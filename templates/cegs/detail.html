@@ -17,6 +17,7 @@
          formSocial: '{{ logged_participant.social_handle|default:''|escapejs }}',
          // Modal State
          modalOpen: false,
+         feeModalOpen: false,
          selectedSlot: null,
          openClaimModal(slot) {
              if (!this.isLoggedIn) {
@@ -142,6 +143,97 @@
             {% endif %}
         </div>
 
+        <!-- Painel de Prazos e Taxas (Item, Frete Internacional e Taxa Aduaneira) -->
+        <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-xl p-5 border border-purple-800/40 shadow-md space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-800/60 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">💰</span>
+                    <div>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-purple-200">
+                            Etapas de Pagamento da CEG (3 Fases)
+                        </h3>
+                        <p class="text-[11px] text-slate-300">Acompanhe os prazos de pagamento de cada etapa desta compra em grupo.</p>
+                    </div>
+                </div>
+                {% if user.is_staff %}
+                    <button type="button" @click="feeModalOpen = true"
+                            class="self-start sm:self-auto px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                        <span>✏️</span> Atualizar Taxas & Prazos
+                    </button>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <!-- Fase 1: Item -->
+                <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-pink-300 tracking-wider">1. Pagamento do Item</span>
+                        <span class="text-[9px] bg-pink-500/20 text-pink-200 font-bold px-1.5 py-0.5 rounded">Fase 1</span>
+                    </div>
+                    <div class="text-xs text-slate-300 font-medium">
+                        Valor individual de cada slot / photocard
+                    </div>
+                    <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                        {% if ceg.prazo_pagamento_item %}
+                            <span class="text-amber-300 flex items-center gap-1">
+                                <span>⏰</span> Prazo: {{ ceg.prazo_pagamento_item|date:"d/m/Y às H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="text-slate-400 font-normal">Sem prazo limite estipulado</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fase 2: Frete Internacional -->
+                <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-blue-300 tracking-wider">2. Frete Internacional</span>
+                        <span class="text-[9px] bg-blue-500/20 text-blue-200 font-bold px-1.5 py-0.5 rounded">Fase 2</span>
+                    </div>
+                    <div class="text-sm font-black text-white">
+                        {% if ceg.frete_inter is not None %}
+                            R$ {{ ceg.frete_inter|floatformat:2 }}
+                        {% else %}
+                            <span class="text-slate-400 text-xs font-normal">Aguardando cotação/pesagem</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                        {% if ceg.prazo_pagamento_frete_inter %}
+                            <span class="text-blue-300 flex items-center gap-1">
+                                <span>⏰</span> Prazo: {{ ceg.prazo_pagamento_frete_inter|date:"d/m/Y às H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="text-slate-400 font-normal">Prazo a definir</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fase 3: Taxa Aduaneira -->
+                <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-emerald-300 tracking-wider">3. Taxa Aduaneira</span>
+                        <span class="text-[9px] bg-emerald-500/20 text-emerald-200 font-bold px-1.5 py-0.5 rounded">Fase 3</span>
+                    </div>
+                    <div class="text-sm font-black text-white">
+                        {% if ceg.taxa_aduaneira is not None %}
+                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                        {% else %}
+                            <span class="text-slate-400 text-xs font-normal">Aguardando Receita Federal</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                        {% if ceg.prazo_pagamento_taxa_aduaneira %}
+                            <span class="text-emerald-300 flex items-center gap-1">
+                                <span>⏰</span> Prazo: {{ ceg.prazo_pagamento_taxa_aduaneira|date:"d/m/Y às H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="text-slate-400 font-normal">Prazo a definir</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Standby Countdown Alert Banner -->
         <div x-show="isStandby" x-cloak
              class="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 p-6 rounded-xl text-white shadow-lg space-y-3">
@@ -248,9 +340,12 @@
                                     </span>
                                 {% endif %}
 
-                                <span class="text-xs font-black text-slate-900">
-                                    R$ {{ slot.price|floatformat:2 }}
-                                </span>
+                                <div class="text-right">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Item</span>
+                                    <span class="text-xs font-black text-slate-900">
+                                        R$ {{ slot.price|floatformat:2 }}
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Item Name -->
@@ -259,6 +354,35 @@
                                     {{ slot.item_definition.name }}
                                 </h3>
                                 <p class="text-[11px] text-slate-400">Set {{ set.set_number }}</p>
+                            </div>
+
+                            <!-- Valores de Frete e Taxa no Card -->
+                            <div class="grid grid-cols-2 gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px]">
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">
+                                        <span>✈️</span> Frete Inter
+                                    </span>
+                                    <span class="font-extrabold text-xs {% if ceg.frete_inter is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                        {% if ceg.frete_inter is not None %}
+                                            R$ {{ ceg.frete_inter|floatformat:2 }}
+                                        {% else %}
+                                            A definir
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="flex flex-col border-l border-slate-200 pl-2">
+                                    <span class="text-[9px] font-black uppercase tracking-wider text-purple-600 flex items-center gap-1">
+                                        <span>🏛️</span> Taxa Aduaneira
+                                    </span>
+                                    <span class="font-extrabold text-xs {% if ceg.taxa_aduaneira is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                        {% if ceg.taxa_aduaneira is not None %}
+                                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                                        {% else %}
+                                            A definir
+                                        {% endif %}
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Status / Action Button -->
@@ -278,7 +402,9 @@
                                                         name: '{{ slot.item_definition.name|escapejs }}',
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                         setNumber: {{ set.set_number }},
-                                                        price: '{{ slot.price|floatformat:2 }}'
+                                                        price: '{{ slot.price|floatformat:2 }}',
+                                                        frete: '{% if ceg.frete_inter is not None %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
+                                                        taxa: '{% if ceg.taxa_aduaneira is not None %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
                                                     })"
                                                     class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
                                                 <span>⚡</span> Reservar (Claim)
@@ -317,6 +443,84 @@
                                 {% endif %}
                             </div>
 
+                            <!-- Bloco de Status de Pagamento & Check Marks -->
+                            {% if user.is_staff %}
+                                <!-- Check Marks Interativos para o Organizador -->
+                                <div class="mt-2 pt-2 border-t border-slate-100 bg-slate-50 -mx-4 -mb-4 p-2.5 rounded-b-xl space-y-1.5"
+                                     x-data="{
+                                         isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                         isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
+                                         isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
+                                         loading: false,
+                                         async toggle(field) {
+                                             if (this.loading) return;
+                                             this.loading = true;
+                                             try {
+                                                 const res = await fetch('/slots/{{ slot.id }}/toggle-payment/', {
+                                                     method: 'POST',
+                                                     headers: {
+                                                         'Content-Type': 'application/json',
+                                                         'X-CSRFToken': '{{ csrf_token }}'
+                                                     },
+                                                     body: JSON.stringify({ field: field })
+                                                 });
+                                                 const data = await res.json();
+                                                 if (data.success) {
+                                                     this.isItemPaid = data.is_item_paid;
+                                                     this.isInterPaid = data.is_frete_inter_paid;
+                                                     this.isTaxaPaid = data.is_taxa_aduaneira_paid;
+                                                 } else {
+                                                     alert(data.message || 'Erro ao alterar status');
+                                                 }
+                                             } catch(e) {
+                                                 alert('Erro de conexão ao alterar status: ' + e);
+                                             } finally {
+                                                 this.loading = false;
+                                             }
+                                         }
+                                     }">
+                                    <div class="flex items-center justify-between text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                                        <span>Check Marks de Pagamento</span>
+                                        <span x-show="loading" class="animate-spin text-pink-600">⌛</span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
+                                        <button type="button" @click="toggle('item')" :disabled="loading"
+                                                :class="isItemPaid ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'"
+                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer"
+                                                title="Item: R$ {{ slot.price|floatformat:2 }}">
+                                            <span x-text="isItemPaid ? '✔' : '○'"></span>
+                                            <span>Item</span>
+                                        </button>
+                                        <button type="button" @click="toggle('inter')" :disabled="loading"
+                                                :class="isInterPaid ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'"
+                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer"
+                                                title="Frete Internacional: {% if ceg.frete_inter is not None %}R$ {{ ceg.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}">
+                                            <span x-text="isInterPaid ? '✔' : '○'"></span>
+                                            <span>Inter</span>
+                                        </button>
+                                        <button type="button" @click="toggle('taxa')" :disabled="loading"
+                                                :class="isTaxaPaid ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-purple-300'"
+                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer"
+                                                title="Taxa Aduaneira: {% if ceg.taxa_aduaneira is not None %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}">
+                                            <span x-text="isTaxaPaid ? '✔' : '○'"></span>
+                                            <span>Taxa</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% elif slot.claimed_by %}
+                                <!-- Badges de Status Informativos para Participantes -->
+                                <div class="mt-1 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[10px] font-semibold text-slate-600 text-center">
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100 {% if slot.is_item_paid %}text-emerald-700 font-bold bg-emerald-50/60 border-emerald-100{% else %}text-slate-400{% endif %}">
+                                        <span>{% if slot.is_item_paid %}✔{% else %}○{% endif %} Item</span>
+                                    </div>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100 {% if slot.is_frete_inter_paid %}text-blue-700 font-bold bg-blue-50/60 border-blue-100{% else %}text-slate-400{% endif %}">
+                                        <span>{% if slot.is_frete_inter_paid %}✔{% else %}○{% endif %} Inter</span>
+                                    </div>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100 {% if slot.is_taxa_aduaneira_paid %}text-purple-700 font-bold bg-purple-50/60 border-purple-100{% else %}text-slate-400{% endif %}">
+                                        <span>{% if slot.is_taxa_aduaneira_paid %}✔{% else %}○{% endif %} Taxa</span>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                     {% empty %}
                         <div class="col-span-full py-8 text-center text-slate-400 text-sm">
@@ -344,11 +548,27 @@
                 <div>
                     <span class="text-xs font-black text-pink-600 uppercase tracking-wider">Confirmar Reserva</span>
                     <h3 class="text-lg font-black text-slate-900" x-text="selectedSlot ? selectedSlot.name : ''"></h3>
-                    <p class="text-xs text-slate-500" x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber + ' • R$ ' + selectedSlot.price : ''"></p>
+                    <p class="text-xs text-slate-500" x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber : ''"></p>
                 </div>
                 <button type="button" @click="closeClaimModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">
                     ✕
                 </button>
+            </div>
+
+            <!-- Valores das Fases da CEG para o Item -->
+            <div class="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200/90 text-center text-xs">
+                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">1. Item</span>
+                    <span class="font-black text-slate-900" x-text="selectedSlot ? 'R$ ' + selectedSlot.price : ''"></span>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
+                    <span class="block text-[10px] font-bold text-blue-500 uppercase">2. Frete Inter</span>
+                    <span class="font-black text-blue-900" x-text="selectedSlot && selectedSlot.frete ? 'R$ ' + selectedSlot.frete : 'A definir'"></span>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
+                    <span class="block text-[10px] font-bold text-purple-500 uppercase">3. Taxa</span>
+                    <span class="font-black text-purple-900" x-text="selectedSlot && selectedSlot.taxa ? 'R$ ' + selectedSlot.taxa : 'A definir'"></span>
+                </div>
             </div>
 
             <!-- Informação de Concorrência -->
@@ -461,9 +681,95 @@
                     </button>
                 </div>
             </form>
-
         </div>
     </div>
+
+    <!-- Modal para Atualizar Taxas e Prazos da CEG (Organizador) -->
+    {% if user.is_staff %}
+        <div x-show="feeModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="feeModalOpen = false">
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all"
+                 @click.away="feeModalOpen = false">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">💰</span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">Atualizar Taxas & Prazos da CEG</h3>
+                            <p class="text-[11px] text-slate-500">Altere os prazos e informe os valores do frete inter e taxa aduaneira.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="feeModalOpen = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <form action="{% url 'update_ceg_fees' ceg.slug %}" method="POST" class="space-y-4 text-xs">
+                    {% csrf_token %}
+
+                    <!-- Item -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                        <label class="block font-bold text-slate-700">1. Prazo para Pagamento do Item</label>
+                        <input type="datetime-local" name="prazo_pagamento_item"
+                               value="{{ ceg.prazo_pagamento_item|date:'Y-m-d\TH:i' }}"
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-slate-800">
+                        <span class="text-[10px] text-slate-400">Data limite para os participantes pagarem o valor do item.</span>
+                    </div>
+
+                    <!-- Frete Inter -->
+                    <div class="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2">
+                        <label class="block font-bold text-blue-950">2. Frete Internacional</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Valor (R$)</span>
+                                <input type="number" step="0.01" min="0" name="frete_inter"
+                                       value="{{ ceg.frete_inter|default_if_none:'' }}"
+                                       placeholder="Ex: 35.00"
+                                       class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Prazo de Pagamento</span>
+                                <input type="datetime-local" name="prazo_pagamento_frete_inter"
+                                       value="{{ ceg.prazo_pagamento_frete_inter|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg font-semibold text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Taxa Aduaneira -->
+                    <div class="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-2">
+                        <label class="block font-bold text-emerald-950">3. Taxa Aduaneira / Alfândega</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Valor (R$)</span>
+                                <input type="number" step="0.01" min="0" name="taxa_aduaneira"
+                                       value="{{ ceg.taxa_aduaneira|default_if_none:'' }}"
+                                       placeholder="Ex: 25.00"
+                                       class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Prazo de Pagamento</span>
+                                <input type="datetime-local" name="prazo_pagamento_taxa_aduaneira"
+                                       value="{{ ceg.prazo_pagamento_taxa_aduaneira|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg font-semibold text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                        <button type="button" @click="feeModalOpen = false"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition">
+                            ✔ Salvar Taxas & Prazos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
 
 </div>
 {% endblock %}

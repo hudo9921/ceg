@@ -1,7 +1,8 @@
+import json
+import threading
 from django.test import TestCase, TransactionTestCase, Client
 from django.utils import timezone
 from datetime import timedelta
-import threading
 from django.contrib.auth.models import User
 from apps.groups.models import KpopGroup, Era
 from apps.cegs.models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog
@@ -652,6 +653,144 @@ class CreationsHubIntegrationTests(TestCase):
 
         # Deve existir um Claim registrado para a Beatriz
         self.assertTrue(Claim.objects.filter(slot=slot_vip, participant=participant).exists())
+
+
+class CEGFeesAndPaymentToggleTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username='admin_test',
+            email='admin@test.com',
+            password='password123'
+        )
+        self.group = KpopGroup.objects.create(name='LE SSERAFIM', slug='le-sserafim')
+        self.era = Era.objects.create(group=self.group, name='Crazy', slug='crazy')
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='CEG LE SSERAFIM Crazy Test',
+            slug='ceg-le-sserafim-crazy-test',
+            status=CEG.Status.OPEN,
+            pix_key='val@pix.com'
+        )
+        self.item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Chaewon',
+            member_name='Chaewon',
+            default_price=45.00
+        )
+        self.cset = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.cset.generate_slots()
+        self.slot = self.cset.slots.first()
+        self.participant = Participant.objects.create(
+            name='Deborah Silva',
+            whatsapp='5562920058172',
+            social_handle='@deborah'
+        )
+
+    def test_ceg_fee_fields_default_and_update(self):
+        """Verifica que frete_inter e taxa_aduaneira começam nulos e podem ser atualizados."""
+        self.assertIsNone(self.ceg.frete_inter)
+        self.assertIsNone(self.ceg.taxa_aduaneira)
+        self.assertIsNone(self.ceg.prazo_pagamento_item)
+        self.assertIsNone(self.ceg.prazo_pagamento_frete_inter)
+        self.assertIsNone(self.ceg.prazo_pagamento_taxa_aduaneira)
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(f'/ceg/{self.ceg.slug}/update-fees/', {
+            'prazo_pagamento_item': '2026-09-20T23:59',
+            'frete_inter': '35.50',
+            'taxa_aduaneira': '22.00',
+            'prazo_pagamento_frete_inter': '2026-09-25T18:00',
+            'prazo_pagamento_taxa_aduaneira': '2026-09-30T18:00',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        self.ceg.refresh_from_db()
+        self.assertEqual(float(self.ceg.frete_inter), 35.50)
+        self.assertEqual(float(self.ceg.taxa_aduaneira), 22.00)
+        self.assertIsNotNone(self.ceg.prazo_pagamento_item)
+        self.assertIsNotNone(self.ceg.prazo_pagamento_frete_inter)
+        self.assertIsNotNone(self.ceg.prazo_pagamento_taxa_aduaneira)
+
+    def test_toggle_slot_payment_item_syncs_claim_and_slot_status(self):
+        """Alternar is_item_paid deve atualizar slot.status para PAID e sincronizar Claim."""
+        # 1. Reserva o slot para a participante
+        self.slot.claimed_by = self.participant
+        self.slot.status = ItemSlot.Status.RESERVED
+        self.slot.save()
+        claim = Claim.objects.create(
+            slot=self.slot,
+            participant=self.participant,
+            status=Claim.Status.PENDING,
+            total_price=self.slot.price
+        )
+
+        self.client.force_login(self.admin_user)
+
+        # 2. Marca o item como pago via endpoint JSON
+        res = self.client.post(
+            f'/slots/{self.slot.id}/toggle-payment/',
+            data=json.dumps({'field': 'item', 'value': True}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['is_item_paid'])
+
+        self.slot.refresh_from_db()
+        claim.refresh_from_db()
+        self.assertTrue(self.slot.is_item_paid)
+        self.assertEqual(self.slot.status, ItemSlot.Status.PAID)
+        self.assertEqual(claim.status, Claim.Status.PAID)
+        self.assertIsNotNone(claim.paid_at)
+
+        # 3. Desmarca o item como pago
+        res2 = self.client.post(
+            f'/slots/{self.slot.id}/toggle-payment/',
+            data=json.dumps({'field': 'item', 'value': False}),
+            content_type='application/json'
+        )
+        self.assertEqual(res2.status_code, 200)
+        self.slot.refresh_from_db()
+        claim.refresh_from_db()
+        self.assertFalse(self.slot.is_item_paid)
+        self.assertEqual(self.slot.status, ItemSlot.Status.RESERVED)
+        self.assertEqual(claim.status, Claim.Status.PENDING)
+
+    def test_toggle_slot_inter_and_taxa_payments(self):
+        """Verifica alternância independente de frete_inter e taxa_aduaneira."""
+        self.client.force_login(self.admin_user)
+
+        # Alterna frete inter
+        res_inter = self.client.post(
+            f'/slots/{self.slot.id}/toggle-payment/',
+            data=json.dumps({'field': 'inter'}),
+            content_type='application/json'
+        )
+        self.assertTrue(res_inter.json()['is_frete_inter_paid'])
+        self.slot.refresh_from_db()
+        self.assertTrue(self.slot.is_frete_inter_paid)
+
+        # Alterna taxa aduaneira
+        res_taxa = self.client.post(
+            f'/slots/{self.slot.id}/toggle-payment/',
+            data=json.dumps({'field': 'taxa'}),
+            content_type='application/json'
+        )
+        self.assertTrue(res_taxa.json()['is_taxa_aduaneira_paid'])
+        self.slot.refresh_from_db()
+        self.assertTrue(self.slot.is_taxa_aduaneira_paid)
+
+    def test_toggle_payment_unauthorized_for_non_staff(self):
+        """Usuários sem permissão de staff não podem alterar check marks de pagamento."""
+        res = self.client.post(
+            f'/slots/{self.slot.id}/toggle-payment/',
+            data=json.dumps({'field': 'item', 'value': True}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 403)
+
 
 
 

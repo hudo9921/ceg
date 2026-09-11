@@ -47,6 +47,40 @@ class CEG(models.Model):
         help_text='Se preenchido com data futura, a página pública exibirá o cronômetro regressivo.'
     )
     closes_at = models.DateTimeField('Data e Hora de Encerramento', null=True, blank=True)
+    prazo_pagamento_item = models.DateTimeField(
+        'Prazo de Pagamento do Item',
+        null=True,
+        blank=True,
+        help_text='Data e hora limite para pagamento do valor do item (opcional).'
+    )
+    frete_inter = models.DecimalField(
+        'Frete Internacional (R$)',
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Valor do frete internacional (começa nulo e depois atualiza).'
+    )
+    taxa_aduaneira = models.DecimalField(
+        'Taxa Aduaneira (R$)',
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Valor da taxa aduaneira / alfandegária (começa nulo e depois atualiza).'
+    )
+    prazo_pagamento_frete_inter = models.DateTimeField(
+        'Prazo de Pagamento do Frete Inter',
+        null=True,
+        blank=True,
+        help_text='Data e hora limite para pagamento do frete internacional (opcional).'
+    )
+    prazo_pagamento_taxa_aduaneira = models.DateTimeField(
+        'Prazo de Pagamento da Taxa Aduaneira',
+        null=True,
+        blank=True,
+        help_text='Data e hora limite para pagamento da taxa aduaneira (opcional).'
+    )
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
     updated_at = models.DateTimeField('Atualizado em', auto_now=True)
 
@@ -246,6 +280,74 @@ class ItemSlot(models.Model):
         verbose_name='Reservado por'
     )
     claimed_at = models.DateTimeField('Reservado em', null=True, blank=True)
+    is_item_paid = models.BooleanField(
+        'Item Pago',
+        default=False,
+        help_text='Check mark indicando se o valor do item foi pago.'
+    )
+    is_frete_inter_paid = models.BooleanField(
+        'Frete Inter Pago',
+        default=False,
+        help_text='Check mark indicando se o frete internacional foi pago.'
+    )
+    is_taxa_aduaneira_paid = models.BooleanField(
+        'Taxa Aduaneira Paga',
+        default=False,
+        help_text='Check mark indicando se a taxa aduaneira foi paga.'
+    )
+    is_frete_nacional_paid = models.BooleanField(
+        'Frete Nacional Pago',
+        default=False,
+        help_text='Check mark indicando se o frete nacional foi pago.'
+    )
+
+    def sync_payment_status(self):
+        """Sincroniza o status do slot e da reserva (Claim) com base na flag is_item_paid."""
+        if self.is_item_paid:
+            self.status = self.Status.PAID
+            if hasattr(self, 'claim') and self.claim:
+                self.claim.status = 'PAID'
+                if not self.claim.paid_at:
+                    self.claim.paid_at = timezone.now()
+                self.claim.save(update_fields=['status', 'paid_at'])
+        else:
+            if self.claimed_by:
+                self.status = self.Status.RESERVED
+                if hasattr(self, 'claim') and self.claim:
+                    self.claim.status = 'PENDING'
+                    self.claim.save(update_fields=['status'])
+            else:
+                self.status = self.Status.AVAILABLE
+
+    def toggle_payment(self, field_name: str, value=None) -> bool:
+        """Alterna ou define o status de um dos campos de pagamento do item/slot."""
+        field_map = {
+            'item': 'is_item_paid',
+            'is_item_paid': 'is_item_paid',
+            'frete_inter': 'is_frete_inter_paid',
+            'inter': 'is_frete_inter_paid',
+            'is_frete_inter_paid': 'is_frete_inter_paid',
+            'taxa': 'is_taxa_aduaneira_paid',
+            'taxa_aduaneira': 'is_taxa_aduaneira_paid',
+            'is_taxa_aduaneira_paid': 'is_taxa_aduaneira_paid',
+            'nacional': 'is_frete_nacional_paid',
+            'frete_nacional': 'is_frete_nacional_paid',
+            'is_frete_nacional_paid': 'is_frete_nacional_paid',
+        }
+        attr = field_map.get(field_name)
+        if not attr:
+            raise ValueError(f"Campo de pagamento desconhecido: '{field_name}'")
+        current_val = getattr(self, attr)
+        new_val = not current_val if value is None else bool(value)
+        setattr(self, attr, new_val)
+        update_fields = [attr]
+
+        if attr == 'is_item_paid':
+            self.sync_payment_status()
+            update_fields.append('status')
+
+        self.save(update_fields=update_fields)
+        return new_val
 
     class Meta:
         verbose_name = 'Slot de Item'
@@ -259,6 +361,16 @@ class ItemSlot(models.Model):
     @property
     def is_available(self) -> bool:
         return self.status == self.Status.AVAILABLE
+
+    @property
+    def frete_inter(self):
+        """Retorna o frete internacional definido para a CEG deste slot."""
+        return self.set.ceg.frete_inter
+
+    @property
+    def taxa_aduaneira(self):
+        """Retorna a taxa aduaneira definida para a CEG deste slot."""
+        return self.set.ceg.taxa_aduaneira
 
 
 class ClaimAttemptLog(models.Model):

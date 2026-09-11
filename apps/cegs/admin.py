@@ -33,12 +33,33 @@ class ItemSlotInline(admin.TabularInline):
 
 @admin.register(CEG)
 class CEGAdmin(admin.ModelAdmin):
-    list_display = ('title', 'group_name', 'era', 'status_badge', 'opens_at', 'standby_badge', 'slots_progress', 'created_at')
+    list_display = ('title', 'group_name', 'era', 'status_badge', 'prazo_pagamento_item', 'frete_inter', 'taxa_aduaneira', 'standby_badge', 'slots_progress', 'created_at')
     list_filter = ('status', 'era__group', 'era')
     search_fields = ('title', 'era__name', 'era__group__name')
     prepopulated_fields = {'slug': ('title',)}
     inlines = [CEGItemDefinitionInline, CEGSetInline]
     actions = ['make_open', 'make_closed', 'generate_all_slots_for_ceg']
+    fieldsets = (
+        ('Informações Principais', {
+            'fields': ('title', 'slug', 'era', 'status', 'description', 'banner_url')
+        }),
+        ('Horários & Abertura', {
+            'fields': ('opens_at', 'closes_at')
+        }),
+        ('Prazos & Taxas de Pagamento', {
+            'fields': (
+                'prazo_pagamento_item',
+                'frete_inter',
+                'prazo_pagamento_frete_inter',
+                'taxa_aduaneira',
+                'prazo_pagamento_taxa_aduaneira',
+            ),
+            'description': 'Configure os prazos de pagamento e os valores de frete internacional e taxa aduaneira.'
+        }),
+        ('Instruções Pix', {
+            'fields': ('pix_key', 'pix_instructions')
+        }),
+    )
 
     def group_name(self, obj):
         return obj.era.group.name
@@ -140,8 +161,13 @@ class CEGSetAdmin(admin.ModelAdmin):
 
 @admin.register(ItemSlot)
 class ItemSlotAdmin(admin.ModelAdmin):
-    list_display = ('id', 'set_info', 'item_name', 'price', 'status_badge', 'claimed_by_info', 'claimed_at')
-    list_filter = ('status', 'set__ceg', 'set__set_number')
+    list_display = (
+        'id', 'set_info', 'item_name', 'price',
+        'is_item_paid', 'is_frete_inter_paid', 'is_taxa_aduaneira_paid', 'is_frete_nacional_paid',
+        'status_badge', 'claimed_by_info', 'claimed_at'
+    )
+    list_editable = ('is_item_paid', 'is_frete_inter_paid', 'is_taxa_aduaneira_paid', 'is_frete_nacional_paid')
+    list_filter = ('status', 'is_item_paid', 'is_frete_inter_paid', 'is_taxa_aduaneira_paid', 'set__ceg', 'set__set_number')
     search_fields = ('item_definition__name', 'claimed_by__name', 'claimed_by__username', 'claimed_by__whatsapp', 'claimed_by__social_handle')
     raw_id_fields = ('claimed_by',)
     inlines = [ClaimAttemptLogInline]

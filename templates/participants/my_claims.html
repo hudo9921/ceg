@@ -344,8 +344,20 @@
                                 <th class="py-2.5">Set</th>
                                 <th class="py-2.5">Item / Inclusão</th>
                                 <th class="py-2.5">Integrante</th>
-                                <th class="py-2.5">Valor</th>
-                                <th class="py-2.5">Status</th>
+                                <th class="py-2.5">Item (R$)</th>
+                                <th class="py-2.5 text-center">1. Item</th>
+                                <th class="py-2.5 text-center">
+                                    2. Frete Inter
+                                    {% if group.ceg.frete_inter is not None %}
+                                        <span class="block text-[9px] text-blue-600 font-semibold lowercase">(R$ {{ group.ceg.frete_inter|floatformat:2 }})</span>
+                                    {% endif %}
+                                </th>
+                                <th class="py-2.5 text-center">
+                                    3. Taxa
+                                    {% if group.ceg.taxa_aduaneira is not None %}
+                                        <span class="block text-[9px] text-purple-600 font-semibold lowercase">(R$ {{ group.ceg.taxa_aduaneira|floatformat:2 }})</span>
+                                    {% endif %}
+                                </th>
                                 <th class="py-2.5">Data da Reserva</th>
                             </tr>
                         </thead>
@@ -370,18 +382,36 @@
                                     <td class="py-3 font-bold text-slate-900">
                                         R$ {{ claim.total_price|floatformat:2 }}
                                     </td>
-                                    <td class="py-3">
-                                        {% if claim.status == 'PENDING' %}
-                                            <span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded-md">
-                                                ⏳ Aguardando Pagamento
-                                            </span>
-                                        {% elif claim.status == 'PAID' %}
-                                            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-md">
-                                                ✔ Pago / Confirmado
+                                    <td class="py-3 text-center">
+                                        {% if claim.slot.is_item_paid %}
+                                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[11px]">
+                                                ✔ Pago
                                             </span>
                                         {% else %}
-                                            <span class="px-2.5 py-1 bg-slate-100 text-slate-600 font-bold rounded-md">
-                                                {{ claim.get_status_display }}
+                                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[11px]">
+                                                ⏳ Pendente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        {% if claim.slot.is_frete_inter_paid %}
+                                            <span class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-[11px]">
+                                                ✔ Pago
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[11px]">
+                                                ⏳ Pendente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        {% if claim.slot.is_taxa_aduaneira_paid %}
+                                            <span class="px-2 py-0.5 bg-purple-100 text-purple-800 font-bold rounded text-[11px]">
+                                                ✔ Pago
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[11px]">
+                                                ⏳ Pendente
                                             </span>
                                         {% endif %}
                                     </td>

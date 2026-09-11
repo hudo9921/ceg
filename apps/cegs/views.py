@@ -1,9 +1,11 @@
 import json
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.http import JsonResponse
 from django.contrib import messages
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db.models import Q
 from .models import CEG, CEGSet, ItemSlot
 from .services import ClaimService, CEGError
@@ -194,3 +196,117 @@ class ClaimSlotView(View):
                 return JsonResponse({'success': False, 'message': err_msg}, status=500)
             messages.error(request, err_msg)
             return redirect('ceg_detail', slug=ceg.slug)
+
+
+class ToggleSlotPaymentView(View):
+    """
+    Endpoint para o Organizador (Staff) alternar check marks de pagamento por item:
+    - Item pago (is_item_paid)
+    - Frete Inter pago (is_frete_inter_paid)
+    - Taxa Aduaneira paga (is_taxa_aduaneira_paid)
+    - Frete Nacional pago (is_frete_nacional_paid)
+    """
+    def post(self, request, slot_id):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return JsonResponse({
+                'success': False,
+                'message': 'Acesso restrito: apenas o organizador pode alterar status de pagamento.'
+            }, status=403)
+
+        slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg', 'claimed_by'), id=slot_id)
+
+        try:
+            if request.content_type == 'application/json':
+                body = json.loads(request.body.decode('utf-8') or '{}')
+                field = body.get('field', '').strip()
+                value = body.get('value')
+            else:
+                field = request.POST.get('field', '').strip()
+                val_raw = request.POST.get('value')
+                value = val_raw.lower() in ('true', '1', 'yes') if val_raw is not None else None
+
+            if not field:
+                return JsonResponse({'success': False, 'message': 'Parâmetro "field" é obrigatório.'}, status=400)
+
+            new_val = slot.toggle_payment(field, value=value)
+
+            return JsonResponse({
+                'success': True,
+                'slot_id': slot.id,
+                'field': field,
+                'new_value': new_val,
+                'is_item_paid': slot.is_item_paid,
+                'is_frete_inter_paid': slot.is_frete_inter_paid,
+                'is_taxa_aduaneira_paid': slot.is_taxa_aduaneira_paid,
+                'is_frete_nacional_paid': slot.is_frete_nacional_paid,
+                'status': slot.status,
+                'status_display': slot.get_status_display(),
+            })
+        except ValueError as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Erro ao atualizar status: {e}'}, status=500)
+
+
+class UpdateCEGFeesView(View):
+    """
+    Permite ao organizador atualizar valores e prazos da CEG:
+    - Prazo Pagamento Item
+    - Frete Internacional (R$)
+    - Taxa Aduaneira (R$)
+    - Prazo Pagamento Frete Inter
+    - Prazo Pagamento Taxa Aduaneira
+    """
+    def post(self, request, slug):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            messages.error(request, "Acesso restrito ao organizador.")
+            return redirect(f"/admin/login/?next={request.path}")
+
+        ceg = get_object_or_404(CEG, slug=slug)
+
+        def parse_dt(dt_str):
+            if not dt_str:
+                return None
+            try:
+                dt = parse_datetime(dt_str.strip())
+                if dt and timezone.is_naive(dt):
+                    dt = timezone.make_aware(dt, timezone.get_current_timezone())
+                return dt
+            except Exception:
+                return None
+
+        def parse_decimal(val_str):
+            if val_str is None or val_str == '':
+                return None
+            val_clean = str(val_str).replace('R$', '').replace(' ', '').replace(',', '.').strip()
+            if not val_clean:
+                return None
+            try:
+                return Decimal(val_clean)
+            except (InvalidOperation, ValueError):
+                return None
+
+        # Dados do form
+        prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
+        frete_inter_str = request.POST.get('frete_inter', '').strip()
+        taxa_aduaneira_str = request.POST.get('taxa_aduaneira', '').strip()
+        prazo_frete_str = request.POST.get('prazo_pagamento_frete_inter', '').strip()
+        prazo_taxa_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
+
+        ceg.prazo_pagamento_item = parse_dt(prazo_item_str) if prazo_item_str else None
+        ceg.frete_inter = parse_decimal(frete_inter_str)
+        ceg.taxa_aduaneira = parse_decimal(taxa_aduaneira_str)
+        ceg.prazo_pagamento_frete_inter = parse_dt(prazo_frete_str) if prazo_frete_str else None
+        ceg.prazo_pagamento_taxa_aduaneira = parse_dt(prazo_taxa_str) if prazo_taxa_str else None
+
+        ceg.save(update_fields=[
+            'prazo_pagamento_item',
+            'frete_inter',
+            'taxa_aduaneira',
+            'prazo_pagamento_frete_inter',
+            'prazo_pagamento_taxa_aduaneira',
+        ])
+
+        messages.success(request, f"💰 Taxas e prazos da CEG '{ceg.title}' atualizados com sucesso!")
+        return redirect('ceg_detail', slug=ceg.slug)
+

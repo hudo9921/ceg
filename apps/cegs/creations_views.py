@@ -77,6 +77,11 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'active_sets_count': c.sets.filter(is_active=True).count(),
                 'items_count': c.item_definitions.count(),
                 'opens_at': c.opens_at.strftime('%d/%m/%Y %H:%M') if c.opens_at else None,
+                'prazo_pagamento_item': c.prazo_pagamento_item.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_item else None,
+                'frete_inter': str(c.frete_inter) if c.frete_inter is not None else None,
+                'taxa_aduaneira': str(c.taxa_aduaneira) if c.taxa_aduaneira is not None else None,
+                'prazo_pagamento_frete_inter': c.prazo_pagamento_frete_inter.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_frete_inter else None,
+                'prazo_pagamento_taxa_aduaneira': c.prazo_pagamento_taxa_aduaneira.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_taxa_aduaneira else None,
                 'is_standby': c.is_standby,
                 'pix_key': c.pix_key,
             })
@@ -116,11 +121,7 @@ class CreateGroupView(StaffRequiredMixin, View):
         description = request.POST.get('description', '').strip()
 
         if not name:
-            messages.error(request, "O nome do grupo ou solista é obrigatório.")
-            return redirect('/creations/?tab=group')
-
-        if KpopGroup.objects.filter(name__iexact=name).exists():
-            messages.warning(request, f"Já existe um grupo cadastrado com o nome '{name}'.")
+            messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
 
         try:
@@ -129,7 +130,7 @@ class CreateGroupView(StaffRequiredMixin, View):
                 image_url=image_url,
                 description=description
             )
-            messages.success(request, f"🎤 Grupo '{group.name}' cadastrado com sucesso! Agora você pode criar Eras para ele.")
+            messages.success(request, f"🎤 Grupo/Solista '{group.name}' cadastrado com sucesso! Agora você pode criar uma Era para ele.")
             return redirect('/creations/?tab=era')
         except Exception as e:
             logger.error(f"Erro ao criar grupo: {e}")
@@ -138,7 +139,7 @@ class CreateGroupView(StaffRequiredMixin, View):
 
 
 class CreateEraView(StaffRequiredMixin, View):
-    """Cadastra uma nova Era / Comeback vinculada a um grupo."""
+    """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo."""
 
     def post(self, request):
         group_id = request.POST.get('group_id')
@@ -172,7 +173,7 @@ class CreateEraView(StaffRequiredMixin, View):
 class CreateCEGView(StaffRequiredMixin, View):
     """
     Cadastra uma nova CEG completa com:
-    - Informações gerais (datas, status, chave pix, regras)
+    - Informações gerais (datas, status, chave pix, regras, prazos, taxas)
     - Construtor dinâmico de itens/photocards com valores
     - Geração automática do Set #1 e de seus slots físicos
     """
@@ -183,6 +184,11 @@ class CreateCEGView(StaffRequiredMixin, View):
         status = request.POST.get('status', CEG.Status.OPEN)
         opens_at_str = request.POST.get('opens_at', '').strip()
         closes_at_str = request.POST.get('closes_at', '').strip()
+        prazo_pagamento_item_str = request.POST.get('prazo_pagamento_item', '').strip()
+        frete_inter_str = request.POST.get('frete_inter', '').strip()
+        taxa_aduaneira_str = request.POST.get('taxa_aduaneira', '').strip()
+        prazo_pagamento_frete_inter_str = request.POST.get('prazo_pagamento_frete_inter', '').strip()
+        prazo_pagamento_taxa_aduaneira_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
         pix_key = request.POST.get('pix_key', '').strip()
         pix_instructions = request.POST.get('pix_instructions', '').strip()
         banner_url = request.POST.get('banner_url', '').strip()
@@ -198,6 +204,20 @@ class CreateCEGView(StaffRequiredMixin, View):
         era = get_object_or_404(Era, id=era_id)
         opens_at = parse_local_datetime(opens_at_str)
         closes_at = parse_local_datetime(closes_at_str)
+        prazo_pagamento_item = parse_local_datetime(prazo_pagamento_item_str)
+        prazo_pagamento_frete_inter = parse_local_datetime(prazo_pagamento_frete_inter_str)
+        prazo_pagamento_taxa_aduaneira = parse_local_datetime(prazo_pagamento_taxa_aduaneira_str)
+
+        def parse_optional_decimal(v_str):
+            if not v_str:
+                return None
+            try:
+                return Decimal(str(v_str).replace('R$', '').replace(' ', '').replace(',', '.').strip())
+            except (InvalidOperation, ValueError):
+                return None
+
+        frete_inter = parse_optional_decimal(frete_inter_str)
+        taxa_aduaneira = parse_optional_decimal(taxa_aduaneira_str)
 
         # Se tiver opens_at no futuro e status for OPEN, ajusta para SCHEDULED
         if opens_at and timezone.now() < opens_at and status == CEG.Status.OPEN:
@@ -240,6 +260,11 @@ class CreateCEGView(StaffRequiredMixin, View):
                     status=status,
                     opens_at=opens_at,
                     closes_at=closes_at,
+                    prazo_pagamento_item=prazo_pagamento_item,
+                    frete_inter=frete_inter,
+                    taxa_aduaneira=taxa_aduaneira,
+                    prazo_pagamento_frete_inter=prazo_pagamento_frete_inter,
+                    prazo_pagamento_taxa_aduaneira=prazo_pagamento_taxa_aduaneira,
                     pix_key=pix_key,
                     pix_instructions=pix_instructions,
                     banner_url=banner_url,
