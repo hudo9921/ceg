@@ -792,5 +792,190 @@ class CEGFeesAndPaymentToggleTests(TestCase):
         self.assertEqual(res.status_code, 403)
 
 
+class ManageSlotViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username='admin_manage',
+            email='admin_manage@test.com',
+            password='password123'
+        )
+        self.regular_user = User.objects.create_user(
+            username='user_regular',
+            password='password123'
+        )
+        self.group = KpopGroup.objects.create(name='tripleS', slug='triples')
+        self.era = Era.objects.create(group=self.group, name='Assemble24', slug='assemble24')
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='CEG tripleS Test',
+            slug='ceg-triples-test',
+            status=CEG.Status.OPEN,
+            pix_key='pix@triples.com'
+        )
+        self.item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Seoyeon',
+            member_name='Seoyeon',
+            default_price=25.00
+        )
+        self.set1 = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.set1.generate_slots()
+        self.slot1 = self.set1.slots.first()
+
+        self.set2 = CEGSet.objects.create(ceg=self.ceg, set_number=2)
+        self.set2.generate_slots()
+        self.slot2 = self.set2.slots.first()
+
+        self.p1 = Participant.objects.create(
+            name='Alice Santos',
+            whatsapp='5511999990001',
+            social_handle='@alice'
+        )
+        self.p2 = Participant.objects.create(
+            name='Bruna Lima',
+            whatsapp='5511999990002',
+            social_handle='@bruna'
+        )
+
+    def test_update_slot_price_single_slot(self):
+        """Atualiza o preço de um único slot sem afetar os outros sets."""
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({
+                'price': '35.50',
+                'apply_to_all_sets': False
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['slot']['price'], '35.50')
+
+        self.slot1.refresh_from_db()
+        self.slot2.refresh_from_db()
+        self.assertEqual(float(self.slot1.price), 35.50)
+        self.assertEqual(float(self.slot2.price), 25.00)
+
+    def test_update_slot_price_apply_to_all_sets(self):
+        """Atualiza o preço do slot e replica para todos os sets da CEG."""
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({
+                'price': '40,00',
+                'apply_to_all_sets': True
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.slot1.refresh_from_db()
+        self.slot2.refresh_from_db()
+        self.item_def.refresh_from_db()
+        self.assertEqual(float(self.slot1.price), 40.00)
+        self.assertEqual(float(self.slot2.price), 40.00)
+        self.assertEqual(float(self.item_def.default_price), 40.00)
+
+    def test_remove_claim_frees_slot_and_deletes_claim(self):
+        """Remover reserva limpa claimed_by, apaga o Claim e restaura status para AVAILABLE."""
+        self.slot1.claimed_by = self.p1
+        self.slot1.status = ItemSlot.Status.RESERVED
+        self.slot1.is_item_paid = True
+        self.slot1.save()
+        Claim.objects.create(
+            slot=self.slot1,
+            participant=self.p1,
+            total_price=self.slot1.price,
+            status=Claim.Status.PAID
+        )
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({'remove_claim': True}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['slot']['status'], ItemSlot.Status.AVAILABLE)
+        self.assertIsNone(data['slot']['claimed_by'])
+        self.assertFalse(data['slot']['is_item_paid'])
+
+        self.slot1.refresh_from_db()
+        self.assertIsNone(self.slot1.claimed_by)
+        self.assertEqual(self.slot1.status, ItemSlot.Status.AVAILABLE)
+        self.assertFalse(self.slot1.is_item_paid)
+        self.assertFalse(Claim.objects.filter(slot=self.slot1).exists())
+
+    def test_change_participant_transfers_claim(self):
+        """Trocar participante transfere a reserva para a nova participante."""
+        self.slot1.claimed_by = self.p1
+        self.slot1.status = ItemSlot.Status.RESERVED
+        self.slot1.save()
+        claim = Claim.objects.create(
+            slot=self.slot1,
+            participant=self.p1,
+            total_price=self.slot1.price,
+            status=Claim.Status.PENDING
+        )
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({'participant_id': self.p2.id}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['slot']['claimed_by']['id'], self.p2.id)
+
+        self.slot1.refresh_from_db()
+        claim.refresh_from_db()
+        self.assertEqual(self.slot1.claimed_by, self.p2)
+        self.assertEqual(claim.participant, self.p2)
+
+    def test_assign_participant_to_available_slot(self):
+        """Atribuir um participante diretamente a um slot livre."""
+        self.assertEqual(self.slot1.status, ItemSlot.Status.AVAILABLE)
+        self.assertIsNone(self.slot1.claimed_by)
+
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({'participant_id': self.p1.id}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.slot1.refresh_from_db()
+        self.assertEqual(self.slot1.claimed_by, self.p1)
+        self.assertEqual(self.slot1.status, ItemSlot.Status.RESERVED)
+        self.assertTrue(Claim.objects.filter(slot=self.slot1, participant=self.p1).exists())
+
+    def test_manage_slot_forbidden_for_non_staff(self):
+        """Usuários não-staff ou anônimos recebem 403 Forbidden."""
+        # Anônimo
+        res_anon = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({'price': '10.00'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_anon.status_code, 403)
+
+        # Usuário autenticado sem staff
+        self.client.force_login(self.regular_user)
+        res_user = self.client.post(
+            f'/slots/{self.slot1.id}/manage/',
+            data=json.dumps({'price': '10.00'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res_user.status_code, 403)
+
+
+
 
 

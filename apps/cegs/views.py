@@ -6,8 +6,10 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.db import transaction
 from django.db.models import Q
 from .models import CEG, CEGSet, ItemSlot
+from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError
 
 
@@ -309,4 +311,122 @@ class UpdateCEGFeesView(View):
 
         messages.success(request, f"💰 Taxas e prazos da CEG '{ceg.title}' atualizados com sucesso!")
         return redirect('ceg_detail', slug=ceg.slug)
+
+
+class ManageSlotView(View):
+    """
+    Permite ao organizador (staff) gerenciar um ItemSlot:
+    - Editar o preço do slot (com opção de aplicar a todos os sets do item na CEG)
+    - Remover claim / reserva (liberar slot)
+    - Trocar participante do claim ou atribuir a um novo participante
+    """
+    def post(self, request, slot_id):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+
+        slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg', 'item_definition', 'claimed_by'), id=slot_id)
+
+        try:
+            if request.content_type == 'application/json':
+                data = json.loads(request.body.decode('utf-8') or '{}')
+            else:
+                data = request.POST
+        except Exception:
+            data = request.POST
+
+        action = data.get('action')
+        price_val = data.get('price')
+        apply_all_sets = data.get('apply_to_all_sets', False)
+        if isinstance(apply_all_sets, str):
+            apply_all_sets = apply_all_sets.lower() in ('true', '1', 'yes', 'on')
+        remove_claim = data.get('remove_claim', False)
+        if isinstance(remove_claim, str):
+            remove_claim = remove_claim.lower() in ('true', '1', 'yes', 'on')
+        participant_id = data.get('participant_id')
+
+        with transaction.atomic():
+            # 1. Atualização de Preço
+            if price_val is not None and str(price_val).strip() != '':
+                val_clean = str(price_val).replace('R$', '').replace(' ', '').replace(',', '.').strip()
+                try:
+                    new_price = Decimal(val_clean)
+                    if new_price < 0:
+                        return JsonResponse({'success': False, 'message': 'O preço não pode ser negativo.'}, status=400)
+                    slot.price = new_price
+                    if hasattr(slot, 'claim') and slot.claim:
+                        slot.claim.total_price = new_price
+                        slot.claim.save(update_fields=['total_price'])
+
+                    if apply_all_sets:
+                        ItemSlot.objects.filter(
+                            set__ceg=slot.set.ceg,
+                            item_definition=slot.item_definition
+                        ).update(price=new_price)
+                        slot.item_definition.default_price = new_price
+                        slot.item_definition.save(update_fields=['default_price'])
+                        Claim.objects.filter(
+                            slot__set__ceg=slot.set.ceg,
+                            slot__item_definition=slot.item_definition
+                        ).update(total_price=new_price)
+                except (InvalidOperation, ValueError):
+                    return JsonResponse({'success': False, 'message': 'Valor de preço inválido.'}, status=400)
+
+            # 2. Remover Reserva
+            if remove_claim or action == 'remove_claim':
+                if hasattr(slot, 'claim') and slot.claim:
+                    slot.claim.delete()
+                slot.claimed_by = None
+                slot.claimed_at = None
+                slot.status = ItemSlot.Status.AVAILABLE
+                slot.is_item_paid = False
+                slot.is_frete_inter_paid = False
+                slot.is_taxa_aduaneira_paid = False
+                slot.is_frete_nacional_paid = False
+
+            # 3. Trocar ou Atribuir Participante
+            elif participant_id:
+                try:
+                    new_participant = Participant.objects.get(id=participant_id)
+                    slot.claimed_by = new_participant
+                    if not slot.claimed_at:
+                        slot.claimed_at = timezone.now()
+                    if slot.status == ItemSlot.Status.AVAILABLE:
+                        slot.status = ItemSlot.Status.RESERVED
+
+                    if hasattr(slot, 'claim') and slot.claim:
+                        slot.claim.participant = new_participant
+                        slot.claim.save(update_fields=['participant'])
+                    else:
+                        Claim.objects.create(
+                            slot=slot,
+                            participant=new_participant,
+                            total_price=slot.price,
+                            status=Claim.Status.PAID if slot.is_item_paid else Claim.Status.PENDING
+                        )
+                except Participant.DoesNotExist:
+                    return JsonResponse({'success': False, 'message': 'Participante não encontrado.'}, status=404)
+
+            slot.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Slot atualizado com sucesso!',
+            'slot': {
+                'id': slot.id,
+                'price': f"{slot.price:.2f}",
+                'status': slot.status,
+                'status_display': slot.get_status_display(),
+                'is_item_paid': slot.is_item_paid,
+                'is_frete_inter_paid': slot.is_frete_inter_paid,
+                'is_taxa_aduaneira_paid': slot.is_taxa_aduaneira_paid,
+                'claimed_by': {
+                    'id': slot.claimed_by.id,
+                    'name': slot.claimed_by.name,
+                    'display_name': slot.claimed_by.display_name,
+                    'social_handle': slot.claimed_by.social_handle or '',
+                    'whatsapp': slot.claimed_by.whatsapp or '',
+                } if slot.claimed_by else None,
+            }
+        })
+
 
