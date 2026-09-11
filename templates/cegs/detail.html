@@ -40,7 +40,11 @@
          },
          openManageSlotModal(slot) {
              this.managedSlot = slot;
-             this.managePrice = slot.price || '';
+             let p = '';
+             if (slot && slot.price !== undefined && slot.price !== null) {
+                 p = String(slot.price).replace('R$', '').replace(/\s/g, '').replace(',', '.').trim();
+             }
+             this.managePrice = p;
              this.manageApplyAllSets = false;
              this.manageParticipantId = slot.claimedById ? String(slot.claimedById) : '';
              this.manageRemoveClaim = false;
@@ -397,7 +401,7 @@
                                                     name: '{{ slot.item_definition.name|escapejs }}',
                                                     member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                     setNumber: {{ set.set_number }},
-                                                    price: '{{ slot.price|floatformat:2 }}',
+                                                    price: '{{ slot.price|stringformat:".2f" }}',
                                                     status: '{{ slot.status }}',
                                                     statusDisplay: '{{ slot.get_status_display }}',
                                                     claimedById: '{{ slot.claimed_by.id|default:'' }}',
@@ -505,7 +509,7 @@
                                                         name: '{{ slot.item_definition.name|escapejs }}',
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                         setNumber: {{ set.set_number }},
-                                                        price: '{{ slot.price|floatformat:2 }}',
+                                                        price: '{{ slot.price|stringformat:".2f" }}',
                                                         status: '{{ slot.status }}',
                                                         statusDisplay: '{{ slot.get_status_display }}',
                                                         claimedById: '{{ slot.claimed_by.id|default:'' }}',
@@ -536,7 +540,7 @@
                                                         name: '{{ slot.item_definition.name|escapejs }}',
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                         setNumber: {{ set.set_number }},
-                                                        price: '{{ slot.price|floatformat:2 }}',
+                                                        price: '{{ slot.price|stringformat:".2f" }}',
                                                         status: '{{ slot.status }}',
                                                         statusDisplay: '{{ slot.get_status_display }}',
                                                         claimedById: '{{ slot.claimed_by.id|default:'' }}',
