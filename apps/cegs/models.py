@@ -259,3 +259,34 @@ class ItemSlot(models.Model):
     @property
     def is_available(self) -> bool:
         return self.status == self.Status.AVAILABLE
+
+
+class ClaimAttemptLog(models.Model):
+    class Result(models.TextChoices):
+        SUCCESS = 'SUCCESS', '1º Lugar (Reserva Garantida)'
+        LOST_RACE = 'LOST_RACE', 'Perdeu por Concorrência'
+        STANDBY_BLOCKED = 'STANDBY_BLOCKED', 'Bloqueado (Modo Standby)'
+        ERROR = 'ERROR', 'Erro / Falha'
+
+    slot = models.ForeignKey(
+        ItemSlot,
+        on_delete=models.CASCADE,
+        related_name='attempt_logs',
+        verbose_name='Slot'
+    )
+    attempt_number = models.PositiveIntegerField('Ordem da Tentativa (Chegada)', default=1)
+    participant_name = models.CharField('Nome do Participante', max_length=150)
+    phone = models.CharField('WhatsApp', max_length=30)
+    social_handle = models.CharField('@ Rede Social', max_length=100, blank=True)
+    result = models.CharField('Resultado', max_length=30, choices=Result.choices)
+    details = models.TextField('Detalhes da Tentativa', blank=True)
+    created_at = models.DateTimeField('Data e Hora Exata', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Log de Tentativa de Claim'
+        verbose_name_plural = 'Logs de Tentativas de Claim (Ordem de Chegada)'
+        ordering = ['slot', 'attempt_number']
+
+    def __str__(self):
+        handle = f" ({self.social_handle})" if self.social_handle else ""
+        return f"Slot #{self.slot.id} - {self.attempt_number}º a dar claim: {self.participant_name}{handle} [{self.get_result_display()}]"

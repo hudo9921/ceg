@@ -8,16 +8,43 @@
          isStandby: {{ ceg.is_standby|yesno:'true,false' }},
          secondsLeft: {{ ceg.countdown_seconds }},
          timer: null,
+         isLoggedIn: {{ logged_participant|yesno:'true,false' }} || {{ user.is_staff|yesno:'true,false' }},
+         isAdmin: {{ user.is_staff|yesno:'true,false' }},
+         allParticipants: JSON.parse('{{ all_participants_json|default:'[]'|escapejs }}'),
+         formName: '{{ logged_participant.name|default:''|escapejs }}',
+         formUsername: '{{ logged_participant.username|default:''|escapejs }}',
+         formWhatsapp: '{{ logged_participant.whatsapp|default:''|escapejs }}',
+         formSocial: '{{ logged_participant.social_handle|default:''|escapejs }}',
          // Modal State
          modalOpen: false,
          selectedSlot: null,
          openClaimModal(slot) {
+             if (!this.isLoggedIn) {
+                 window.location.href = '{% url "login_otp" %}?next=' + encodeURIComponent(window.location.pathname);
+                 return;
+             }
              this.selectedSlot = slot;
              this.modalOpen = true;
          },
          closeClaimModal() {
              this.modalOpen = false;
              this.selectedSlot = null;
+         },
+         selectParticipantForClaim(pId) {
+             if (!pId) {
+                 this.formName = '';
+                 this.formUsername = '';
+                 this.formWhatsapp = '';
+                 this.formSocial = '';
+                 return;
+             }
+             const p = this.allParticipants.find(item => String(item.id) === String(pId));
+             if (p) {
+                 this.formName = p.name || '';
+                 this.formUsername = p.username || '';
+                 this.formWhatsapp = p.whatsapp || '';
+                 this.formSocial = p.social_handle || '';
+             }
          },
          copyPix(key) {
              navigator.clipboard.writeText(key);
@@ -244,17 +271,24 @@
                                         </button>
                                     </template>
                                     <template x-if="!isStandby">
-                                        <button type="button"
-                                                @click="openClaimModal({
-                                                    id: {{ slot.id }},
-                                                    name: '{{ slot.item_definition.name|escapejs }}',
-                                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                                    setNumber: {{ set.set_number }},
-                                                    price: '{{ slot.price|floatformat:2 }}'
-                                                })"
-                                                class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1">
-                                            <span>⚡</span> Reservar (Claim)
-                                        </button>
+                                        {% if logged_participant or user.is_staff %}
+                                            <button type="button"
+                                                    @click="openClaimModal({
+                                                        id: {{ slot.id }},
+                                                        name: '{{ slot.item_definition.name|escapejs }}',
+                                                        member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                        setNumber: {{ set.set_number }},
+                                                        price: '{{ slot.price|floatformat:2 }}'
+                                                    })"
+                                                    class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
+                                                <span>⚡</span> Reservar (Claim)
+                                            </button>
+                                        {% else %}
+                                            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                                               class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer text-center">
+                                                <span>⚡</span> Reservar (Claim)
+                                            </a>
+                                        {% endif %}
                                     </template>
 
                                 {% elif slot.status == 'RESERVED' %}
@@ -264,7 +298,7 @@
                                             {% if slot.claimed_by.social_handle %}
                                                 {{ slot.claimed_by.social_handle }}
                                             {% else %}
-                                                {{ slot.claimed_by.name }}
+                                                {{ slot.claimed_by.display_name }}
                                             {% endif %}
                                         </div>
                                     </div>
@@ -276,7 +310,7 @@
                                             {% if slot.claimed_by.social_handle %}
                                                 {{ slot.claimed_by.social_handle }}
                                             {% else %}
-                                                {{ slot.claimed_by.name }}
+                                                {{ slot.claimed_by.display_name }}
                                             {% endif %}
                                         </div>
                                     </div>
@@ -322,21 +356,79 @@
                 ⚡ <strong>Atenção:</strong> Este slot é único! O primeiro participante a clicar em Confirmar garantirá a reserva no sistema.
             </div>
 
+            {% if user.is_staff %}
+                <!-- Bloco do Administrador: Escolher Participante Cadastrado -->
+                <div class="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>👑</span> Modo Organizador (Admin)
+                        </span>
+                        <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">Admin</span>
+                    </div>
+                    <p class="text-[11px] text-amber-800 leading-snug">
+                        Selecione um participante cadastrado por <strong>Nome</strong> ou <strong>WhatsApp</strong> para autopreencher os dados abaixo:
+                    </p>
+                    <select @change="selectParticipantForClaim($event.target.value)"
+                            class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+                        <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                        <template x-for="p in allParticipants" :key="p.id">
+                            <option :value="p.id"
+                                    x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                            </option>
+                        </template>
+                    </select>
+                </div>
+            {% elif logged_participant %}
+                <!-- Bloco do Participante Logado -->
+                <div class="p-3 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-xl space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
+                            <span>👤</span> Reservando com sua Conta
+                        </span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                            ● Autenticado
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-900 font-bold">
+                        {{ logged_participant.name }}
+                        {% if logged_participant.username %}
+                            <span class="text-pink-600 font-black">({{ logged_participant.username }})</span>
+                        {% endif %}
+                        <span class="text-slate-500 font-normal">• {{ logged_participant.formatted_phone }}</span>
+                    </div>
+                    {% if logged_participant.social_handle %}
+                        <div class="text-[11px] text-pink-700 font-mono">
+                            {{ logged_participant.social_handle }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
             <form :action="'/slots/' + (selectedSlot ? selectedSlot.id : 0) + '/claim/'" method="POST" class="space-y-4">
                 {% csrf_token %}
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu Nome Completo *</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo do Participante *</label>
                     <input type="text" name="name" required
-                           value="{{ logged_participant.name|default:'' }}"
+                           x-model="formName"
                            placeholder="Ex: Beatriz Silva"
                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Nome para conferência de pagamento Pix e identificação.</span>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu WhatsApp (com DDD) *</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Como prefere ser chamado(a)? <span class="text-slate-400 font-normal text-[11px]">(opcional)</span></label>
+                    <input type="text" name="username"
+                           x-model="formUsername"
+                           placeholder="Ex: Bia, Hudo, JihyoStan"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Nome de usuário ou apelido para saudações e exibição.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp (com DDD) *</label>
                     <input type="tel" name="whatsapp" required
-                           value="{{ logged_participant.whatsapp|default:'' }}"
+                           x-model="formWhatsapp"
                            placeholder="Ex: 11999998888"
                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
                     <span class="text-[10px] text-slate-400">Usado para você consultar suas reservas sem senha via OTP.</span>
@@ -345,7 +437,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Seu @ no Twitter ou Instagram</label>
                     <input type="text" name="social_handle"
-                           value="{{ logged_participant.social_handle|default:'' }}"
+                           x-model="formSocial"
                            placeholder="Ex: @jihyolover"
                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
                     <span class="text-[10px] text-slate-400">Exibido publicamente no card para confirmar seu slot.</span>
@@ -364,7 +456,7 @@
                         Cancelar
                     </button>
                     <button type="submit"
-                            class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1">
+                            class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1 cursor-pointer">
                         <span>✔</span> Confirmar Reserva Única
                     </button>
                 </div>

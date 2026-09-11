@@ -1,0 +1,808 @@
+{% extends 'base.html' %}
+
+{% block title %}Hub de Criações — Painel do Organizador{% endblock %}
+
+{% block content %}
+<div x-data="creationsHub()" class="space-y-8">
+
+    <!-- Header do Hub de Criações -->
+    <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-purple-950 to-pink-900 text-white p-6 sm:p-8 rounded-2xl shadow-xl border border-white/10">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <div class="flex items-center gap-2">
+                    <span class="bg-pink-500/20 text-pink-300 border border-pink-400/30 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                        👑 Painel do Organizador
+                    </span>
+                    <span class="text-xs text-slate-300">Área de Criações & Cadastros</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+                    Hub de Criações
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300">
+                    Clique em qualquer um dos retângulos abaixo para abrir o pop-up correspondente e realizar novos cadastros.
+                </p>
+            </div>
+
+            <!-- Contadores Rápidos de Inventário -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-pink-300">{{ total_groups }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Grupos</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-purple-300">{{ total_eras }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Eras</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-emerald-300">{{ open_cegs }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">CEGs Abertas</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-amber-300">{{ total_cegs }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Total CEGs</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- GRADE DE RETÂNGULOS (CARDS DE AÇÃO QUE ABREM POP-UPS) -->
+    <!-- ========================================================================= -->
+    <div>
+        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">
+            Selecione o que deseja cadastrar
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            <!-- Retângulo 1: Cadastrar Grupo Novo -->
+            <button type="button" @click="openModal('group')"
+                    class="group text-left bg-white hover:bg-purple-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 group-hover:bg-purple-200 text-purple-700 flex items-center justify-center text-2xl mb-4 transition">
+                        🎤
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                        Artistas & Solistas
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-purple-700 transition">
+                        Cadastrar Grupo Novo
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Adicione grupos como TWICE, Stray Kids, aespa, LE SSERAFIM ou solistas com foto e descrição.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-600">
+                    <span>Abrir Formulário</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Retângulo 2: Cadastrar Era Nova -->
+            <button type="button" @click="openModal('era')"
+                    class="group text-left bg-white hover:bg-indigo-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 group-hover:bg-indigo-200 text-indigo-700 flex items-center justify-center text-2xl mb-4 transition">
+                        💿
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                        Comeback / Álbum
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-indigo-700 transition">
+                        Cadastrar Era Nova
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Vincule um novo álbum ou lançamento ao grupo para habilitar a criação de novas CEGs.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600">
+                    <span>Abrir Formulário</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Retângulo 3: Cadastrar CEG Nova (Destaque Principal) -->
+            <button type="button" @click="openModal('ceg')"
+                    class="group text-left bg-gradient-to-br from-pink-50 via-white to-purple-50 hover:from-pink-100/50 p-6 rounded-2xl border-2 border-pink-300 hover:border-pink-500 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer relative overflow-hidden">
+                <div class="absolute top-3 right-3 bg-pink-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                    Principal
+                </div>
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-pink-100 group-hover:bg-pink-200 text-pink-700 flex items-center justify-center text-2xl mb-4 transition">
+                        ✨
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-pink-600 bg-pink-100/60 px-2 py-0.5 rounded">
+                        Compra em Grupo
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-pink-700 transition">
+                        Cadastrar CEG Nova
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Configure título, era, regras, chave Pix, cronômetro de abertura, lista de photocards, valores e pré-reservas.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-pink-100 flex items-center justify-between text-xs font-bold text-pink-700">
+                    <span>Configurar CEG Completa</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Retângulo 4: Adicionar Novo Set -->
+            <button type="button" @click="openModal('set')"
+                    class="group text-left bg-white hover:bg-amber-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 group-hover:bg-amber-200 text-amber-700 flex items-center justify-center text-2xl mb-4 transition">
+                        📦
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                        Expansão de Slots
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-amber-700 transition">
+                        Adicionar Novo Set
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Abra o Set #2, #3 para uma CEG que está lotando, com geração instantânea dos slots de cada photocard.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
+                    <span>Adicionar Set</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TABELA DE RESUMO DE INVENTÁRIO CADASTRADO -->
+    <!-- ========================================================================= -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <div>
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span>📋</span> CEGs Cadastradas no Sistema
+                </h3>
+                <p class="text-xs text-slate-500">Acesse qualquer CEG pública ou gerencie suas configurações no Django Admin.</p>
+            </div>
+            <a href="/admin/cegs/ceg/" target="_blank" class="text-xs font-bold text-pink-600 hover:underline">
+                Painel Django Admin ↗
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold">
+                        <th class="py-2.5 px-3">CEG / Grupo</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Sets</th>
+                        <th class="py-2.5 px-3">Itens Cadastrados</th>
+                        <th class="py-2.5 px-3">Abertura / Countdown</th>
+                        <th class="py-2.5 px-3 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for c in cegs %}
+                        <tr class="hover:bg-slate-50/70 transition">
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-slate-900">{{ c.title }}</div>
+                                <div class="text-[10px] text-pink-600 font-semibold">{{ c.era.group.name }} • {{ c.era.name }}</div>
+                            </td>
+                            <td class="py-3 px-3">
+                                {% if c.status == 'OPEN' %}
+                                    <span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px]">Aberta</span>
+                                {% elif c.status == 'SCHEDULED' %}
+                                    <span class="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full text-[10px]">Standby</span>
+                                {% else %}
+                                    <span class="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">{{ c.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3 font-semibold text-slate-700">
+                                {{ c.sets.count }} set(s)
+                            </td>
+                            <td class="py-3 px-3 font-semibold text-slate-700">
+                                {{ c.item_definitions.count }} itens
+                            </td>
+                            <td class="py-3 px-3 text-slate-500">
+                                {{ c.opens_at|date:"d/m/Y H:i"|default:"-" }}
+                            </td>
+                            <td class="py-3 px-3 text-right space-x-2">
+                                <a href="{% url 'ceg_detail' slug=c.slug %}"
+                                   class="inline-block px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg transition">
+                                    Ver CEG ↗
+                                </a>
+                                <a href="/admin/cegs/ceg/{{ c.id }}/change/" target="_blank"
+                                   class="inline-block px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg transition">
+                                    Editar
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="py-6 text-center text-slate-400">
+                                Nenhuma CEG cadastrada ainda. Clique no retângulo "Cadastrar CEG Nova" para criar a primeira!
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: CADASTRAR GRUPO NOVO (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'group'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-purple-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🎤</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Grupo Novo</h3>
+                        <p class="text-[11px] text-slate-500">Adicione grupos ou solistas de K-pop ao sistema.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_group' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Grupo / Solista *</label>
+                    <input type="text" name="name" required
+                           placeholder="Ex: LE SSERAFIM, Stray Kids, IU, aespa"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">URL da Imagem / Logo (opcional)</label>
+                    <input type="url" name="image_url"
+                           placeholder="https://exemplo.com/logo-grupo.png"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Informações (opcional)</label>
+                    <textarea name="description" rows="3"
+                              placeholder="Ex: Girl group da Source Music / HYBE composto por 5 integrantes."
+                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ✔ Salvar Grupo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: CADASTRAR ERA NOVA (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'era'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">💿</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Era Nova</h3>
+                        <p class="text-[11px] text-slate-500">Vincule o comeback (álbum/single) ao grupo.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_era' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Grupo / Solista *</label>
+                    <select name="group_id" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <option value="">-- Selecione o Grupo --</option>
+                        {% for g in groups %}
+                            <option value="{{ g.id }}">{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Era / Comeback *</label>
+                    <input type="text" name="name" required
+                           placeholder="Ex: CRAZY, With YOU-th, Armageddon, ATE"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
+                        <input type="date" name="release_date"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">URL do Banner Promocional</label>
+                        <input type="url" name="banner_url"
+                               placeholder="https://exemplo.com/banner-era.jpg"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Notas do Comeback (opcional)</label>
+                    <textarea name="description" rows="2"
+                              placeholder="Ex: 4º Mini Álbum com versões Compact e Weverse."
+                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ✔ Salvar Era
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: CADASTRAR CEG NOVA (POP-UP COMPLETO) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'ceg'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-pink-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">✨</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Nova CEG Completa</h3>
+                        <p class="text-[11px] text-slate-500">Defina todos os campos da compra em grupo, photocards, valores e pré-reservas.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_ceg' %}" method="POST" class="p-6 space-y-6 overflow-y-auto">
+                {% csrf_token %}
+                <input type="hidden" name="items_json" :value="JSON.stringify(items)">
+
+                <!-- Seção 1: Era & Grupo -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="text-xs font-black text-pink-700 uppercase tracking-wider block">
+                        1. Era e Título da Compra em Grupo
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Filtrar por Grupo</label>
+                            <select x-model="selectedGroupId"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <option value="">-- Todos os Grupos --</option>
+                                <template x-for="g in groups" :key="g.id">
+                                    <option :value="g.id" x-text="g.name"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Era / Comeback *</label>
+                            <select name="era_id" required x-model="selectedEraId"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <option value="">-- Selecione a Era correspondente --</option>
+                                {% for e in eras %}
+                                    <option value="{{ e.id }}"
+                                            x-show="!selectedGroupId || selectedGroupId == '{{ e.group.id }}'">
+                                        {{ e.group.name }} — {{ e.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Título da CEG *</label>
+                        <input type="text" name="title" required
+                               placeholder="Ex: CEG TWICE With YOU-th — Digipack & POB Soundwave Split"
+                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">URL do Banner da CEG (opcional)</label>
+                        <input type="url" name="banner_url"
+                               placeholder="https://exemplo.com/banner.jpg"
+                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500">
+                    </div>
+                </div>
+
+                <!-- Seção 2: Datas, Horário de Abertura & Status -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="text-xs font-black text-pink-700 uppercase tracking-wider block">
+                        2. Horário de Abertura (Standby / Countdown) & Status
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Status Inicial</label>
+                            <select name="status"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <option value="OPEN" selected>Aberta para Reservas (Imediato)</option>
+                                <option value="SCHEDULED">Agendada (Standby / Countdown)</option>
+                                <option value="DRAFT">Rascunho</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Hora de Abertura (Standby)</label>
+                            <input type="datetime-local" name="opens_at"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            <span class="text-[10px] text-pink-600 font-semibold">Exibe cronômetro regressivo até abrir!</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Hora de Encerramento (opcional)</label>
+                            <input type="datetime-local" name="closes_at"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 3: Chave Pix & Regras -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="text-xs font-black text-pink-700 uppercase tracking-wider block">
+                        3. Chave Pix do Organizador & Regras de Frete
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Chave Pix *</label>
+                            <input type="text" name="pix_key"
+                                   placeholder="Ex: email@pix.com ou telefone"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-pink-700 focus:ring-2 focus:ring-pink-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Instruções para Pagamento</label>
+                            <input type="text" name="pix_instructions"
+                                   placeholder="Ex: Enviar comprovante no WhatsApp com seu @ em até 2h"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-pink-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Regras e Informações da CEG</label>
+                        <textarea name="description" rows="2"
+                                  placeholder="Regras de frete (nacional/internacional), prazos de envio e avisos..."
+                                  class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-pink-500"></textarea>
+                    </div>
+                </div>
+
+                <!-- Seção 4: Construtor Dinâmico de Photocards, Valores & Pré-Reservas -->
+                <div class="p-4 bg-pink-50/50 rounded-xl border-2 border-pink-200 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-pink-100 pb-2">
+                        <div>
+                            <span class="text-xs font-black text-pink-900 uppercase tracking-wider block">
+                                4. Definição de Itens, Valores e Pré-Reservas
+                            </span>
+                            <span class="text-[11px] text-slate-500">
+                                Defina os photocards/itens da CEG e pré-reserve slots para participantes cadastrados se desejar.
+                            </span>
+                        </div>
+                        <button type="button" @click="addItem()"
+                                class="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 self-start sm:self-auto cursor-pointer">
+                            <span>➕</span> Adicionar Item
+                        </button>
+                    </div>
+
+                    <!-- Barra de Atalho em Lote por Nomes de Integrantes -->
+                    <div class="p-3 bg-white border border-pink-200 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
+                                <span>⚡</span> Gerar Photocards em Lote por Nomes
+                            </span>
+                            <span class="text-[10px] text-pink-700 bg-pink-100 px-2 py-0.5 rounded font-bold">Atalho Ágil</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                            <div class="sm:col-span-7">
+                                <input type="text" x-model="batchMembersText"
+                                       placeholder="Nomes separados por vírgula: Nayeon, Jeongyeon, Momo, Sana, Jihyo..."
+                                       @keydown.enter.prevent="addMembersBatch()"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800">
+                            </div>
+                            <div class="sm:col-span-3 flex gap-1">
+                                <input type="number" step="0.01" x-model="batchDefaultPrice"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900">
+                                <button type="button" @click="applyBatchPrice()"
+                                        class="px-2 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] rounded-lg cursor-pointer">
+                                    Aplicar
+                                </button>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="button" @click="addMembersBatch()"
+                                        class="w-full py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg cursor-pointer">
+                                    ➕ Gerar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Dinâmica de Itens -->
+                    <div class="space-y-2.5">
+                        <template x-for="(item, index) in items" :key="index">
+                            <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2 shadow-xs">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                    <span class="w-6 h-6 rounded-md bg-pink-100 text-pink-700 font-bold text-xs flex items-center justify-center shrink-0"
+                                          x-text="index + 1"></span>
+
+                                    <!-- Nome do Photocard -->
+                                    <div class="flex-1 w-full sm:w-auto">
+                                        <input type="text" x-model="item.name" required
+                                               placeholder="Nome do Item (Ex: Photocard POB Nayeon)"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900">
+                                    </div>
+
+                                    <!-- Integrante -->
+                                    <div class="w-full sm:w-32">
+                                        <input type="text" x-model="item.member_name"
+                                               placeholder="Integrante"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+                                    </div>
+
+                                    <!-- Tipo -->
+                                    <div class="w-full sm:w-28">
+                                        <select x-model="item.item_type"
+                                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-700">
+                                            {% for val, label in item_types %}
+                                                <option value="{{ val }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Preço -->
+                                    <div class="w-full sm:w-28 relative">
+                                        <span class="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">R$</span>
+                                        <input type="number" step="0.01" x-model="item.default_price" required
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900">
+                                    </div>
+
+                                    <!-- Botão Excluir -->
+                                    <button type="button" @click="removeItem(index)" title="Remover item"
+                                            class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 cursor-pointer">
+                                        🗑️
+                                    </button>
+                                </div>
+
+                                <!-- Linha de Pré-Reserva para Participante Cadastrado -->
+                                <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <span class="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                                            <span>🔒</span> Pré-reservar para:
+                                        </span>
+                                        <select x-model="item.participant_id"
+                                                :class="item.participant_id ? 'border-amber-400 bg-amber-50 text-amber-900 font-bold' : 'border-slate-200 bg-slate-50 text-slate-700'"
+                                                class="border rounded-lg px-2.5 py-1 text-xs focus:ring-2 focus:ring-pink-500">
+                                            <option value="">-- Aberto para Claim Geral (Sem Pré-Reserva) --</option>
+                                            <template x-for="p in participants" :key="p.id">
+                                                <option :value="p.id"
+                                                        x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp">
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div x-show="item.participant_id" class="text-[11px] text-amber-700 font-bold flex items-center gap-1">
+                                        <span>●</span> Slot #1 começará garantido para este participante
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Totalizadores -->
+                    <div class="p-3 bg-white border border-pink-200 rounded-xl flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span>Total de Itens: <strong class="text-pink-600" x-text="items.length"></strong></span>
+                        <span>Faturamento 1 Set: <strong class="text-emerald-700" x-text="'R$ ' + calculateSetTotal()"></strong></span>
+                    </div>
+                </div>
+
+                <!-- Seção 5: Sets Iniciais & Ação de Criação -->
+                <div class="p-4 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h4 class="text-sm font-black">Geração Automática de Sets</h4>
+                        <p class="text-[11px] text-pink-100">Quantos Sets completos deseja instanciar imediatamente?</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <select name="initial_sets_count" x-model="initialSetsCount"
+                                class="bg-white text-slate-900 font-black rounded-lg px-3 py-1.5 text-xs">
+                            <option value="1">1 Set (Set #1)</option>
+                            <option value="2">2 Sets (Set #1 e #2)</option>
+                            <option value="3">3 Sets</option>
+                            <option value="4">4 Sets</option>
+                            <option value="5">5 Sets</option>
+                        </select>
+
+                        <button type="submit"
+                                class="px-6 py-2.5 bg-white text-pink-700 hover:bg-pink-50 font-black text-xs rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer">
+                            <span>🚀</span> Publicar CEG
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: ADICIONAR NOVO SET (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'set'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📦</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Adicionar Novo Set</h3>
+                        <p class="text-[11px] text-slate-500">Expanda os slots de uma CEG existente.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_set' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a CEG *</label>
+                    <select name="ceg_id" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                        <option value="">-- Escolha uma CEG --</option>
+                        {% for c in cegs %}
+                            <option value="{{ c.id }}">
+                                {{ c.title }} ({{ c.era.group.name }}) — {{ c.sets.count }} set(s) atuais
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Número do Set</label>
+                        <input type="number" name="set_number" min="1"
+                               placeholder="Auto-incrementar"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                        <span class="text-[10px] text-slate-400">Em branco calcula o próximo set automaticamente.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Anotações do Set</label>
+                        <input type="text" name="notes"
+                               placeholder="Ex: Set 2 - Pedido Adicional"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+                    <input type="checkbox" name="is_active" id="modal_set_active" checked
+                           class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 border-slate-300">
+                    <label for="modal_set_active" class="text-xs font-bold text-amber-900 cursor-pointer">
+                        Ativar este Set para novas reservas imediatamente
+                    </label>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ⚡ Criar Set & Gerar Slots
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<!-- Script Alpine.js com Componente Isolado (Evita qualquer erro de parsing de HTML) -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('creationsHub', () => ({
+        activeModal: null, // 'group', 'era', 'ceg', 'set'
+        groups: {{ groups_json|safe }},
+        participants: {{ participants_json|safe }},
+        selectedGroupId: '',
+        selectedEraId: '',
+        batchMembersText: '',
+        batchDefaultPrice: '45.00',
+        initialSetsCount: 1,
+        items: [
+            { name: 'Photocard POB 1', member_name: 'Integrante 1', item_type: 'PHOTOCARD', default_price: '45.00', image_url: '', participant_id: '' },
+            { name: 'Photocard POB 2', member_name: 'Integrante 2', item_type: 'PHOTOCARD', default_price: '45.00', image_url: '', participant_id: '' },
+            { name: 'Álbum Selado (Sem POB)', member_name: '', item_type: 'ALBUM', default_price: '120.00', image_url: '', participant_id: '' }
+        ],
+
+        openModal(name) {
+            this.activeModal = name;
+        },
+        closeModal() {
+            this.activeModal = null;
+        },
+        addItem() {
+            this.items.push({
+                name: 'Novo Item ' + (this.items.length + 1),
+                member_name: '',
+                item_type: 'PHOTOCARD',
+                default_price: this.batchDefaultPrice || '45.00',
+                image_url: '',
+                participant_id: ''
+            });
+        },
+        removeItem(index) {
+            if (this.items.length > 1) {
+                this.items.splice(index, 1);
+            }
+        },
+        applyBatchPrice() {
+            if (!this.batchDefaultPrice) return;
+            this.items.forEach(i => {
+                if (i.item_type !== 'ALBUM') {
+                    i.default_price = this.batchDefaultPrice;
+                }
+            });
+        },
+        addMembersBatch() {
+            if (!this.batchMembersText.trim()) return;
+            const names = this.batchMembersText.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+            if (!names.length) return;
+
+            if (this.items.length === 3 && this.items[0].name.includes('Photocard POB 1')) {
+                this.items = [];
+            }
+
+            names.forEach((name) => {
+                this.items.push({
+                    name: 'Photocard POB ' + name,
+                    member_name: name,
+                    item_type: 'PHOTOCARD',
+                    default_price: this.batchDefaultPrice || '45.00',
+                    image_url: '',
+                    participant_id: ''
+                });
+            });
+            this.batchMembersText = '';
+        },
+        calculateSetTotal() {
+            return this.items.reduce((acc, item) => {
+                const val = parseFloat(String(item.default_price).replace(',', '.')) || 0;
+                return acc + val;
+            }, 0).toFixed(2);
+        }
+    }));
+});
+</script>
+{% endblock %}

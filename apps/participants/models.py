@@ -14,7 +14,13 @@ def clean_phone_number(phone: str) -> str:
 
 
 class Participant(models.Model):
-    name = models.CharField('Nome do Participante', max_length=150)
+    name = models.CharField('Nome Completo do Participante', max_length=150)
+    username = models.CharField(
+        'Nome de Usuário / Apelido',
+        max_length=60,
+        blank=True,
+        help_text='Como você prefere ser chamado(a) no sistema (ex: Bia, Hudo, JihyoStan)'
+    )
     whatsapp = models.CharField(
         'WhatsApp',
         max_length=30,
@@ -37,13 +43,23 @@ class Participant(models.Model):
         ordering = ['name']
 
     def __str__(self):
+        user = f" [{self.username}]" if self.username else ""
         handle = f" ({self.social_handle})" if self.social_handle else ""
-        return f"{self.name}{handle} - {self.whatsapp}"
+        return f"{self.name}{user}{handle} - {self.whatsapp}"
 
     def save(self, *args, **kwargs):
         if self.whatsapp:
             self.whatsapp = clean_phone_number(self.whatsapp)
         super().save(*args, **kwargs)
+
+    @property
+    def display_name(self) -> str:
+        """Retorna o nome de usuário/apelido escolhido ou o nome completo."""
+        if self.username:
+            return self.username
+        if self.name:
+            return self.name
+        return f"Participante {self.whatsapp[-4:]}"
 
     @property
     def formatted_phone(self):

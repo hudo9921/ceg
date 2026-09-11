@@ -41,9 +41,13 @@
                         <span class="text-2xl">✨</span>
                         <span>CEG<span class="text-slate-800 font-semibold">Manager</span></span>
                     </a>
-                    <div class="hidden md:flex space-x-4">
+                    <div class="hidden md:flex space-x-4 items-center">
                         <a href="{% url 'home' %}" class="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:text-pink-600 hover:bg-pink-50 transition">
                             Todas as CEGs
+                        </a>
+                        <a href="{% url 'creations_hub' %}" class="px-3 py-2 rounded-md text-sm font-bold text-pink-700 hover:text-pink-800 bg-pink-50 hover:bg-pink-100/70 border border-pink-200 transition flex items-center gap-1.5 shadow-sm">
+                            <span>✨</span>
+                            <span>Hub de Criações</span>
                         </a>
                         <a href="{% url 'analytics_dashboard' %}" class="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:text-pink-600 hover:bg-pink-50 transition">
                             📊 Métricas do Organizador
@@ -55,11 +59,16 @@
                 </div>
 
                 <div class="flex items-center space-x-3">
+                    {% if request.user.is_authenticated and request.user.is_staff %}
+                        <a href="{% url 'creations_hub' %}" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-sm" title="Logado como Administrador">
+                            👑 Admin
+                        </a>
+                    {% endif %}
                     {% if logged_participant %}
                         <div class="flex items-center space-x-2">
                             <a href="{% url 'my_claims' %}" class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-800 hover:bg-pink-200 transition">
                                 <span class="w-2 h-2 mr-1.5 bg-pink-500 rounded-full animate-pulse"></span>
-                                {{ logged_participant.name }} (Meus Claims)
+                                {{ logged_participant.display_name }} (Meus Claims)
                             </a>
                             <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-xs text-slate-400 hover:text-red-600 px-2 py-1">
                                 Sair

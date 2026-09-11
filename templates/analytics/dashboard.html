@@ -1,56 +1,458 @@
 {% extends 'base.html' %}
 
-{% block title %}Métricas e Analítica do Organizador — K-pop CEG Manager{% endblock %}
+{% block title %}Métricas do Organizador & Inteligência de Vendas — K-pop CEG Manager{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="space-y-8"
+     x-data="{
+         filterOptions: JSON.parse('{{ filter_options_json|escapejs }}'),
+         selectedGroup: '{{ selected_group }}',
+         selectedEra: '{{ selected_era }}',
+         selectedMonth: '{{ selected_month }}',
+         get currentEras() {
+             if (!this.selectedGroup) return this.filterOptions.eras;
+             return this.filterOptions.eras.filter(e => e.group_id === this.selectedGroup);
+         },
+         onGroupChange() {
+             this.selectedEra = '';
+             $refs.filterForm.submit();
+         }
+     }">
 
     <!-- Top Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Inteligência de Vendas</span>
-            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                📊 Métricas do Organizador
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-100 text-pink-700">
+                    Inteligência de Vendas & Inventário
+                </span>
+                {% if selected_group_name or selected_era_name or selected_month %}
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                        <span>🔍 Filtro Ativo:</span>
+                        {% if selected_group_name %}<strong>{{ selected_group_name }}</strong>{% endif %}
+                        {% if selected_era_name %}<span>• {{ selected_era_name }}</span>{% endif %}
+                        {% if selected_month %}<span>• {{ selected_month }}</span>{% endif %}
+                    </span>
+                {% endif %}
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>📊</span> Métricas do Organizador
             </h1>
-            <p class="text-xs text-slate-500">
-                Acompanhe o ritmo de esgotamento de photocards, faturamento por Era e fechamento de Sets.
+            <p class="text-xs sm:text-sm text-slate-500">
+                Acompanhe o faturamento realizado, pendente, inventário para vender, fluxo mensal e fechamento de Sets.
             </p>
         </div>
 
-        <a href="/admin/" target="_blank"
-           class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition">
-            Abrir Django Admin ↗
-        </a>
+        <div class="flex items-center gap-2.5">
+            {% if selected_group or selected_era or selected_month %}
+                <a href="{% url 'analytics_dashboard' %}"
+                   class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                    <span>✕</span> Limpar Filtros
+                </a>
+            {% endif %}
+            <a href="/admin/" target="_blank"
+               class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                <span>Painel Admin</span>
+                <span>↗</span>
+            </a>
+        </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- Barra de Filtros Dinâmicos -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🎯</span> Filtros de Desempenho
+            </span>
+
+            <!-- Pílulas de Atalho Rápido para Grupos -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <a href="{% url 'analytics_dashboard' %}"
+                   class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {% if not selected_group %}bg-pink-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                    Todos os Grupos
+                </a>
+                {% for g in filter_options.groups %}
+                    <a href="?group={{ g.id }}{% if selected_month %}&month={{ selected_month }}{% endif %}"
+                       class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {% if selected_group == g.id %}bg-pink-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                        {{ g.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <form method="get" x-ref="filterForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+            <!-- Dropdown Grupo -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Grupo de K-pop</label>
+                <select name="group"
+                        x-model="selectedGroup"
+                        @change="onGroupChange()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    <option value="">Todos os Grupos</option>
+                    {% for g in filter_options.groups %}
+                        <option value="{{ g.id }}" {% if selected_group == g.id %}selected{% endif %}>
+                            {{ g.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Dropdown Era -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Era / Comeback</label>
+                <select name="era"
+                        x-model="selectedEra"
+                        @change="$refs.filterForm.submit()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    <option value="">Todas as Eras</option>
+                    <template x-for="era in currentEras" :key="era.id">
+                        <option :value="era.id" :selected="era.id === selectedEra" x-text="era.name + (selectedGroup ? '' : ' (' + era.group_name + ')')"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Dropdown Mês -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Período / Mês</label>
+                <select name="month"
+                        x-model="selectedMonth"
+                        @change="$refs.filterForm.submit()"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    <option value="">Todos os Meses</option>
+                    {% for m in filter_options.months %}
+                        <option value="{{ m.value }}" {% if selected_month == m.value %}selected{% endif %}>
+                            {{ m.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="flex items-center gap-2">
+                <button type="submit"
+                        class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                    Aplicar Filtros
+                </button>
+                {% if selected_group or selected_era or selected_month %}
+                    <a href="{% url 'analytics_dashboard' %}"
+                       class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition text-center"
+                       title="Limpar todos os filtros">
+                        ↺
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- 1. PAINEL DE CARTÕES FINANCEIROS (Tudo bem estruturado e separadinho) -->
+    <div>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <span>💰</span> Faturamento e Potencial de Venda
+            </h2>
+            <span class="text-xs text-slate-400">Valores em Reais (R$)</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- 1. Faturado (Confirmado / Pago) -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-emerald-100 shadow-sm space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Faturado (Confirmado)</span>
+                    <span class="text-base p-1.5 bg-emerald-50 rounded-lg text-emerald-600">💸</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">
+                    R$ {{ summary.total_paid|floatformat:2 }}
+                </div>
+                <div class="text-[11px] text-emerald-700/80 font-medium flex items-center gap-1">
+                    <span>✔</span> Pagamentos Pix confirmados
+                </div>
+                <div class="h-1 bg-emerald-500 rounded-full w-full"></div>
+            </div>
+
+            <!-- 2. Falta Pagar (Pendente) -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-amber-100 shadow-sm space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Falta Pagar (Pendente)</span>
+                    <span class="text-base p-1.5 bg-amber-50 rounded-lg text-amber-600">⏳</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-500 tracking-tight">
+                    R$ {{ summary.total_pending|floatformat:2 }}
+                </div>
+                <div class="text-[11px] text-amber-700/80 font-medium flex items-center gap-1">
+                    <span>⏱</span> Aguardando comprovante Pix
+                </div>
+                <div class="h-1 bg-amber-500 rounded-full w-full"></div>
+            </div>
+
+            <!-- 3. Já Vendido (Pago + Pendente) -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-blue-100 shadow-sm space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Total Já Vendido</span>
+                    <span class="text-base p-1.5 bg-blue-50 rounded-lg text-blue-600">🏷️</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight">
+                    R$ {{ summary.total_sold|floatformat:2 }}
+                </div>
+                <div class="text-[11px] text-blue-700/80 font-medium flex items-center gap-1">
+                    <span>📦</span> Confirmado + Pendente
+                </div>
+                <div class="h-1 bg-blue-500 rounded-full w-full"></div>
+            </div>
+
+            <!-- 4. Para Vender (Restante no Inventário) -->
+            <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Para Vender (Livre)</span>
+                    <span class="text-base p-1.5 bg-slate-100 rounded-lg text-slate-600">📦</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-700 tracking-tight">
+                    R$ {{ summary.total_remaining_to_sell|floatformat:2 }}
+                </div>
+                <div class="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                    <span>🏷️</span> {{ summary.available_slots }} slots disponíveis
+                </div>
+                <div class="h-1 bg-slate-300 rounded-full w-full"></div>
+            </div>
+
+            <!-- 5. Potencial Total da CEG -->
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-2xl border-2 border-purple-200 shadow-sm space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-purple-900 uppercase tracking-wide">Potencial Total</span>
+                    <span class="text-base p-1.5 bg-purple-100 rounded-lg text-purple-700">💎</span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-black text-purple-900 tracking-tight">
+                    R$ {{ summary.total_inventory_value|floatformat:2 }}
+                </div>
+                <div class="text-[11px] text-purple-700 font-medium flex items-center gap-1">
+                    <span>✨</span> Capacidade 100% dos slots
+                </div>
+                <div class="h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full w-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MÉTRICAS OPERACIONAIS E OCUPAÇÃO -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-slate-400 uppercase">Faturamento Confirmado</span>
-            <div class="text-2xl font-black text-emerald-600">R$ {{ summary.total_paid|floatformat:2 }}</div>
-            <p class="text-[11px] text-slate-400">Pagamentos aprovados no Pix</p>
+        <!-- Ocupação de Slots -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-500 uppercase">Ocupação Geral dos Slots</span>
+                <span class="font-black text-pink-600">{{ summary.occupancy_percentage }}%</span>
+            </div>
+            <div class="text-lg font-black text-slate-900">
+                {{ summary.reserved_slots }} <span class="text-xs font-normal text-slate-400">de {{ summary.total_slots }} slots alocados</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: {{ summary.occupancy_percentage }}%"></div>
+            </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-slate-400 uppercase">Faturamento Pendente</span>
-            <div class="text-2xl font-black text-amber-500">R$ {{ summary.total_pending|floatformat:2 }}</div>
-            <p class="text-[11px] text-slate-400">Aguardando comprovante</p>
-        </div>
-
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-slate-400 uppercase">Participantes Cadastrados</span>
+        <!-- Colecionadores Únicos -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Colecionadores Participantes</span>
             <div class="text-2xl font-black text-slate-900">{{ summary.total_participants }}</div>
-            <p class="text-[11px] text-slate-400">Total de colecionadores únicos</p>
+            <p class="text-[11px] text-slate-400">Usuários únicos com reservas ativas</p>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-slate-400 uppercase">Total de Reservas</span>
+        <!-- Ticket Médio -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Ticket Médio por Colecionador</span>
+            <div class="text-2xl font-black text-slate-900">R$ {{ summary.avg_ticket|floatformat:2 }}</div>
+            <p class="text-[11px] text-slate-400">Média de gasto por participante</p>
+        </div>
+
+        <!-- Reservas Realizadas -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total de Reservas (Claims)</span>
             <div class="text-2xl font-black text-pink-600">{{ summary.total_claims_count }}</div>
-            <p class="text-[11px] text-slate-400">Photocards e inclusões alocados</p>
+            <p class="text-[11px] text-slate-400">{{ summary.active_cegs }} CEGs ativas monitoradas</p>
         </div>
     </div>
 
-    <!-- Grid de Relatórios -->
+    <!-- 3. SEÇÃO DE GRÁFICOS ANALÍTICOS (Chart.js) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Gráfico 1: Fluxo de Vendas por Mês (2 Colunas) -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-black text-slate-900 flex items-center gap-1.5">
+                        <span>📈</span> Fluxo de Vendas por Mês
+                    </h2>
+                    <p class="text-xs text-slate-400">Evolução do faturamento confirmado, pendente e quantidade de reservas ao longo do tempo</p>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-bold">
+                    <span class="flex items-center gap-1 text-emerald-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Confirmado</span>
+                    <span class="flex items-center gap-1 text-amber-500"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Pendente</span>
+                    <span class="flex items-center gap-1 text-pink-600"><span class="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block"></span> Claims (Qtd)</span>
+                </div>
+            </div>
+
+            <div class="h-72 relative">
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico 2: Composição Financeira (Donut / Rosca) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 flex flex-col justify-between">
+            <div>
+                <h2 class="text-base font-black text-slate-900 flex items-center gap-1.5">
+                    <span>🍩</span> Composição de Receita
+                </h2>
+                <p class="text-xs text-slate-400">Proporção entre recebido, pendente e potencial a vender</p>
+            </div>
+
+            <div class="h-56 relative flex items-center justify-center">
+                <canvas id="financialDonutChart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold block">Pago</span>
+                    <span class="text-xs font-black text-emerald-600">R$ {{ summary.total_paid|floatformat:0 }}</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold block">Pendente</span>
+                    <span class="text-xs font-black text-amber-500">R$ {{ summary.total_pending|floatformat:0 }}</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold block">A Vender</span>
+                    <span class="text-xs font-black text-slate-600">R$ {{ summary.total_remaining_to_sell|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 4. TABELA CONSOLIDADA DE INVENTÁRIO (Tudo bem estruturado e separadinho) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
+                    <span>📑</span> Detalhamento Consolidado por CEG e Era
+                </h2>
+                <p class="text-xs text-slate-400">
+                    Visualização minuciosa de cada compra em grupo: status de abertura, faturado, falta pagar, já vendido e para vender.
+                </p>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg">
+                {{ detailed_inventory|length }} CEGs no recorte
+            </span>
+        </div>
+
+        {% if detailed_inventory %}
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold tracking-wider text-[11px]">
+                            <th class="py-3 px-4">CEG / Título</th>
+                            <th class="py-3 px-3">Grupo & Era</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                            <th class="py-3 px-3 text-center">Slots (Ocupação)</th>
+                            <th class="py-3 px-3 text-right">Faturado (Pago)</th>
+                            <th class="py-3 px-3 text-right">Falta Pagar</th>
+                            <th class="py-3 px-3 text-right font-black text-blue-700">Já Vendido</th>
+                            <th class="py-3 px-3 text-right text-slate-500">Para Vender</th>
+                            <th class="py-3 px-4 text-right font-black text-purple-900">Total Potencial</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in detailed_inventory %}
+                            <tr class="hover:bg-slate-50/80 transition">
+                                <!-- Título com link -->
+                                <td class="py-3 px-4 font-bold text-slate-900">
+                                    <a href="{% url 'ceg_detail' slug=row.slug %}" class="hover:text-pink-600 transition flex items-center gap-1">
+                                        <span>{{ row.title }}</span>
+                                        <span class="text-[10px] text-slate-400">↗</span>
+                                    </a>
+                                </td>
+
+                                <!-- Grupo & Era -->
+                                <td class="py-3 px-3">
+                                    <div class="font-bold text-pink-600">{{ row.group_name }}</div>
+                                    <div class="text-[11px] text-slate-400">{{ row.era_name }}</div>
+                                </td>
+
+                                <!-- Status -->
+                                <td class="py-3 px-3 text-center">
+                                    {% if row.status == 'OPEN' %}
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700 uppercase">
+                                            Aberta
+                                        </span>
+                                    {% elif row.status == 'SCHEDULED' %}
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700 uppercase">
+                                            Standby
+                                        </span>
+                                    {% elif row.status == 'CLOSED' %}
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 uppercase">
+                                            Fechada
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                                            {{ row.status_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Slots & Ocupação -->
+                                <td class="py-3 px-3 text-center">
+                                    <div class="font-bold text-slate-800">
+                                        {{ row.sold_slots }}/{{ row.total_slots }} <span class="text-[10px] text-slate-400">({{ row.fill_percentage }}%)</span>
+                                    </div>
+                                    <div class="w-20 mx-auto bg-slate-100 rounded-full h-1.5 overflow-hidden mt-1">
+                                        <div class="bg-pink-500 h-1.5 rounded-full" style="width: {{ row.fill_percentage }}%"></div>
+                                    </div>
+                                </td>
+
+                                <!-- Faturado (Pago) -->
+                                <td class="py-3 px-3 text-right text-emerald-600 font-bold">
+                                    R$ {{ row.paid_amount|floatformat:2 }}
+                                </td>
+
+                                <!-- Falta Pagar (Pendente) -->
+                                <td class="py-3 px-3 text-right text-amber-500 font-bold">
+                                    R$ {{ row.pending_amount|floatformat:2 }}
+                                </td>
+
+                                <!-- Já Vendido -->
+                                <td class="py-3 px-3 text-right text-blue-600 font-black">
+                                    R$ {{ row.sold_amount|floatformat:2 }}
+                                </td>
+
+                                <!-- Para Vender (Restante) -->
+                                <td class="py-3 px-3 text-right text-slate-500 font-medium">
+                                    R$ {{ row.available_amount|floatformat:2 }}
+                                </td>
+
+                                <!-- Potencial Total -->
+                                <td class="py-3 px-4 text-right text-purple-900 font-black text-sm">
+                                    R$ {{ row.total_potential|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-slate-100/70 border-t-2 border-slate-200 font-black text-slate-900">
+                        <tr>
+                            <td class="py-3 px-4 text-left font-bold" colspan="3">Totais Consolidados do Recorte:</td>
+                            <td class="py-3 px-3 text-center">{{ summary.reserved_slots }}/{{ summary.total_slots }} ({{ summary.occupancy_percentage }}%)</td>
+                            <td class="py-3 px-3 text-right text-emerald-700">R$ {{ summary.total_paid|floatformat:2 }}</td>
+                            <td class="py-3 px-3 text-right text-amber-700">R$ {{ summary.total_pending|floatformat:2 }}</td>
+                            <td class="py-3 px-3 text-right text-blue-700">R$ {{ summary.total_sold|floatformat:2 }}</td>
+                            <td class="py-3 px-3 text-right text-slate-700">R$ {{ summary.total_remaining_to_sell|floatformat:2 }}</td>
+                            <td class="py-3 px-4 text-right text-purple-900 text-sm">R$ {{ summary.total_inventory_value|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-8 text-center text-slate-400 bg-slate-50 rounded-xl space-y-1">
+                <p class="font-bold text-slate-700">Nenhuma CEG encontrada com os filtros atuais.</p>
+                <p class="text-xs">Tente selecionar outro Grupo ou clique em "Limpar Filtros".</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 5. INTELIGÊNCIA OPERACIONAL (Integrantes Mais Disputados & Sets Próximos de Fechar) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         <!-- Integrantes Mais Disputados (Popularidade & Sold-out) -->
@@ -60,14 +462,14 @@
                     <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
                         <span>🏆</span> Integrantes Mais Disputados
                     </h2>
-                    <p class="text-xs text-slate-400">Ranking por taxa de reserva e velocidade de esgotamento</p>
+                    <p class="text-xs text-slate-400">Ranking por taxa de reserva e esgotamento rápido de photocards</p>
                 </div>
             </div>
 
             {% if members %}
-                <div class="space-y-3 pt-2">
+                <div class="space-y-2.5 pt-1">
                     {% for m in members %}
-                        <div class="p-3 rounded-xl border border-slate-100 hover:border-pink-200 bg-slate-50/50 space-y-2 transition">
+                        <div class="p-3 rounded-xl border border-slate-100 hover:border-pink-200 bg-slate-50/50 space-y-1.5 transition">
                             <div class="flex justify-between items-center text-xs">
                                 <div>
                                     <strong class="text-slate-900 text-sm">{{ m.member_name }}</strong>
@@ -84,7 +486,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="text-xs text-slate-400 py-6 text-center">Nenhum dado de integrante registrado ainda.</p>
+                <p class="text-xs text-slate-400 py-6 text-center">Nenhum dado de integrante registrado para o filtro atual.</p>
             {% endif %}
         </div>
 
@@ -95,14 +497,14 @@
                     <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
                         <span>📦</span> Sets Próximos de Fechar
                     </h2>
-                    <p class="text-xs text-slate-400">Identifique quais conjuntos estão prontos para compra no fornecedor</p>
+                    <p class="text-xs text-slate-400">Identifique quais conjuntos estão prontos para compra com o fornecedor</p>
                 </div>
             </div>
 
             {% if sets_near %}
-                <div class="space-y-3 pt-2">
+                <div class="space-y-2.5 pt-1">
                     {% for s in sets_near %}
-                        <div class="p-3 rounded-xl border border-slate-100 space-y-2 bg-slate-50/50">
+                        <div class="p-3 rounded-xl border border-slate-100 space-y-1.5 bg-slate-50/50">
                             <div class="flex justify-between items-center text-xs">
                                 <div>
                                     <strong class="text-slate-900">Set #{{ s.set_number }}</strong>
@@ -126,52 +528,156 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="text-xs text-slate-400 py-6 text-center">Nenhum Set ativo no momento.</p>
+                <p class="text-xs text-slate-400 py-6 text-center">Nenhum Set ativo no momento para o filtro atual.</p>
             {% endif %}
         </div>
 
     </div>
 
-    <!-- Desempenho Financeiro por Era -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <div>
-            <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
-                <span>💰</span> Faturamento Consolidado por Era / Comeback
-            </h2>
-            <p class="text-xs text-slate-400">Total arrecadado e pendente agrupado pelas Eras dos grupos</p>
-        </div>
-
-        {% if financials %}
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead>
-                        <tr class="border-b border-slate-200 text-slate-400 uppercase font-bold tracking-wider">
-                            <th class="py-3">Era / Comeback</th>
-                            <th class="py-3">Grupo</th>
-                            <th class="py-3">Reservas</th>
-                            <th class="py-3">Confirmado (Pago)</th>
-                            <th class="py-3">Pendente</th>
-                            <th class="py-3">Receita Total Potencial</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for f in financials %}
-                            <tr class="hover:bg-slate-50">
-                                <td class="py-3.5 font-bold text-slate-900">{{ f.era_name }}</td>
-                                <td class="py-3.5 text-pink-600 font-semibold">{{ f.group_name }}</td>
-                                <td class="py-3.5">{{ f.claims_count }} itens</td>
-                                <td class="py-3.5 text-emerald-600 font-bold">R$ {{ f.paid_amount|floatformat:2 }}</td>
-                                <td class="py-3.5 text-amber-500 font-bold">R$ {{ f.pending_amount|floatformat:2 }}</td>
-                                <td class="py-3.5 text-slate-900 font-black">R$ {{ f.total_amount|floatformat:2 }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="text-xs text-slate-400 py-6 text-center">Nenhum registro financeiro registrado ainda.</p>
-        {% endif %}
-    </div>
-
 </div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const rawData = JSON.parse('{{ chart_data_json|escapejs }}');
+
+        // 1. Gráfico de Fluxo de Vendas por Mês (Barras Empilhadas de Valor + Linha de Reservas)
+        const ctxMonthly = document.getElementById('monthlySalesChart');
+        if (ctxMonthly && rawData.monthly) {
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: rawData.monthly.labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Faturado Pago (R$)',
+                            data: rawData.monthly.paid,
+                            backgroundColor: '#10b981', // emerald-500
+                            borderRadius: 6,
+                            stack: 'revenue',
+                            yAxisID: 'yRevenue',
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Falta Pagar (R$)',
+                            data: rawData.monthly.pending,
+                            backgroundColor: '#f59e0b', // amber-500
+                            borderRadius: 6,
+                            stack: 'revenue',
+                            yAxisID: 'yRevenue',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Qtd. de Reservas',
+                            data: rawData.monthly.claims,
+                            borderColor: '#db2777', // pink-600
+                            backgroundColor: 'rgba(219, 39, 119, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#db2777',
+                            tension: 0.3,
+                            yAxisID: 'yClaims',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 12, weight: 'bold' },
+                            bodyFont: { size: 11 },
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.yAxisID === 'yRevenue') {
+                                        return `${context.dataset.label}: R$ ${context.parsed.y.toFixed(2)}`;
+                                    }
+                                    return `${context.dataset.label}: ${context.parsed.y} claims`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11 } }
+                        },
+                        yRevenue: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { size: 11 },
+                                callback: value => 'R$ ' + value
+                            }
+                        },
+                        yClaims: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 11 },
+                                stepSize: 1,
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Gráfico de Composição Financeira (Donut)
+        const ctxDonut = document.getElementById('financialDonutChart');
+        if (ctxDonut && rawData.donut) {
+            new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: rawData.donut.labels,
+                    datasets: [{
+                        data: rawData.donut.data,
+                        backgroundColor: [
+                            '#10b981', // Pago (Esmeralda)
+                            '#f59e0b', // Pendente (Âmbar)
+                            '#cbd5e1', // Para Vender (Slate)
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return ` ${context.label}: R$ ${value.toFixed(2)} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
+

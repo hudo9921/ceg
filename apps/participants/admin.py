@@ -7,8 +7,8 @@ from .models import Participant, Claim
 
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ('name', 'formatted_phone', 'social_handle', 'active_claims_count', 'total_spent', 'created_at')
-    search_fields = ('name', 'whatsapp', 'social_handle')
+    list_display = ('name', 'username', 'formatted_phone', 'social_handle', 'active_claims_count', 'total_spent', 'created_at')
+    search_fields = ('name', 'username', 'whatsapp', 'social_handle')
     ordering = ['name']
 
     def formatted_phone(self, obj):
@@ -34,7 +34,7 @@ class ClaimAdmin(admin.ModelAdmin):
     )
     list_filter = ('status', 'slot__set__ceg', 'slot__set__ceg__era__group')
     search_fields = (
-        'participant__name', 'participant__whatsapp', 'participant__social_handle',
+        'participant__name', 'participant__username', 'participant__whatsapp', 'participant__social_handle',
         'slot__item_definition__name', 'slot__set__ceg__title'
     )
     readonly_fields = ('claimed_at',)
@@ -46,8 +46,9 @@ class ClaimAdmin(admin.ModelAdmin):
 
     def participant_info(self, obj):
         p = obj.participant
+        user = f" [{p.username}]" if p.username else ""
         handle = f" ({p.social_handle})" if p.social_handle else ""
-        return f"{p.name}{handle}"
+        return f"{p.name}{user}{handle}"
     participant_info.short_description = 'Participante'
 
     def status_badge(self, obj):
@@ -67,8 +68,9 @@ class ClaimAdmin(admin.ModelAdmin):
     def whatsapp_contact_button(self, obj):
         phone = obj.participant.whatsapp
         ceg = obj.slot.set.ceg
+        display_name = obj.participant.display_name
         msg = (
-            f"Olá {obj.participant.name}! Tudo bem?\n"
+            f"Olá {display_name}! Tudo bem?\n"
             f"Passando para falar sobre sua reserva na *{ceg.title}*:\n"
             f"📦 *Item:* {obj.slot.item_definition.name} (Set {obj.slot.set.set_number})\n"
             f"💰 *Valor:* R$ {obj.total_price:.2f}\n"

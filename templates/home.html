@@ -30,8 +30,9 @@
     </div>
 
     <!-- Seção: CEGs Abertas para Reserva -->
-    <section id="cegs-abertas" class="space-y-4">
-        <div class="flex justify-between items-end">
+    <section id="cegs-abertas" class="space-y-6"
+             x-data="{ selectedGroup: '' }">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
                     <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
@@ -39,12 +40,47 @@
                 </h2>
                 <p class="text-sm text-slate-500">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
             </div>
+
+            <!-- Filtro de Grupos para CEGs Abertas -->
+            {% if open_groups %}
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Filtrar Grupo:</span>
+
+                    <!-- Botão Todos os Grupos -->
+                    <button type="button"
+                            @click="selectedGroup = ''"
+                            :class="selectedGroup === '' ? 'bg-pink-600 text-white font-bold shadow-sm' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium'"
+                            class="px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
+                        <span>Todos os Grupos</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                              :class="selectedGroup === '' ? 'bg-pink-700 text-white' : 'bg-slate-100 text-slate-600'">
+                            {{ active_cegs|length }}
+                        </span>
+                    </button>
+
+                    <!-- Botão de cada Grupo com CEG aberta -->
+                    {% for g in open_groups %}
+                        <button type="button"
+                                @click="selectedGroup = selectedGroup === '{{ g.id }}' ? '' : '{{ g.id }}'"
+                                :class="selectedGroup === '{{ g.id }}' ? 'bg-pink-600 text-white font-bold shadow-sm' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium'"
+                                class="px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
+                            <span>{{ g.name }}</span>
+                            <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                                  :class="selectedGroup === '{{ g.id }}' ? 'bg-pink-700 text-white' : 'bg-slate-100 text-slate-600'">
+                                {{ g.cegs_count }}
+                            </span>
+                        </button>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
 
         {% if active_cegs %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for ceg in active_cegs %}
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                    <div x-show="!selectedGroup || selectedGroup === '{{ ceg.era.group.id }}'"
+                         x-transition
+                         class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
                         {% if ceg.banner_url %}
                             <div class="h-44 bg-slate-200 overflow-hidden relative">
                                 <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}" class="w-full h-full object-cover">
@@ -129,7 +165,12 @@
                      }"
                      x-init="
                          timer = setInterval(() => {
-                             if (secondsLeft > 0) secondsLeft--;
+                             if (secondsLeft > 0) {
+                                 secondsLeft--;
+                                 if (secondsLeft <= 0) {
+                                     setTimeout(() => window.location.reload(), 1500);
+                                 }
+                             }
                          }, 1000);
                      ">
                     <div class="bg-amber-50 p-4 border-b border-amber-100 flex items-center justify-between">

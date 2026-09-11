@@ -1,7 +1,15 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog
+
+
+class ClaimAttemptLogInline(admin.TabularInline):
+    model = ClaimAttemptLog
+    extra = 0
+    readonly_fields = ('attempt_number', 'participant_name', 'phone', 'social_handle', 'result', 'details', 'created_at')
+    can_delete = False
+    ordering = ('attempt_number',)
 
 
 class CEGItemDefinitionInline(admin.TabularInline):
@@ -134,8 +142,9 @@ class CEGSetAdmin(admin.ModelAdmin):
 class ItemSlotAdmin(admin.ModelAdmin):
     list_display = ('id', 'set_info', 'item_name', 'price', 'status_badge', 'claimed_by_info', 'claimed_at')
     list_filter = ('status', 'set__ceg', 'set__set_number')
-    search_fields = ('item_definition__name', 'claimed_by__name', 'claimed_by__whatsapp', 'claimed_by__social_handle')
+    search_fields = ('item_definition__name', 'claimed_by__name', 'claimed_by__username', 'claimed_by__whatsapp', 'claimed_by__social_handle')
     raw_id_fields = ('claimed_by',)
+    inlines = [ClaimAttemptLogInline]
     actions = ['mark_as_available', 'mark_as_paid']
 
     def set_info(self, obj):
@@ -148,8 +157,9 @@ class ItemSlotAdmin(admin.ModelAdmin):
 
     def claimed_by_info(self, obj):
         if obj.claimed_by:
+            user = f" [{obj.claimed_by.username}]" if obj.claimed_by.username else ""
             handle = f" ({obj.claimed_by.social_handle})" if obj.claimed_by.social_handle else ""
-            return f"{obj.claimed_by.name}{handle}"
+            return f"{obj.claimed_by.name}{user}{handle}"
         return "-"
     claimed_by_info.short_description = 'Reservado por'
 
@@ -189,3 +199,26 @@ class ItemSlotAdmin(admin.ModelAdmin):
                 slot.claim.paid_at = timezone.now()
                 slot.claim.save(update_fields=['status', 'paid_at'])
         self.message_user(request, f"{queryset.count()} slots marcados como pagos.")
+
+
+@admin.register(ClaimAttemptLog)
+class ClaimAttemptLogAdmin(admin.ModelAdmin):
+    list_display = ('slot', 'attempt_number', 'participant_name', 'phone', 'social_handle', 'result_badge', 'created_at')
+    list_filter = ('result', 'created_at')
+    search_fields = ('participant_name', 'phone', 'social_handle', 'slot__item_definition__name')
+    readonly_fields = ('slot', 'attempt_number', 'participant_name', 'phone', 'social_handle', 'result', 'details', 'created_at')
+
+    def result_badge(self, obj):
+        colors = {
+            ClaimAttemptLog.Result.SUCCESS: '#198754',
+            ClaimAttemptLog.Result.LOST_RACE: '#dc3545',
+            ClaimAttemptLog.Result.STANDBY_BLOCKED: '#ffc107',
+            ClaimAttemptLog.Result.ERROR: '#6c757d',
+        }
+        text_color = '#000' if obj.result == ClaimAttemptLog.Result.STANDBY_BLOCKED else '#fff'
+        color = colors.get(obj.result, '#333')
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_result_display()
+        )
+    result_badge.short_description = 'Resultado da Concorrência'

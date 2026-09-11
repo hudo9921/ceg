@@ -13,12 +13,25 @@
                 💬
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">
-                Consulta Sem Senha
+                {% if next_url %}Identificação Rápida{% else %}Consulta Sem Senha{% endif %}
             </h1>
             <p class="text-xs text-slate-500 leading-relaxed">
-                Acesse suas reservas, status de pagamento e chave Pix utilizando apenas o seu WhatsApp.
+                {% if next_url %}
+                    Informe seu WhatsApp para confirmar suas reservas com 1 clique e acompanhar seus claims.
+                {% else %}
+                    Acesse suas reservas, status de pagamento e chave Pix utilizando apenas o seu WhatsApp.
+                {% endif %}
             </p>
         </div>
+
+        {% if next_url %}
+            <div class="p-3 bg-pink-50 border border-pink-200 rounded-xl text-xs text-pink-900 flex items-center gap-2">
+                <span class="text-base">⚡</span>
+                <div>
+                    <strong>Pronto para reservar:</strong> Após confirmar o código de acesso, você voltará diretamente para a CEG!
+                </div>
+            </div>
+        {% endif %}
 
         {% if step == 'verify' %}
             <!-- Etapa 2: Digitar o código de 6 dígitos -->
@@ -26,6 +39,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="verify_otp">
                 <input type="hidden" name="phone" value="{{ phone }}">
+                {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
                 <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs text-center">
                     Código enviado para <strong>+{{ phone }}</strong> via WhatsApp!
@@ -42,11 +56,11 @@
 
                 <button type="submit"
                         class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-black text-sm rounded-xl shadow-md transition">
-                    ✨ Acessar Minhas Reservas
+                    ✨ Confirmar e Continuar
                 </button>
 
                 <div class="pt-2 text-center text-xs text-slate-400">
-                    <a href="{% url 'login_otp' %}" class="hover:text-pink-600">
+                    <a href="{% url 'login_otp' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="hover:text-pink-600">
                         ← Digitar outro número de WhatsApp
                     </a>
                 </div>
@@ -57,6 +71,7 @@
             <form action="{% url 'login_otp' %}" method="POST" class="space-y-4">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="send_otp">
+                {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">
@@ -72,7 +87,7 @@
                                class="w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
                     </div>
                     <span class="text-[11px] text-slate-400 mt-1 block">
-                        Informe o mesmo número utilizado ao reservar seus itens.
+                        Informe o seu número de WhatsApp para verificação rápida por código.
                     </span>
                 </div>
 

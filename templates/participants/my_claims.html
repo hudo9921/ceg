@@ -1,10 +1,48 @@
 {% extends 'base.html' %}
 
-{% block title %}Meus Claims — {{ participant.name }} | K-pop CEG Manager{% endblock %}
+{% block title %}Meus Claims — {{ participant.display_name }} | K-pop CEG Manager{% endblock %}
 
 {% block content %}
 <div class="space-y-8"
      x-data="{
+         profileModalOpen: {% if is_placeholder_name %}true{% else %}false{% endif %},
+         selectedGroup: '',
+         selectedCeg: '',
+         statusFilter: 'ALL',
+         allCegs: [
+             {% for c in cegs_filter_list %}
+             {
+                 id: '{{ c.id }}',
+                 title: '{{ c.title|escapejs }}',
+                 groupId: '{{ c.group_id }}',
+                 count: {{ c.items_count }},
+                 countPending: {{ c.count_pending }},
+                 countPaid: {{ c.count_paid }}
+             }{% if not forloop.last %},{% endif %}
+             {% endfor %}
+         ],
+         get filteredCegsOptions() {
+             if (!this.selectedGroup) return this.allCegs;
+             return this.allCegs.filter(c => String(c.groupId) === String(this.selectedGroup));
+         },
+         onGroupChange() {
+             if (this.selectedCeg) {
+                 const exists = this.filteredCegsOptions.some(c => String(c.id) === String(this.selectedCeg));
+                 if (!exists) this.selectedCeg = '';
+             }
+         },
+         clearFilters() {
+             this.selectedGroup = '';
+             this.selectedCeg = '';
+             this.statusFilter = 'ALL';
+         },
+         matchesCeg(groupId, cegId, countPending, countPaid) {
+             if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
+             if (this.selectedCeg && String(this.selectedCeg) !== String(cegId)) return false;
+             if (this.statusFilter === 'PENDING' && countPending === 0) return false;
+             if (this.statusFilter === 'PAID' && countPaid === 0) return false;
+             return true;
+         },
          copyPix(key) {
              navigator.clipboard.writeText(key);
              alert('Chave Pix copiada com sucesso! ' + key);
@@ -16,52 +54,229 @@
         <div class="space-y-1">
             <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Painel do Participante</span>
             <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Olá, {{ participant.name }}! 👋
+                Olá, {{ participant.display_name }}! 👋
             </h1>
             <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
+                <span>👤 Nome Completo: <strong>{{ participant.name }}</strong></span>
+                <span>•</span>
                 <span>📱 WhatsApp: <strong>{{ participant.formatted_phone }}</strong></span>
+                <span>•</span>
                 {% if participant.social_handle %}
-                    <span>•</span>
                     <span>@ Rede Social: <strong class="text-pink-600">{{ participant.social_handle }}</strong></span>
+                {% else %}
+                    <button type="button" @click="profileModalOpen = true" class="text-pink-600 hover:text-pink-700 font-semibold inline-flex items-center gap-1 underline underline-offset-2">
+                        + Adicionar @ Twitter/Insta
+                    </button>
                 {% endif %}
             </div>
         </div>
 
-        <a href="{% url 'logout_participant' %}"
-           class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition">
-            Encerrar Sessão
-        </a>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="profileModalOpen = true"
+                    class="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <span>✏️</span>
+                <span>Editar Perfil</span>
+            </button>
+            <a href="{% url 'logout_participant' %}"
+               class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition">
+                Encerrar Sessão
+            </a>
+        </div>
     </div>
 
-    <!-- Metric Cards -->
+    <!-- Banner de Boas-Vindas para Completar Perfil -->
+    {% if is_placeholder_name or not participant.social_handle %}
+        <div class="bg-gradient-to-r from-pink-50 via-purple-50 to-pink-50 border border-pink-200 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl flex-shrink-0">
+                    👤
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900">
+                        {% if is_placeholder_name %}
+                            Complete o seu cadastro de participante!
+                        {% else %}
+                            Adicione seu @ no Twitter / Instagram
+                        {% endif %}
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed pt-0.5">
+                        {% if is_placeholder_name %}
+                            Você acessou pelo WhatsApp. Defina seu <strong>Nome Completo</strong> (obrigatório) e seu <strong>Twitter/Instagram</strong> (opcional) para identificação nos photocards e claims.
+                        {% else %}
+                            Adicione seu identificador para que outros colecionadores e o organizador identifiquem suas reservas nos cards.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="profileModalOpen = true"
+                    class="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 flex-shrink-0">
+                <span>✏️</span>
+                <span>{% if is_placeholder_name %}Completar Cadastro{% else %}Adicionar @ Social{% endif %}</span>
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- Metric Cards: Contagem de Itens e Status Interativo -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Itens</div>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900">{{ total_claims_count }}</div>
-            <div class="text-[11px] text-slate-500">Reservas em todas as CEGs</div>
+        <!-- Card 1: Total de Itens -->
+        <div @click="statusFilter = 'ALL'"
+             :class="statusFilter === 'ALL' ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/20' : 'border-slate-200 hover:border-slate-300'"
+             class="bg-white p-5 rounded-2xl border shadow-sm space-y-1.5 cursor-pointer transition select-none">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Itens</div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      :class="statusFilter === 'ALL' ? 'bg-pink-100 text-pink-700' : 'bg-slate-100 text-slate-500'">
+                    Todos
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black text-slate-900">{{ total_claims_count }}</span>
+                <span class="text-sm font-semibold text-slate-500">{% if total_claims_count == 1 %}item reservado{% else %}itens reservados{% endif %}</span>
+            </div>
+            <div class="text-[11px] text-slate-500">Reservas em todas as suas CEGs</div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm space-y-1 bg-amber-50/40">
-            <div class="text-xs font-bold text-amber-700 uppercase tracking-wider">Aguardando Pagamento</div>
-            <div class="text-2xl sm:text-3xl font-black text-amber-900">R$ {{ total_pending_all|floatformat:2 }}</div>
-            <div class="text-[11px] text-amber-700">Pague via Pix para confirmar</div>
+        <!-- Card 2: Aguardando Pagamento (Número de Itens Pendentes) -->
+        <div @click="statusFilter = statusFilter === 'PENDING' ? 'ALL' : 'PENDING'"
+             :class="statusFilter === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/80 shadow-md' : 'border-amber-200 bg-amber-50/40 hover:bg-amber-50/70'"
+             class="p-5 rounded-2xl border shadow-sm space-y-1.5 cursor-pointer transition select-none">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold text-amber-800 uppercase tracking-wider">Aguardando Pagamento</div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      :class="statusFilter === 'PENDING' ? 'bg-amber-600 text-white' : 'bg-amber-200/70 text-amber-900'">
+                    Faltam Pagar
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black text-amber-900">{{ pending_claims_count }}</span>
+                <span class="text-sm font-bold text-amber-700">{% if pending_claims_count == 1 %}item pendente{% else %}itens pendentes{% endif %}</span>
+            </div>
+            <div class="text-[11px] text-amber-800 flex items-center justify-between">
+                <span>Clique para filtrar itens a pagar</span>
+                {% if total_pending_all > 0 %}
+                    <span class="font-semibold text-amber-900 text-[11px]">R$ {{ total_pending_all|floatformat:2 }}</span>
+                {% endif %}
+            </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm space-y-1 bg-emerald-50/40">
-            <div class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Pagamentos Confirmados</div>
-            <div class="text-2xl sm:text-3xl font-black text-emerald-900">R$ {{ total_paid_all|floatformat:2 }}</div>
-            <div class="text-[11px] text-emerald-700">Validados pelo organizador</div>
+        <!-- Card 3: Pagamentos Confirmados (Número de Itens Confirmados) -->
+        <div @click="statusFilter = statusFilter === 'PAID' ? 'ALL' : 'PAID'"
+             :class="statusFilter === 'PAID' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/80 shadow-md' : 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/70'"
+             class="p-5 rounded-2xl border shadow-sm space-y-1.5 cursor-pointer transition select-none">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Pagamentos Confirmados</div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      :class="statusFilter === 'PAID' ? 'bg-emerald-600 text-white' : 'bg-emerald-200/70 text-emerald-900'">
+                    Confirmados
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black text-emerald-900">{{ paid_claims_count }}</span>
+                <span class="text-sm font-bold text-emerald-700">{% if paid_claims_count == 1 %}item pago{% else %}itens pagos{% endif %}</span>
+            </div>
+            <div class="text-[11px] text-emerald-800 flex items-center justify-between">
+                <span>Clique para filtrar itens já pagos</span>
+                {% if total_paid_all > 0 %}
+                    <span class="font-semibold text-emerald-900 text-[11px]">R$ {{ total_paid_all|floatformat:2 }}</span>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <!-- Grupos de Reservas por CEG -->
+    <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->
     <div class="space-y-6">
-        <h2 class="text-xl font-black text-slate-900">
-            📦 Minhas Reservas por CEG
-        </h2>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>📦</span>
+                        <span>Minhas Reservas por CEG</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 pt-0.5">
+                        Filtre e visualize suas reservas por Grupo e por CEG.
+                    </p>
+                </div>
+
+                <!-- Filtros: Grupo e CEG -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- 1. Filtro de Grupos -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-slate-700 whitespace-nowrap">Grupo:</label>
+                        <select x-model="selectedGroup" @change="onGroupChange()"
+                                class="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition cursor-pointer">
+                            <option value="">Todos os Grupos ({{ groups_filter_list|length }})</option>
+                            {% for g in groups_filter_list %}
+                                <option value="{{ g.id }}">{{ g.name }} ({{ g.total_items }} {% if g.total_items == 1 %}item{% else %}itens{% endif %})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- 2. Filtro de CEGs -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-slate-700 whitespace-nowrap">CEG:</label>
+                        <select x-model="selectedCeg"
+                                class="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition cursor-pointer max-w-[260px] truncate">
+                            <option value="">Todas as CEGs</option>
+                            <template x-for="c in filteredCegsOptions" :key="c.id">
+                                <option :value="c.id" x-text="c.title + ' (' + c.count + (c.count === 1 ? ' item)' : ' itens)')"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Botão Limpar Filtros -->
+                    <button type="button"
+                            x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL'"
+                            @click="clearFilters()"
+                            class="px-3 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                        <span>✕</span>
+                        <span>Limpar Filtros</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtro rápido por Status (Pills interativos) -->
+            <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filtrar por Status:</span>
+                <button type="button" @click="statusFilter = 'ALL'"
+                        :class="statusFilter === 'ALL' ? 'bg-slate-900 text-white font-bold shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                    <span>Todos os Itens</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                          :class="statusFilter === 'ALL' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'">
+                        {{ total_claims_count }}
+                    </span>
+                </button>
+                <button type="button" @click="statusFilter = 'PENDING'"
+                        :class="statusFilter === 'PENDING' ? 'bg-amber-600 text-white font-bold shadow-sm' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                    <span>⏳ Faltam Pagar</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                          :class="statusFilter === 'PENDING' ? 'bg-amber-700 text-white' : 'bg-amber-200 text-amber-900'">
+                        {{ pending_claims_count }}
+                    </span>
+                </button>
+                <button type="button" @click="statusFilter = 'PAID'"
+                        :class="statusFilter === 'PAID' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                    <span>✔ Já Pagos</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                          :class="statusFilter === 'PAID' ? 'bg-emerald-700 text-white' : 'bg-emerald-200 text-emerald-900'">
+                        {{ paid_claims_count }}
+                    </span>
+                </button>
+
+                <!-- Feedback de filtro ativo -->
+                <div x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL'" class="ml-auto text-xs text-slate-500 font-medium flex items-center gap-1">
+                    <span>Filtro ativo:</span>
+                    <span class="font-bold text-pink-600"
+                          x-text="(statusFilter === 'PENDING' ? 'Faltam Pagar' : (statusFilter === 'PAID' ? 'Já Pagos' : 'Todos')) + (selectedGroup ? ' • Grupo filtrado' : '') + (selectedCeg ? ' • CEG filtrada' : '')"></span>
+                </div>
+            </div>
+        </div>
 
         {% for group in cegs_groups %}
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm space-y-4">
+            <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', {{ group.count_pending }}, {{ group.count_paid }})"
+                 class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm space-y-4">
                 
                 <!-- CEG Header -->
                 <div class="bg-slate-100 p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -78,15 +293,19 @@
 
                     <div class="text-right flex items-center gap-3">
                         {% if group.total_pending > 0 %}
-                            <div class="text-xs">
+                            <div class="text-xs" x-show="statusFilter === 'ALL' || statusFilter === 'PENDING'">
                                 <span class="text-slate-500">Pendente nesta CEG:</span>
-                                <strong class="text-amber-600 font-bold block text-sm">R$ {{ group.total_pending|floatformat:2 }}</strong>
+                                <strong class="text-amber-600 font-bold block text-sm">
+                                    {{ group.count_pending }} {% if group.count_pending == 1 %}item{% else %}itens{% endif %} (R$ {{ group.total_pending|floatformat:2 }})
+                                </strong>
                             </div>
                         {% endif %}
                         {% if group.total_paid > 0 %}
-                            <div class="text-xs">
+                            <div class="text-xs" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
                                 <span class="text-slate-500">Pago:</span>
-                                <strong class="text-emerald-600 font-bold block text-sm">R$ {{ group.total_paid|floatformat:2 }}</strong>
+                                <strong class="text-emerald-600 font-bold block text-sm">
+                                    {{ group.count_paid }} {% if group.count_paid == 1 %}item{% else %}itens{% endif %} (R$ {{ group.total_paid|floatformat:2 }})
+                                </strong>
                             </div>
                         {% endif %}
                     </div>
@@ -94,7 +313,8 @@
 
                 <!-- Chave Pix da CEG (se houver pendente) -->
                 {% if group.total_pending > 0 and group.ceg.pix_key %}
-                    <div class="mx-5 p-4 bg-gradient-to-r from-amber-50 to-pink-50 border border-amber-200 rounded-xl flex flex-col md:flex-row justify-between items-center gap-3">
+                    <div x-show="statusFilter === 'ALL' || statusFilter === 'PENDING'"
+                         class="mx-5 p-4 bg-gradient-to-r from-amber-50 to-pink-50 border border-amber-200 rounded-xl flex flex-col md:flex-row justify-between items-center gap-3">
                         <div class="space-y-1 text-center md:text-left">
                             <div class="text-xs font-bold text-slate-800">
                                 🔑 Chave Pix para Pagamento desta CEG:
@@ -131,7 +351,7 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100 text-slate-700">
                             {% for claim in group.claims %}
-                                <tr>
+                                <tr x-show="statusFilter === 'ALL' || statusFilter === '{{ claim.status }}'">
                                     <td class="py-3 font-bold text-slate-900">
                                         Set #{{ claim.slot.set.set_number }}
                                     </td>
@@ -187,6 +407,115 @@
                 </div>
             </div>
         {% endfor %}
+
+        <!-- Mensagem quando filtros não encontram correspondência -->
+        {% if cegs_groups %}
+            <div x-show="allCegs.length > 0 && !allCegs.some(c => matchesCeg(c.groupId, c.id, c.countPending, c.countPaid))"
+                 class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500 space-y-2">
+                <div class="text-3xl">🔍</div>
+                <p class="text-sm font-bold text-slate-800">Nenhuma reserva encontrada para os filtros selecionados.</p>
+                <p class="text-xs text-slate-500">Tente selecionar outro grupo, CEG ou status.</p>
+                <div class="pt-2">
+                    <button type="button" @click="clearFilters()"
+                            class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow transition">
+                        Limpar Filtros
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal de Edição de Perfil (Nome, WhatsApp, Twitter/Instagram) -->
+    <div x-show="profileModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+         @keydown.escape.window="profileModalOpen = false">
+        
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all"
+             @click.away="profileModalOpen = false">
+            
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span class="text-xs font-black text-pink-600 uppercase tracking-wider">Conta do Participante</span>
+                    <h3 class="text-lg font-black text-slate-900">Meu Perfil de Colecionador</h3>
+                    <p class="text-xs text-slate-500">Mantenha seus dados atualizados para suas reservas e comprovantes.</p>
+                </div>
+                <button type="button" @click="profileModalOpen = false" class="text-slate-400 hover:text-slate-700 text-xl font-bold">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'update_profile' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Nome Completo (Obrigatório) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Nome Completo <span class="text-pink-600">*</span>
+                    </label>
+                    <input type="text" name="name" required
+                           value="{% if is_placeholder_name %}{% else %}{{ participant.name }}{% endif %}"
+                           placeholder="Ex: Beatriz Lima da Silva"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Obrigatório. Seu nome civil completo para conferência de pagamentos Pix, envios e encomendas.</span>
+                </div>
+
+                <!-- Como prefere ser chamado(a) / Apelido (Opcional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Como prefere ser chamado(a)? / Nome de Usuário <span class="text-slate-400 font-normal text-[11px]">(opcional)</span>
+                    </label>
+                    <input type="text" name="username"
+                           value="{{ participant.username|default:'' }}"
+                           placeholder="Ex: Bia, Hudo, JihyoStan"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Nome de usuário ou apelido usado nas saudações e no painel. Se em branco, usará seu nome completo.</span>
+                </div>
+
+                <!-- WhatsApp (Obrigatório / Autenticado via OTP) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        WhatsApp <span class="text-pink-600">*</span>
+                    </label>
+                    <div class="flex items-center justify-between px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700">
+                        <div class="flex items-center space-x-2">
+                            <span>🇧🇷</span>
+                            <span>{{ participant.formatted_phone }}</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span>✔</span> Autenticado via OTP
+                        </span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">Número verificado por código de 6 dígitos. Não pode ser alterado diretamente.</span>
+                </div>
+
+                <!-- Twitter / Instagram (Opcional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        @ Twitter (X) ou Instagram <span class="text-slate-400 font-normal text-[11px]">(opcional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="social_handle"
+                               value="{{ participant.social_handle|default:'' }}"
+                               placeholder="Ex: @jihyolover"
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    </div>
+                    <span class="text-[10px] text-slate-400">Exibido publicamente na lista de reservas de cada Set e photocard.</span>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" @click="profileModalOpen = false"
+                            class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                        <span>💾</span>
+                        <span>Salvar Alterações</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
     </div>
 
 </div>
