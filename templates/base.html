@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}K-pop CEG Manager{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kpop: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            900: '#831843',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-6">
+                    <a href="{% url 'home' %}" class="flex items-center space-x-2 text-pink-600 font-black text-xl tracking-tight">
+                        <span class="text-2xl">✨</span>
+                        <span>CEG<span class="text-slate-800 font-semibold">Manager</span></span>
+                    </a>
+                    <div class="hidden md:flex space-x-4">
+                        <a href="{% url 'home' %}" class="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:text-pink-600 hover:bg-pink-50 transition">
+                            Todas as CEGs
+                        </a>
+                        <a href="{% url 'analytics_dashboard' %}" class="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:text-pink-600 hover:bg-pink-50 transition">
+                            📊 Métricas do Organizador
+                        </a>
+                        <a href="/admin/" target="_blank" class="px-3 py-2 rounded-md text-sm font-medium text-slate-500 hover:text-slate-800 transition">
+                            Painel Admin ↗
+                        </a>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    {% if logged_participant %}
+                        <div class="flex items-center space-x-2">
+                            <a href="{% url 'my_claims' %}" class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-800 hover:bg-pink-200 transition">
+                                <span class="w-2 h-2 mr-1.5 bg-pink-500 rounded-full animate-pulse"></span>
+                                {{ logged_participant.name }} (Meus Claims)
+                            </a>
+                            <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-xs text-slate-400 hover:text-red-600 px-2 py-1">
+                                Sair
+                            </a>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login_otp' %}" class="inline-flex items-center px-4 py-2 border border-pink-500 text-pink-600 hover:bg-pink-50 text-xs sm:text-sm font-semibold rounded-lg transition shadow-sm">
+                            📱 Consultar com WhatsApp
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+        <div class="max-w-4xl mx-auto px-4 mt-4 w-full">
+            {% for message in messages %}
+                <div class="p-4 mb-3 rounded-lg text-sm font-medium flex items-center justify-between shadow-sm
+                    {% if message.tags == 'error' %} bg-red-50 text-red-800 border border-red-200
+                    {% elif message.tags == 'success' %} bg-emerald-50 text-emerald-800 border border-emerald-200
+                    {% else %} bg-sky-50 text-sky-800 border border-sky-200 {% endif %}">
+                    <span>{{ message }}</span>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700 ml-3">✕</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p><strong>K-pop CEG Manager</strong> — Plataforma de Compras em Grupo, Claims e Photocard Splits.</p>
+            <p class="text-slate-400">Desenvolvido com Django & Tailwind CSS</p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

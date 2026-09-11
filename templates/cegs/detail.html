@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ ceg.title }} — {{ ceg.era.group.name }} | K-pop CEG{% endblock %}
+
+{% block content %}
+<div class="space-y-8"
+     x-data="{
+         isStandby: {{ ceg.is_standby|yesno:'true,false' }},
+         secondsLeft: {{ ceg.countdown_seconds }},
+         timer: null,
+         // Modal State
+         modalOpen: false,
+         selectedSlot: null,
+         openClaimModal(slot) {
+             this.selectedSlot = slot;
+             this.modalOpen = true;
+         },
+         closeClaimModal() {
+             this.modalOpen = false;
+             this.selectedSlot = null;
+         },
+         copyPix(key) {
+             navigator.clipboard.writeText(key);
+             alert('Chave Pix copiada para a área de transferência! ' + key);
+         },
+         formatCountdown() {
+             if (this.secondsLeft <= 0) {
+                 this.isStandby = false;
+                 return 'ABERTO AGORA!';
+             }
+             let d = Math.floor(this.secondsLeft / 86400);
+             let h = Math.floor((this.secondsLeft % 86400) / 3600);
+             let m = Math.floor((this.secondsLeft % 3600) / 60);
+             let s = this.secondsLeft % 60;
+             return { d, h: String(h).padStart(2, '0'), m: String(m).padStart(2, '0'), s: String(s).padStart(2, '0') };
+         }
+     }"
+     x-init="
+         if (secondsLeft > 0) {
+             timer = setInterval(() => {
+                 if (secondsLeft > 0) {
+                     secondsLeft--;
+                 } else {
+                     isStandby = false;
+                     clearInterval(timer);
+                 }
+             }, 1000);
+         }
+     ">
+
+    <!-- Top Breadcrumb -->
+    <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500">
+        <a href="{% url 'home' %}" class="hover:text-pink-600">Home</a>
+        <span>/</span>
+        <span class="text-pink-600 font-bold">{{ ceg.era.group.name }}</span>
+        <span>/</span>
+        <span class="text-slate-800">{{ ceg.title }}</span>
+    </div>
+
+    <!-- CEG Header Banner -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+        <div class="flex flex-col lg:flex-row justify-between gap-6">
+            <div class="space-y-2 max-w-3xl">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 bg-pink-100 text-pink-800 text-xs font-black rounded-md uppercase tracking-wider">
+                        {{ ceg.era.group.name }} • Era {{ ceg.era.name }}
+                    </span>
+                    {% if ceg.status == 'OPEN' %}
+                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-md uppercase tracking-wider">
+                            ● Aberta
+                        </span>
+                    {% elif ceg.status == 'SCHEDULED' %}
+                        <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-black rounded-md uppercase tracking-wider">
+                            ⏳ Agendada (Standby)
+                        </span>
+                    {% else %}
+                        <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-md uppercase tracking-wider">
+                            {{ ceg.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                    {{ ceg.title }}
+                </h1>
+
+                {% if ceg.description %}
+                    <p class="text-slate-600 text-sm leading-relaxed whitespace-pre-line pt-2">
+                        {{ ceg.description }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Card de Dados de Pagamento Pix -->
+            {% if ceg.pix_key %}
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl p-5 w-full lg:w-80 shadow-md space-y-3 flex-shrink-0">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-400">
+                        <span>PAGAMENTO DA CEG</span>
+                        <span class="text-pink-400">PIX</span>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-300">Chave Pix do Organizador:</div>
+                        <div class="font-mono text-sm font-bold truncate text-pink-300 select-all">{{ ceg.pix_key }}</div>
+                    </div>
+                    <button type="button" @click="copyPix('{{ ceg.pix_key }}')"
+                            class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg transition shadow">
+                        📋 Copiar Chave Pix
+                    </button>
+                    {% if ceg.pix_instructions %}
+                        <p class="text-[11px] text-slate-300 leading-snug border-t border-slate-700/60 pt-2">
+                            ℹ️ {{ ceg.pix_instructions }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Standby Countdown Alert Banner -->
+        <div x-show="isStandby" x-cloak
+             class="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 p-6 rounded-xl text-white shadow-lg space-y-3">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-lg font-black tracking-tight flex items-center gap-2">
+                        <span>⏳</span>
+                        MODO STANDBY ATIVO (HYPE & COUNTDOWN)
+                    </h3>
+                    <p class="text-xs text-amber-100">
+                        Esta CEG abre oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y às H:i:s" }}</strong>.
+                        Os botões de reserva estão travados e destravarão no segundo zero!
+                    </p>
+                </div>
+                <div class="flex space-x-2 text-center">
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black" x-text="formatCountdown().d"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Dias</span>
+                    </div>
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black" x-text="formatCountdown().h"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Horas</span>
+                    </div>
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black" x-text="formatCountdown().m"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Min</span>
+                    </div>
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black text-yellow-300" x-text="formatCountdown().s"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Seg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner de Abertura Real Time -->
+        <div x-show="!isStandby && {{ ceg.is_open_for_claims|yesno:'true,false' }}"
+             class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center justify-between text-emerald-900 text-sm font-semibold shadow-sm">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
+                <span>🔥 As reservas estão <strong>abertas em tempo real</strong>! Cada slot físico é único por Set.</span>
+            </div>
+            <span class="text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full font-bold">1 pessoa por slot</span>
+        </div>
+    </div>
+
+    <!-- Sets & Slots List -->
+    <div class="space-y-8">
+        {% for set in sets %}
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <!-- Set Header -->
+                <div class="bg-slate-100 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center space-x-3">
+                        <span class="w-8 h-8 rounded-lg bg-pink-600 text-white font-black text-sm flex items-center justify-center shadow">
+                            #{{ set.set_number }}
+                        </span>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">Set {{ set.set_number }}</h2>
+                            {% if set.notes %}
+                                <p class="text-xs text-slate-500">{{ set.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="font-bold text-slate-600">
+                            {{ set.reserved_count }}/{{ set.slots_count }} preenchidos
+                        </span>
+                        {% if set.is_full %}
+                            <span class="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-md">
+                                ✔ Set 100% Fechado
+                            </span>
+                        {% else %}
+                            <span class="px-2.5 py-1 bg-slate-200 text-slate-700 font-medium rounded-md">
+                                {{ set.slots_count|add:"-"|add:set.reserved_count }} vagas restantes
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Slots Grid -->
+                <div class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {% for slot in set.slots.all %}
+                        <div class="border rounded-xl p-4 flex flex-col justify-between space-y-3 transition
+                            {% if slot.status == 'AVAILABLE' %}
+                                border-slate-200 hover:border-pink-300 hover:shadow bg-white
+                            {% elif slot.status == 'RESERVED' %}
+                                border-amber-200 bg-amber-50/50
+                            {% elif slot.status == 'PAID' %}
+                                border-blue-200 bg-blue-50/40
+                            {% else %}
+                                border-slate-200 bg-slate-50 opacity-60
+                            {% endif %}">
+
+                            <!-- Top Tag / Member -->
+                            <div class="flex justify-between items-start">
+                                {% if slot.item_definition.member_name %}
+                                    <span class="text-xs font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
+                                        {{ slot.item_definition.member_name }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                        {{ slot.item_definition.get_item_type_display }}
+                                    </span>
+                                {% endif %}
+
+                                <span class="text-xs font-black text-slate-900">
+                                    R$ {{ slot.price|floatformat:2 }}
+                                </span>
+                            </div>
+
+                            <!-- Item Name -->
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900 leading-snug">
+                                    {{ slot.item_definition.name }}
+                                </h3>
+                                <p class="text-[11px] text-slate-400">Set {{ set.set_number }}</p>
+                            </div>
+
+                            <!-- Status / Action Button -->
+                            <div class="pt-2 border-t border-slate-100">
+                                {% if slot.status == 'AVAILABLE' %}
+                                    <template x-if="isStandby">
+                                        <button type="button" disabled
+                                                class="w-full py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed flex items-center justify-center gap-1">
+                                            <span>🔒</span> Aguarde abertura
+                                        </button>
+                                    </template>
+                                    <template x-if="!isStandby">
+                                        <button type="button"
+                                                @click="openClaimModal({
+                                                    id: {{ slot.id }},
+                                                    name: '{{ slot.item_definition.name|escapejs }}',
+                                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                    setNumber: {{ set.set_number }},
+                                                    price: '{{ slot.price|floatformat:2 }}'
+                                                })"
+                                                class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1">
+                                            <span>⚡</span> Reservar (Claim)
+                                        </button>
+                                    </template>
+
+                                {% elif slot.status == 'RESERVED' %}
+                                    <div class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                        <span class="font-bold">🔒 Reservado</span>
+                                        <div class="text-[10px] text-amber-700 truncate">
+                                            {% if slot.claimed_by.social_handle %}
+                                                {{ slot.claimed_by.social_handle }}
+                                            {% else %}
+                                                {{ slot.claimed_by.name }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                {% elif slot.status == 'PAID' %}
+                                    <div class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                        <span class="font-bold">✔ Confirmado / Pago</span>
+                                        <div class="text-[10px] text-blue-700 truncate">
+                                            {% if slot.claimed_by.social_handle %}
+                                                {{ slot.claimed_by.social_handle }}
+                                            {% else %}
+                                                {{ slot.claimed_by.name }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    {% empty %}
+                        <div class="col-span-full py-8 text-center text-slate-400 text-sm">
+                            Nenhum slot gerado para este Set ainda.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
+                Nenhum Set disponível para esta CEG no momento.
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Modal de Reserva (Claim Modal) -->
+    <div x-show="modalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+         @keydown.escape.window="closeClaimModal()">
+        
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all"
+             @click.away="closeClaimModal()">
+            
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span class="text-xs font-black text-pink-600 uppercase tracking-wider">Confirmar Reserva</span>
+                    <h3 class="text-lg font-black text-slate-900" x-text="selectedSlot ? selectedSlot.name : ''"></h3>
+                    <p class="text-xs text-slate-500" x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber + ' • R$ ' + selectedSlot.price : ''"></p>
+                </div>
+                <button type="button" @click="closeClaimModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Informação de Concorrência -->
+            <div class="p-3 bg-pink-50 border border-pink-100 rounded-xl text-pink-900 text-xs leading-relaxed">
+                ⚡ <strong>Atenção:</strong> Este slot é único! O primeiro participante a clicar em Confirmar garantirá a reserva no sistema.
+            </div>
+
+            <form :action="'/slots/' + (selectedSlot ? selectedSlot.id : 0) + '/claim/'" method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu Nome Completo *</label>
+                    <input type="text" name="name" required
+                           value="{{ logged_participant.name|default:'' }}"
+                           placeholder="Ex: Beatriz Silva"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu WhatsApp (com DDD) *</label>
+                    <input type="tel" name="whatsapp" required
+                           value="{{ logged_participant.whatsapp|default:'' }}"
+                           placeholder="Ex: 11999998888"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Usado para você consultar suas reservas sem senha via OTP.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu @ no Twitter ou Instagram</label>
+                    <input type="text" name="social_handle"
+                           value="{{ logged_participant.social_handle|default:'' }}"
+                           placeholder="Ex: @jihyolover"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Exibido publicamente no card para confirmar seu slot.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Observações (opcional)</label>
+                    <textarea name="notes" rows="2"
+                              placeholder="Alguma observação especial para o organizador?"
+                              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" @click="closeClaimModal()"
+                            class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1">
+                        <span>✔</span> Confirmar Reserva Única
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

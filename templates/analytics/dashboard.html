@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Métricas e Analítica do Organizador — K-pop CEG Manager{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Inteligência de Vendas</span>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                📊 Métricas do Organizador
+            </h1>
+            <p class="text-xs text-slate-500">
+                Acompanhe o ritmo de esgotamento de photocards, faturamento por Era e fechamento de Sets.
+            </p>
+        </div>
+
+        <a href="/admin/" target="_blank"
+           class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition">
+            Abrir Django Admin ↗
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Faturamento Confirmado</span>
+            <div class="text-2xl font-black text-emerald-600">R$ {{ summary.total_paid|floatformat:2 }}</div>
+            <p class="text-[11px] text-slate-400">Pagamentos aprovados no Pix</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Faturamento Pendente</span>
+            <div class="text-2xl font-black text-amber-500">R$ {{ summary.total_pending|floatformat:2 }}</div>
+            <p class="text-[11px] text-slate-400">Aguardando comprovante</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Participantes Cadastrados</span>
+            <div class="text-2xl font-black text-slate-900">{{ summary.total_participants }}</div>
+            <p class="text-[11px] text-slate-400">Total de colecionadores únicos</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total de Reservas</span>
+            <div class="text-2xl font-black text-pink-600">{{ summary.total_claims_count }}</div>
+            <p class="text-[11px] text-slate-400">Photocards e inclusões alocados</p>
+        </div>
+    </div>
+
+    <!-- Grid de Relatórios -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Integrantes Mais Disputados (Popularidade & Sold-out) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
+                        <span>🏆</span> Integrantes Mais Disputados
+                    </h2>
+                    <p class="text-xs text-slate-400">Ranking por taxa de reserva e velocidade de esgotamento</p>
+                </div>
+            </div>
+
+            {% if members %}
+                <div class="space-y-3 pt-2">
+                    {% for m in members %}
+                        <div class="p-3 rounded-xl border border-slate-100 hover:border-pink-200 bg-slate-50/50 space-y-2 transition">
+                            <div class="flex justify-between items-center text-xs">
+                                <div>
+                                    <strong class="text-slate-900 text-sm">{{ m.member_name }}</strong>
+                                    <span class="text-slate-400 ml-1">({{ m.group_name }})</span>
+                                </div>
+                                <div class="font-bold text-pink-600">
+                                    {{ m.claimed_slots }}/{{ m.total_slots }} slots ({{ m.claim_percentage }}%)
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                                <div class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: {{ m.claim_percentage }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-400 py-6 text-center">Nenhum dado de integrante registrado ainda.</p>
+            {% endif %}
+        </div>
+
+        <!-- Sets Próximos de Fechar (Fulfillment de Sets) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
+                        <span>📦</span> Sets Próximos de Fechar
+                    </h2>
+                    <p class="text-xs text-slate-400">Identifique quais conjuntos estão prontos para compra no fornecedor</p>
+                </div>
+            </div>
+
+            {% if sets_near %}
+                <div class="space-y-3 pt-2">
+                    {% for s in sets_near %}
+                        <div class="p-3 rounded-xl border border-slate-100 space-y-2 bg-slate-50/50">
+                            <div class="flex justify-between items-center text-xs">
+                                <div>
+                                    <strong class="text-slate-900">Set #{{ s.set_number }}</strong>
+                                    <span class="text-slate-500">• {{ s.ceg_title }} ({{ s.group_name }})</span>
+                                </div>
+                                {% if s.is_full %}
+                                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[11px]">
+                                        ✔ 100% Fechado
+                                    </span>
+                                {% else %}
+                                    <span class="text-slate-600 font-semibold text-[11px]">
+                                        Faltam {{ s.remaining_slots }} slots
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                                <div class="{% if s.is_full %}bg-emerald-500{% else %}bg-amber-500{% endif %} h-2 rounded-full transition-all duration-500"
+                                     style="width: {{ s.fill_percentage }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-400 py-6 text-center">Nenhum Set ativo no momento.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Desempenho Financeiro por Era -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div>
+            <h2 class="text-lg font-black text-slate-900 flex items-center gap-1.5">
+                <span>💰</span> Faturamento Consolidado por Era / Comeback
+            </h2>
+            <p class="text-xs text-slate-400">Total arrecadado e pendente agrupado pelas Eras dos grupos</p>
+        </div>
+
+        {% if financials %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 uppercase font-bold tracking-wider">
+                            <th class="py-3">Era / Comeback</th>
+                            <th class="py-3">Grupo</th>
+                            <th class="py-3">Reservas</th>
+                            <th class="py-3">Confirmado (Pago)</th>
+                            <th class="py-3">Pendente</th>
+                            <th class="py-3">Receita Total Potencial</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for f in financials %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3.5 font-bold text-slate-900">{{ f.era_name }}</td>
+                                <td class="py-3.5 text-pink-600 font-semibold">{{ f.group_name }}</td>
+                                <td class="py-3.5">{{ f.claims_count }} itens</td>
+                                <td class="py-3.5 text-emerald-600 font-bold">R$ {{ f.paid_amount|floatformat:2 }}</td>
+                                <td class="py-3.5 text-amber-500 font-bold">R$ {{ f.pending_amount|floatformat:2 }}</td>
+                                <td class="py-3.5 text-slate-900 font-black">R$ {{ f.total_amount|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-xs text-slate-400 py-6 text-center">Nenhum registro financeiro registrado ainda.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

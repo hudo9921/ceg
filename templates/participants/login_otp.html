@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Consulta por WhatsApp — K-pop CEG Manager{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-8">
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
+        
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-sm">
+                💬
+            </div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">
+                Consulta Sem Senha
+            </h1>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Acesse suas reservas, status de pagamento e chave Pix utilizando apenas o seu WhatsApp.
+            </p>
+        </div>
+
+        {% if step == 'verify' %}
+            <!-- Etapa 2: Digitar o código de 6 dígitos -->
+            <form action="{% url 'login_otp' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="verify_otp">
+                <input type="hidden" name="phone" value="{{ phone }}">
+
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs text-center">
+                    Código enviado para <strong>+{{ phone }}</strong> via WhatsApp!
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 text-center">
+                        Digite o Código de 6 Dígitos
+                    </label>
+                    <input type="text" name="code" maxlength="6" pattern="[0-9]{6}" required autofocus
+                           placeholder="Ex: 123456"
+                           class="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-black text-sm rounded-xl shadow-md transition">
+                    ✨ Acessar Minhas Reservas
+                </button>
+
+                <div class="pt-2 text-center text-xs text-slate-400">
+                    <a href="{% url 'login_otp' %}" class="hover:text-pink-600">
+                        ← Digitar outro número de WhatsApp
+                    </a>
+                </div>
+            </form>
+
+        {% else %}
+            <!-- Etapa 1: Digitar o telefone WhatsApp -->
+            <form action="{% url 'login_otp' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_otp">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Número de WhatsApp (com DDD)
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm font-semibold">
+                            🇧🇷 +55
+                        </span>
+                        <input type="tel" name="phone" required autofocus
+                               value="{{ phone|default:'' }}"
+                               placeholder="11999998888"
+                               class="w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    </div>
+                    <span class="text-[11px] text-slate-400 mt-1 block">
+                        Informe o mesmo número utilizado ao reservar seus itens.
+                    </span>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <span>📲</span>
+                    <span>Receber Código de 6 Dígitos</span>
+                </button>
+            </form>
+        {% endif %}
+
+        <div class="border-t border-slate-100 pt-4 text-center text-[11px] text-slate-400">
+            🔒 Seus dados são protegidos e usados apenas para a gestão de reservas de K-pop.
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
