@@ -128,6 +128,16 @@ class MyClaimsView(View):
         pending_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PENDING)
         paid_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PAID)
 
+        # Contagens de frete inter e taxa não pagos (apenas quando o valor cadastrado na CEG for > 0)
+        inter_unpaid_count = sum(
+            1 for c in claims_list
+            if c.slot.set.ceg.frete_inter and c.slot.set.ceg.frete_inter > 0 and not c.slot.is_frete_inter_paid
+        )
+        taxa_unpaid_count = sum(
+            1 for c in claims_list
+            if c.slot.set.ceg.taxa_aduaneira and c.slot.set.ceg.taxa_aduaneira > 0 and not c.slot.is_taxa_aduaneira_paid
+        )
+
         # Agrupamento de reservas por CEG para facilitar o pagamento e visualização
         cegs_dict = {}
         groups_dict = {}
@@ -153,6 +163,8 @@ class MyClaimsView(View):
                     'total_paid': 0,
                     'count_pending': 0,
                     'count_paid': 0,
+                    'count_inter_unpaid': 0,
+                    'count_taxa_unpaid': 0,
                 }
             cegs_dict[ceg.id]['claims'].append(claim)
             if claim.status == Claim.Status.PENDING:
@@ -161,6 +173,11 @@ class MyClaimsView(View):
             elif claim.status == Claim.Status.PAID:
                 cegs_dict[ceg.id]['total_paid'] += claim.total_price
                 cegs_dict[ceg.id]['count_paid'] += 1
+
+            if ceg.frete_inter and ceg.frete_inter > 0 and not claim.slot.is_frete_inter_paid:
+                cegs_dict[ceg.id]['count_inter_unpaid'] += 1
+            if ceg.taxa_aduaneira and ceg.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid:
+                cegs_dict[ceg.id]['count_taxa_unpaid'] += 1
 
         total_pending_all = sum(c['total_pending'] for c in cegs_dict.values())
         total_paid_all = sum(c['total_paid'] for c in cegs_dict.values())
@@ -174,6 +191,8 @@ class MyClaimsView(View):
                 'items_count': len(c_data['claims']),
                 'count_pending': c_data['count_pending'],
                 'count_paid': c_data['count_paid'],
+                'count_inter_unpaid': c_data['count_inter_unpaid'],
+                'count_taxa_unpaid': c_data['count_taxa_unpaid'],
             }
             for c_data in cegs_dict.values()
         ]
@@ -193,12 +212,15 @@ class MyClaimsView(View):
             'total_claims_count': total_claims_count,
             'pending_claims_count': pending_claims_count,
             'paid_claims_count': paid_claims_count,
+            'inter_unpaid_count': inter_unpaid_count,
+            'taxa_unpaid_count': taxa_unpaid_count,
             'total_pending_all': total_pending_all,
             'total_paid_all': total_paid_all,
             'is_placeholder_name': is_placeholder_name,
             'notifications': notifications,
             'unread_notifications_count': unread_notifications_count,
         })
+
 
     def post(self, request):
         return ProfileUpdateView.as_view()(request)

@@ -302,18 +302,36 @@
                         {{ paid_claims_count }}
                     </span>
                 </button>
+                <button type="button" @click="statusFilter = 'INTER_UNPAID'"
+                        :class="statusFilter === 'INTER_UNPAID' ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                    <span>✈️ Inter Não Pago</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                          :class="statusFilter === 'INTER_UNPAID' ? 'bg-blue-700 text-white' : 'bg-blue-200 text-blue-900'">
+                        {{ inter_unpaid_count }}
+                    </span>
+                </button>
+                <button type="button" @click="statusFilter = 'TAXA_UNPAID'"
+                        :class="statusFilter === 'TAXA_UNPAID' ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                    <span>🏛️ Taxa Não Paga</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                          :class="statusFilter === 'TAXA_UNPAID' ? 'bg-purple-700 text-white' : 'bg-purple-200 text-purple-900'">
+                        {{ taxa_unpaid_count }}
+                    </span>
+                </button>
 
                 <!-- Feedback de filtro ativo -->
                 <div x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL'" class="ml-auto text-xs text-slate-500 font-medium flex items-center gap-1">
                     <span>Filtro ativo:</span>
                     <span class="font-bold text-pink-600"
-                          x-text="(statusFilter === 'PENDING' ? 'Faltam Pagar' : (statusFilter === 'PAID' ? 'Já Pagos' : 'Todos')) + (selectedGroup ? ' • Grupo filtrado' : '') + (selectedCeg ? ' • CEG filtrada' : '')"></span>
+                          x-text="(statusFilter === 'PENDING' ? 'Faltam Pagar' : (statusFilter === 'PAID' ? 'Já Pagos' : (statusFilter === 'INTER_UNPAID' ? 'Inter Não Pago' : (statusFilter === 'TAXA_UNPAID' ? 'Taxa Não Paga' : 'Todos')))) + (selectedGroup ? ' • Grupo filtrado' : '') + (selectedCeg ? ' • CEG filtrada' : '')"></span>
                 </div>
             </div>
         </div>
 
         {% for group in cegs_groups %}
-            <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', {{ group.count_pending }}, {{ group.count_paid }})"
+            <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }})"
                  class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm space-y-4">
                 
                 <!-- CEG Header -->
@@ -346,32 +364,50 @@
                                 </strong>
                             </div>
                         {% endif %}
+                        {% if group.count_inter_unpaid > 0 %}
+                            <div class="text-xs" x-show="statusFilter === 'INTER_UNPAID'">
+                                <span class="text-slate-500">Inter Pendente:</span>
+                                <strong class="text-blue-600 font-bold block text-sm">
+                                    {{ group.count_inter_unpaid }} {% if group.count_inter_unpaid == 1 %}item{% else %}itens{% endif %}
+                                </strong>
+                            </div>
+                        {% endif %}
+                        {% if group.count_taxa_unpaid > 0 %}
+                            <div class="text-xs" x-show="statusFilter === 'TAXA_UNPAID'">
+                                <span class="text-slate-500">Taxa Pendente:</span>
+                                <strong class="text-purple-600 font-bold block text-sm">
+                                    {{ group.count_taxa_unpaid }} {% if group.count_taxa_unpaid == 1 %}item{% else %}itens{% endif %}
+                                </strong>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <!-- Chave Pix da CEG (se houver pendente) -->
-                {% if group.total_pending > 0 and group.ceg.pix_key %}
-                    <div x-show="statusFilter === 'ALL' || statusFilter === 'PENDING'"
-                         class="mx-5 p-4 bg-gradient-to-r from-amber-50 to-pink-50 border border-amber-200 rounded-xl flex flex-col md:flex-row justify-between items-center gap-3">
-                        <div class="space-y-1 text-center md:text-left">
-                            <div class="text-xs font-bold text-slate-800">
-                                🔑 Chave Pix para Pagamento desta CEG:
-                            </div>
-                            <div class="font-mono text-xs font-bold text-pink-700 select-all">
-                                {{ group.ceg.pix_key }}
-                            </div>
-                            {% if group.ceg.pix_instructions %}
-                                <div class="text-[11px] text-slate-600">
-                                    {{ group.ceg.pix_instructions }}
+                {% if group.ceg.pix_key %}
+                    {% if group.count_pending > 0 or group.count_inter_unpaid > 0 or group.count_taxa_unpaid > 0 %}
+                        <div x-show="statusFilter === 'ALL' || (statusFilter === 'PENDING' && {{ group.count_pending }} > 0) || (statusFilter === 'INTER_UNPAID' && {{ group.count_inter_unpaid }} > 0) || (statusFilter === 'TAXA_UNPAID' && {{ group.count_taxa_unpaid }} > 0)"
+                             class="mx-5 p-4 bg-gradient-to-r from-amber-50 to-pink-50 border border-amber-200 rounded-xl flex flex-col md:flex-row justify-between items-center gap-3">
+                            <div class="space-y-1 text-center md:text-left">
+                                <div class="text-xs font-bold text-slate-800">
+                                    🔑 Chave Pix para Pagamento desta CEG:
                                 </div>
-                            {% endif %}
-                        </div>
+                                <div class="font-mono text-xs font-bold text-pink-700 select-all">
+                                    {{ group.ceg.pix_key }}
+                                </div>
+                                {% if group.ceg.pix_instructions %}
+                                    <div class="text-[11px] text-slate-600">
+                                        {{ group.ceg.pix_instructions }}
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                        <button type="button" @click="copyPix('{{ group.ceg.pix_key }}')"
-                                class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg transition shadow-sm flex-shrink-0">
-                            📋 Copiar Chave Pix
-                        </button>
-                    </div>
+                            <button type="button" @click="copyPix('{{ group.ceg.pix_key }}')"
+                                    class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg transition shadow-sm flex-shrink-0">
+                                📋 Copiar Chave Pix
+                            </button>
+                        </div>
+                    {% endif %}
                 {% endif %}
 
                 <!-- Tabela de Itens -->
@@ -386,13 +422,13 @@
                                 <th class="py-2.5 text-center">1. Item</th>
                                 <th class="py-2.5 text-center">
                                     2. Frete Inter
-                                    {% if group.ceg.frete_inter is not None %}
+                                    {% if group.ceg.frete_inter and group.ceg.frete_inter > 0 %}
                                         <span class="block text-[9px] text-blue-600 font-semibold lowercase">(R$ {{ group.ceg.frete_inter|floatformat:2 }})</span>
                                     {% endif %}
                                 </th>
                                 <th class="py-2.5 text-center">
                                     3. Taxa
-                                    {% if group.ceg.taxa_aduaneira is not None %}
+                                    {% if group.ceg.taxa_aduaneira and group.ceg.taxa_aduaneira > 0 %}
                                         <span class="block text-[9px] text-purple-600 font-semibold lowercase">(R$ {{ group.ceg.taxa_aduaneira|floatformat:2 }})</span>
                                     {% endif %}
                                 </th>
@@ -401,7 +437,7 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100 text-slate-700">
                             {% for claim in group.claims %}
-                                <tr x-show="statusFilter === 'ALL' || statusFilter === '{{ claim.status }}'">
+                                <tr x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if group.ceg.frete_inter and group.ceg.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if group.ceg.taxa_aduaneira and group.ceg.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %})">
                                     <td class="py-3 font-bold text-slate-900">
                                         Set #{{ claim.slot.set.set_number }}
                                     </td>
@@ -432,25 +468,33 @@
                                         {% endif %}
                                     </td>
                                     <td class="py-3 text-center">
-                                        {% if claim.slot.is_frete_inter_paid %}
-                                            <span class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-[11px]">
-                                                ✔ Pago
-                                            </span>
+                                        {% if group.ceg.frete_inter and group.ceg.frete_inter > 0 %}
+                                            {% if claim.slot.is_frete_inter_paid %}
+                                                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-[11px]">
+                                                    ✔ Pago
+                                                </span>
+                                            {% else %}
+                                                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[11px]">
+                                                    ⏳ Pendente
+                                                </span>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[11px]">
-                                                ⏳ Pendente
-                                            </span>
+                                            <span class="text-slate-300 font-bold text-xs" title="Não aplicável">—</span>
                                         {% endif %}
                                     </td>
                                     <td class="py-3 text-center">
-                                        {% if claim.slot.is_taxa_aduaneira_paid %}
-                                            <span class="px-2 py-0.5 bg-purple-100 text-purple-800 font-bold rounded text-[11px]">
-                                                ✔ Pago
-                                            </span>
+                                        {% if group.ceg.taxa_aduaneira and group.ceg.taxa_aduaneira > 0 %}
+                                            {% if claim.slot.is_taxa_aduaneira_paid %}
+                                                <span class="px-2 py-0.5 bg-purple-100 text-purple-800 font-bold rounded text-[11px]">
+                                                    ✔ Pago
+                                                </span>
+                                            {% else %}
+                                                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[11px]">
+                                                    ⏳ Pendente
+                                                </span>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[11px]">
-                                                ⏳ Pendente
-                                            </span>
+                                            <span class="text-slate-300 font-bold text-xs" title="Não aplicável">—</span>
                                         {% endif %}
                                     </td>
                                     <td class="py-3 text-slate-400">
@@ -478,7 +522,7 @@
 
         <!-- Mensagem quando filtros não encontram correspondência -->
         {% if cegs_groups %}
-            <div x-show="allCegs.length > 0 && !allCegs.some(c => matchesCeg(c.groupId, c.id, c.countPending, c.countPaid))"
+            <div x-show="allCegs.length > 0 && !allCegs.some(c => matchesCeg(c.groupId, c.id, c.countPending, c.countPaid, c.countInterUnpaid, c.countTaxaUnpaid))"
                  class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500 space-y-2">
                 <div class="text-3xl">🔍</div>
                 <p class="text-sm font-bold text-slate-800">Nenhuma reserva encontrada para os filtros selecionados.</p>
@@ -611,7 +655,9 @@ function myClaimsApp() {
             groupId: String(c.group_id),
             count: c.items_count,
             countPending: c.count_pending,
-            countPaid: c.count_paid
+            countPaid: c.count_paid,
+            countInterUnpaid: c.count_inter_unpaid || 0,
+            countTaxaUnpaid: c.count_taxa_unpaid || 0
         })),
         get filteredCegsOptions() {
             if (!this.selectedGroup) return this.allCegs;
@@ -628,11 +674,21 @@ function myClaimsApp() {
             this.selectedCeg = '';
             this.statusFilter = 'ALL';
         },
-        matchesCeg(groupId, cegId, countPending, countPaid) {
+        matchesCeg(groupId, cegId, countPending, countPaid, countInterUnpaid = 0, countTaxaUnpaid = 0) {
             if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
             if (this.selectedCeg && String(this.selectedCeg) !== String(cegId)) return false;
             if (this.statusFilter === 'PENDING' && countPending === 0) return false;
             if (this.statusFilter === 'PAID' && countPaid === 0) return false;
+            if (this.statusFilter === 'INTER_UNPAID' && countInterUnpaid === 0) return false;
+            if (this.statusFilter === 'TAXA_UNPAID' && countTaxaUnpaid === 0) return false;
+            return true;
+        },
+        matchesRow(filter, claimStatus, isInterUnpaid, isTaxaUnpaid) {
+            if (filter === 'ALL') return true;
+            if (filter === 'PENDING') return claimStatus === 'PENDING';
+            if (filter === 'PAID') return claimStatus === 'PAID';
+            if (filter === 'INTER_UNPAID') return isInterUnpaid;
+            if (filter === 'TAXA_UNPAID') return isTaxaUnpaid;
             return true;
         },
         copyPix(key) {

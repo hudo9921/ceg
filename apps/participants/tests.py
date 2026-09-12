@@ -159,6 +159,90 @@ class ParticipantProfileTests(TestCase):
         self.assertContains(response, 'Faltam Pagar')
         self.assertContains(response, 'Confirmados')
 
+    def test_my_claims_frete_and_taxa_not_shown_as_pending_when_zero_or_none(self):
+        from decimal import Decimal
+        from apps.groups.models import KpopGroup, Era
+        from apps.cegs.models import CEG, CEGSet, CEGItemDefinition, ItemSlot
+        from apps.participants.models import Claim
+        from django.utils import timezone
+
+        group = KpopGroup.objects.create(name='TWICE')
+        era = Era.objects.create(group=group, name='With YOU-th')
+        ceg = CEG.objects.create(
+            era=era,
+            title='CEG Makestar',
+            opens_at=timezone.now() - timezone.timedelta(hours=1),
+            frete_inter=Decimal('0.00'),
+            taxa_aduaneira=Decimal('0.00')
+        )
+        set_obj = CEGSet.objects.create(ceg=ceg, set_number=1)
+        item = CEGItemDefinition.objects.create(ceg=ceg, name='Photocard Momo', item_type='PHOTOCARD')
+        slot = ItemSlot.objects.create(
+            set=set_obj, item_definition=item, price=45.00,
+            status=ItemSlot.Status.RESERVED, claimed_by=self.participant,
+            is_frete_inter_paid=False, is_taxa_aduaneira_paid=False
+        )
+        Claim.objects.create(slot=slot, participant=self.participant, status=Claim.Status.PENDING, total_price=45.00)
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        response = self.client.get('/me/')
+        self.assertEqual(response.status_code, 200)
+
+        # Contagens de inadimplência devem ser zero porque frete e taxa são 0
+        self.assertEqual(response.context['inter_unpaid_count'], 0)
+        self.assertEqual(response.context['taxa_unpaid_count'], 0)
+
+        # Não deve mostrar (R$ 0,00) nos cabeçalhos
+        content = response.content.decode('utf-8')
+        self.assertNotIn('(R$ 0,00)', content)
+        self.assertNotIn('(r$ 0,00)', content)
+
+    def test_my_claims_frete_and_taxa_shown_when_greater_than_zero(self):
+        from decimal import Decimal
+        from apps.groups.models import KpopGroup, Era
+        from apps.cegs.models import CEG, CEGSet, CEGItemDefinition, ItemSlot
+        from apps.participants.models import Claim
+        from django.utils import timezone
+
+        group = KpopGroup.objects.create(name='LE SSERAFIM')
+        era = Era.objects.create(group=group, name='EASY')
+        ceg = CEG.objects.create(
+            era=era,
+            title='CEG Weverse EASY',
+            opens_at=timezone.now() - timezone.timedelta(hours=1),
+            frete_inter=Decimal('12.50'),
+            taxa_aduaneira=Decimal('6.00')
+        )
+        set_obj = CEGSet.objects.create(ceg=ceg, set_number=1)
+        item = CEGItemDefinition.objects.create(ceg=ceg, name='Photocard Chaewon', item_type='PHOTOCARD')
+        slot = ItemSlot.objects.create(
+            set=set_obj, item_definition=item, price=50.00,
+            status=ItemSlot.Status.RESERVED, claimed_by=self.participant,
+            is_frete_inter_paid=False, is_taxa_aduaneira_paid=False
+        )
+        Claim.objects.create(slot=slot, participant=self.participant, status=Claim.Status.PENDING, total_price=50.00)
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        response = self.client.get('/me/')
+        self.assertEqual(response.status_code, 200)
+
+        # Contagens de inadimplência devem contabilizar o item com frete/taxa > 0
+        self.assertEqual(response.context['inter_unpaid_count'], 1)
+        self.assertEqual(response.context['taxa_unpaid_count'], 1)
+
+        # Cabeçalhos com os valores
+        self.assertContains(response, 'R$ 12,50')
+        self.assertContains(response, 'R$ 6,00')
+        # Filtros pills
+        self.assertContains(response, 'Inter Não Pago')
+        self.assertContains(response, 'Taxa Não Paga')
+
 
 class ParticipantNotificationTests(TestCase):
     def setUp(self):
