@@ -3,29 +3,9 @@
 {% block title %}Status e Completude das CEGs | Painel do Organizador{% endblock %}
 
 {% block content %}
-<div class="space-y-8"
-     x-data="{
-         selectedGroup: '{{ selected_group|default:'' }}',
-         selectedEra: '{{ selected_era|default:'' }}',
-         filterOptions: {{ filter_options_json|safe }},
-         get availableEras() {
-             if (!this.selectedGroup) return this.filterOptions.eras;
-             return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
-         },
-         onGroupChange() {
-             this.selectedEra = '';
-             this.applyFilter();
-         },
-         applyFilter() {
-             const params = new URLSearchParams();
-             if (this.selectedGroup) params.set('group', this.selectedGroup);
-             if (this.selectedEra) params.set('era', this.selectedEra);
-             window.location.search = params.toString();
-         },
-         clearFilters() {
-             window.location.href = '{% url 'cegs_status' %}';
-         }
-     }">
+{{ filter_options|json_script:"filter-options-data" }}
+
+<div class="space-y-8" x-data="cegStatusApp()">
 
     <!-- Top Navigation Tabs entre os dois módulos de métricas -->
     <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -119,51 +99,108 @@
         </div>
     </div>
 
-    <!-- 4 Cards de Resumo Operacional (KPIs) -->
+    <!-- 4 Cards de Resumo Operacional (KPIs) - CLICÁVEIS PARA FILTRAR -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Total de CEGs -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-2">
-            <div class="flex items-center justify-between text-slate-500">
-                <span class="text-xs font-bold uppercase tracking-wider">CEGs Ativas</span>
-                <span class="p-2 bg-purple-50 text-purple-600 rounded-xl text-base">📋</span>
+        <!-- Card 1: Total de CEGs Ativas (Filtro: Todas) -->
+        <div @click="setCardFilter('all')"
+             class="p-5 rounded-2xl border transition-all duration-200 cursor-pointer shadow-sm flex flex-col justify-between space-y-2 select-none relative group"
+             :class="activeCardFilter === 'all'
+                 ? 'bg-purple-50/80 border-purple-500 ring-2 ring-purple-300 shadow-md scale-[1.01]'
+                 : 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'all' ? 'text-purple-900' : 'text-slate-500'">
+                    CEGS ATIVAS
+                </span>
+                <span class="p-2 rounded-xl text-base transition"
+                      :class="activeCardFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-600'">
+                    📋
+                </span>
             </div>
             <div>
-                <div class="text-2xl sm:text-3xl font-black text-slate-900">{{ summary.open_cegs }}</div>
+                <div class="flex items-baseline gap-2">
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900">{{ summary.open_cegs }}</div>
+                    <span x-show="activeCardFilter === 'all'"
+                          class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-600 text-white shadow-2xs">
+                        Todas
+                    </span>
+                </div>
                 <div class="text-[11px] text-slate-400 font-semibold mt-0.5">
                     De um total de {{ summary.total_cegs }} CEGs cadastradas
                 </div>
+                <div class="text-[10px] font-bold mt-2 pt-1 border-t border-purple-100/80 flex items-center gap-1 text-purple-700">
+                    <span>👆 Clique para mostrar todas</span>
+                </div>
             </div>
         </div>
 
-        <!-- Sets Completos com Pendências -->
-        <div class="bg-white p-5 rounded-2xl border border-amber-200 bg-amber-50/20 shadow-sm flex flex-col justify-between space-y-2">
-            <div class="flex items-center justify-between text-amber-800">
-                <span class="text-xs font-bold uppercase tracking-wider">Sets 100% Fechados</span>
-                <span class="p-2 bg-amber-100 text-amber-700 rounded-xl text-base">⚠️</span>
+        <!-- Card 2: Sets Completos com Pendências (Filtro: 100% Fechados) -->
+        <div @click="setCardFilter('completed')"
+             class="p-5 rounded-2xl border transition-all duration-200 cursor-pointer shadow-sm flex flex-col justify-between space-y-2 select-none relative group"
+             :class="activeCardFilter === 'completed'
+                 ? 'bg-amber-100/70 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
+                 : 'bg-amber-50/20 border-amber-200 hover:border-amber-400 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'completed' ? 'text-amber-950 font-black' : 'text-amber-800'">
+                    SETS 100% FECHADOS
+                </span>
+                <span class="p-2 rounded-xl text-base transition"
+                      :class="activeCardFilter === 'completed' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700'">
+                    ⚠️
+                </span>
             </div>
             <div>
-                <div class="text-2xl sm:text-3xl font-black text-amber-900">{{ summary.completed_pending_sets_count }}</div>
+                <div class="flex items-baseline gap-2">
+                    <div class="text-2xl sm:text-3xl font-black text-amber-900">{{ summary.completed_pending_sets_count }}</div>
+                    <span x-show="activeCardFilter === 'completed'"
+                          class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-2xs">
+                        ✓ Filtrando
+                    </span>
+                </div>
                 <div class="text-[11px] text-amber-700 font-semibold mt-0.5">
                     Completos, aguardando frete/taxa/pagamento
                 </div>
-            </div>
-        </div>
-
-        <!-- Sets Incompletos (Vagas Abertas) -->
-        <div class="bg-white p-5 rounded-2xl border border-pink-200 bg-pink-50/20 shadow-sm flex flex-col justify-between space-y-2">
-            <div class="flex items-center justify-between text-pink-700">
-                <span class="text-xs font-bold uppercase tracking-wider">Sets c/ Vagas Abertas</span>
-                <span class="p-2 bg-pink-100 text-pink-600 rounded-xl text-base">⚡</span>
-            </div>
-            <div>
-                <div class="text-2xl sm:text-3xl font-black text-pink-900">{{ summary.incomplete_sets_count }}</div>
-                <div class="text-[11px] text-pink-600 font-semibold mt-0.5">
-                    Sets que precisam de claims para fechar
+                <div class="text-[10px] font-bold mt-2 pt-1 border-t border-amber-200 flex items-center gap-1 text-amber-800">
+                    <span>👆 Clique para filtrar sets fechados</span>
                 </div>
             </div>
         </div>
 
-        <!-- Taxa Global de Ocupação -->
+        <!-- Card 3: Sets Incompletos (Filtro: Vagas Abertas) -->
+        <div @click="setCardFilter('incomplete')"
+             class="p-5 rounded-2xl border transition-all duration-200 cursor-pointer shadow-sm flex flex-col justify-between space-y-2 select-none relative group"
+             :class="activeCardFilter === 'incomplete'
+                 ? 'bg-pink-100/70 border-pink-500 ring-2 ring-pink-400 shadow-md scale-[1.01]'
+                 : 'bg-pink-50/20 border-pink-200 hover:border-pink-400 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'incomplete' ? 'text-pink-950 font-black' : 'text-pink-700'">
+                    SETS C/ VAGAS ABERTAS
+                </span>
+                <span class="p-2 rounded-xl text-base transition"
+                      :class="activeCardFilter === 'incomplete' ? 'bg-pink-600 text-white' : 'bg-pink-100 text-pink-600'">
+                    ⚡
+                </span>
+            </div>
+            <div>
+                <div class="flex items-baseline gap-2">
+                    <div class="text-2xl sm:text-3xl font-black text-pink-900">{{ summary.incomplete_sets_count }}</div>
+                    <span x-show="activeCardFilter === 'incomplete'"
+                          class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-pink-600 text-white shadow-2xs">
+                        ✓ Filtrando
+                    </span>
+                </div>
+                <div class="text-[11px] text-pink-600 font-semibold mt-0.5">
+                    Sets que precisam de claims para fechar
+                </div>
+                <div class="text-[10px] font-bold mt-2 pt-1 border-t border-pink-200 flex items-center gap-1 text-pink-700">
+                    <span>👆 Clique para filtrar vagas abertas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Taxa Global de Ocupação -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-2">
             <div class="flex items-center justify-between text-slate-500">
                 <span class="text-xs font-bold uppercase tracking-wider">Ocupação Global</span>
@@ -174,12 +211,36 @@
                 <div class="text-[11px] text-slate-400 font-semibold mt-0.5">
                     {{ summary.reserved_slots }}/{{ summary.total_slots }} slots ocupados ({{ summary.available_slots }} livres)
                 </div>
+                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
+                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: {{ summary.global_occupancy }}%"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Banner Informativo quando Filtro dos Cards está Ativo -->
+    <div x-show="activeCardFilter !== 'all'"
+         x-cloak
+         class="p-3.5 bg-gradient-to-r from-pink-50 via-purple-50 to-indigo-50 border border-pink-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-2.5 text-xs text-slate-800">
+            <span class="text-base">🔍</span>
+            <span class="font-bold">Filtro rápido dos cards ativo:</span>
+            <span class="px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider shadow-2xs"
+                  :class="activeCardFilter === 'completed' ? 'bg-amber-500 text-white' : 'bg-pink-600 text-white'"
+                  x-text="activeCardFilter === 'completed' ? 'Exibindo apenas CEGs e Sets 100% Fechados' : 'Exibindo apenas CEGs e Sets com Vagas Abertas'">
+            </span>
+        </div>
+        <button type="button"
+                @click="setCardFilter('all')"
+                class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-300 text-xs transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-2xs">
+            <span>✕</span> Limpar filtro dos cards (Mostrar tudo)
+        </button>
+    </div>
+
     <!-- SEÇÃO 1: Sets Incompletos e o que falta para completá-los -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+    <div x-show="activeCardFilter === 'all' || activeCardFilter === 'incomplete'"
+         x-transition
+         class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
             <div>
                 <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -272,7 +333,9 @@
     </div>
 
     <!-- SEÇÃO 2: Sets Completos, porém ainda não finalizados (Pendências) -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+    <div x-show="activeCardFilter === 'all' || activeCardFilter === 'completed'"
+         x-transition
+         class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
             <div>
                 <h2 class="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -372,9 +435,18 @@
                     Consolidação financeira de itens, fretes, taxas e prazos por compra em grupo.
                 </p>
             </div>
-            <span class="text-xs text-slate-500 font-bold">
-                Total: {{ cegs_overview|length }} CEG(s)
-            </span>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-500 font-bold" x-text="getCegTableSubtext()">
+                    Total: {{ cegs_overview|length }} CEG(s)
+                </span>
+                <button type="button"
+                        x-show="activeCardFilter !== 'all'"
+                        x-cloak
+                        @click="setCardFilter('all')"
+                        class="text-[11px] font-bold text-pink-600 hover:text-pink-800 transition">
+                    (Ver todas)
+                </button>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -395,7 +467,9 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for c in cegs_overview %}
-                        <tr class="hover:bg-slate-50/80 transition">
+                        <tr x-show="isCegRowVisible({{ c.has_completed_sets|yesno:'true,false' }}, {{ c.has_incomplete_sets|yesno:'true,false' }})"
+                            x-transition
+                            class="hover:bg-slate-50/80 transition">
                             <td class="py-3 px-4">
                                 <div class="font-black text-slate-900 text-sm leading-snug">{{ c.title }}</div>
                                 <div class="text-[11px] text-slate-500 font-semibold">
@@ -449,6 +523,12 @@
                                 </a>
                             </td>
                         </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="10" class="py-6 text-center text-slate-400">
+                                Nenhuma CEG encontrada com os filtros selecionados.
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -456,4 +536,57 @@
     </div>
 
 </div>
+
+<script>
+function cegStatusApp() {
+    return {
+        selectedGroup: '{{ selected_group|default:"" }}',
+        selectedEra: '{{ selected_era|default:"" }}',
+        activeCardFilter: 'all', // 'all', 'completed', 'incomplete'
+        filterOptions: JSON.parse(document.getElementById('filter-options-data').textContent),
+        get availableEras() {
+            if (!this.selectedGroup) return this.filterOptions.eras;
+            return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+        },
+        onGroupChange() {
+            this.selectedEra = '';
+            this.applyFilter();
+        },
+        applyFilter() {
+            const params = new URLSearchParams();
+            if (this.selectedGroup) params.set('group', this.selectedGroup);
+            if (this.selectedEra) params.set('era', this.selectedEra);
+            window.location.search = params.toString();
+        },
+        clearFilters() {
+            window.location.href = '{% url "cegs_status" %}';
+        },
+        setCardFilter(filterName) {
+            if (this.activeCardFilter === filterName && filterName !== 'all') {
+                this.activeCardFilter = 'all';
+            } else {
+                this.activeCardFilter = filterName;
+            }
+        },
+        isCegRowVisible(hasCompleted, hasIncomplete) {
+            if (this.activeCardFilter === 'completed') {
+                return Boolean(hasCompleted);
+            }
+            if (this.activeCardFilter === 'incomplete') {
+                return Boolean(hasIncomplete);
+            }
+            return true;
+        },
+        getCegTableSubtext() {
+            if (this.activeCardFilter === 'completed') {
+                return 'Filtrando: apenas CEGs com sets 100% fechados';
+            }
+            if (this.activeCardFilter === 'incomplete') {
+                return 'Filtrando: apenas CEGs com vagas abertas';
+            }
+            return 'Exibindo todas as {{ cegs_overview|length }} CEG(s)';
+        }
+    };
+}
+</script>
 {% endblock %}

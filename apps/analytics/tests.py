@@ -241,3 +241,31 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('detailed_inventory', data)
         self.assertEqual(data['summary']['total_sold'], 80.00)
 
+    def test_card_filter_flags_in_cegs_overview(self):
+        status_data = AnalyticsService.get_cegs_operational_status()
+        cegs_overview = status_data['cegs_overview']
+        self.assertTrue(len(cegs_overview) >= 2)
+        for c in cegs_overview:
+            self.assertIn('has_completed_sets', c)
+            self.assertIn('has_incomplete_sets', c)
+            self.assertIn('completed_pending_sets', c)
+            self.assertIn('incomplete_sets', c)
+
+    def test_no_raw_javascript_leak_in_rendered_templates(self):
+        # Verifica ceg_status.html
+        res_cegs = self.client.get('/analytics/cegs/')
+        self.assertEqual(res_cegs.status_code, 200)
+        # O padrão que vazava anteriormente vinha de arrow functions e aspas em atributos
+        self.assertNotContains(res_cegs, 'String(e.group_id) === String(this.selectedGroup)); }, onGroupChange()')
+        self.assertContains(res_cegs, 'filter-options-data')
+        self.assertContains(res_cegs, 'setCardFilter')
+        self.assertContains(res_cegs, 'activeCardFilter')
+
+        # Verifica sales_report.html
+        res_sales = self.client.get('/analytics/vendas/')
+        self.assertEqual(res_sales.status_code, 200)
+        self.assertNotContains(res_sales, 'String(e.group_id) === String(this.selectedGroup)); }, onGroupChange()')
+        self.assertContains(res_sales, 'filter-options-data')
+        self.assertContains(res_sales, 'chart-data')
+        self.assertContains(res_sales, 'salesReportApp')
+

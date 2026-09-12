@@ -522,6 +522,9 @@ class AnalyticsService:
             frete_inter_paid_slots = ceg_slots.filter(is_frete_inter_paid=True).count()
             taxa_paid_slots = ceg_slots.filter(is_taxa_aduaneira_paid=True).count()
 
+            ceg_completed_cnt = sum(1 for s in sets_completed_pending if s['ceg_id'] == ceg.id)
+            ceg_incomplete_cnt = sum(1 for s in sets_incomplete if s['ceg_id'] == ceg.id)
+
             cegs_overview.append({
                 'ceg_id': ceg.id,
                 'title': ceg.title,
@@ -535,6 +538,10 @@ class AnalyticsService:
                 'sold_slots': ceg_sold_slots_cnt,
                 'available_slots': ceg_avail_slots_cnt,
                 'fill_percentage': ceg_fill_pct,
+                'completed_pending_sets': ceg_completed_cnt,
+                'incomplete_sets': ceg_incomplete_cnt,
+                'has_completed_sets': ceg_completed_cnt > 0 or (ceg_sold_slots_cnt == ceg_total_slots_cnt and ceg_total_slots_cnt > 0),
+                'has_incomplete_sets': ceg_incomplete_cnt > 0 or ceg_avail_slots_cnt > 0,
                 'paid_amount': ceg_paid_val,
                 'pending_amount': ceg_pending_val,
                 'available_amount': ceg_avail_val,
