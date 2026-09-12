@@ -422,13 +422,9 @@ class AnalyticsService:
                         })
 
                     # 2. Frete Internacional
-                    if ceg.frete_inter is None:
-                        pending_reasons.append({
-                            'code': 'FRETE_INTER_NOT_SET',
-                            'title': 'Frete Internacional não cotado',
-                            'type': 'danger'
-                        })
-                    else:
+                    # Quando não existir valor (> 0) para frete, consideramos que ele não existe na CEG (não flagar pendência)
+                    has_frete = (ceg.frete_inter is not None and ceg.frete_inter > 0)
+                    if has_frete:
                         unpaid_frete = [s for s in slots if not s.is_frete_inter_paid]
                         if unpaid_frete:
                             pending_reasons.append({
@@ -438,13 +434,9 @@ class AnalyticsService:
                             })
 
                     # 3. Taxa Aduaneira
-                    if ceg.taxa_aduaneira is None:
-                        pending_reasons.append({
-                            'code': 'TAXA_NOT_SET',
-                            'title': 'Taxa Aduaneira aguardando Receita Federal',
-                            'type': 'info'
-                        })
-                    else:
+                    # Quando não existir valor (> 0) para taxa, consideramos que ela não existe na CEG (não flagar pendência)
+                    has_taxa = (ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0)
+                    if has_taxa:
                         unpaid_taxa = [s for s in slots if not s.is_taxa_aduaneira_paid]
                         if unpaid_taxa:
                             pending_reasons.append({
@@ -453,8 +445,8 @@ class AnalyticsService:
                                 'type': 'warning'
                             })
 
-                    # Se a CEG não estiver arquivada/fechada ou se houver pendências
-                    if pending_reasons or ceg.status != CEG.Status.CLOSED:
+                    # Apenas inclui em sets_completed_pending se houver de fato pendências ativas
+                    if pending_reasons:
                         sets_completed_pending.append({
                             'set_id': cset.id,
                             'set_number': cset.set_number,
@@ -469,10 +461,12 @@ class AnalyticsService:
                             'set_total_value': set_total_value,
                             'set_paid_value': set_paid_value,
                             'set_pending_value': set_pending_value,
-                            'frete_inter': float(ceg.frete_inter) if ceg.frete_inter is not None else None,
-                            'taxa_aduaneira': float(ceg.taxa_aduaneira) if ceg.taxa_aduaneira is not None else None,
+                            'has_frete': has_frete,
+                            'has_taxa': has_taxa,
+                            'frete_inter': float(ceg.frete_inter) if has_frete else None,
+                            'taxa_aduaneira': float(ceg.taxa_aduaneira) if has_taxa else None,
                             'pending_reasons': pending_reasons,
-                            'is_fully_paid': (len(items_unpaid) == 0 and (ceg.frete_inter is not None and not any(not s.is_frete_inter_paid for s in slots)) and (ceg.taxa_aduaneira is not None and not any(not s.is_taxa_aduaneira_paid for s in slots)))
+                            'is_fully_paid': False
                         })
 
                 else:
@@ -518,9 +512,11 @@ class AnalyticsService:
             ceg_pot_val = ceg_paid_val + ceg_pending_val + ceg_avail_val
             ceg_fill_pct = int((ceg_sold_slots_cnt / ceg_total_slots_cnt) * 100) if ceg_total_slots_cnt > 0 else 0
 
-            # Contadores de frete e taxa na CEG
-            frete_inter_paid_slots = ceg_slots.filter(is_frete_inter_paid=True).count()
-            taxa_paid_slots = ceg_slots.filter(is_taxa_aduaneira_paid=True).count()
+            # Contadores de frete e taxa na CEG (apenas quando existirem com valor > 0)
+            has_ceg_frete = (ceg.frete_inter is not None and ceg.frete_inter > 0)
+            has_ceg_taxa = (ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0)
+            frete_inter_paid_slots = ceg_slots.filter(is_frete_inter_paid=True).count() if has_ceg_frete else 0
+            taxa_paid_slots = ceg_slots.filter(is_taxa_aduaneira_paid=True).count() if has_ceg_taxa else 0
 
             ceg_completed_cnt = sum(1 for s in sets_completed_pending if s['ceg_id'] == ceg.id)
             ceg_incomplete_cnt = sum(1 for s in sets_incomplete if s['ceg_id'] == ceg.id)
@@ -546,12 +542,14 @@ class AnalyticsService:
                 'pending_amount': ceg_pending_val,
                 'available_amount': ceg_avail_val,
                 'total_potential': ceg_pot_val,
-                'frete_inter': float(ceg.frete_inter) if ceg.frete_inter is not None else None,
+                'has_frete': has_ceg_frete,
+                'has_taxa': has_ceg_taxa,
+                'frete_inter': float(ceg.frete_inter) if has_ceg_frete else None,
                 'frete_inter_paid_slots': frete_inter_paid_slots,
-                'prazo_frete_inter': ceg.prazo_pagamento_frete_inter,
-                'taxa_aduaneira': float(ceg.taxa_aduaneira) if ceg.taxa_aduaneira is not None else None,
+                'prazo_frete_inter': ceg.prazo_pagamento_frete_inter if has_ceg_frete else None,
+                'taxa_aduaneira': float(ceg.taxa_aduaneira) if has_ceg_taxa else None,
                 'taxa_paid_slots': taxa_paid_slots,
-                'prazo_taxa': ceg.prazo_pagamento_taxa_aduaneira,
+                'prazo_taxa': ceg.prazo_pagamento_taxa_aduaneira if has_ceg_taxa else None,
                 'prazo_item': ceg.prazo_pagamento_item,
             })
 

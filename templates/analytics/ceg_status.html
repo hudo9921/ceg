@@ -501,19 +501,19 @@
                                 R$ {{ c.total_potential|floatformat:2 }}
                             </td>
                             <td class="py-3 px-3 text-center">
-                                {% if c.frete_inter is not None %}
+                                {% if c.has_frete %}
                                     <span class="text-xs font-black text-blue-700 block">R$ {{ c.frete_inter|floatformat:2 }}</span>
                                     <span class="text-[10px] text-slate-400">{{ c.frete_inter_paid_slots }}/{{ c.sold_slots }} pagos</span>
                                 {% else %}
-                                    <span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-semibold">A definir</span>
+                                    <span class="text-[10px] text-slate-400 font-semibold">—</span>
                                 {% endif %}
                             </td>
                             <td class="py-3 px-3 text-center">
-                                {% if c.taxa_aduaneira is not None %}
+                                {% if c.has_taxa %}
                                     <span class="text-xs font-black text-purple-700 block">R$ {{ c.taxa_aduaneira|floatformat:2 }}</span>
                                     <span class="text-[10px] text-slate-400">{{ c.taxa_paid_slots }}/{{ c.sold_slots }} pagos</span>
                                 {% else %}
-                                    <span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-semibold">A definir</span>
+                                    <span class="text-[10px] text-slate-400 font-semibold">—</span>
                                 {% endif %}
                             </td>
                             <td class="py-3 px-4 text-center">

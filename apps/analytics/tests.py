@@ -192,11 +192,38 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('cegs_overview', data)
         self.assertIn('summary', data)
 
-        # Set do tripleS tem 1 slot preenchido de 1 (100% fechado), porém frete inter e taxa não foram cotados
+        # Set do tripleS tem 1 slot preenchido de 1 (100% fechado), com item pendente de pagamento
+        # Como frete_inter e taxa_aduaneira são nulos, NÃO devem ser flagados como pendência
         self.assertGreaterEqual(len(data['sets_completed_pending']), 1)
         completed = data['sets_completed_pending'][0]
         reasons = [r['code'] for r in completed['pending_reasons']]
-        self.assertIn('FRETE_INTER_NOT_SET', reasons)
+        self.assertIn('UNPAID_ITEMS', reasons)
+        self.assertNotIn('FRETE_INTER_NOT_SET', reasons)
+        self.assertNotIn('TAXA_NOT_SET', reasons)
+        self.assertNotIn('FRETE_INTER_UNPAID', reasons)
+        self.assertNotIn('TAXA_UNPAID', reasons)
+
+        # Se definirmos frete internacional na CEG (> 0), ele passa a existir e deve flagar pendência se não pago
+        self.ceg_triples.frete_inter = 15.00
+        self.ceg_triples.save()
+        data_with_frete = AnalyticsService.get_cegs_operational_status()
+        completed_with_frete = data_with_frete['sets_completed_pending'][0]
+        reasons_with_frete = [r['code'] for r in completed_with_frete['pending_reasons']]
+        self.assertIn('FRETE_INTER_UNPAID', reasons_with_frete)
+
+        # Ao marcar o frete como pago, a pendência de frete é removida
+        self.slot_seoyeon.is_frete_inter_paid = True
+        self.slot_seoyeon.save()
+        data_frete_paid = AnalyticsService.get_cegs_operational_status()
+        completed_frete_paid = data_frete_paid['sets_completed_pending'][0]
+        reasons_frete_paid = [r['code'] for r in completed_frete_paid['pending_reasons']]
+        self.assertNotIn('FRETE_INTER_UNPAID', reasons_frete_paid)
+
+        # Restaurar estado original
+        self.ceg_triples.frete_inter = None
+        self.ceg_triples.save()
+        self.slot_seoyeon.is_frete_inter_paid = False
+        self.slot_seoyeon.save()
 
         # Set do TWICE tem 1 slot preenchido (Jihyo) e 1 livre (Sana) -> incompleto
         self.assertGreaterEqual(len(data['sets_incomplete']), 1)
