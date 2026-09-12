@@ -984,6 +984,142 @@ class ManageSlotViewTests(TestCase):
         self.assertEqual(res_user.status_code, 403)
 
 
+class CEGAvailabilityCardTests(TestCase):
+    def setUp(self):
+        self.group = KpopGroup.objects.create(name='TWICE Test', slug='twice-test')
+        self.era = Era.objects.create(group=self.group, name='With YOU-th Test', slug='with-youth-test')
+
+        # 1. CEG com Preço Único
+        self.ceg_single = CEG.objects.create(
+            era=self.era,
+            title='CEG Single Price Test',
+            slug='ceg-single-price-test',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='pix@test.com'
+        )
+        self.def_nayeon = CEGItemDefinition.objects.create(
+            ceg=self.ceg_single, name='Photocard Nayeon', member_name='Nayeon', default_price=45.00, order_index=1
+        )
+        self.def_momo = CEGItemDefinition.objects.create(
+            ceg=self.ceg_single, name='Photocard Momo', member_name='Momo', default_price=45.00, order_index=2
+        )
+        self.set1 = CEGSet.objects.create(ceg=self.ceg_single, set_number=1)
+        self.set1.generate_slots()
+        self.set2 = CEGSet.objects.create(ceg=self.ceg_single, set_number=2)
+        self.set2.generate_slots()
+
+        # No Set 1: reserva Momo (sobra Nayeon)
+        s1_momo = self.set1.slots.get(item_definition=self.def_momo)
+        s1_momo.status = ItemSlot.Status.RESERVED
+        s1_momo.save()
+
+        # No Set 2: reserva Nayeon (sobra Momo)
+        s2_nayeon = self.set2.slots.get(item_definition=self.def_nayeon)
+        s2_nayeon.status = ItemSlot.Status.RESERVED
+        s2_nayeon.save()
+
+        # 2. CEG com Preços Variados
+        self.ceg_varied = CEG.objects.create(
+            era=self.era,
+            title='CEG Varied Prices Test',
+            slug='ceg-varied-prices-test',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='pix@test.com'
+        )
+        self.def_pc = CEGItemDefinition.objects.create(
+            ceg=self.ceg_varied, name='Photocard Jihyo', member_name='Jihyo', default_price=45.00
+        )
+        self.def_album = CEGItemDefinition.objects.create(
+            ceg=self.ceg_varied, name='Álbum Selado', member_name='', default_price=120.00
+        )
+        self.set_v1 = CEGSet.objects.create(ceg=self.ceg_varied, set_number=1)
+        self.set_v1.generate_slots()
+
+        # 3. CEG 100% Completa
+        self.ceg_full = CEG.objects.create(
+            era=self.era,
+            title='CEG 100 Percent Full Test',
+            slug='ceg-full-test',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='pix@test.com'
+        )
+        self.def_full = CEGItemDefinition.objects.create(
+            ceg=self.ceg_full, name='Photocard Sana', member_name='Sana', default_price=50.00
+        )
+        self.set_full = CEGSet.objects.create(ceg=self.ceg_full, set_number=1)
+        self.set_full.generate_slots()
+        slot_full = self.set_full.slots.first()
+        slot_full.status = ItemSlot.Status.PAID
+        slot_full.save()
+
+    def test_single_price_enrichment(self):
+        """Verifica que a CEG de preço único é identificada corretamente e lista sets corretos."""
+        from apps.cegs.services import enrich_cegs_with_availability
+        enrich_cegs_with_availability([self.ceg_single])
+
+        self.assertTrue(self.ceg_single.has_single_price)
+        self.assertFalse(self.ceg_single.has_different_prices)
+        self.assertEqual(float(self.ceg_single.single_price), 45.00)
+        self.assertEqual(self.ceg_single.available_slots_count, 2)
+        self.assertEqual(self.ceg_single.reserved_slots_count, 2)
+        self.assertEqual(self.ceg_single.total_slots_count, 4)
+
+        # Deve ter 2 itens sobrando: Momo no Set 2 e Nayeon no Set 1
+        items = {item['display_name']: item for item in self.ceg_single.grouped_available_items}
+        self.assertIn('Nayeon', items)
+        self.assertIn('Momo', items)
+        self.assertEqual(items['Nayeon']['sets'], [1])
+        self.assertEqual(items['Momo']['sets'], [2])
+        self.assertEqual(items['Nayeon']['sets_text'], 'Set #1')
+        self.assertEqual(items['Momo']['sets_text'], 'Set #2')
+
+    def test_varied_price_enrichment(self):
+        """Verifica que itens com preços diferentes ativam a flag has_different_prices."""
+        from apps.cegs.services import enrich_cegs_with_availability
+        enrich_cegs_with_availability([self.ceg_varied])
+
+        self.assertFalse(self.ceg_varied.has_single_price)
+        self.assertTrue(self.ceg_varied.has_different_prices)
+        self.assertIsNone(self.ceg_varied.single_price)
+        self.assertEqual(self.ceg_varied.available_slots_count, 2)
+
+    def test_full_ceg_enrichment(self):
+        """Verifica que CEG com 100% de ocupação não lista itens sobrando."""
+        from apps.cegs.services import enrich_cegs_with_availability
+        enrich_cegs_with_availability([self.ceg_full])
+
+        self.assertEqual(self.ceg_full.available_slots_count, 0)
+        self.assertEqual(self.ceg_full.progress_percentage, 100)
+        self.assertEqual(len(self.ceg_full.grouped_available_items), 0)
+
+    def test_home_view_renders_availability_cards(self):
+        """Verifica que a Home renderiza os blocos expansíveis de itens sobrando e os avisos de preço."""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # Verifica presença de elementos do accordion
+        self.assertIn('Itens sobrando', content)
+        self.assertIn('Ver quais faltam', content)
+
+        # CEG de preço único deve exibir o valor
+        self.assertIn('R$ 45,00 cada', content)
+
+        # CEG de preços variados deve exibir instrução para consultar
+        self.assertIn('valores variados', content)
+
+        # Sets das vagas devem ser informados
+        self.assertIn('Set #1', content)
+        self.assertIn('Set #2', content)
+
+        # CEG 100% preenchida
+        self.assertIn('100% preenchida', content)
+
+
+
 
 
 

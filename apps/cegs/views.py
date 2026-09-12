@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Q
 from .models import CEG, CEGSet, ItemSlot
 from apps.participants.models import Participant, Claim
-from .services import ClaimService, CEGError
+from .services import ClaimService, CEGError, enrich_cegs_with_availability
 
 
 class HomeView(View):
@@ -36,12 +36,16 @@ class HomeView(View):
                 Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now)
             ).select_related('era__group').order_by('-created_at')
         )
+        enrich_cegs_with_availability(active_cegs)
 
         # 3. Busca apenas as agendadas cujo horário AINDA está no futuro
-        scheduled_cegs = CEG.objects.filter(
-            status=CEG.Status.SCHEDULED,
-            opens_at__gt=now
-        ).select_related('era__group').order_by('opens_at')
+        scheduled_cegs = list(
+            CEG.objects.filter(
+                status=CEG.Status.SCHEDULED,
+                opens_at__gt=now
+            ).select_related('era__group').order_by('opens_at')
+        )
+        enrich_cegs_with_availability(scheduled_cegs)
 
         closed_cegs = CEG.objects.filter(
             status__in=[CEG.Status.CLOSED, CEG.Status.COMPLETED]

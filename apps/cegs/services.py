@@ -331,3 +331,107 @@ class ClaimService:
         with _slot_counter_lock:
             _slot_attempts_count.clear()
             LAST_CLAIM_DISPUTES.clear()
+
+
+def enrich_cegs_with_availability(cegs_list):
+    """
+    Enriquece uma lista de objetos CEG com informações sobre vagas restantes,
+    agrupamento por integrante/item e regras de preço para exibição no card.
+
+    Adiciona a cada CEG:
+      - available_slots_count: int (quantidade total de slots AVAILABLE nos sets ativos)
+      - total_slots_count: int (quantidade total de slots nos sets ativos)
+      - reserved_slots_count: int (quantidade reservada/paga nos sets ativos)
+      - progress_percentage: int (0 a 100)
+      - has_single_price: bool (True se todos os itens da CEG têm o mesmo valor)
+      - single_price: Decimal ou None (valor único, se houver)
+      - has_different_prices: bool (True se itens da CEG têm preços variados)
+      - grouped_available_items: list de dicts com vagas por integrante e sets
+    """
+    if not cegs_list:
+        return cegs_list
+
+    cegs_list = list(cegs_list)
+    ceg_ids = [c.id for c in cegs_list]
+
+    slots = list(
+        ItemSlot.objects.filter(
+            set__ceg_id__in=ceg_ids,
+            set__is_active=True
+        ).select_related('item_definition', 'set')
+        .order_by('set__set_number', 'item_definition__order_index', 'item_definition__name')
+    )
+
+    slots_by_ceg = defaultdict(list)
+    for s in slots:
+        slots_by_ceg[s.set.ceg_id].append(s)
+
+    for ceg in cegs_list:
+        ceg_slots = slots_by_ceg[ceg.id]
+        total_slots = len(ceg_slots)
+        reserved_slots = len([s for s in ceg_slots if s.status in (ItemSlot.Status.RESERVED, ItemSlot.Status.PAID)])
+        available_slots = [s for s in ceg_slots if s.status == ItemSlot.Status.AVAILABLE]
+
+        ceg.total_slots_count = total_slots
+        ceg.reserved_slots_count = reserved_slots
+        ceg.available_slots_count = len(available_slots)
+        ceg.progress_percentage = int((reserved_slots / total_slots) * 100) if total_slots > 0 else 0
+
+        # Regra de preços:
+        # Se a CEG for de todos com o mesmo valor, mostrar o valor no card;
+        # caso contrário (tenham valores diferentes na CEG), sinalizar para consultar preços.
+        all_prices = {s.price for s in ceg_slots}
+        has_single_price = (len(all_prices) == 1) if all_prices else False
+        ceg.has_single_price = has_single_price
+        ceg.single_price = list(all_prices)[0] if has_single_price else None
+        ceg.has_different_prices = (len(all_prices) > 1)
+
+        # Mapeamento para desambiguação de nomes se houver o mesmo member_name em múltiplos itens da CEG
+        member_item_defs = defaultdict(set)
+        for s in ceg_slots:
+            if s.item_definition.member_name:
+                member_item_defs[s.item_definition.member_name].add(s.item_definition_id)
+
+        items_map = {}
+        for s in available_slots:
+            item_def = s.item_definition
+            key = item_def.id
+            if key not in items_map:
+                if item_def.member_name:
+                    if len(member_item_defs.get(item_def.member_name, set())) > 1:
+                        display_name = f"{item_def.member_name} ({item_def.name})"
+                    else:
+                        display_name = item_def.member_name
+                else:
+                    display_name = item_def.name
+
+                items_map[key] = {
+                    'id': item_def.id,
+                    'display_name': display_name,
+                    'item_name': item_def.name,
+                    'member_name': item_def.member_name,
+                    'item_type': item_def.item_type,
+                    'price': s.price,
+                    'sets': [],
+                }
+
+            if s.set.set_number not in items_map[key]['sets']:
+                items_map[key]['sets'].append(s.set.set_number)
+
+        grouped_items = []
+        for item_data in items_map.values():
+            item_data['sets'].sort()
+            sets_list = item_data['sets']
+            if len(sets_list) == 1:
+                item_data['sets_text'] = f"Set #{sets_list[0]}"
+            elif len(sets_list) == 2:
+                item_data['sets_text'] = f"Sets #{sets_list[0]} e #{sets_list[1]}"
+            else:
+                item_data['sets_text'] = f"Sets #{', #'.join(str(n) for n in sets_list[:-1])} e #{sets_list[-1]}"
+            grouped_items.append(item_data)
+
+        grouped_items.sort(key=lambda x: x['display_name'].lower())
+        ceg.grouped_available_items = grouped_items
+
+    return cegs_list
+

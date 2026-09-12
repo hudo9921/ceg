@@ -133,22 +133,99 @@ class CEG(models.Model):
 
     @property
     def total_slots_count(self) -> int:
+        if hasattr(self, '_total_slots_count'):
+            return self._total_slots_count
         return ItemSlot.objects.filter(set__ceg=self, set__is_active=True).count()
+
+    @total_slots_count.setter
+    def total_slots_count(self, value: int):
+        self._total_slots_count = value
 
     @property
     def reserved_slots_count(self) -> int:
+        if hasattr(self, '_reserved_slots_count'):
+            return self._reserved_slots_count
         return ItemSlot.objects.filter(
             set__ceg=self,
             set__is_active=True,
             status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]
         ).count()
 
+    @reserved_slots_count.setter
+    def reserved_slots_count(self, value: int):
+        self._reserved_slots_count = value
+
+    @property
+    def available_slots_count(self) -> int:
+        if hasattr(self, '_available_slots_count'):
+            return self._available_slots_count
+        return ItemSlot.objects.filter(
+            set__ceg=self,
+            set__is_active=True,
+            status=ItemSlot.Status.AVAILABLE
+        ).count()
+
+    @available_slots_count.setter
+    def available_slots_count(self, value: int):
+        self._available_slots_count = value
+
     @property
     def progress_percentage(self) -> int:
+        if hasattr(self, '_progress_percentage'):
+            return self._progress_percentage
         total = self.total_slots_count
         if total == 0:
             return 0
         return int((self.reserved_slots_count / total) * 100)
+
+    @progress_percentage.setter
+    def progress_percentage(self, value: int):
+        self._progress_percentage = value
+
+    @property
+    def has_single_price(self) -> bool:
+        if not hasattr(self, '_has_single_price'):
+            from apps.cegs.services import enrich_cegs_with_availability
+            enrich_cegs_with_availability([self])
+        return getattr(self, '_has_single_price', False)
+
+    @has_single_price.setter
+    def has_single_price(self, value: bool):
+        self._has_single_price = value
+
+    @property
+    def single_price(self):
+        if not hasattr(self, '_single_price'):
+            from apps.cegs.services import enrich_cegs_with_availability
+            enrich_cegs_with_availability([self])
+        return getattr(self, '_single_price', None)
+
+    @single_price.setter
+    def single_price(self, value):
+        self._single_price = value
+
+    @property
+    def has_different_prices(self) -> bool:
+        if not hasattr(self, '_has_different_prices'):
+            from apps.cegs.services import enrich_cegs_with_availability
+            enrich_cegs_with_availability([self])
+        return getattr(self, '_has_different_prices', False)
+
+    @has_different_prices.setter
+    def has_different_prices(self, value: bool):
+        self._has_different_prices = value
+
+    @property
+    def grouped_available_items(self) -> list:
+        if not hasattr(self, '_grouped_available_items'):
+            from apps.cegs.services import enrich_cegs_with_availability
+            enrich_cegs_with_availability([self])
+        return getattr(self, '_grouped_available_items', [])
+
+    @grouped_available_items.setter
+    def grouped_available_items(self, value: list):
+        self._grouped_available_items = value
+
 
 
 class CEGItemDefinition(models.Model):
