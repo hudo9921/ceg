@@ -3,104 +3,8 @@
 {% block title %}Meus Claims — {{ participant.display_name }} | K-pop CEG Manager{% endblock %}
 
 {% block content %}
-<div class="space-y-8"
-     x-data="{
-         profileModalOpen: {% if is_placeholder_name %}true{% else %}false{% endif %},
-         selectedGroup: '',
-         selectedCeg: '',
-         statusFilter: 'ALL',
-         allCegs: [
-             {% for c in cegs_filter_list %}
-             {
-                 id: '{{ c.id }}',
-                 title: '{{ c.title|escapejs }}',
-                 groupId: '{{ c.group_id }}',
-                 count: {{ c.items_count }},
-                 countPending: {{ c.count_pending }},
-                 countPaid: {{ c.count_paid }}
-             }{% if not forloop.last %},{% endif %}
-             {% endfor %}
-         ],
-         get filteredCegsOptions() {
-             if (!this.selectedGroup) return this.allCegs;
-             return this.allCegs.filter(c => String(c.groupId) === String(this.selectedGroup));
-         },
-         onGroupChange() {
-             if (this.selectedCeg) {
-                 const exists = this.filteredCegsOptions.some(c => String(c.id) === String(this.selectedCeg));
-                 if (!exists) this.selectedCeg = '';
-             }
-         },
-         clearFilters() {
-             this.selectedGroup = '';
-             this.selectedCeg = '';
-             this.statusFilter = 'ALL';
-         },
-         matchesCeg(groupId, cegId, countPending, countPaid) {
-             if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
-             if (this.selectedCeg && String(this.selectedCeg) !== String(cegId)) return false;
-             if (this.statusFilter === 'PENDING' && countPending === 0) return false;
-             if (this.statusFilter === 'PAID' && countPaid === 0) return false;
-             return true;
-         },
-         copyPix(key) {
-             navigator.clipboard.writeText(key);
-             alert('Chave Pix copiada com sucesso! ' + key);
-         },
-         notificationsOpen: {% if unread_notifications_count > 0 %}true{% else %}false{% endif %},
-         unreadNotificationsCount: {{ unread_notifications_count|default:0 }},
-         async markNotificationRead(notifId) {
-             try {
-                 const res = await fetch(`/me/notifications/${notifId}/read/`, {
-                     method: 'POST',
-                     headers: {
-                         'X-CSRFToken': '{{ csrf_token }}',
-                         'X-Requested-With': 'XMLHttpRequest'
-                     }
-                 });
-                 const data = await res.json();
-                 if (data.success) {
-                     this.unreadNotificationsCount = data.unread_count;
-                     const card = document.getElementById(`notif-card-${notifId}`);
-                     if (card) {
-                         card.classList.remove('border-amber-300', 'bg-amber-50/40');
-                         card.classList.add('border-slate-200', 'bg-slate-50/60', 'opacity-85');
-                         const badge = card.querySelector('.notif-badge-new');
-                         if (badge) badge.remove();
-                         const btn = card.querySelector('.notif-btn-read');
-                         if (btn) btn.outerHTML = '<span class="text-[11px] text-slate-400 font-medium flex items-center gap-1"><span>✓</span> Lido</span>';
-                     }
-                 }
-             } catch (err) {
-                 console.error('Erro ao marcar notificação como lida:', err);
-             }
-         },
-         async markAllNotificationsRead() {
-             try {
-                 const res = await fetch('/me/notifications/read-all/', {
-                     method: 'POST',
-                     headers: {
-                         'X-CSRFToken': '{{ csrf_token }}',
-                         'X-Requested-With': 'XMLHttpRequest'
-                     }
-                 });
-                 const data = await res.json();
-                 if (data.success) {
-                     this.unreadNotificationsCount = 0;
-                     document.querySelectorAll('.notif-card-item').forEach(card => {
-                         card.classList.remove('border-amber-300', 'bg-amber-50/40');
-                         card.classList.add('border-slate-200', 'bg-slate-50/60', 'opacity-85');
-                         const badge = card.querySelector('.notif-badge-new');
-                         if (badge) badge.remove();
-                         const btn = card.querySelector('.notif-btn-read');
-                         if (btn) btn.outerHTML = '<span class="text-[11px] text-slate-400 font-medium flex items-center gap-1"><span>✓</span> Lido</span>';
-                     });
-                 }
-             } catch (err) {
-                 console.error('Erro ao marcar todas notificações:', err);
-             }
-         }
-     }">
+<div class="space-y-8" x-data="myClaimsApp()">
+
 
     <!-- Top Header -->
     <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -208,9 +112,8 @@
 
             <div x-show="notificationsOpen" x-collapse class="space-y-3 pt-1">
                 {% for notif in notifications %}
-                    <div id="notif-card-{{ notif.id }}"
-                         class="notif-card-item p-4 sm:p-5 rounded-2xl border transition-all duration-200 space-y-3
-                         {% if not notif.is_read %}border-amber-300 bg-amber-50/40 shadow-xs{% else %}border-slate-200 bg-slate-50/60 opacity-85{% endif %}">
+                    <div class="p-4 sm:p-5 rounded-2xl border transition-all duration-200 space-y-3"
+                         :class="(allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})) ? 'border-slate-200 bg-slate-50/60 opacity-85' : 'border-amber-300 bg-amber-50/40 shadow-xs'">
                         
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
@@ -220,25 +123,24 @@
                                 <h3 class="text-sm font-black text-slate-900">
                                     {{ notif.title }}
                                 </h3>
-                                {% if not notif.is_read %}
-                                    <span class="notif-badge-new px-1.5 py-0.5 bg-amber-500 text-white font-black text-[9px] rounded-md uppercase tracking-wider">
-                                        Novo
-                                    </span>
-                                {% endif %}
+                                <span x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                                      class="px-1.5 py-0.5 bg-amber-500 text-white font-black text-[9px] rounded-md uppercase tracking-wider">
+                                    Novo
+                                </span>
                             </div>
 
                             <div class="flex items-center gap-3 text-xs text-slate-400">
                                 <span class="text-[11px]">{{ notif.created_at|date:"d/m/Y \à\s H:i" }}</span>
-                                {% if not notif.is_read %}
-                                    <button type="button" @click="markNotificationRead({{ notif.id }})"
-                                            class="notif-btn-read px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-lg text-[11px] transition shadow-2xs cursor-pointer">
-                                        Marcar como lido
-                                    </button>
-                                {% else %}
-                                    <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                                        <span>✓</span> Lido
-                                    </span>
-                                {% endif %}
+                                <button type="button"
+                                        x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                                        @click="markNotificationRead({{ notif.id }})"
+                                        class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-lg text-[11px] transition shadow-2xs cursor-pointer">
+                                    Marcar como lido
+                                </button>
+                                <span x-show="allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                                      class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                                    <span>✓</span> Lido
+                                </span>
                             </div>
                         </div>
 
@@ -685,4 +587,104 @@
     </div>
 
 </div>
+
+{{ cegs_filter_list|json_script:"cegs-filter-data" }}
+
+<script>
+function myClaimsApp() {
+    let allCegs = [];
+    try {
+        const el = document.getElementById('cegs-filter-data');
+        if (el) allCegs = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('Erro ao ler cegs-filter-data:', e);
+    }
+
+    return {
+        profileModalOpen: {% if is_placeholder_name %}true{% else %}false{% endif %},
+        selectedGroup: '',
+        selectedCeg: '',
+        statusFilter: 'ALL',
+        allCegs: allCegs.map(c => ({
+            id: String(c.id),
+            title: c.title,
+            groupId: String(c.group_id),
+            count: c.items_count,
+            countPending: c.count_pending,
+            countPaid: c.count_paid
+        })),
+        get filteredCegsOptions() {
+            if (!this.selectedGroup) return this.allCegs;
+            return this.allCegs.filter(c => String(c.groupId) === String(this.selectedGroup));
+        },
+        onGroupChange() {
+            if (this.selectedCeg) {
+                const exists = this.filteredCegsOptions.some(c => String(c.id) === String(this.selectedCeg));
+                if (!exists) this.selectedCeg = '';
+            }
+        },
+        clearFilters() {
+            this.selectedGroup = '';
+            this.selectedCeg = '';
+            this.statusFilter = 'ALL';
+        },
+        matchesCeg(groupId, cegId, countPending, countPaid) {
+            if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
+            if (this.selectedCeg && String(this.selectedCeg) !== String(cegId)) return false;
+            if (this.statusFilter === 'PENDING' && countPending === 0) return false;
+            if (this.statusFilter === 'PAID' && countPaid === 0) return false;
+            return true;
+        },
+        copyPix(key) {
+            navigator.clipboard.writeText(key);
+            alert('Chave Pix copiada com sucesso! ' + key);
+        },
+        notificationsOpen: {% if unread_notifications_count > 0 %}true{% else %}false{% endif %},
+        unreadNotificationsCount: {{ unread_notifications_count|default:0 }},
+        readNotifIds: [],
+        allMarkedRead: false,
+        isRead(id, initialRead) {
+            return initialRead || this.readNotifIds.includes(id);
+        },
+        async markNotificationRead(notifId) {
+            try {
+                const res = await fetch(`/me/notifications/${notifId}/read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.unreadNotificationsCount = data.unread_count;
+                    if (!this.readNotifIds.includes(notifId)) {
+                        this.readNotifIds.push(notifId);
+                    }
+                }
+            } catch (err) {
+                console.error('Erro ao marcar notificação como lida:', err);
+            }
+        },
+        async markAllNotificationsRead() {
+            try {
+                const res = await fetch('/me/notifications/read-all/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.unreadNotificationsCount = 0;
+                    this.allMarkedRead = true;
+                }
+            } catch (err) {
+                console.error('Erro ao marcar todas notificações:', err);
+            }
+        }
+    };
+}
+</script>
 {% endblock %}
