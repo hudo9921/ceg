@@ -24,6 +24,9 @@
          managedSlot: null,
          setToDelete: null,
          deleteSetLoading: false,
+         notifyParticipants: true,
+         customCancelMessage: '',
+         copySuccess: false,
          managePrice: '',
          manageApplyAllSets: false,
          manageParticipantId: '',
@@ -32,11 +35,25 @@
          openDeleteSetModal(setObj) {
              this.setToDelete = setObj;
              this.deleteSetLoading = false;
+             this.notifyParticipants = true;
+             this.customCancelMessage = '';
+             this.copySuccess = false;
              this.deleteSetModalOpen = true;
          },
          closeDeleteSetModal() {
              this.deleteSetModalOpen = false;
              this.setToDelete = null;
+             this.copySuccess = false;
+         },
+         copyCancelMessage(slot) {
+             let paymentNote = slot.isPaid
+                 ? '⚠️ Como você já havia efetuado o pagamento deste item, entre em contato para estorno via Pix ou transferência de crédito.'
+                 : 'ℹ️ Nenhuma cobrança foi efetuada para este item.';
+             let extra = this.customCancelMessage ? '\n\n💬 Recado do organizador:\n' + this.customCancelMessage : '';
+             let text = `Olá, ${slot.participantName}! 📢\n\nInformamos que o Set #${this.setToDelete.setNumber} da compra em grupo '{{ ceg.title|escapejs }}' não atingiu o fechamento e precisou ser cancelado.\n\n📦 Item que você tinha neste set:\n• ${slot.name} — R$ ${slot.price} (${slot.isPaid ? 'Pago ✔' : 'Pendente'})\n\n${paymentNote}${extra}\n\nAgradecemos pelo seu apoio e compreensão!`;
+             navigator.clipboard.writeText(text);
+             this.copySuccess = true;
+             setTimeout(() => { this.copySuccess = false; }, 2500);
          },
          openClaimModal(slot) {
              if (!this.isLoggedIn) {
@@ -385,7 +402,23 @@
                                         setNumber: {{ set.set_number }},
                                         reservedCount: {{ set.reserved_count }},
                                         slotsCount: {{ set.slots_count }},
-                                        isFull: {{ set.is_full|yesno:'true,false' }}
+                                        isFull: {{ set.is_full|yesno:'true,false' }},
+                                        claimedSlots: [
+                                            {% for slot in set.slots.all %}
+                                                {% if slot.claimed_by %}
+                                                    {
+                                                        id: {{ slot.id }},
+                                                        name: '{{ slot.item_definition.name|escapejs }}',
+                                                        price: '{{ slot.price|floatformat:2 }}',
+                                                        isPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                                        participantName: '{{ slot.claimed_by.display_name|escapejs }}',
+                                                        whatsapp: '{{ slot.claimed_by.whatsapp|default:''|escapejs }}',
+                                                        formattedPhone: '{{ slot.claimed_by.formatted_phone|default:''|escapejs }}',
+                                                        socialHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}'
+                                                    },
+                                                {% endif %}
+                                            {% endfor %}
+                                        ]
                                     })"
                                     class="px-2.5 py-1 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-md border border-rose-200 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs"
                                     title="Excluir Set #{{ set.set_number }} da CEG">
@@ -1108,15 +1141,15 @@
             </div>
         </div>
 
-        <!-- Modal de Confirmação para Excluir Set -->
+        <!-- Modal de Confirmação para Excluir Set e Notificar Participantes -->
         <div x-show="deleteSetModalOpen" x-cloak
              class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
              @keydown.escape.window="closeDeleteSetModal()">
 
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-100 max-h-[90vh] flex flex-col"
                  @click.away="closeDeleteSetModal()">
 
-                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3 flex-shrink-0">
                     <div class="flex items-center gap-2.5">
                         <span class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shadow-2xs">
                             🗑️
@@ -1125,7 +1158,7 @@
                             <h3 class="text-base font-black text-slate-900">
                                 Excluir Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span>
                             </h3>
-                            <p class="text-xs text-slate-500 truncate max-w-[260px]">{{ ceg.title }}</p>
+                            <p class="text-xs text-slate-500 truncate max-w-[280px]">{{ ceg.title }}</p>
                         </div>
                     </div>
                     <button type="button" @click="closeDeleteSetModal()"
@@ -1134,35 +1167,113 @@
                     </button>
                 </div>
 
-                <div class="space-y-3 text-xs text-slate-600">
+                <div class="space-y-3.5 text-xs text-slate-600 overflow-y-auto pr-1">
                     <p>
-                        Tem certeza de que deseja excluir o <strong>Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> desta CEG?
+                        Tem certeza que deseja excluir o <strong>Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> desta CEG?
                     </p>
 
-                    <!-- Alerta se houver reservas ativas -->
-                    <template x-if="setToDelete && setToDelete.reservedCount > 0">
-                        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1 text-amber-900">
-                            <div class="font-bold flex items-center gap-1.5 text-xs text-amber-800">
-                                <span>⚠️</span> Atenção: Reservas existentes
+                    <!-- Lista de Participantes Afetados se houver reservas -->
+                    <template x-if="setToDelete && setToDelete.claimedSlots && setToDelete.claimedSlots.length > 0">
+                        <div class="space-y-2">
+                            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-amber-900">
+                                <div class="font-bold flex items-center justify-between text-xs text-amber-900">
+                                    <span class="flex items-center gap-1.5">
+                                        <span>⚠️</span> Reservas ativas no set (<span x-text="setToDelete.claimedSlots.length"></span>)
+                                    </span>
+                                    <span class="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded font-black">
+                                        Serão Canceladas
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-amber-800 leading-relaxed">
+                                    Os seguintes participantes estão com itens neste set que não fechou:
+                                </p>
+
+                                <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                    <template x-for="slot in setToDelete.claimedSlots" :key="slot.id">
+                                        <div class="bg-white p-2 rounded-lg border border-amber-200 flex items-center justify-between gap-2 text-xs">
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-900 truncate">
+                                                    <span x-text="slot.participantName"></span>
+                                                    <template x-if="slot.socialHandle">
+                                                        <span class="text-[10px] font-normal text-slate-400" x-text="' (' + slot.socialHandle + ')'"></span>
+                                                    </template>
+                                                </div>
+                                                <div class="text-[10px] text-slate-500 flex items-center gap-1">
+                                                    <span class="font-medium text-purple-700 truncate" x-text="slot.name"></span>
+                                                    <span>•</span>
+                                                    <span x-text="'R$ ' + slot.price"></span>
+                                                    <template x-if="slot.isPaid">
+                                                        <span class="text-emerald-700 bg-emerald-100 font-bold px-1 rounded text-[9px]">Pago ✔</span>
+                                                    </template>
+                                                    <template x-if="!slot.isPaid">
+                                                        <span class="text-slate-500 bg-slate-100 font-semibold px-1 rounded text-[9px]">Pendente</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <template x-if="slot.whatsapp">
+                                                    <a :href="'https://wa.me/' + slot.whatsapp + '?text=' + encodeURIComponent('Olá, ' + slot.participantName + '! Informamos que o Set #' + setToDelete.setNumber + ' da compra em grupo \'{{ ceg.title|escapejs }}\' precisou ser cancelado por não atingir o fechamento. Seu item reservado era: ' + slot.name + ' (' + (slot.isPaid ? 'Pago' : 'Pendente') + ').')"
+                                                       target="_blank"
+                                                       class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                                       title="Conversar com este participante no WhatsApp">
+                                                        <span>📱</span> WhatsApp
+                                                    </a>
+                                                </template>
+                                                <button type="button" @click="copyCancelMessage(slot)"
+                                                        class="p-1 hover:bg-slate-100 text-slate-600 rounded border border-slate-200 text-[10px] cursor-pointer transition shadow-2xs"
+                                                        title="Copiar mensagem para este participante">
+                                                    📋
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
-                            <p class="text-[11px] leading-relaxed">
-                                Este set possui <strong x-text="setToDelete.reservedCount"></strong> de <strong x-text="setToDelete.slotsCount"></strong> item(ns) reservado(s).
-                                Ao excluir este set, <strong>todas as suas reservas e slots físicos serão permanentemente cancelados e excluídos</strong>.
-                            </p>
+
+                            <!-- Opção de Notificação Automática -->
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800">
+                                    <input type="checkbox" name="notify_participants_check" value="true"
+                                           x-model="notifyParticipants"
+                                           class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500 cursor-pointer">
+                                    <span>Enviar notificação automática via WhatsApp</span>
+                                </label>
+                                <p class="text-[10px] text-slate-500 pl-6">
+                                    O sistema disparará mensagem via WhatsApp Gateway para cada participante com seus respectivos itens cancelados e orientações de estorno/crédito.
+                                </p>
+
+                                <div x-show="notifyParticipants" class="pl-6 pt-1 space-y-1">
+                                    <label class="block text-[11px] font-bold text-slate-700">
+                                        Recado adicional do organizador (opcional):
+                                    </label>
+                                    <textarea x-model="customCancelMessage" rows="2"
+                                              placeholder="Ex: Não atingimos o mínimo a tempo. Quem já efetuou o pagamento receberá o estorno via Pix ainda hoje!"
+                                              class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </template>
 
                     <!-- Mensagem se não houver reservas -->
-                    <template x-if="setToDelete && setToDelete.reservedCount === 0">
+                    <template x-if="setToDelete && (!setToDelete.claimedSlots || setToDelete.claimedSlots.length === 0)">
                         <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-[11px] leading-relaxed">
-                            ℹ️ Este set não possui nenhuma reserva ativa. Todos os seus slots vagos serão removidos com segurança.
+                            ℹ️ Este set não possui nenhuma reserva ativa. Todos os seus slots vagos serão removidos com segurança sem afetar nenhum participante.
                         </div>
                     </template>
+
+                    <div x-show="copySuccess" x-cloak
+                         class="p-2 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg text-center">
+                        ✓ Mensagem de aviso copiada para a área de transferência!
+                    </div>
                 </div>
 
                 <form :action="'/sets/' + (setToDelete ? setToDelete.id : '') + '/delete/'" method="POST"
-                      @submit="deleteSetLoading = true">
+                      @submit="deleteSetLoading = true" class="flex-shrink-0">
                     {% csrf_token %}
+                    <input type="hidden" name="notify_participants" :value="notifyParticipants ? 'true' : 'false'">
+                    <input type="hidden" name="custom_message" :value="customCancelMessage">
+
                     <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
                         <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
                                 class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs">

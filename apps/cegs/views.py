@@ -1,4 +1,5 @@
 import json
+import logging
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
@@ -11,6 +12,8 @@ from django.db.models import Q
 from .models import CEG, CEGSet, ItemSlot
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, enrich_cegs_with_availability
+
+logger = logging.getLogger(__name__)
 
 
 class HomeView(View):
@@ -438,6 +441,7 @@ class DeleteSetView(View):
     """
     Permite ao organizador (staff) excluir um Set da CEG (por exemplo, quando o Set não fechou).
     Ao excluir o Set, todos os seus slots e eventuais reservas são permanentemente removidos.
+    Além disso, notifica os participantes que estavam no set via WhatsApp Gateway.
     """
     def post(self, request, set_id):
         if not request.user.is_authenticated or not request.user.is_staff:
@@ -449,20 +453,97 @@ class DeleteSetView(View):
         ceg_set = get_object_or_404(CEGSet.objects.select_related('ceg'), id=set_id)
         ceg = ceg_set.ceg
         set_number = ceg_set.set_number
-        claims_count = Claim.objects.filter(slot__set=ceg_set).count()
 
+        notify_participants = request.POST.get('notify_participants', 'true').lower() in ('true', '1', 'on', 'yes')
+        custom_message = request.POST.get('custom_message', '').strip()
+
+        # 1. Coleta participantes e itens reservados neste set ANTES de deletar
+        claimed_slots = list(
+            ceg_set.slots.filter(claimed_by__isnull=False)
+            .select_related('claimed_by', 'item_definition')
+        )
+
+        # Agrupa por participante para enviar 1 mensagem consolidada por pessoa
+        participants_data = {}
+        for slot in claimed_slots:
+            p = slot.claimed_by
+            if p.id not in participants_data:
+                participants_data[p.id] = {
+                    'participant': p,
+                    'items': [],
+                    'has_paid': False,
+                }
+            participants_data[p.id]['items'].append({
+                'name': slot.item_definition.name,
+                'price': slot.price,
+                'is_paid': slot.is_item_paid,
+            })
+            if slot.is_item_paid:
+                participants_data[p.id]['has_paid'] = True
+
+        # 2. Deleta o set em transação atômica
         with transaction.atomic():
             ceg_set.delete()
 
+        # 3. Envia notificações via WhatsApp Gateway se solicitado
+        notified_names = []
+        if notify_participants and participants_data:
+            from apps.auth_otp.providers import get_whatsapp_provider
+            provider = get_whatsapp_provider()
+
+            for p_id, p_info in participants_data.items():
+                p = p_info['participant']
+                if not p.whatsapp:
+                    continue
+
+                items_text = "\n".join(
+                    f"• {item['name']} — R$ {item['price']:.2f} ({'Pago ✔' if item['is_paid'] else 'Pendente'})"
+                    for item in p_info['items']
+                )
+
+                if p_info['has_paid']:
+                    payment_note = "⚠️ *Importante:* Como você já havia efetuado o pagamento deste item, entre em contato para estorno/reembolso via Pix ou transferência de crédito."
+                else:
+                    payment_note = "ℹ️ Nenhuma cobrança foi efetuada para este item."
+
+                extra_note = f"\n\n💬 *Recado do organizador:*\n{custom_message}" if custom_message else ""
+
+                msg = (
+                    f"Olá, {p.display_name}! 📢\n\n"
+                    f"Informamos que o *Set #{set_number}* da compra em grupo *{ceg.title}* infelizmente não atingiu o fechamento e precisou ser cancelado.\n\n"
+                    f"📦 *Item(ns) que você tinha neste set:*\n"
+                    f"{items_text}\n\n"
+                    f"{payment_note}"
+                    f"{extra_note}\n\n"
+                    f"Agradecemos muito pelo seu apoio e compreensão!"
+                )
+
+                try:
+                    sent = provider.send_message(p.whatsapp, msg)
+                    if sent:
+                        notified_names.append(p.display_name)
+                except Exception as e:
+                    logger.error(f"Erro ao enviar notificação WhatsApp para {p.whatsapp}: {e}")
+
+        # Mensagem de feedback
         msg = f"🗑️ Set #{set_number} excluído com sucesso da CEG '{ceg.title}'."
-        if claims_count > 0:
-            msg += f" ({claims_count} reserva(s) foram canceladas e removidas)."
+        if claimed_slots:
+            msg += f" {len(claimed_slots)} reserva(s) foram canceladas."
+        if notified_names:
+            msg += f" 📢 Notificação WhatsApp enviada para {len(notified_names)} participante(s): {', '.join(notified_names)}."
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
-            return JsonResponse({'success': True, 'message': msg, 'set_number': set_number})
+            return JsonResponse({
+                'success': True,
+                'message': msg,
+                'set_number': set_number,
+                'notified_count': len(notified_names),
+                'notified_names': notified_names,
+            })
 
         messages.success(request, msg)
         return redirect('ceg_detail', slug=ceg.slug)
+
 
 
 

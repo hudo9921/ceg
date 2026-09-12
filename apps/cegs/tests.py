@@ -1217,6 +1217,64 @@ class DeleteSetViewTests(TestCase):
         res = self.client.post('/sets/99999/delete/')
         self.assertEqual(res.status_code, 404)
 
+    def test_delete_set_notifies_participants_via_whatsapp(self):
+        """Ao excluir um set com participantes e notify_participants=True, envia mensagem via WhatsApp com detalhes dos itens e estorno."""
+        from apps.auth_otp.providers import LAST_SENT_MESSAGES
+        LAST_SENT_MESSAGES.clear()
+
+        # Configura slot reservado e pago
+        self.slot_2.claimed_by = self.participant
+        self.slot_2.status = ItemSlot.Status.PAID
+        self.slot_2.is_item_paid = True
+        self.slot_2.save()
+
+        self.client.force_login(self.admin_user)
+        res = self.client.post(
+            f'/sets/{self.set_2.id}/delete/',
+            data={
+                'notify_participants': 'true',
+                'custom_message': 'Estorno será efetuado via Pix ainda hoje!'
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['notified_count'], 1)
+        self.assertIn('part_claim', data['notified_names'])
+
+        # Verifica mensagem no provedor
+        self.assertIn(self.participant.whatsapp, LAST_SENT_MESSAGES)
+        sent_msg = LAST_SENT_MESSAGES[self.participant.whatsapp]
+        self.assertIn(self.ceg.title, sent_msg)
+        self.assertIn('Set #2', sent_msg)
+        self.assertIn('Photocard Seoyeon', sent_msg)
+        self.assertIn('Pago ✔', sent_msg)
+        self.assertIn('estorno/reembolso via Pix', sent_msg)
+        self.assertIn('Estorno será efetuado via Pix ainda hoje!', sent_msg)
+
+    def test_delete_set_without_notification(self):
+        """Quando notify_participants=False, o set é excluído sem disparar mensagens via WhatsApp."""
+        from apps.auth_otp.providers import LAST_SENT_MESSAGES
+        LAST_SENT_MESSAGES.clear()
+
+        self.slot_2.claimed_by = self.participant
+        self.slot_2.status = ItemSlot.Status.RESERVED
+        self.slot_2.is_item_paid = False
+        self.slot_2.save()
+
+        self.client.force_login(self.admin_user)
+        res = self.client.post(
+            f'/sets/{self.set_2.id}/delete/',
+            data={
+                'notify_participants': 'false',
+                'custom_message': 'Essa mensagem não deve ser enviada'
+            }
+        )
+        self.assertRedirects(res, f'/ceg/{self.ceg.slug}/')
+        self.assertNotIn(self.participant.whatsapp, LAST_SENT_MESSAGES)
+
+
 
 
 
