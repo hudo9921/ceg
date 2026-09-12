@@ -81,16 +81,32 @@
                         <!-- Barrinha Separadora -->
                         <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
 
-                        <!-- 3. Métricas do Organizador -->
-                        {% if 'analytics' in request.path or request.resolver_match.url_name == 'analytics_dashboard' %}
-                            <a href="{% url 'analytics_dashboard' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                <span>📊</span>
-                                <span>Métricas do Organizador</span>
+                        <!-- 3. Status das CEGs -->
+                        {% if request.resolver_match.url_name == 'cegs_status' or request.resolver_match.url_name == 'cegs_status_tab' or request.path == '/analytics/' or '/analytics/cegs' in request.path %}
+                            <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                <span>📦</span>
+                                <span>Status das CEGs</span>
                             </a>
                         {% else %}
-                            <a href="{% url 'analytics_dashboard' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                <span class="opacity-70">📊</span>
-                                <span>Métricas do Organizador</span>
+                            <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                <span class="opacity-70">📦</span>
+                                <span>Status das CEGs</span>
+                            </a>
+                        {% endif %}
+
+                        <!-- Barrinha Separadora -->
+                        <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
+                        <!-- 4. Relatório de Vendas -->
+                        {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.url_name == 'sales_report_alias' or '/analytics/vendas' in request.path or '/analytics/sales' in request.path %}
+                            <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                <span>📈</span>
+                                <span>Relatório de Vendas</span>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                <span class="opacity-70">📈</span>
+                                <span>Relatório de Vendas</span>
                             </a>
                         {% endif %}
 

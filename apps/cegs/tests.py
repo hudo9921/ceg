@@ -411,11 +411,19 @@ class ViewsAndAnalyticsIntegrationTests(TestCase):
         self.assertEqual(len(sets_near), 1)
         self.assertEqual(sets_near[0]['set_number'], 1)
 
-        # Testa visualização do dashboard de analítica
-        response = self.client.get('/analytics/')
+        # Testa visualização do dashboard de analítica e novos módulos
+        response = self.client.get('/analytics/dashboard/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Seoyeon')
         self.assertContains(response, 'ASSEMBLE24')
+
+        res_cegs = self.client.get('/analytics/cegs/')
+        self.assertEqual(res_cegs.status_code, 200)
+        self.assertContains(res_cegs, 'ASSEMBLE24')
+
+        res_vendas = self.client.get('/analytics/vendas/')
+        self.assertEqual(res_vendas.status_code, 200)
+        self.assertContains(res_vendas, 'Seoyeon')
 
     def test_home_auto_promotes_scheduled_ceg_and_provides_group_filters(self):
         """Verifica que CEGs com opens_at no passado são promovidas automaticamente para OPEN e agrupadas nos filtros da Home"""

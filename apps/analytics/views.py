@@ -5,6 +5,141 @@ from django.http import JsonResponse
 from .services import AnalyticsService
 
 
+class CEGStatusView(View):
+    """
+    Página 1: Painel Operacional das CEGs e Sets.
+    Foco em status de CEGs, completude de sets (o que falta para fechar),
+    sets completos porém pendentes (frete, taxa, pagamentos) e valores das CEGs.
+    """
+    def get(self, request):
+        group_id = request.GET.get('group') or None
+        era_id = request.GET.get('era') or None
+
+        filter_options = AnalyticsService.get_filter_options()
+        status_data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id)
+
+        selected_group_name = None
+        if group_id:
+            for g in filter_options['groups']:
+                if g['id'] == str(group_id):
+                    selected_group_name = g['name']
+                    break
+
+        selected_era_name = None
+        if era_id:
+            for e in filter_options['eras']:
+                if e['id'] == str(era_id):
+                    selected_era_name = e['name']
+                    break
+
+        return render(request, 'analytics/ceg_status.html', {
+            'filter_options': filter_options,
+            'filter_options_json': json.dumps(filter_options),
+            'selected_group': group_id or '',
+            'selected_era': era_id or '',
+            'selected_group_name': selected_group_name,
+            'selected_era_name': selected_era_name,
+            'summary': status_data['summary'],
+            'sets_completed_pending': status_data['sets_completed_pending'],
+            'sets_incomplete': status_data['sets_incomplete'],
+            'cegs_overview': status_data['cegs_overview'],
+        })
+
+
+class SalesReportView(View):
+    """
+    Página 2: Relatório Financeiro e Análise de Vendas (Income & BI).
+    Foco em faturamento, volume de claims, gráficos temporais mês a mês
+    (volume e valores em R$), ticket médio, ranking de itens e participantes.
+    """
+    def get(self, request):
+        group_id = request.GET.get('group') or None
+        era_id = request.GET.get('era') or None
+        time_window = request.GET.get('window') or 'all'
+        month = request.GET.get('month') or None
+
+        filter_options = AnalyticsService.get_filter_options()
+        sales_data = AnalyticsService.get_sales_analytics(
+            group_id=group_id, era_id=era_id, time_window=time_window, month=month
+        )
+
+        selected_group_name = None
+        if group_id:
+            for g in filter_options['groups']:
+                if g['id'] == str(group_id):
+                    selected_group_name = g['name']
+                    break
+
+        selected_era_name = None
+        if era_id:
+            for e in filter_options['eras']:
+                if e['id'] == str(era_id):
+                    selected_era_name = e['name']
+                    break
+
+        # Estrutura de dados para os gráficos do Chart.js
+        chart_data = {
+            'monthly': {
+                'labels': [m['label'] for m in sales_data['monthly_flow']],
+                'full_labels': [m['full_label'] for m in sales_data['monthly_flow']],
+                'total_sales': [m['total_sales'] for m in sales_data['monthly_flow']],
+                'paid_sales': [m['paid_sales'] for m in sales_data['monthly_flow']],
+                'pending_sales': [m['pending_sales'] for m in sales_data['monthly_flow']],
+                'claims_count': [m['claims_count'] for m in sales_data['monthly_flow']],
+            },
+            'donut': {
+                'labels': ['Pago (Confirmado)', 'Pendente (Aguardando Pix)'],
+                'data': [
+                    sales_data['summary']['total_paid'],
+                    sales_data['summary']['total_pending']
+                ],
+            },
+            'groups': {
+                'labels': [g['group_name'] for g in sales_data['group_sales']],
+                'sales': [g['total_sales'] for g in sales_data['group_sales']],
+                'claims': [g['claims_count'] for g in sales_data['group_sales']],
+            }
+        }
+
+        return render(request, 'analytics/sales_report.html', {
+            'filter_options': filter_options,
+            'filter_options_json': json.dumps(filter_options),
+            'selected_group': group_id or '',
+            'selected_era': era_id or '',
+            'selected_window': time_window,
+            'selected_month': month or '',
+            'selected_group_name': selected_group_name,
+            'selected_era_name': selected_era_name,
+            'summary': sales_data['summary'],
+            'monthly_flow': sales_data['monthly_flow'],
+            'group_sales': sales_data['group_sales'],
+            'top_items': sales_data['top_items'],
+            'top_buyers': sales_data['top_buyers'],
+            'chart_data_json': json.dumps(chart_data),
+        })
+
+
+class CEGStatusApiView(View):
+    def get(self, request):
+        group_id = request.GET.get('group') or None
+        era_id = request.GET.get('era') or None
+        data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id)
+        return JsonResponse(data)
+
+
+class SalesReportApiView(View):
+    def get(self, request):
+        group_id = request.GET.get('group') or None
+        era_id = request.GET.get('era') or None
+        time_window = request.GET.get('window') or 'all'
+        month = request.GET.get('month') or None
+        data = AnalyticsService.get_sales_analytics(
+            group_id=group_id, era_id=era_id, time_window=time_window, month=month
+        )
+        return JsonResponse(data)
+
+
+# Mantém compatibilidade com AnalyticsDashboardView e AnalyticsApiView antigos
 class AnalyticsDashboardView(View):
     def get(self, request):
         group_id = request.GET.get('group') or None
@@ -19,7 +154,6 @@ class AnalyticsDashboardView(View):
         members = AnalyticsService.get_member_popularity(group_id=group_id, era_id=era_id)
         sets_near = AnalyticsService.get_sets_near_completion(group_id=group_id, era_id=era_id)
 
-        # Prepara dados para os gráficos do Chart.js
         chart_data = {
             'monthly': {
                 'labels': [m['label'] for m in monthly_flow],
@@ -42,37 +176,19 @@ class AnalyticsDashboardView(View):
             }
         }
 
-        # Objeto ou nome do grupo e era selecionados para exibição
-        selected_group_name = None
-        if group_id:
-            for g in filter_options['groups']:
-                if g['id'] == str(group_id):
-                    selected_group_name = g['name']
-                    break
-
-        selected_era_name = None
-        if era_id:
-            for e in filter_options['eras']:
-                if e['id'] == str(era_id):
-                    selected_era_name = e['name']
-                    break
-
         return render(request, 'analytics/dashboard.html', {
             'filter_options': filter_options,
             'filter_options_json': json.dumps(filter_options),
             'selected_group': group_id or '',
             'selected_era': era_id or '',
             'selected_month': month or '',
-            'selected_group_name': selected_group_name,
-            'selected_era_name': selected_era_name,
             'summary': summary,
             'monthly_flow': monthly_flow,
             'detailed_inventory': detailed_inventory,
             'group_comparison': group_comparison,
-            'members': members[:12],  # Top 12 integrantes
+            'members': members[:12],
             'sets_near': sets_near,
             'chart_data_json': json.dumps(chart_data),
-            # Para manter retrocompatibilidade com código existente:
             'financials': detailed_inventory,
         })
 

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db.models import Count, Sum, Q, F
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
@@ -358,3 +359,357 @@ class AnalyticsService:
     @staticmethod
     def get_era_financials():
         return AnalyticsService.get_detailed_inventory_table()
+
+    @staticmethod
+    def get_cegs_operational_status(group_id=None, era_id=None):
+        """
+        Retorna o status operacional detalhado das CEGs e Sets:
+        - sets_completed_pending: Sets 100% preenchidos, porém ainda não finalizados
+          (ex: aguardando cotação de frete inter, taxa aduaneira, ou com pagamentos de item/taxas pendentes).
+        - sets_incomplete: Sets que ainda NÃO estão 100% preenchidos, com detalhes exatos
+          do que falta para completá-los (membros/itens vagos, slots restantes, valor restante).
+        - cegs_overview: Tabela consolidada de valores das CEGs em si (valores totais de itens, frete, taxa, status, prazos).
+        """
+        cegs_qs = CEG.objects.select_related('era__group', 'era').prefetch_related(
+            'sets__slots__item_definition',
+            'sets__slots__claimed_by'
+        ).all()
+
+        if group_id:
+            cegs_qs = cegs_qs.filter(era__group_id=group_id)
+        if era_id:
+            cegs_qs = cegs_qs.filter(era_id=era_id)
+
+        sets_completed_pending = []
+        sets_incomplete = []
+        cegs_overview = []
+
+        total_sets_count = 0
+        total_slots_count = 0
+        total_reserved_slots_count = 0
+
+        for ceg in cegs_qs:
+            for cset in ceg.sets.filter(is_active=True).order_by('set_number'):
+                total_sets_count += 1
+                slots = list(cset.slots.all().order_by('item_definition__name'))
+                tot = len(slots)
+                total_slots_count += tot
+
+                claimed_slots = [s for s in slots if s.status in [ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]]
+                available_slots = [s for s in slots if s.status == ItemSlot.Status.AVAILABLE]
+                res_count = len(claimed_slots)
+                total_reserved_slots_count += res_count
+
+                fill_pct = int((res_count / tot) * 100) if tot > 0 else 0
+                set_is_full = (res_count == tot and tot > 0)
+
+                # Valores do set
+                set_total_value = sum(float(s.price) for s in slots)
+                set_paid_value = sum(float(s.price) for s in slots if s.is_item_paid)
+                set_pending_value = sum(float(s.price) for s in claimed_slots if not s.is_item_paid)
+                set_missing_value = sum(float(s.price) for s in available_slots)
+
+                # Checagem de pendências operacionais (se set_is_full)
+                if set_is_full:
+                    pending_reasons = []
+                    # 1. Pagamento de itens
+                    items_unpaid = [s for s in slots if not s.is_item_paid]
+                    if items_unpaid:
+                        pending_reasons.append({
+                            'code': 'UNPAID_ITEMS',
+                            'title': f"{len(items_unpaid)} item(ns) aguardando pagamento",
+                            'type': 'warning'
+                        })
+
+                    # 2. Frete Internacional
+                    if ceg.frete_inter is None:
+                        pending_reasons.append({
+                            'code': 'FRETE_INTER_NOT_SET',
+                            'title': 'Frete Internacional não cotado',
+                            'type': 'danger'
+                        })
+                    else:
+                        unpaid_frete = [s for s in slots if not s.is_frete_inter_paid]
+                        if unpaid_frete:
+                            pending_reasons.append({
+                                'code': 'FRETE_INTER_UNPAID',
+                                'title': f"{len(unpaid_frete)} frete(s) inter pendente(s)",
+                                'type': 'warning'
+                            })
+
+                    # 3. Taxa Aduaneira
+                    if ceg.taxa_aduaneira is None:
+                        pending_reasons.append({
+                            'code': 'TAXA_NOT_SET',
+                            'title': 'Taxa Aduaneira aguardando Receita Federal',
+                            'type': 'info'
+                        })
+                    else:
+                        unpaid_taxa = [s for s in slots if not s.is_taxa_aduaneira_paid]
+                        if unpaid_taxa:
+                            pending_reasons.append({
+                                'code': 'TAXA_UNPAID',
+                                'title': f"{len(unpaid_taxa)} taxa(s) aduaneira(s) pendente(s)",
+                                'type': 'warning'
+                            })
+
+                    # Se a CEG não estiver arquivada/fechada ou se houver pendências
+                    if pending_reasons or ceg.status != CEG.Status.CLOSED:
+                        sets_completed_pending.append({
+                            'set_id': cset.id,
+                            'set_number': cset.set_number,
+                            'ceg_id': ceg.id,
+                            'ceg_title': ceg.title,
+                            'ceg_slug': ceg.slug,
+                            'group_name': ceg.era.group.name,
+                            'era_name': ceg.era.name,
+                            'ceg_status': ceg.status,
+                            'ceg_status_display': ceg.get_status_display(),
+                            'total_slots': tot,
+                            'set_total_value': set_total_value,
+                            'set_paid_value': set_paid_value,
+                            'set_pending_value': set_pending_value,
+                            'frete_inter': float(ceg.frete_inter) if ceg.frete_inter is not None else None,
+                            'taxa_aduaneira': float(ceg.taxa_aduaneira) if ceg.taxa_aduaneira is not None else None,
+                            'pending_reasons': pending_reasons,
+                            'is_fully_paid': (len(items_unpaid) == 0 and (ceg.frete_inter is not None and not any(not s.is_frete_inter_paid for s in slots)) and (ceg.taxa_aduaneira is not None and not any(not s.is_taxa_aduaneira_paid for s in slots)))
+                        })
+
+                else:
+                    # Set Incompleto: detalhar exatamente o que falta para fechar
+                    missing_items = []
+                    for s in available_slots:
+                        missing_items.append({
+                            'slot_id': s.id,
+                            'item_name': s.item_definition.name,
+                            'member_name': s.item_definition.member_name or s.item_definition.get_item_type_display(),
+                            'price': float(s.price)
+                        })
+
+                    sets_incomplete.append({
+                        'set_id': cset.id,
+                        'set_number': cset.set_number,
+                        'ceg_id': ceg.id,
+                        'ceg_title': ceg.title,
+                        'ceg_slug': ceg.slug,
+                        'group_name': ceg.era.group.name,
+                        'era_name': ceg.era.name,
+                        'ceg_status': ceg.status,
+                        'ceg_status_display': ceg.get_status_display(),
+                        'total_slots': tot,
+                        'reserved_slots': res_count,
+                        'remaining_slots': len(available_slots),
+                        'fill_percentage': fill_pct,
+                        'set_total_value': set_total_value,
+                        'set_sold_value': set_paid_value + set_pending_value,
+                        'missing_value': set_missing_value,
+                        'missing_items': missing_items,
+                    })
+
+            # Estatísticas da CEG individual para cegs_overview
+            ceg_slots = ItemSlot.objects.filter(set__ceg=ceg, set__is_active=True)
+            ceg_total_slots_cnt = ceg_slots.count()
+            ceg_sold_slots_cnt = ceg_slots.filter(status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]).count()
+            ceg_avail_slots_cnt = ceg_slots.filter(status=ItemSlot.Status.AVAILABLE).count()
+
+            ceg_paid_val = float(Claim.objects.filter(slot__set__ceg=ceg, status=Claim.Status.PAID).aggregate(s=Sum('total_price'))['s'] or 0)
+            ceg_pending_val = float(Claim.objects.filter(slot__set__ceg=ceg, status=Claim.Status.PENDING).aggregate(s=Sum('total_price'))['s'] or 0)
+            ceg_avail_val = float(ceg_slots.filter(status=ItemSlot.Status.AVAILABLE).aggregate(s=Sum('price'))['s'] or 0)
+            ceg_pot_val = ceg_paid_val + ceg_pending_val + ceg_avail_val
+            ceg_fill_pct = int((ceg_sold_slots_cnt / ceg_total_slots_cnt) * 100) if ceg_total_slots_cnt > 0 else 0
+
+            # Contadores de frete e taxa na CEG
+            frete_inter_paid_slots = ceg_slots.filter(is_frete_inter_paid=True).count()
+            taxa_paid_slots = ceg_slots.filter(is_taxa_aduaneira_paid=True).count()
+
+            cegs_overview.append({
+                'ceg_id': ceg.id,
+                'title': ceg.title,
+                'slug': ceg.slug,
+                'status': ceg.status,
+                'status_display': ceg.get_status_display(),
+                'group_name': ceg.era.group.name,
+                'era_name': ceg.era.name,
+                'total_sets': ceg.sets.filter(is_active=True).count(),
+                'total_slots': ceg_total_slots_cnt,
+                'sold_slots': ceg_sold_slots_cnt,
+                'available_slots': ceg_avail_slots_cnt,
+                'fill_percentage': ceg_fill_pct,
+                'paid_amount': ceg_paid_val,
+                'pending_amount': ceg_pending_val,
+                'available_amount': ceg_avail_val,
+                'total_potential': ceg_pot_val,
+                'frete_inter': float(ceg.frete_inter) if ceg.frete_inter is not None else None,
+                'frete_inter_paid_slots': frete_inter_paid_slots,
+                'prazo_frete_inter': ceg.prazo_pagamento_frete_inter,
+                'taxa_aduaneira': float(ceg.taxa_aduaneira) if ceg.taxa_aduaneira is not None else None,
+                'taxa_paid_slots': taxa_paid_slots,
+                'prazo_taxa': ceg.prazo_pagamento_taxa_aduaneira,
+                'prazo_item': ceg.prazo_pagamento_item,
+            })
+
+        # Ordenações convenientes
+        sets_completed_pending.sort(key=lambda x: (x['group_name'], x['era_name'], x['set_number']))
+        sets_incomplete.sort(key=lambda x: (x['remaining_slots'], -x['fill_percentage']))
+        cegs_overview.sort(key=lambda x: (x['status'] != CEG.Status.OPEN, -x['total_potential']))
+
+        global_occupancy = int((total_reserved_slots_count / total_slots_count) * 100) if total_slots_count > 0 else 0
+
+        return {
+            'sets_completed_pending': sets_completed_pending,
+            'sets_incomplete': sets_incomplete,
+            'cegs_overview': cegs_overview,
+            'summary': {
+                'total_cegs': cegs_qs.count(),
+                'open_cegs': cegs_qs.filter(status=CEG.Status.OPEN).count(),
+                'scheduled_cegs': cegs_qs.filter(status=CEG.Status.SCHEDULED).count(),
+                'total_sets': total_sets_count,
+                'completed_pending_sets_count': len(sets_completed_pending),
+                'incomplete_sets_count': len(sets_incomplete),
+                'total_slots': total_slots_count,
+                'reserved_slots': total_reserved_slots_count,
+                'available_slots': total_slots_count - total_reserved_slots_count,
+                'global_occupancy': global_occupancy,
+            }
+        }
+
+    @staticmethod
+    def get_sales_analytics(group_id=None, era_id=None, time_window=None, month=None):
+        """
+        Retorna o relatório analítico completo de vendas, faturamento e BI:
+        - time_window: '30d', '90d', '180d', 'year', 'all'
+        - month: 'YYYY-MM'
+        - monthly_sales: agregação mensal com claims_count (volume) e valores monetários (R$)
+        - group_sales: faturamento e volume por grupo
+        - top_items: ranking de photocards/itens mais vendidos
+        - top_buyers: participantes com maior volume de compras
+        """
+        claims = Claim.objects.exclude(status=Claim.Status.CANCELLED).select_related(
+            'participant', 'slot__set__ceg__era__group', 'slot__item_definition'
+        )
+
+        if group_id:
+            claims = claims.filter(slot__set__ceg__era__group_id=group_id)
+        if era_id:
+            claims = claims.filter(slot__set__ceg__era_id=era_id)
+
+        now = timezone.now()
+        if time_window == '30d':
+            claims = claims.filter(claimed_at__gte=now - timedelta(days=30))
+        elif time_window == '90d':
+            claims = claims.filter(claimed_at__gte=now - timedelta(days=90))
+        elif time_window == '180d':
+            claims = claims.filter(claimed_at__gte=now - timedelta(days=180))
+        elif time_window == 'year':
+            claims = claims.filter(claimed_at__year=now.year)
+        elif month:
+            try:
+                y, m = month.split('-')
+                claims = claims.filter(claimed_at__year=int(y), claimed_at__month=int(m))
+            except (ValueError, TypeError):
+                pass
+
+        total_paid = float(claims.filter(status=Claim.Status.PAID).aggregate(s=Sum('total_price'))['s'] or 0)
+        total_pending = float(claims.filter(status=Claim.Status.PENDING).aggregate(s=Sum('total_price'))['s'] or 0)
+        total_sales = total_paid + total_pending
+        claims_count = claims.count()
+        unique_participants = claims.values('participant_id').distinct().count()
+        avg_ticket = float(total_sales / unique_participants) if unique_participants > 0 else 0.0
+
+        # Agregação temporal mês a mês
+        monthly_qs = claims.annotate(
+            month=TruncMonth('claimed_at')
+        ).values('month').annotate(
+            total_amount=Sum('total_price'),
+            paid_amount=Sum('total_price', filter=Q(status=Claim.Status.PAID)),
+            pending_amount=Sum('total_price', filter=Q(status=Claim.Status.PENDING)),
+            claims_count=Count('id')
+        ).order_by('month')
+
+        monthly_flow = []
+        for row in monthly_qs:
+            dt = row['month']
+            if dt:
+                monthly_flow.append({
+                    'month_key': dt.strftime('%Y-%m'),
+                    'label': f"{MONTH_ABBR.get(dt.month, '')}/{str(dt.year)[2:]}",
+                    'full_label': f"{MONTH_FULL.get(dt.month, '')}/{dt.year}",
+                    'total_sales': float(row['total_amount'] or 0),
+                    'paid_sales': float(row['paid_amount'] or 0),
+                    'pending_sales': float(row['pending_amount'] or 0),
+                    'claims_count': row['claims_count'],
+                })
+
+        if not monthly_flow:
+            monthly_flow.append({
+                'month_key': now.strftime('%Y-%m'),
+                'label': f"{MONTH_ABBR.get(now.month, '')}/{str(now.year)[2:]}",
+                'full_label': f"{MONTH_FULL.get(now.month, '')}/{now.year}",
+                'total_sales': 0.0,
+                'paid_sales': 0.0,
+                'pending_sales': 0.0,
+                'claims_count': 0,
+            })
+
+        # Vendas por Grupo
+        group_sales_map = {}
+        for c in claims:
+            grp = c.slot.set.ceg.era.group.name
+            if grp not in group_sales_map:
+                group_sales_map[grp] = {'group_name': grp, 'total_sales': 0.0, 'claims_count': 0}
+            group_sales_map[grp]['total_sales'] += float(c.total_price)
+            group_sales_map[grp]['claims_count'] += 1
+        group_sales = sorted(group_sales_map.values(), key=lambda x: x['total_sales'], reverse=True)
+
+        # Top Itens mais vendidos
+        item_sales_map = {}
+        for c in claims:
+            name = c.slot.item_definition.name
+            member = c.slot.item_definition.member_name or ''
+            grp = c.slot.set.ceg.era.group.name
+            key = (name, grp)
+            if key not in item_sales_map:
+                item_sales_map[key] = {
+                    'item_name': name,
+                    'member_name': member,
+                    'group_name': grp,
+                    'count': 0,
+                    'total_amount': 0.0
+                }
+            item_sales_map[key]['count'] += 1
+            item_sales_map[key]['total_amount'] += float(c.total_price)
+        top_items = sorted(item_sales_map.values(), key=lambda x: (x['count'], x['total_amount']), reverse=True)[:15]
+
+        # Top compradores
+        buyer_map = {}
+        for c in claims:
+            p = c.participant
+            if p.id not in buyer_map:
+                buyer_map[p.id] = {
+                    'id': p.id,
+                    'name': p.name,
+                    'display_name': p.display_name,
+                    'whatsapp': p.whatsapp,
+                    'social_handle': p.social_handle or '',
+                    'claims_count': 0,
+                    'total_spent': 0.0
+                }
+            buyer_map[p.id]['claims_count'] += 1
+            buyer_map[p.id]['total_spent'] += float(c.total_price)
+        top_buyers = sorted(buyer_map.values(), key=lambda x: (x['total_spent'], x['claims_count']), reverse=True)[:10]
+
+        return {
+            'summary': {
+                'total_paid': total_paid,
+                'total_pending': total_pending,
+                'total_sales': total_sales,
+                'claims_count': claims_count,
+                'unique_participants': unique_participants,
+                'avg_ticket': avg_ticket,
+            },
+            'monthly_flow': monthly_flow,
+            'group_sales': group_sales,
+            'top_items': top_items,
+            'top_buyers': top_buyers,
+        }
+

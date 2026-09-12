@@ -146,10 +146,9 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('CEG tripleS Withmuu', ceg_titles)
 
     def test_dashboard_view_renders_successfully(self):
-        # Acesso sem filtros
-        response = self.client.get('/analytics/')
+        # Acesso ao dashboard legado
+        response = self.client.get('/analytics/dashboard/')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Métricas do Organizador')
         self.assertContains(response, 'Faturado (Confirmado)')
         self.assertContains(response, 'Falta Pagar (Pendente)')
         self.assertContains(response, 'Para Vender (Livre)')
@@ -157,9 +156,81 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertContains(response, 'financialDonutChart')
 
         # Acesso com filtro de grupo
-        response_filtered = self.client.get(f'/analytics/?group={self.group_twice.id}')
+        response_filtered = self.client.get(f'/analytics/dashboard/?group={self.group_twice.id}')
         self.assertEqual(response_filtered.status_code, 200)
         self.assertContains(response_filtered, 'TWICE')
+
+    def test_ceg_status_view_renders_successfully(self):
+        # Acesso ao novo painel de status das CEGs
+        response = self.client.get('/analytics/cegs/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Status, Completude e Valores das CEGs')
+        self.assertContains(response, 'Sets Incompletos')
+        self.assertContains(response, 'Sets 100% Preenchidos')
+        self.assertContains(response, 'Sana')
+
+        # Rota raiz /analytics/ também carrega o status das CEGs
+        res_root = self.client.get('/analytics/')
+        self.assertEqual(res_root.status_code, 200)
+        self.assertContains(res_root, 'Status, Completude e Valores das CEGs')
+
+    def test_sales_report_view_renders_successfully(self):
+        # Acesso ao novo relatório de vendas e BI
+        response = self.client.get('/analytics/vendas/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Relatório de Vendas e Income')
+        self.assertContains(response, 'salesMonthlyChart')
+        self.assertContains(response, 'salesDonutChart')
+        self.assertContains(response, 'salesGroupsChart')
+        self.assertContains(response, 'Top Itens & Photocards Mais Vendidos')
+        self.assertContains(response, 'Principais Compradores')
+
+    def test_cegs_operational_status_service(self):
+        data = AnalyticsService.get_cegs_operational_status()
+        self.assertIn('sets_completed_pending', data)
+        self.assertIn('sets_incomplete', data)
+        self.assertIn('cegs_overview', data)
+        self.assertIn('summary', data)
+
+        # Set do tripleS tem 1 slot preenchido de 1 (100% fechado), porém frete inter e taxa não foram cotados
+        self.assertGreaterEqual(len(data['sets_completed_pending']), 1)
+        completed = data['sets_completed_pending'][0]
+        reasons = [r['code'] for r in completed['pending_reasons']]
+        self.assertIn('FRETE_INTER_NOT_SET', reasons)
+
+        # Set do TWICE tem 1 slot preenchido (Jihyo) e 1 livre (Sana) -> incompleto
+        self.assertGreaterEqual(len(data['sets_incomplete']), 1)
+        incomplete = [s for s in data['sets_incomplete'] if s['ceg_title'] == 'CEG TWICE Makestar'][0]
+        self.assertEqual(incomplete['remaining_slots'], 1)
+        missing_names = [item['member_name'] for item in incomplete['missing_items']]
+        self.assertIn('Sana', missing_names)
+
+    def test_sales_analytics_service(self):
+        data = AnalyticsService.get_sales_analytics(time_window='all')
+        self.assertIn('summary', data)
+        self.assertIn('monthly_flow', data)
+        self.assertIn('group_sales', data)
+        self.assertIn('top_items', data)
+        self.assertIn('top_buyers', data)
+
+        self.assertEqual(data['summary']['total_sales'], 80.00)
+        self.assertEqual(data['summary']['claims_count'], 2)
+        self.assertEqual(data['summary']['unique_participants'], 2)
+
+    def test_analytics_new_api_endpoints(self):
+        # API de status das CEGs
+        res_cegs = self.client.get('/analytics/api/cegs/')
+        self.assertEqual(res_cegs.status_code, 200)
+        data_cegs = res_cegs.json()
+        self.assertIn('sets_completed_pending', data_cegs)
+        self.assertIn('sets_incomplete', data_cegs)
+
+        # API de vendas
+        res_sales = self.client.get('/analytics/api/sales/')
+        self.assertEqual(res_sales.status_code, 200)
+        data_sales = res_sales.json()
+        self.assertIn('summary', data_sales)
+        self.assertIn('monthly_flow', data_sales)
 
     def test_analytics_api_endpoint(self):
         response = self.client.get('/analytics/api/')
@@ -169,3 +240,4 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('monthly_flow', data)
         self.assertIn('detailed_inventory', data)
         self.assertEqual(data['summary']['total_sold'], 80.00)
+
