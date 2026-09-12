@@ -619,7 +619,9 @@ class AnalyticsService:
         total_sales = total_paid + total_pending
         claims_count = claims.count()
         unique_participants = claims.values('participant_id').distinct().count()
-        avg_ticket = float(total_sales / unique_participants) if unique_participants > 0 else 0.0
+        avg_ticket_per_buyer = float(total_sales / unique_participants) if unique_participants > 0 else 0.0
+        avg_ticket_per_claim = float(total_sales / claims_count) if claims_count > 0 else 0.0
+        collection_rate = round((total_paid / total_sales) * 100, 1) if total_sales > 0 else 0
 
         # Agregação temporal mês a mês
         monthly_qs = claims.annotate(
@@ -675,15 +677,20 @@ class AnalyticsService:
             key = (name, grp)
             if key not in item_sales_map:
                 item_sales_map[key] = {
+                    'name': name,
                     'item_name': name,
                     'member_name': member,
                     'group_name': grp,
                     'count': 0,
-                    'total_amount': 0.0
+                    'total_claims': 0,
+                    'total_amount': 0.0,
+                    'total_revenue': 0.0,
                 }
             item_sales_map[key]['count'] += 1
+            item_sales_map[key]['total_claims'] += 1
             item_sales_map[key]['total_amount'] += float(c.total_price)
-        top_items = sorted(item_sales_map.values(), key=lambda x: (x['count'], x['total_amount']), reverse=True)[:15]
+            item_sales_map[key]['total_revenue'] += float(c.total_price)
+        top_items = sorted(item_sales_map.values(), key=lambda x: (x['total_claims'], x['total_revenue']), reverse=True)[:15]
 
         # Top compradores
         buyer_map = {}
@@ -708,9 +715,14 @@ class AnalyticsService:
                 'total_paid': total_paid,
                 'total_pending': total_pending,
                 'total_sales': total_sales,
+                'total_claims': claims_count,
                 'claims_count': claims_count,
+                'total_participants': unique_participants,
                 'unique_participants': unique_participants,
-                'avg_ticket': avg_ticket,
+                'avg_ticket': avg_ticket_per_buyer,
+                'avg_ticket_per_buyer': avg_ticket_per_buyer,
+                'avg_ticket_per_claim': avg_ticket_per_claim,
+                'collection_rate': collection_rate,
             },
             'monthly_flow': monthly_flow,
             'group_sales': group_sales,

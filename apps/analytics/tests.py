@@ -296,3 +296,55 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertContains(res_sales, 'chart-data')
         self.assertContains(res_sales, 'salesReportApp')
 
+    def test_sales_report_page_render_and_chart_data_integrity(self):
+        import json
+        res = self.client.get('/analytics/vendas/')
+        self.assertEqual(res.status_code, 200)
+
+        # Contexto e chaves de BI
+        ctx = res.context
+        self.assertIn('chart_data', ctx)
+        self.assertIn('summary', ctx)
+        summary = ctx['summary']
+
+        self.assertEqual(summary['total_sales'], 80.00)
+        self.assertEqual(summary['total_paid'], 45.00)
+        self.assertEqual(summary['total_pending'], 35.00)
+        self.assertEqual(summary['total_claims'], 2)
+        self.assertEqual(summary['total_participants'], 2)
+        self.assertEqual(summary['collection_rate'], 56.2)
+        self.assertEqual(summary['avg_ticket_per_claim'], 40.00)
+        self.assertEqual(summary['avg_ticket_per_buyer'], 40.00)
+
+        # Script do Chart.js
+        self.assertContains(res, 'chart.umd.min.js')
+
+        # JSON dos gráficos no script tag
+        content = res.content.decode('utf-8')
+        self.assertIn('<script id="chart-data" type="application/json">', content)
+        start = content.index('<script id="chart-data" type="application/json">') + len('<script id="chart-data" type="application/json">')
+        end = content.index('</script>', start)
+        json_raw = content[start:end]
+        chart_data_parsed = json.loads(json_raw)
+
+        self.assertIn('monthly', chart_data_parsed)
+        self.assertIn('donut', chart_data_parsed)
+        self.assertIn('groups', chart_data_parsed)
+        self.assertEqual(chart_data_parsed['donut']['data'], [45.00, 35.00])
+
+        # Top Itens deve conter nomes e valores preenchidos
+        top_items = ctx['top_items']
+        self.assertTrue(len(top_items) >= 2)
+        self.assertEqual(top_items[0]['name'], 'Photocard Jihyo')
+        self.assertEqual(top_items[0]['total_claims'], 1)
+        self.assertEqual(top_items[0]['total_revenue'], 45.00)
+
+        # HTML renderizado com métricas completas nos cards
+        self.assertContains(res, '56,2% recebido')
+        self.assertContains(res, '(2 vendas)')
+        self.assertContains(res, 'De 2 compradores únicos')
+        self.assertContains(res, 'R$ 40,00 por participante')
+        self.assertContains(res, 'Photocard Jihyo')
+        self.assertContains(res, 'Photocard Seoyeon')
+
+

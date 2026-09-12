@@ -2,6 +2,11 @@
 
 {% block title %}Relatório de Vendas & BI Financeiro | Painel do Organizador{% endblock %}
 
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 {{ filter_options|json_script:"filter-options-data" }}
 {{ chart_data|json_script:"chart-data" }}
@@ -403,19 +408,36 @@
 
 </div>
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
 <script>
 function salesReportApp() {
+    let filterOptions = { groups: [], eras: [], months: [] };
+    try {
+        const el = document.getElementById('filter-options-data');
+        if (el && el.textContent.trim()) filterOptions = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('Erro ao ler filter-options-data:', e);
+    }
+
+    let chartData = {
+        monthly: { labels: [], full_labels: [], total_sales: [], paid_sales: [], pending_sales: [], claims_count: [] },
+        donut: { labels: ['Pago (Confirmado)', 'Pendente (Aguardando Pix)'], data: [0, 0] },
+        groups: { labels: [], sales: [], claims: [] }
+    };
+    try {
+        const el = document.getElementById('chart-data');
+        if (el && el.textContent.trim()) chartData = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('Erro ao ler chart-data:', e);
+    }
+
     return {
         selectedGroup: '{{ selected_group|default:"" }}',
         selectedEra: '{{ selected_era|default:"" }}',
         selectedWindow: '{{ selected_window|default:"all" }}',
         selectedMonth: '{{ selected_month|default:"" }}',
         chartViewMode: 'combined', // 'combined', 'volume', 'revenue'
-        filterOptions: JSON.parse(document.getElementById('filter-options-data').textContent),
-        chartData: JSON.parse(document.getElementById('chart-data').textContent),
+        filterOptions: filterOptions,
+        chartData: chartData,
         monthlyChart: null,
         donutChart: null,
         groupsChart: null,
@@ -463,21 +485,33 @@ function salesReportApp() {
             this.monthlyChart.update();
         },
         initCharts() {
-            this.$nextTick(() => {
+            const startRendering = () => {
                 this.renderMonthlyChart();
                 this.renderDonutChart();
                 this.renderGroupsChart();
-            });
+            };
+
+            const ensureChartLoaded = (tries = 25) => {
+                if (typeof Chart !== 'undefined') {
+                    this.$nextTick(startRendering);
+                } else if (tries > 0) {
+                    setTimeout(() => ensureChartLoaded(tries - 1), 100);
+                } else {
+                    console.error('Chart.js não pôde ser carregado a tempo.');
+                }
+            };
+
+            ensureChartLoaded();
         },
         renderMonthlyChart() {
             const ctx = document.getElementById('salesMonthlyChart');
             if (!ctx) return;
             if (this.monthlyChart) this.monthlyChart.destroy();
 
-            const labels = this.chartData.monthly.labels;
-            const claimsCount = this.chartData.monthly.claims_count;
-            const paidSales = this.chartData.monthly.paid_sales;
-            const pendingSales = this.chartData.monthly.pending_sales;
+            const labels = (this.chartData.monthly && this.chartData.monthly.labels) || [];
+            const claimsCount = (this.chartData.monthly && this.chartData.monthly.claims_count) || [];
+            const paidSales = (this.chartData.monthly && this.chartData.monthly.paid_sales) || [];
+            const pendingSales = (this.chartData.monthly && this.chartData.monthly.pending_sales) || [];
 
             this.monthlyChart = new Chart(ctx, {
                 type: 'bar',
@@ -490,7 +524,8 @@ function salesReportApp() {
                             backgroundColor: 'rgba(16, 185, 129, 0.85)',
                             borderRadius: 6,
                             yAxisID: 'yRevenue',
-                            order: 2
+                            order: 2,
+                            stack: 'revenue'
                         },
                         {
                             label: 'Faturamento Pendente (R$)',
@@ -498,7 +533,8 @@ function salesReportApp() {
                             backgroundColor: 'rgba(245, 158, 11, 0.7)',
                             borderRadius: 6,
                             yAxisID: 'yRevenue',
-                            order: 3
+                            order: 3,
+                            stack: 'revenue'
                         },
                         {
                             type: 'line',
@@ -537,9 +573,9 @@ function salesReportApp() {
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
                                     if (context.dataset.yAxisID === 'yRevenue') {
-                                        label += 'R$ ' + context.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                        label += 'R$ ' + (context.parsed.y || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                                     } else {
-                                        label += context.parsed.y + ' claims';
+                                        label += (context.parsed.y || 0) + ' claims';
                                     }
                                     return label;
                                 }
@@ -548,12 +584,14 @@ function salesReportApp() {
                     },
                     scales: {
                         x: {
+                            stacked: true,
                             grid: { display: false },
                             ticks: { font: { weight: 'bold', size: 11 } }
                         },
                         yRevenue: {
                             type: 'linear',
                             position: 'left',
+                            beginAtZero: true,
                             title: {
                                 display: true,
                                 text: 'Faturamento (R$)',
@@ -567,6 +605,7 @@ function salesReportApp() {
                         yVolume: {
                             type: 'linear',
                             position: 'right',
+                            beginAtZero: true,
                             title: {
                                 display: true,
                                 text: 'Qtd Vendas (Claims)',
@@ -584,13 +623,19 @@ function salesReportApp() {
             if (!ctx) return;
             if (this.donutChart) this.donutChart.destroy();
 
+            const donutLabels = (this.chartData.donut && this.chartData.donut.labels) || ['Pago (Confirmado)', 'Pendente (Aguardando Pix)'];
+            const donutData = (this.chartData.donut && this.chartData.donut.data) || [0, 0];
+            const hasData = donutData.some(v => v > 0);
+
             this.donutChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: this.chartData.donut.labels,
+                    labels: hasData ? donutLabels : ['Sem dados no período'],
                     datasets: [{
-                        data: this.chartData.donut.data,
-                        backgroundColor: ['rgba(16, 185, 129, 0.9)', 'rgba(245, 158, 11, 0.9)'],
+                        data: hasData ? donutData : [1],
+                        backgroundColor: hasData
+                            ? ['rgba(16, 185, 129, 0.9)', 'rgba(245, 158, 11, 0.9)']
+                            : ['rgba(226, 232, 240, 0.8)'],
                         borderWidth: 2,
                         borderColor: '#ffffff'
                     }]
@@ -606,6 +651,7 @@ function salesReportApp() {
                         tooltip: {
                             callbacks: {
                                 label: function(ctx) {
+                                    if (!hasData) return 'Nenhuma venda registrada no período';
                                     const v = ctx.parsed || 0;
                                     return ctx.label + ': R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                                 }
@@ -621,13 +667,17 @@ function salesReportApp() {
             if (!ctx) return;
             if (this.groupsChart) this.groupsChart.destroy();
 
+            const groupLabels = (this.chartData.groups && this.chartData.groups.labels) || [];
+            const groupSales = (this.chartData.groups && this.chartData.groups.sales) || [];
+            const hasData = groupLabels.length > 0 && groupSales.some(v => v > 0);
+
             this.groupsChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: this.chartData.groups.labels,
+                    labels: hasData ? groupLabels : ['Sem dados'],
                     datasets: [{
                         label: 'Faturamento Total (R$)',
-                        data: this.chartData.groups.sales,
+                        data: hasData ? groupSales : [0],
                         backgroundColor: 'rgba(147, 51, 234, 0.8)',
                         borderRadius: 6
                     }]
@@ -648,6 +698,7 @@ function salesReportApp() {
                     },
                     scales: {
                         x: {
+                            beginAtZero: true,
                             ticks: {
                                 callback: function(v) { return 'R$ ' + v; }
                             },

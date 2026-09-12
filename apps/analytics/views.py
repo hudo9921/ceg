@@ -77,6 +77,22 @@ class SalesReportView(View):
                     selected_era_name = e['name']
                     break
 
+        from .services import MONTH_FULL
+        window_labels = {
+            '30d': 'Últimos 30 dias',
+            '90d': 'Últimos 90 dias',
+            '180d': 'Últimos 6 meses',
+            'year': 'Este Ano',
+            'all': 'Todo o Histórico',
+        }
+        window_label = window_labels.get(time_window, 'Todo o Histórico')
+        if month:
+            try:
+                y, m = month.split('-')
+                window_label = f"{MONTH_FULL.get(int(m), '')}/{y}"
+            except Exception:
+                pass
+
         # Estrutura de dados para os gráficos do Chart.js
         chart_data = {
             'monthly': {
@@ -110,11 +126,13 @@ class SalesReportView(View):
             'selected_month': month or '',
             'selected_group_name': selected_group_name,
             'selected_era_name': selected_era_name,
+            'window_label': window_label,
             'summary': sales_data['summary'],
             'monthly_flow': sales_data['monthly_flow'],
             'group_sales': sales_data['group_sales'],
             'top_items': sales_data['top_items'],
             'top_buyers': sales_data['top_buyers'],
+            'chart_data': chart_data,
             'chart_data_json': json.dumps(chart_data),
         })
 
