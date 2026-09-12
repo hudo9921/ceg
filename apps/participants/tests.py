@@ -158,3 +158,104 @@ class ParticipantProfileTests(TestCase):
         self.assertContains(response, 'Filtrar por Status:')
         self.assertContains(response, 'Faltam Pagar')
         self.assertContains(response, 'Confirmados')
+
+
+class ParticipantNotificationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.participant = Participant.objects.create(
+            name='Participante Notif',
+            whatsapp='5511977776666',
+            username='part_notif'
+        )
+
+    def test_notification_creation_and_unread_count(self):
+        from apps.participants.models import ParticipantNotification
+        self.assertEqual(self.participant.unread_notifications_count, 0)
+
+        notif = ParticipantNotification.objects.create(
+            participant=self.participant,
+            title='Set #2 Cancelado — CEG Teste',
+            message='O Set #2 precisou ser cancelado.',
+            notification_type=ParticipantNotification.NotificationType.SET_CANCELLED
+        )
+        self.assertEqual(self.participant.unread_notifications_count, 1)
+
+        notif.mark_as_read()
+        self.assertTrue(notif.is_read)
+        self.assertIsNotNone(notif.read_at)
+        self.assertEqual(self.participant.unread_notifications_count, 0)
+
+    def test_my_claims_view_renders_notifications(self):
+        from apps.participants.models import ParticipantNotification
+        ParticipantNotification.objects.create(
+            participant=self.participant,
+            title='Aviso de Set Cancelado',
+            message='Item photocard cancelado.',
+            notification_type=ParticipantNotification.NotificationType.SET_CANCELLED
+        )
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        response = self.client.get('/me/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Avisos & Notificações')
+        self.assertContains(response, 'Aviso de Set Cancelado')
+        self.assertContains(response, 'Item photocard cancelado.')
+        self.assertEqual(response.context['unread_notifications_count'], 1)
+
+    def test_mark_notification_read_view(self):
+        from apps.participants.models import ParticipantNotification
+        notif = ParticipantNotification.objects.create(
+            participant=self.participant,
+            title='Aviso 1',
+            message='Mensagem 1'
+        )
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.post(
+            f'/me/notifications/{notif.id}/read/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['unread_count'], 0)
+
+        notif.refresh_from_db()
+        self.assertTrue(notif.is_read)
+
+    def test_mark_all_notifications_read_view(self):
+        from apps.participants.models import ParticipantNotification
+        ParticipantNotification.objects.create(
+            participant=self.participant,
+            title='Aviso 1',
+            message='Mensagem 1'
+        )
+        ParticipantNotification.objects.create(
+            participant=self.participant,
+            title='Aviso 2',
+            message='Mensagem 2'
+        )
+        self.assertEqual(self.participant.unread_notifications_count, 2)
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.post(
+            '/me/notifications/read-all/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['unread_count'], 0)
+
+        self.assertEqual(self.participant.unread_notifications_count, 0)
+

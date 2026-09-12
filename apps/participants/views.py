@@ -2,8 +2,10 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Participant, Claim, clean_phone_number
+from django.utils import timezone
+from .models import Participant, Claim, ParticipantNotification, clean_phone_number
 from apps.auth_otp.services import OTPService
+
 
 
 class LoginOtpView(View):
@@ -179,6 +181,10 @@ class MyClaimsView(View):
 
         is_placeholder_name = participant.name.startswith('Participante ')
 
+        # Notificações do participante
+        notifications = list(participant.notifications.all()[:25])
+        unread_notifications_count = sum(1 for n in notifications if not n.is_read)
+
         return render(request, 'participants/my_claims.html', {
             'participant': participant,
             'cegs_groups': list(cegs_dict.values()),
@@ -190,10 +196,58 @@ class MyClaimsView(View):
             'total_pending_all': total_pending_all,
             'total_paid_all': total_paid_all,
             'is_placeholder_name': is_placeholder_name,
+            'notifications': notifications,
+            'unread_notifications_count': unread_notifications_count,
         })
 
     def post(self, request):
         return ProfileUpdateView.as_view()(request)
+
+
+class MarkNotificationReadView(View):
+    """Marca uma notificação como lida pelo participante."""
+    def post(self, request, notification_id):
+        participant_id = request.session.get('participant_id')
+        if not participant_id:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Não autenticado'}, status=401)
+            return redirect('login_otp')
+
+        try:
+            notif = ParticipantNotification.objects.get(id=notification_id, participant_id=participant_id)
+            notif.mark_as_read()
+        except ParticipantNotification.DoesNotExist:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Notificação não encontrada'}, status=404)
+            return redirect('my_claims')
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            unread_count = ParticipantNotification.objects.filter(participant_id=participant_id, is_read=False).count()
+            return JsonResponse({'success': True, 'unread_count': unread_count})
+
+        messages.success(request, "Aviso marcado como lido.")
+        return redirect('my_claims')
+
+
+class MarkAllNotificationsReadView(View):
+    """Marca todas as notificações do participante como lidas."""
+    def post(self, request):
+        participant_id = request.session.get('participant_id')
+        if not participant_id:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Não autenticado'}, status=401)
+            return redirect('login_otp')
+
+        ParticipantNotification.objects.filter(participant_id=participant_id, is_read=False).update(
+            is_read=True,
+            read_at=timezone.now()
+        )
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'unread_count': 0})
+
+        messages.success(request, "Todos os avisos foram marcados como lidos.")
+        return redirect('my_claims')
 
 
 class LogoutView(View):
@@ -201,3 +255,4 @@ class LogoutView(View):
         request.session.pop('participant_id', None)
         messages.info(request, "Você encerrou sua sessão com sucesso.")
         return redirect('home')
+

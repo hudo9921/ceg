@@ -485,7 +485,34 @@ class DeleteSetView(View):
         with transaction.atomic():
             ceg_set.delete()
 
-        # 3. Envia notificações via WhatsApp Gateway se solicitado
+        # 3. Cria Notificações Internas no Painel do Participante (sempre persistido no banco)
+        from apps.participants.models import ParticipantNotification
+        for p_id, p_info in participants_data.items():
+            p = p_info['participant']
+            items_text_app = "\n".join(
+                f"• {item['name']} — R$ {item['price']:.2f} ({'Pago ✔' if item['is_paid'] else 'Pendente'})"
+                for item in p_info['items']
+            )
+            if p_info['has_paid']:
+                payment_note_app = "⚠️ Importante: Como você já havia efetuado o pagamento deste item, entre em contato para estorno/reembolso via Pix ou transferência de crédito."
+            else:
+                payment_note_app = "ℹ️ Nenhuma cobrança foi efetuada para este item."
+            extra_note_app = f"\n\n💬 Recado do organizador:\n{custom_message}" if custom_message else ""
+
+            notification_message = (
+                f"O Set #{set_number} da compra em grupo '{ceg.title}' infelizmente não atingiu o fechamento e precisou ser cancelado.\n\n"
+                f"📦 Item(ns) que você tinha neste set:\n{items_text_app}\n\n"
+                f"{payment_note_app}{extra_note_app}"
+            )
+
+            ParticipantNotification.objects.create(
+                participant=p,
+                title=f"Set #{set_number} Cancelado — {ceg.title}",
+                message=notification_message,
+                notification_type=ParticipantNotification.NotificationType.SET_CANCELLED,
+            )
+
+        # 4. Envia notificações via WhatsApp Gateway se solicitado
         notified_names = []
         if notify_participants and participants_data:
             from apps.auth_otp.providers import get_whatsapp_provider
@@ -528,9 +555,10 @@ class DeleteSetView(View):
         # Mensagem de feedback
         msg = f"🗑️ Set #{set_number} excluído com sucesso da CEG '{ceg.title}'."
         if claimed_slots:
-            msg += f" {len(claimed_slots)} reserva(s) foram canceladas."
+            msg += f" {len(claimed_slots)} reserva(s) foram canceladas e notificadas no painel de {len(participants_data)} participante(s)."
         if notified_names:
-            msg += f" 📢 Notificação WhatsApp enviada para {len(notified_names)} participante(s): {', '.join(notified_names)}."
+            msg += f" 📢 WhatsApp enviado para {len(notified_names)} participante(s): {', '.join(notified_names)}."
+
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
             return JsonResponse({

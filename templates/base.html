@@ -132,7 +132,13 @@
                             <a href="{% url 'my_claims' %}" class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-800 hover:bg-pink-200 transition">
                                 <span class="w-2 h-2 mr-1.5 bg-pink-500 rounded-full animate-pulse"></span>
                                 {{ logged_participant.display_name }} (Meus Claims)
+                                {% if logged_participant.unread_notifications_count > 0 %}
+                                    <span class="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px] font-black animate-bounce" title="{{ logged_participant.unread_notifications_count }} aviso(s) não lido(s)">
+                                        {{ logged_participant.unread_notifications_count }}
+                                    </span>
+                                {% endif %}
                             </a>
+
                             <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-xs text-slate-400 hover:text-red-600 px-2 py-1">
                                 Sair
                             </a>

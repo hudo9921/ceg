@@ -69,6 +69,11 @@ class Participant(models.Model):
             return f"+55 ({w[2:4]}) {w[4:9]}-{w[9:]}"
         return f"+{w}"
 
+    @property
+    def unread_notifications_count(self) -> int:
+        """Retorna a contagem de notificações não lidas deste participante."""
+        return self.notifications.filter(is_read=False).count()
+
 
 class Claim(models.Model):
     class Status(models.TextChoices):
@@ -133,3 +138,44 @@ class Claim(models.Model):
             self.slot.claimed_by = None
             self.slot.claimed_at = None
             self.slot.save(update_fields=['status', 'claimed_by', 'claimed_at'])
+
+
+class ParticipantNotification(models.Model):
+    class NotificationType(models.TextChoices):
+        SET_CANCELLED = 'SET_CANCELLED', 'Set Cancelado'
+        CLAIM_UPDATE = 'CLAIM_UPDATE', 'Atualização de Reserva'
+        GENERAL = 'GENERAL', 'Aviso Geral'
+
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name='Participante'
+    )
+    title = models.CharField('Título', max_length=200)
+    message = models.TextField('Mensagem / Detalhes')
+    notification_type = models.CharField(
+        'Tipo de Notificação',
+        max_length=40,
+        choices=NotificationType.choices,
+        default=NotificationType.SET_CANCELLED,
+        db_index=True
+    )
+    is_read = models.BooleanField('Lida', default=False, db_index=True)
+    created_at = models.DateTimeField('Criado em', auto_now_add=True, db_index=True)
+    read_at = models.DateTimeField('Lida em', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Notificação de Participante'
+        verbose_name_plural = 'Notificações de Participantes'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notificação para {self.participant.display_name}: {self.title}"
+
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
 import urllib.parse
-from .models import Participant, Claim
+from .models import Participant, Claim, ParticipantNotification
 
 
 @admin.register(Participant)
@@ -100,3 +100,18 @@ class ClaimAdmin(admin.ModelAdmin):
         for claim in queryset:
             claim.cancel()
         self.message_user(request, f"{queryset.count()} reservas foram canceladas e os slots liberados.")
+
+
+@admin.register(ParticipantNotification)
+class ParticipantNotificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'participant', 'title', 'notification_type', 'is_read', 'created_at', 'read_at')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('participant__name', 'participant__username', 'participant__whatsapp', 'title', 'message')
+    actions = ['mark_as_read']
+
+    @admin.action(description='Marcar selecionadas como LIDAS')
+    def mark_as_read(self, request, queryset):
+        for notif in queryset:
+            notif.mark_as_read()
+        self.message_user(request, f"{queryset.count()} notificações marcadas como lidas.")
+

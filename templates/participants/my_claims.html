@@ -46,6 +46,59 @@
          copyPix(key) {
              navigator.clipboard.writeText(key);
              alert('Chave Pix copiada com sucesso! ' + key);
+         },
+         notificationsOpen: {% if unread_notifications_count > 0 %}true{% else %}false{% endif %},
+         unreadNotificationsCount: {{ unread_notifications_count|default:0 }},
+         async markNotificationRead(notifId) {
+             try {
+                 const res = await fetch(`/me/notifications/${notifId}/read/`, {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': '{{ csrf_token }}',
+                         'X-Requested-With': 'XMLHttpRequest'
+                     }
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     this.unreadNotificationsCount = data.unread_count;
+                     const card = document.getElementById(`notif-card-${notifId}`);
+                     if (card) {
+                         card.classList.remove('border-amber-300', 'bg-amber-50/40');
+                         card.classList.add('border-slate-200', 'bg-slate-50/60', 'opacity-85');
+                         const badge = card.querySelector('.notif-badge-new');
+                         if (badge) badge.remove();
+                         const btn = card.querySelector('.notif-btn-read');
+                         if (btn) btn.outerHTML = '<span class="text-[11px] text-slate-400 font-medium flex items-center gap-1"><span>✓</span> Lido</span>';
+                     }
+                 }
+             } catch (err) {
+                 console.error('Erro ao marcar notificação como lida:', err);
+             }
+         },
+         async markAllNotificationsRead() {
+             try {
+                 const res = await fetch('/me/notifications/read-all/', {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': '{{ csrf_token }}',
+                         'X-Requested-With': 'XMLHttpRequest'
+                     }
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     this.unreadNotificationsCount = 0;
+                     document.querySelectorAll('.notif-card-item').forEach(card => {
+                         card.classList.remove('border-amber-300', 'bg-amber-50/40');
+                         card.classList.add('border-slate-200', 'bg-slate-50/60', 'opacity-85');
+                         const badge = card.querySelector('.notif-badge-new');
+                         if (badge) badge.remove();
+                         const btn = card.querySelector('.notif-btn-read');
+                         if (btn) btn.outerHTML = '<span class="text-[11px] text-slate-400 font-medium flex items-center gap-1"><span>✓</span> Lido</span>';
+                     });
+                 }
+             } catch (err) {
+                 console.error('Erro ao marcar todas notificações:', err);
+             }
          }
      }">
 
@@ -113,6 +166,89 @@
                 <span>✏️</span>
                 <span>{% if is_placeholder_name %}Completar Cadastro{% else %}Adicionar @ Social{% endif %}</span>
             </button>
+        </div>
+    {% endif %}
+
+    <!-- Central de Avisos & Notificações do Participante -->
+    {% if notifications %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-base font-bold shadow-2xs">
+                        📢
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-black text-slate-900">Avisos & Notificações</h2>
+                            <template x-if="unreadNotificationsCount > 0">
+                                <span class="px-2 py-0.5 bg-red-100 text-red-700 font-black text-[10px] rounded-full uppercase tracking-wider animate-pulse"
+                                      x-text="unreadNotificationsCount + ' novo(s)'"></span>
+                            </template>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Atualizações sobre compras em grupo, cancelamentos de sets e estornos.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 self-end sm:self-center">
+                    <template x-if="unreadNotificationsCount > 0">
+                        <button type="button" @click="markAllNotificationsRead()"
+                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs">
+                            <span>✓</span> Marcar todos como lidos
+                        </button>
+                    </template>
+                    <button type="button" @click="notificationsOpen = !notificationsOpen"
+                            class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1">
+                        <span x-text="notificationsOpen ? 'Recolher' : 'Expandir (' + {{ notifications|length }} + ')'"></span>
+                        <span class="transition-transform duration-200 text-[10px]" :class="notificationsOpen ? 'rotate-180' : ''">▼</span>
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="notificationsOpen" x-collapse class="space-y-3 pt-1">
+                {% for notif in notifications %}
+                    <div id="notif-card-{{ notif.id }}"
+                         class="notif-card-item p-4 sm:p-5 rounded-2xl border transition-all duration-200 space-y-3
+                         {% if not notif.is_read %}border-amber-300 bg-amber-50/40 shadow-xs{% else %}border-slate-200 bg-slate-50/60 opacity-85{% endif %}">
+                        
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">
+                                    {% if notif.notification_type == 'SET_CANCELLED' %}⚠️{% else %}ℹ️{% endif %}
+                                </span>
+                                <h3 class="text-sm font-black text-slate-900">
+                                    {{ notif.title }}
+                                </h3>
+                                {% if not notif.is_read %}
+                                    <span class="notif-badge-new px-1.5 py-0.5 bg-amber-500 text-white font-black text-[9px] rounded-md uppercase tracking-wider">
+                                        Novo
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex items-center gap-3 text-xs text-slate-400">
+                                <span class="text-[11px]">{{ notif.created_at|date:"d/m/Y \à\s H:i" }}</span>
+                                {% if not notif.is_read %}
+                                    <button type="button" @click="markNotificationRead({{ notif.id }})"
+                                            class="notif-btn-read px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-lg text-[11px] transition shadow-2xs cursor-pointer">
+                                        Marcar como lido
+                                    </button>
+                                {% else %}
+                                    <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                                        <span>✓</span> Lido
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da mensagem formatada -->
+                        <div class="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans bg-white/80 p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                            {{ notif.message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 

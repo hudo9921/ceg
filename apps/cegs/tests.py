@@ -1253,9 +1253,21 @@ class DeleteSetViewTests(TestCase):
         self.assertIn('estorno/reembolso via Pix', sent_msg)
         self.assertIn('Estorno será efetuado via Pix ainda hoje!', sent_msg)
 
+        # Verifica criação da notificação interna no painel do participante
+        from apps.participants.models import ParticipantNotification
+        notif = ParticipantNotification.objects.filter(participant=self.participant).first()
+        self.assertIsNotNone(notif)
+        self.assertEqual(notif.notification_type, ParticipantNotification.NotificationType.SET_CANCELLED)
+        self.assertIn('Set #2 Cancelado', notif.title)
+        self.assertIn('Photocard Seoyeon', notif.message)
+        self.assertIn('Pago ✔', notif.message)
+        self.assertIn('estorno/reembolso via Pix', notif.message)
+        self.assertFalse(notif.is_read)
+
     def test_delete_set_without_notification(self):
-        """Quando notify_participants=False, o set é excluído sem disparar mensagens via WhatsApp."""
+        """Quando notify_participants=False, o set é excluído sem disparar mensagens via WhatsApp, mas a notificação interna ainda é gerada."""
         from apps.auth_otp.providers import LAST_SENT_MESSAGES
+        from apps.participants.models import ParticipantNotification
         LAST_SENT_MESSAGES.clear()
 
         self.slot_2.claimed_by = self.participant
@@ -1268,11 +1280,15 @@ class DeleteSetViewTests(TestCase):
             f'/sets/{self.set_2.id}/delete/',
             data={
                 'notify_participants': 'false',
-                'custom_message': 'Essa mensagem não deve ser enviada'
+                'custom_message': 'Essa mensagem não deve ser enviada via whats'
             }
         )
         self.assertRedirects(res, f'/ceg/{self.ceg.slug}/')
         self.assertNotIn(self.participant.whatsapp, LAST_SENT_MESSAGES)
+
+        # Notificação interna no painel deve ter sido gerada
+        self.assertTrue(ParticipantNotification.objects.filter(participant=self.participant).exists())
+
 
 
 
