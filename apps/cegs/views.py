@@ -434,3 +434,35 @@ class ManageSlotView(View):
         })
 
 
+class DeleteSetView(View):
+    """
+    Permite ao organizador (staff) excluir um Set da CEG (por exemplo, quando o Set não fechou).
+    Ao excluir o Set, todos os seus slots e eventuais reservas são permanentemente removidos.
+    """
+    def post(self, request, set_id):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+            messages.error(request, "Acesso restrito ao organizador.")
+            return redirect(f"/admin/login/?next={request.path}")
+
+        ceg_set = get_object_or_404(CEGSet.objects.select_related('ceg'), id=set_id)
+        ceg = ceg_set.ceg
+        set_number = ceg_set.set_number
+        claims_count = Claim.objects.filter(slot__set=ceg_set).count()
+
+        with transaction.atomic():
+            ceg_set.delete()
+
+        msg = f"🗑️ Set #{set_number} excluído com sucesso da CEG '{ceg.title}'."
+        if claims_count > 0:
+            msg += f" ({claims_count} reserva(s) foram canceladas e removidas)."
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return JsonResponse({'success': True, 'message': msg, 'set_number': set_number})
+
+        messages.success(request, msg)
+        return redirect('ceg_detail', slug=ceg.slug)
+
+
+

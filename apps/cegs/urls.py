@@ -6,6 +6,7 @@ from .views import (
     ToggleSlotPaymentView,
     UpdateCEGFeesView,
     ManageSlotView,
+    DeleteSetView,
 )
 from .creations_views import (
     CreationsHubView,
@@ -23,6 +24,7 @@ urlpatterns = [
     path('slots/<int:slot_id>/claim/', ClaimSlotView.as_view(), name='claim_slot'),
     path('slots/<int:slot_id>/toggle-payment/', ToggleSlotPaymentView.as_view(), name='toggle_slot_payment'),
     path('slots/<int:slot_id>/manage/', ManageSlotView.as_view(), name='manage_slot'),
+    path('sets/<int:set_id>/delete/', DeleteSetView.as_view(), name='delete_set'),
     path('creations/', CreationsHubView.as_view(), name='creations_hub'),
     path('creations/group/create/', CreateGroupView.as_view(), name='create_group'),
     path('creations/era/create/', CreateEraView.as_view(), name='create_era'),

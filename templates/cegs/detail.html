@@ -19,13 +19,25 @@
          modalOpen: false,
          feeModalOpen: false,
          manageSlotModalOpen: false,
+         deleteSetModalOpen: false,
          selectedSlot: null,
          managedSlot: null,
+         setToDelete: null,
+         deleteSetLoading: false,
          managePrice: '',
          manageApplyAllSets: false,
          manageParticipantId: '',
          manageRemoveClaim: false,
          manageLoading: false,
+         openDeleteSetModal(setObj) {
+             this.setToDelete = setObj;
+             this.deleteSetLoading = false;
+             this.deleteSetModalOpen = true;
+         },
+         closeDeleteSetModal() {
+             this.deleteSetModalOpen = false;
+             this.setToDelete = null;
+         },
          openClaimModal(slot) {
              if (!this.isLoggedIn) {
                  window.location.href = '{% url "login_otp" %}?next=' + encodeURIComponent(window.location.pathname);
@@ -363,6 +375,23 @@
                             <span class="px-2.5 py-1 bg-slate-200 text-slate-700 font-medium rounded-md">
                                 {{ set.slots_count|add:"-"|add:set.reserved_count }} vagas restantes
                             </span>
+                        {% endif %}
+
+                        {% if user.is_staff %}
+                            <!-- Botão Excluir Set -->
+                            <button type="button"
+                                    @click="openDeleteSetModal({
+                                        id: {{ set.id }},
+                                        setNumber: {{ set.set_number }},
+                                        reservedCount: {{ set.reserved_count }},
+                                        slotsCount: {{ set.slots_count }},
+                                        isFull: {{ set.is_full|yesno:'true,false' }}
+                                    })"
+                                    class="px-2.5 py-1 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-md border border-rose-200 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs"
+                                    title="Excluir Set #{{ set.set_number }} da CEG">
+                                <span>🗑️</span>
+                                <span class="hidden sm:inline">Excluir Set</span>
+                            </button>
                         {% endif %}
                     </div>
                 </div>
@@ -1072,6 +1101,77 @@
                                 class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
                             <span x-show="manageLoading" class="animate-spin">⌛</span>
                             <span>💾 Salvar Alterações</span>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal de Confirmação para Excluir Set -->
+        <div x-show="deleteSetModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeDeleteSetModal()">
+
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+                 @click.away="closeDeleteSetModal()">
+
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shadow-2xs">
+                            🗑️
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Excluir Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span>
+                            </h3>
+                            <p class="text-xs text-slate-500 truncate max-w-[260px]">{{ ceg.title }}</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeDeleteSetModal()"
+                            class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="space-y-3 text-xs text-slate-600">
+                    <p>
+                        Tem certeza de que deseja excluir o <strong>Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> desta CEG?
+                    </p>
+
+                    <!-- Alerta se houver reservas ativas -->
+                    <template x-if="setToDelete && setToDelete.reservedCount > 0">
+                        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1 text-amber-900">
+                            <div class="font-bold flex items-center gap-1.5 text-xs text-amber-800">
+                                <span>⚠️</span> Atenção: Reservas existentes
+                            </div>
+                            <p class="text-[11px] leading-relaxed">
+                                Este set possui <strong x-text="setToDelete.reservedCount"></strong> de <strong x-text="setToDelete.slotsCount"></strong> item(ns) reservado(s).
+                                Ao excluir este set, <strong>todas as suas reservas e slots físicos serão permanentemente cancelados e excluídos</strong>.
+                            </p>
+                        </div>
+                    </template>
+
+                    <!-- Mensagem se não houver reservas -->
+                    <template x-if="setToDelete && setToDelete.reservedCount === 0">
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-[11px] leading-relaxed">
+                            ℹ️ Este set não possui nenhuma reserva ativa. Todos os seus slots vagos serão removidos com segurança.
+                        </div>
+                    </template>
+                </div>
+
+                <form :action="'/sets/' + (setToDelete ? setToDelete.id : '') + '/delete/'" method="POST"
+                      @submit="deleteSetLoading = true">
+                    {% csrf_token %}
+                    <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                        <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="deleteSetLoading"
+                                class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                            <span x-show="deleteSetLoading" class="animate-spin">⌛</span>
+                            <span>Sim, Excluir Set</span>
                         </button>
                     </div>
                 </form>

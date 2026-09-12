@@ -1,5 +1,6 @@
 import json
 import threading
+from decimal import Decimal
 from django.test import TestCase, TransactionTestCase, Client
 from django.utils import timezone
 from datetime import timedelta
@@ -1117,6 +1118,105 @@ class CEGAvailabilityCardTests(TestCase):
 
         # CEG 100% preenchida
         self.assertIn('100% preenchida', content)
+
+
+class DeleteSetViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username='admin_set_del',
+            email='admin_set_del@test.com',
+            password='password123'
+        )
+        self.regular_user = User.objects.create_user(
+            username='user_regular_del',
+            password='password123'
+        )
+        self.group = KpopGroup.objects.create(name='tripleS Del', slug='triples-del')
+        self.era = Era.objects.create(group=self.group, name='Assemble24 Del', slug='assemble24-del')
+        self.ceg = CEG.objects.create(era=self.era, title='CEG Set Delete Test', slug='ceg-set-delete-test')
+
+        self.item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Seoyeon',
+            default_price=Decimal('50.00')
+        )
+
+        self.set_1 = CEGSet.objects.create(ceg=self.ceg, set_number=1, is_active=True)
+        self.slot_1 = ItemSlot.objects.create(set=self.set_1, item_definition=self.item_def, price=Decimal('50.00'))
+
+        self.set_2 = CEGSet.objects.create(ceg=self.ceg, set_number=2, is_active=True)
+        self.slot_2 = ItemSlot.objects.create(set=self.set_2, item_definition=self.item_def, price=Decimal('50.00'))
+
+        self.participant = Participant.objects.create(
+            name='Participante Claim',
+            whatsapp='5511988889999',
+            username='part_claim'
+        )
+
+    def test_admin_can_delete_empty_set(self):
+        """Organizador pode excluir um set sem reservas."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/')
+        self.assertRedirects(res, f'/ceg/{self.ceg.slug}/')
+
+        self.assertFalse(CEGSet.objects.filter(id=self.set_2.id).exists())
+        self.assertFalse(ItemSlot.objects.filter(id=self.slot_2.id).exists())
+        # Set 1 permanece intacto
+        self.assertTrue(CEGSet.objects.filter(id=self.set_1.id).exists())
+
+    def test_admin_can_delete_set_with_claims(self):
+        """Ao excluir um set que possuía reservas, os slots e claims são removidos em cascata."""
+        claim = Claim.objects.create(
+            slot=self.slot_2,
+            participant=self.participant,
+            total_price=self.slot_2.price,
+            status=Claim.Status.PENDING
+        )
+        self.slot_2.claimed_by = self.participant
+        self.slot_2.status = ItemSlot.Status.RESERVED
+        self.slot_2.save()
+
+        self.client.force_login(self.admin_user)
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/')
+        self.assertRedirects(res, f'/ceg/{self.ceg.slug}/')
+
+        self.assertFalse(CEGSet.objects.filter(id=self.set_2.id).exists())
+        self.assertFalse(ItemSlot.objects.filter(id=self.slot_2.id).exists())
+        self.assertFalse(Claim.objects.filter(id=claim.id).exists())
+
+    def test_ajax_delete_set(self):
+        """Endpoint suporta requisições JSON/AJAX."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post(
+            f'/sets/{self.set_2.id}/delete/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertFalse(CEGSet.objects.filter(id=self.set_2.id).exists())
+
+    def test_non_staff_cannot_delete_set(self):
+        """Usuário comum não tem permissão para excluir sets."""
+        self.client.force_login(self.regular_user)
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/')
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(CEGSet.objects.filter(id=self.set_2.id).exists())
+
+        res_ajax = self.client.post(
+            f'/sets/{self.set_2.id}/delete/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res_ajax.status_code, 403)
+        self.assertTrue(CEGSet.objects.filter(id=self.set_2.id).exists())
+
+    def test_delete_nonexistent_set_404(self):
+        """Tentar excluir um set inexistente retorna 404."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post('/sets/99999/delete/')
+        self.assertEqual(res.status_code, 404)
+
 
 
 
