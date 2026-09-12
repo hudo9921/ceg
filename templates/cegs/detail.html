@@ -451,13 +451,12 @@
                                                     claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
                                                     isItemPaid: isItemPaid
                                                 })"
-                                                class="px-1.5 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-black rounded border border-purple-200 transition shadow-2xs flex items-center gap-0.5 cursor-pointer"
+                                                class="w-6 h-6 flex items-center justify-center bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs rounded border border-purple-200 transition shadow-2xs cursor-pointer"
                                                 title="Editar valor ou gerenciar reserva deste item">
-                                            <span>✏️</span> Editar
+                                            ✏️
                                         </button>
                                     {% endif %}
                                     <div class="text-right">
-                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Item</span>
                                         <span class="text-xs font-black text-slate-900">
                                             R$ {{ slot.price|floatformat:2 }}
                                         </span>
@@ -470,24 +469,24 @@
                                 <h3 class="text-sm font-bold text-slate-900 leading-snug">
                                     {{ slot.item_definition.name }}
                                 </h3>
-                                <p class="text-[11px] text-slate-400">Set {{ set.set_number }}</p>
                             </div>
 
                             <!-- Valores de Frete e Taxa no Card -->
-                            <div class="grid grid-cols-2 gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px]">
-                                <div class="flex flex-col">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">
-                                            <span>✈️</span> Frete Inter
+                            <div class="grid grid-cols-2 gap-2 p-2 bg-slate-50/80 rounded-xl border border-slate-200/80 text-[11px]">
+                                <!-- Frete Inter -->
+                                <div class="flex flex-col min-w-0 justify-between">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 truncate flex items-center gap-0.5">
+                                            <span>✈️</span> Inter
                                         </span>
-                                        <span x-show="isInterPaid" class="text-[9px] font-black text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded shadow-2xs">
-                                            Pago ✔
+                                        <span x-show="isInterPaid" class="text-[9px] font-black text-blue-700 bg-blue-100 px-1 py-0.5 rounded leading-none whitespace-nowrap shrink-0">
+                                            ✔ Pago
                                         </span>
-                                        <span x-show="!isInterPaid" class="text-[9px] font-semibold text-slate-400">
+                                        <span x-show="!isInterPaid" class="text-[9px] font-medium text-slate-400 leading-none whitespace-nowrap shrink-0">
                                             Pendente
                                         </span>
                                     </div>
-                                    <span class="font-extrabold text-xs {% if ceg.frete_inter is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                    <span class="font-extrabold text-xs mt-0.5 {% if ceg.frete_inter is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
                                         {% if ceg.frete_inter is not None %}
                                             R$ {{ ceg.frete_inter|floatformat:2 }}
                                         {% else %}
@@ -496,19 +495,20 @@
                                     </span>
                                 </div>
 
-                                <div class="flex flex-col border-l border-slate-200 pl-2">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[9px] font-black uppercase tracking-wider text-purple-600 flex items-center gap-1">
-                                            <span>🏛️</span> Taxa Aduaneira
+                                <!-- Taxa Aduaneira -->
+                                <div class="flex flex-col min-w-0 justify-between border-l border-slate-200 pl-2">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-purple-600 truncate flex items-center gap-0.5">
+                                            <span>🏛️</span> Taxa
                                         </span>
-                                        <span x-show="isTaxaPaid" class="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded shadow-2xs">
-                                            Paga ✔
+                                        <span x-show="isTaxaPaid" class="text-[9px] font-black text-purple-700 bg-purple-100 px-1 py-0.5 rounded leading-none whitespace-nowrap shrink-0">
+                                            ✔ Paga
                                         </span>
-                                        <span x-show="!isTaxaPaid" class="text-[9px] font-semibold text-slate-400">
+                                        <span x-show="!isTaxaPaid" class="text-[9px] font-medium text-slate-400 leading-none whitespace-nowrap shrink-0">
                                             Pendente
                                         </span>
                                     </div>
-                                    <span class="font-extrabold text-xs {% if ceg.taxa_aduaneira is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                    <span class="font-extrabold text-xs mt-0.5 {% if ceg.taxa_aduaneira is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
                                         {% if ceg.taxa_aduaneira is not None %}
                                             R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
                                         {% else %}
@@ -641,29 +641,25 @@
                             <!-- Bloco de Status de Pagamento & Check Marks -->
                             {% if user.is_staff %}
                                 <!-- Check Marks Interativos para o Organizador -->
-                                <div class="mt-2 pt-2 border-t border-slate-100 bg-slate-50 -mx-4 -mb-4 p-2.5 rounded-b-xl space-y-1.5">
-                                    <div class="flex items-center justify-between text-[9px] font-black uppercase text-slate-500 tracking-wider">
-                                        <span>Check Marks de Pagamento</span>
-                                        <span x-show="loading" class="animate-spin text-pink-600">⌛</span>
-                                    </div>
-                                    <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
+                                <div class="mt-2 pt-2 border-t border-slate-100 bg-slate-50 -mx-4 -mb-4 p-2 rounded-b-xl">
+                                    <div class="grid grid-cols-3 gap-1.5 text-[10px] font-bold">
                                         <button type="button" @click="toggle('item')" :disabled="loading"
                                                 :class="isItemPaid ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'"
-                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
+                                                class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
                                                 title="Item: R$ {{ slot.price|floatformat:2 }}">
                                             <span x-text="isItemPaid ? '✔' : '○'"></span>
                                             <span>Item</span>
                                         </button>
                                         <button type="button" @click="toggle('inter')" :disabled="loading"
                                                 :class="isInterPaid ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'"
-                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
+                                                class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
                                                 title="Frete Internacional: {% if ceg.frete_inter is not None %}R$ {{ ceg.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}">
                                             <span x-text="isInterPaid ? '✔' : '○'"></span>
                                             <span>Inter</span>
                                         </button>
                                         <button type="button" @click="toggle('taxa')" :disabled="loading"
                                                 :class="isTaxaPaid ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-purple-300'"
-                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
+                                                class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
                                                 title="Taxa Aduaneira: {% if ceg.taxa_aduaneira is not None %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}">
                                             <span x-text="isTaxaPaid ? '✔' : '○'"></span>
                                             <span>Taxa</span>
