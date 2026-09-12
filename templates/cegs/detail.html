@@ -379,7 +379,49 @@
                                 border-blue-200 bg-blue-50/40
                             {% else %}
                                 border-slate-200 bg-slate-50 opacity-60
-                            {% endif %}">
+                            {% endif %}"
+                             x-data="{
+                                 slotId: {{ slot.id }},
+                                 status: '{{ slot.status }}',
+                                 isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                 isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
+                                 isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
+                                 loading: false,
+                                 async toggle(field) {
+                                     if (this.loading) return;
+                                     this.loading = true;
+                                     try {
+                                         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                                         const res = await fetch('/slots/' + this.slotId + '/toggle-payment/', {
+                                             method: 'POST',
+                                             headers: {
+                                                 'Content-Type': 'application/json',
+                                                 'X-CSRFToken': csrf
+                                             },
+                                             body: JSON.stringify({ field: field })
+                                         });
+                                         const data = await res.json();
+                                         if (data.success) {
+                                             this.status = data.status;
+                                             this.isItemPaid = data.is_item_paid;
+                                             this.isInterPaid = data.is_frete_inter_paid;
+                                             this.isTaxaPaid = data.is_taxa_aduaneira_paid;
+                                         } else {
+                                             alert(data.message || 'Erro ao alterar status');
+                                         }
+                                     } catch(e) {
+                                         alert('Erro de conexão ao alterar status: ' + e);
+                                     } finally {
+                                         this.loading = false;
+                                     }
+                                 }
+                             }"
+                             :class="{
+                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE',
+                                 'border-amber-300 bg-amber-50/50 shadow-2xs': status === 'RESERVED',
+                                 'border-blue-300 bg-blue-50/40 shadow-2xs': status === 'PAID',
+                                 'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED'
+                             }">
 
                             <!-- Top Tag / Member -->
                             <div class="flex justify-between items-start">
@@ -402,12 +444,12 @@
                                                     member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                     setNumber: {{ set.set_number }},
                                                     price: '{{ slot.price|stringformat:".2f" }}',
-                                                    status: '{{ slot.status }}',
-                                                    statusDisplay: '{{ slot.get_status_display }}',
+                                                    status: status,
+                                                    statusDisplay: status === 'PAID' ? 'Confirmado / Pago' : (status === 'RESERVED' ? 'Reservado' : 'Disponível'),
                                                     claimedById: '{{ slot.claimed_by.id|default:'' }}',
                                                     claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
                                                     claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
-                                                    isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }}
+                                                    isItemPaid: isItemPaid
                                                 })"
                                                 class="px-1.5 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-black rounded border border-purple-200 transition shadow-2xs flex items-center gap-0.5 cursor-pointer"
                                                 title="Editar valor ou gerenciar reserva deste item">
@@ -434,9 +476,17 @@
                             <!-- Valores de Frete e Taxa no Card -->
                             <div class="grid grid-cols-2 gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px]">
                                 <div class="flex flex-col">
-                                    <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">
-                                        <span>✈️</span> Frete Inter
-                                    </span>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 flex items-center gap-1">
+                                            <span>✈️</span> Frete Inter
+                                        </span>
+                                        <span x-show="isInterPaid" class="text-[9px] font-black text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded shadow-2xs">
+                                            Pago ✔
+                                        </span>
+                                        <span x-show="!isInterPaid" class="text-[9px] font-semibold text-slate-400">
+                                            Pendente
+                                        </span>
+                                    </div>
                                     <span class="font-extrabold text-xs {% if ceg.frete_inter is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
                                         {% if ceg.frete_inter is not None %}
                                             R$ {{ ceg.frete_inter|floatformat:2 }}
@@ -447,9 +497,17 @@
                                 </div>
 
                                 <div class="flex flex-col border-l border-slate-200 pl-2">
-                                    <span class="text-[9px] font-black uppercase tracking-wider text-purple-600 flex items-center gap-1">
-                                        <span>🏛️</span> Taxa Aduaneira
-                                    </span>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-purple-600 flex items-center gap-1">
+                                            <span>🏛️</span> Taxa Aduaneira
+                                        </span>
+                                        <span x-show="isTaxaPaid" class="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded shadow-2xs">
+                                            Paga ✔
+                                        </span>
+                                        <span x-show="!isTaxaPaid" class="text-[9px] font-semibold text-slate-400">
+                                            Pendente
+                                        </span>
+                                    </div>
                                     <span class="font-extrabold text-xs {% if ceg.taxa_aduaneira is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
                                         {% if ceg.taxa_aduaneira is not None %}
                                             R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
@@ -462,40 +520,14 @@
 
                             <!-- Status / Action Button -->
                             <div class="pt-2 border-t border-slate-100">
-                                {% if slot.status == 'AVAILABLE' %}
-                                    <template x-if="isStandby">
-                                        <button type="button" disabled
-                                                class="w-full py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed flex items-center justify-center gap-1">
-                                            <span>🔒</span> Aguarde abertura
-                                        </button>
-                                    </template>
-                                    <template x-if="!isStandby">
-                                        {% if logged_participant or user.is_staff %}
-                                            <button type="button"
-                                                    @click="openClaimModal({
-                                                        id: {{ slot.id }},
-                                                        name: '{{ slot.item_definition.name|escapejs }}',
-                                                        member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                                        setNumber: {{ set.set_number }},
-                                                        price: '{{ slot.price|floatformat:2 }}',
-                                                        frete: '{% if ceg.frete_inter is not None %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
-                                                        taxa: '{% if ceg.taxa_aduaneira is not None %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                                                    })"
-                                                    class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
-                                                <span>⚡</span> Reservar (Claim)
-                                            </button>
-                                        {% else %}
-                                            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
-                                               class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer text-center">
-                                                <span>⚡</span> Reservar (Claim)
-                                            </a>
-                                        {% endif %}
-                                    </template>
-
-                                {% elif slot.status == 'RESERVED' %}
-                                    <div class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
-                                        <span class="font-bold">🔒 Reservado</span>
-                                        <div class="text-[10px] text-amber-700 truncate">
+                                {% if slot.claimed_by %}
+                                    <!-- Bloco quando RESERVADO (Item ainda pendente de pagamento) -->
+                                    <div x-show="status === 'RESERVED'"
+                                         class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>🔒</span> Reservado
+                                        </span>
+                                        <div class="text-[10px] text-amber-700 truncate font-mono">
                                             {% if slot.claimed_by.social_handle %}
                                                 {{ slot.claimed_by.social_handle }}
                                             {% else %}
@@ -510,12 +542,12 @@
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                         setNumber: {{ set.set_number }},
                                                         price: '{{ slot.price|stringformat:".2f" }}',
-                                                        status: '{{ slot.status }}',
-                                                        statusDisplay: '{{ slot.get_status_display }}',
+                                                        status: status,
+                                                        statusDisplay: 'Reservado',
                                                         claimedById: '{{ slot.claimed_by.id|default:'' }}',
                                                         claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
                                                         claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
-                                                        isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }}
+                                                        isItemPaid: isItemPaid
                                                     })"
                                                     class="mt-1 text-[10px] font-bold text-amber-900 hover:text-purple-700 underline flex items-center justify-center gap-1 w-full cursor-pointer">
                                                 <span>🔄</span> Trocar ou Remover Claim
@@ -523,10 +555,13 @@
                                         {% endif %}
                                     </div>
 
-                                {% elif slot.status == 'PAID' %}
-                                    <div class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
-                                        <span class="font-bold">✔ Confirmado / Pago</span>
-                                        <div class="text-[10px] text-blue-700 truncate">
+                                    <!-- Bloco quando PAGO (Item confirmado / pago) -->
+                                    <div x-show="status === 'PAID'"
+                                         class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>✔</span> Confirmado / Pago
+                                        </span>
+                                        <div class="text-[10px] text-blue-700 truncate font-mono">
                                             {% if slot.claimed_by.social_handle %}
                                                 {{ slot.claimed_by.social_handle }}
                                             {% else %}
@@ -541,17 +576,64 @@
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                         setNumber: {{ set.set_number }},
                                                         price: '{{ slot.price|stringformat:".2f" }}',
-                                                        status: '{{ slot.status }}',
-                                                        statusDisplay: '{{ slot.get_status_display }}',
+                                                        status: status,
+                                                        statusDisplay: 'Confirmado / Pago',
                                                         claimedById: '{{ slot.claimed_by.id|default:'' }}',
                                                         claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
                                                         claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
-                                                        isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }}
+                                                        isItemPaid: isItemPaid
                                                     })"
                                                     class="mt-1 text-[10px] font-bold text-blue-900 hover:text-purple-700 underline flex items-center justify-center gap-1 w-full cursor-pointer">
                                                 <span>🔄</span> Trocar ou Remover Claim
                                             </button>
                                         {% endif %}
+                                    </div>
+
+                                {% else %}
+                                    <!-- Slot sem claim (Disponível) -->
+                                    <div x-show="status === 'AVAILABLE'">
+                                        <template x-if="isStandby">
+                                            <button type="button" disabled
+                                                    class="w-full py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed flex items-center justify-center gap-1">
+                                                <span>🔒</span> Aguarde abertura
+                                            </button>
+                                        </template>
+                                        <template x-if="!isStandby">
+                                            {% if logged_participant or user.is_staff %}
+                                                <button type="button"
+                                                        @click="openClaimModal({
+                                                            id: {{ slot.id }},
+                                                            name: '{{ slot.item_definition.name|escapejs }}',
+                                                            member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                            setNumber: {{ set.set_number }},
+                                                            price: '{{ slot.price|floatformat:2 }}',
+                                                            frete: '{% if ceg.frete_inter is not None %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
+                                                            taxa: '{% if ceg.taxa_aduaneira is not None %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
+                                                        })"
+                                                        class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
+                                                    <span>⚡</span> Reservar (Claim)
+                                                </button>
+                                            {% else %}
+                                                <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                                                   class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer text-center">
+                                                    <span>⚡</span> Reservar (Claim)
+                                                </a>
+                                            {% endif %}
+                                        </template>
+                                    </div>
+
+                                    <!-- Caso o slot passe para PAID ou RESERVED mesmo sem claimed_by previamente renderizado -->
+                                    <div x-show="status === 'PAID'"
+                                         class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>✔</span> Confirmado / Pago
+                                        </span>
+                                    </div>
+                                    <div x-show="status === 'RESERVED'"
+                                         class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>🔒</span> Reservado
+                                        </span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -559,39 +641,7 @@
                             <!-- Bloco de Status de Pagamento & Check Marks -->
                             {% if user.is_staff %}
                                 <!-- Check Marks Interativos para o Organizador -->
-                                <div class="mt-2 pt-2 border-t border-slate-100 bg-slate-50 -mx-4 -mb-4 p-2.5 rounded-b-xl space-y-1.5"
-                                     x-data="{
-                                         isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
-                                         isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
-                                         isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
-                                         loading: false,
-                                         async toggle(field) {
-                                             if (this.loading) return;
-                                             this.loading = true;
-                                             try {
-                                                 const res = await fetch('/slots/{{ slot.id }}/toggle-payment/', {
-                                                     method: 'POST',
-                                                     headers: {
-                                                         'Content-Type': 'application/json',
-                                                         'X-CSRFToken': '{{ csrf_token }}'
-                                                     },
-                                                     body: JSON.stringify({ field: field })
-                                                 });
-                                                 const data = await res.json();
-                                                 if (data.success) {
-                                                     this.isItemPaid = data.is_item_paid;
-                                                     this.isInterPaid = data.is_frete_inter_paid;
-                                                     this.isTaxaPaid = data.is_taxa_aduaneira_paid;
-                                                 } else {
-                                                     alert(data.message || 'Erro ao alterar status');
-                                                 }
-                                             } catch(e) {
-                                                 alert('Erro de conexão ao alterar status: ' + e);
-                                             } finally {
-                                                 this.loading = false;
-                                             }
-                                         }
-                                     }">
+                                <div class="mt-2 pt-2 border-t border-slate-100 bg-slate-50 -mx-4 -mb-4 p-2.5 rounded-b-xl space-y-1.5">
                                     <div class="flex items-center justify-between text-[9px] font-black uppercase text-slate-500 tracking-wider">
                                         <span>Check Marks de Pagamento</span>
                                         <span x-show="loading" class="animate-spin text-pink-600">⌛</span>
@@ -599,21 +649,21 @@
                                     <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
                                         <button type="button" @click="toggle('item')" :disabled="loading"
                                                 :class="isItemPaid ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'"
-                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer"
+                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
                                                 title="Item: R$ {{ slot.price|floatformat:2 }}">
                                             <span x-text="isItemPaid ? '✔' : '○'"></span>
                                             <span>Item</span>
                                         </button>
                                         <button type="button" @click="toggle('inter')" :disabled="loading"
                                                 :class="isInterPaid ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'"
-                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer"
+                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
                                                 title="Frete Internacional: {% if ceg.frete_inter is not None %}R$ {{ ceg.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}">
                                             <span x-text="isInterPaid ? '✔' : '○'"></span>
                                             <span>Inter</span>
                                         </button>
                                         <button type="button" @click="toggle('taxa')" :disabled="loading"
                                                 :class="isTaxaPaid ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-purple-300'"
-                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer"
+                                                class="py-1 px-1 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
                                                 title="Taxa Aduaneira: {% if ceg.taxa_aduaneira is not None %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}">
                                             <span x-text="isTaxaPaid ? '✔' : '○'"></span>
                                             <span>Taxa</span>
@@ -623,14 +673,17 @@
                             {% elif slot.claimed_by %}
                                 <!-- Badges de Status Informativos para Participantes -->
                                 <div class="mt-1 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[10px] font-semibold text-slate-600 text-center">
-                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100 {% if slot.is_item_paid %}text-emerald-700 font-bold bg-emerald-50/60 border-emerald-100{% else %}text-slate-400{% endif %}">
-                                        <span>{% if slot.is_item_paid %}✔{% else %}○{% endif %} Item</span>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100"
+                                         :class="isItemPaid ? 'text-emerald-700 font-bold bg-emerald-50/60 border-emerald-100' : 'text-slate-400'">
+                                        <span x-text="isItemPaid ? '✔ Item' : '○ Item'"></span>
                                     </div>
-                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100 {% if slot.is_frete_inter_paid %}text-blue-700 font-bold bg-blue-50/60 border-blue-100{% else %}text-slate-400{% endif %}">
-                                        <span>{% if slot.is_frete_inter_paid %}✔{% else %}○{% endif %} Inter</span>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100"
+                                         :class="isInterPaid ? 'text-blue-700 font-bold bg-blue-50/60 border-blue-100' : 'text-slate-400'">
+                                        <span x-text="isInterPaid ? '✔ Inter' : '○ Inter'"></span>
                                     </div>
-                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100 {% if slot.is_taxa_aduaneira_paid %}text-purple-700 font-bold bg-purple-50/60 border-purple-100{% else %}text-slate-400{% endif %}">
-                                        <span>{% if slot.is_taxa_aduaneira_paid %}✔{% else %}○{% endif %} Taxa</span>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100"
+                                         :class="isTaxaPaid ? 'text-purple-700 font-bold bg-purple-50/60 border-purple-100' : 'text-slate-400'">
+                                        <span x-text="isTaxaPaid ? '✔ Taxa' : '○ Taxa'"></span>
                                     </div>
                                 </div>
                             {% endif %}
