@@ -12,4 +12,7 @@ python manage.py collectstatic --no-input
 echo "🗄️ Aplicando migrações do banco de dados..."
 python manage.py migrate
 
+echo "👤 Inicializando superusuário (se configurado em ADMIN_PASSWORD)..."
+python manage.py initadmin
+
 echo "✅ Build concluído com sucesso!"
