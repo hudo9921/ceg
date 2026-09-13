@@ -17,11 +17,21 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kr6krlgapr$0xjn!hb-uio%p=5
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 # Domínios Permitidos
-allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '')
-if allowed_hosts_env:
-    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '*')
+if allowed_hosts_env and allowed_hosts_env.strip() != '*':
+    parsed_hosts = []
+    for h in allowed_hosts_env.split(','):
+        h = h.strip()
+        if not h:
+            continue
+        parsed_hosts.append(h)
+        if h.startswith('*.'):
+            parsed_hosts.append(h[1:])  # '.onrender.com'
+            parsed_hosts.append(h[2:])  # 'onrender.com'
+    parsed_hosts.extend(['.onrender.com', 'localhost', '127.0.0.1'])
+    ALLOWED_HOSTS = list(set(parsed_hosts))
 else:
-    ALLOWED_HOSTS = ['*'] if DEBUG else ['.onrender.com', 'localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['*']
 
 # Proteção CSRF para conexões seguras (HTTPS em produção)
 csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
