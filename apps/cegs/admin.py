@@ -1,7 +1,181 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.utils import timezone
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional
+
+
+@admin.register(TipoItem)
+class TipoItemAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'descricao', 'created_at')
+    search_fields = ('nome', 'descricao')
+
+
+class CaixaItemRateInline(admin.TabularInline):
+    model = CaixaItemRate
+    extra = 0
+    fields = ('tipo_item', 'frete_unitario', 'taxa_unitaria', 'prazo_frete', 'prazo_taxa')
+
+
+class ItemIndividualInline(admin.TabularInline):
+    model = ItemIndividual
+    extra = 0
+    fields = ('nome', 'tipo_item', 'comprador', 'quantidade', 'status', 'link_pedido', 'frete_inter', 'frete_inter_pago', 'taxa_aduaneira', 'taxa_aduaneira_paga')
+
+
+@admin.register(Caixa)
+class CaixaAdmin(admin.ModelAdmin):
+    list_display = ('nome_com_flag', 'origem_badge', 'status_badge', 'cegs_count', 'itens_count', 'codigo_rastreio_link', 'data_envio', 'data_recebimento', 'created_at')
+    list_filter = ('status', 'origem')
+    search_fields = ('nome', 'codigo_rastreio', 'transportadora', 'observacoes')
+    prepopulated_fields = {'slug': ('nome',)}
+    inlines = [CaixaItemRateInline, ItemIndividualInline]
+    actions = ['marcar_como_enviada', 'marcar_como_no_brasil', 'marcar_como_entregue']
+    fieldsets = (
+        ('Identificação da Caixa', {
+            'fields': ('nome', 'slug', 'origem', 'status')
+        }),
+        ('Rastreio & Envio', {
+            'fields': ('codigo_rastreio', 'transportadora', 'data_envio', 'data_previsao', 'data_recebimento')
+        }),
+        ('Custos da Remessa (Opcional)', {
+            'fields': ('frete_inter_total', 'taxa_aduaneira_total')
+        }),
+        ('Anotações Internas', {
+            'fields': ('observacoes',)
+        }),
+    )
+
+    def nome_com_flag(self, obj):
+        flag = '🇰🇷' if obj.origem == 'KR' else ('🇯🇵' if obj.origem == 'JP' else '📦')
+        return f"{flag} {obj.nome}"
+    nome_com_flag.short_description = 'Caixa / Remessa'
+
+    def origem_badge(self, obj):
+        colors = {'KR': '#0d6efd', 'JP': '#dc3545', 'CN': '#ffc107', 'US': '#198754'}
+        color = colors.get(obj.origem, '#6c757d')
+        text_color = '#000' if obj.origem == 'CN' else '#fff'
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_origem_display()
+        )
+    origem_badge.short_description = 'Origem'
+
+    def status_badge(self, obj):
+        colors = {
+            Caixa.Status.EM_CONSOLIDACAO: '#6c757d',
+            Caixa.Status.PRONTA_ENVIO: '#0dcaf0',
+            Caixa.Status.ENVIADA: '#0d6efd',
+            Caixa.Status.NO_BRASIL: '#ffc107',
+            Caixa.Status.TRIBUTADA: '#fd7e14',
+            Caixa.Status.LIBERADA: '#20c997',
+            Caixa.Status.ENTREGUE: '#198754',
+            Caixa.Status.FINALIZADA: '#212529',
+        }
+        color = colors.get(obj.status, '#333')
+        text_color = '#000' if obj.status in [Caixa.Status.NO_BRASIL, Caixa.Status.PRONTA_ENVIO] else '#fff'
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+
+    def cegs_count(self, obj):
+        count = obj.cegs.count()
+        return format_html('<b>{}</b> CEG(s)', count)
+    cegs_count.short_description = 'CEGs Atreladas'
+
+    def itens_count(self, obj):
+        count = obj.itens_individuais.count()
+        return format_html('<b>{}</b> Item(ns)', count)
+    itens_count.short_description = 'Itens Individuais'
+
+    def codigo_rastreio_link(self, obj):
+        if obj.codigo_rastreio:
+            url = obj.tracking_url
+            if url:
+                return format_html('<a href="{}" target="_blank" style="font-weight: bold; color: #0d6efd;">🔗 {}</a>', url, obj.codigo_rastreio)
+            return obj.codigo_rastreio
+        return '-'
+    codigo_rastreio_link.short_description = 'Rastreio'
+
+    @admin.action(description="Marcar selecionadas como Enviadas (Em Trânsito ✈️)")
+    def marcar_como_enviada(self, request, queryset):
+        total_cegs = 0
+        for caixa in queryset:
+            total_cegs += caixa.atualizar_status(Caixa.Status.ENVIADA)
+        self.message_user(request, f"{queryset.count()} caixa(s) e {total_cegs} CEG(s) atualizadas para Enviadas!")
+
+    @admin.action(description="Marcar selecionadas como Chegou ao Brasil (Alfândega 🇧🇷)")
+    def marcar_como_no_brasil(self, request, queryset):
+        total_cegs = 0
+        for caixa in queryset:
+            total_cegs += caixa.atualizar_status(Caixa.Status.NO_BRASIL)
+        self.message_user(request, f"{queryset.count()} caixa(s) e {total_cegs} CEG(s) atualizadas para No Brasil!")
+
+    @admin.action(description="Marcar selecionadas como Entregues ao Organizador (✅)")
+    def marcar_como_entregue(self, request, queryset):
+        total_cegs = 0
+        for caixa in queryset:
+            total_cegs += caixa.atualizar_status(Caixa.Status.ENTREGUE)
+        self.message_user(request, f"{queryset.count()} caixa(s) e {total_cegs} CEG(s) atualizadas para Entregues!")
+
+
+@admin.register(ItemIndividual)
+class ItemIndividualAdmin(admin.ModelAdmin):
+    list_display = ('foto_thumbnail', 'nome', 'comprador', 'caixa_link', 'quantidade', 'status_badge', 'preco_produto', 'produto_pago', 'frete_inter', 'frete_inter_pago', 'taxa_aduaneira', 'taxa_aduaneira_paga', 'link_pedido_link', 'created_at')
+    list_filter = ('status', 'produto_pago', 'frete_inter_pago', 'taxa_aduaneira_paga', 'caixa')
+    search_fields = ('nome', 'comprador__name', 'comprador__whatsapp', 'comprador__username', 'link_pedido', 'observacoes')
+    actions = ['marcar_frete_pago', 'marcar_taxa_paga']
+
+    def foto_thumbnail(self, obj):
+        img_url = obj.image_display_url
+        if img_url:
+            return format_html('<img src="{}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;" />', img_url)
+        return format_html('<span style="color: #aaa; font-size: 11px;">Sem foto</span>')
+    foto_thumbnail.short_description = 'Foto'
+
+    def caixa_link(self, obj):
+        if obj.caixa:
+            flag = '🇰🇷' if obj.caixa.origem == 'KR' else ('🇯🇵' if obj.caixa.origem == 'JP' else '📦')
+            return format_html('{} <a href="/admin/cegs/caixa/{}/change/">{}</a>', flag, obj.caixa.id, obj.caixa.nome)
+        return format_html('<span style="color: #aaa;">Sem Caixa</span>')
+    caixa_link.short_description = 'Caixa'
+
+    def link_pedido_link(self, obj):
+        if obj.link_pedido:
+            return format_html('<a href="{}" target="_blank" style="font-weight: bold; color: #dc3545;">🔗 Pedido</a>', obj.link_pedido)
+        return '-'
+    link_pedido_link.short_description = 'Link Pedido'
+
+    def status_badge(self, obj):
+        colors = {
+            ItemIndividual.Status.COMPRADO: '#6c757d',
+            ItemIndividual.Status.WAREHOUSE: '#0dcaf0',
+            ItemIndividual.Status.EM_CONSOLIDACAO: '#0d6efd',
+            ItemIndividual.Status.ENVIADO: '#6610f2',
+            ItemIndividual.Status.NO_BRASIL: '#ffc107',
+            ItemIndividual.Status.TRIBUTADO: '#fd7e14',
+            ItemIndividual.Status.LIBERADO: '#20c997',
+            ItemIndividual.Status.NA_GOM: '#198754',
+            ItemIndividual.Status.FINALIZADO: '#212529',
+        }
+        color = colors.get(obj.status, '#333')
+        text_color = '#000' if obj.status in [ItemIndividual.Status.NO_BRASIL, ItemIndividual.Status.WAREHOUSE] else '#fff'
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+
+    @admin.action(description="Marcar Frete Internacional como Pago")
+    def marcar_frete_pago(self, request, queryset):
+        count = queryset.update(frete_inter_pago=True)
+        self.message_user(request, f"{count} item(ns) marcado(s) com Frete Internacional Pago!")
+
+    @admin.action(description="Marcar Taxa Aduaneira como Paga")
+    def marcar_taxa_paga(self, request, queryset):
+        count = queryset.update(taxa_aduaneira_paga=True)
+        self.message_user(request, f"{count} item(ns) marcado(s) com Taxa Aduaneira Paga!")
+
 
 
 class ClaimAttemptLogInline(admin.TabularInline):
@@ -33,8 +207,8 @@ class ItemSlotInline(admin.TabularInline):
 
 @admin.register(CEG)
 class CEGAdmin(admin.ModelAdmin):
-    list_display = ('title', 'group_name', 'era', 'status_badge', 'prazo_pagamento_item', 'frete_inter', 'taxa_aduaneira', 'standby_badge', 'slots_progress', 'created_at')
-    list_filter = ('status', 'era__group', 'era')
+    list_display = ('title', 'group_name', 'era', 'caixa_badge', 'shipping_status_badge', 'status_badge', 'prazo_pagamento_item', 'frete_inter', 'taxa_aduaneira', 'standby_badge', 'slots_progress', 'created_at')
+    list_filter = ('status', 'shipping_status', 'caixa__origem', 'caixa', 'era__group', 'era')
     search_fields = ('title', 'era__name', 'era__group__name')
     prepopulated_fields = {'slug': ('title',)}
     inlines = [CEGItemDefinitionInline, CEGSetInline]
@@ -42,6 +216,10 @@ class CEGAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Informações Principais', {
             'fields': ('title', 'slug', 'era', 'status', 'description', 'banner_url')
+        }),
+        ('Remessa & Envio', {
+            'fields': ('caixa', 'shipping_status'),
+            'description': 'Vincule a CEG a uma Caixa internacional (KR/JP) para sincronização automática de envio.'
         }),
         ('Horários & Abertura', {
             'fields': ('opens_at', 'closes_at')
@@ -60,6 +238,35 @@ class CEGAdmin(admin.ModelAdmin):
             'fields': ('pix_key', 'pix_instructions')
         }),
     )
+
+    def caixa_badge(self, obj):
+        if obj.caixa:
+            flag = '🇰🇷' if obj.caixa.origem == 'KR' else ('🇯🇵' if obj.caixa.origem == 'JP' else '📦')
+            return format_html(
+                '<span style="background-color: #e9ecef; color: #212529; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px;">{} {}</span>',
+                flag, obj.caixa.nome
+            )
+        return format_html('<span style="color: #adb5bd; font-size: 11px;">Sem caixa</span>')
+    caixa_badge.short_description = 'Caixa'
+
+    def shipping_status_badge(self, obj):
+        colors = {
+            Caixa.Status.EM_CONSOLIDACAO: '#6c757d',
+            Caixa.Status.PRONTA_ENVIO: '#0dcaf0',
+            Caixa.Status.ENVIADA: '#0d6efd',
+            Caixa.Status.NO_BRASIL: '#ffc107',
+            Caixa.Status.TRIBUTADA: '#fd7e14',
+            Caixa.Status.LIBERADA: '#20c997',
+            Caixa.Status.ENTREGUE: '#198754',
+            Caixa.Status.FINALIZADA: '#212529',
+        }
+        color = colors.get(obj.shipping_status, '#6c757d')
+        text_color = '#000' if obj.shipping_status in [Caixa.Status.NO_BRASIL, Caixa.Status.PRONTA_ENVIO] else '#fff'
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">{}</span>',
+            color, text_color, obj.get_shipping_status_display()
+        )
+    shipping_status_badge.short_description = 'Status Envio'
 
     def group_name(self, obj):
         return obj.era.group.name
@@ -237,14 +444,88 @@ class ClaimAttemptLogAdmin(admin.ModelAdmin):
     def result_badge(self, obj):
         colors = {
             ClaimAttemptLog.Result.SUCCESS: '#198754',
+            ClaimAttemptLog.Result.AUTO_FALLBACK: '#0d6efd',
+            ClaimAttemptLog.Result.WAITING_LIST: '#fd7e14',
             ClaimAttemptLog.Result.LOST_RACE: '#dc3545',
             ClaimAttemptLog.Result.STANDBY_BLOCKED: '#ffc107',
             ClaimAttemptLog.Result.ERROR: '#6c757d',
         }
-        text_color = '#000' if obj.result == ClaimAttemptLog.Result.STANDBY_BLOCKED else '#fff'
+        text_color = '#000' if obj.result in (ClaimAttemptLog.Result.STANDBY_BLOCKED, ClaimAttemptLog.Result.WAITING_LIST) else '#fff'
         color = colors.get(obj.result, '#333')
         return format_html(
             '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
             color, text_color, obj.get_result_display()
         )
     result_badge.short_description = 'Resultado da Concorrência'
+
+
+@admin.register(ItemWaitingList)
+class ItemWaitingListAdmin(admin.ModelAdmin):
+    list_display = ('item_definition', 'position', 'name', 'phone', 'social_handle', 'status_badge', 'allocated_slot', 'created_at')
+    list_filter = ('status', 'created_at', 'item_definition__ceg')
+    search_fields = ('name', 'phone', 'social_handle', 'item_definition__name')
+    readonly_fields = ('created_at', 'promoted_at')
+
+    def status_badge(self, obj):
+        colors = {
+            ItemWaitingList.Status.WAITING: '#ffc107',
+            ItemWaitingList.Status.PROMOTED: '#198754',
+            ItemWaitingList.Status.CANCELLED: '#6c757d',
+        }
+        text_color = '#000' if obj.status == ItemWaitingList.Status.WAITING else '#fff'
+        color = colors.get(obj.status, '#333')
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Status na Fila'
+ 
+ 
+class ItemSlotPacoteInline(admin.TabularInline):
+    model = ItemSlot
+    extra = 0
+    fields = ('item_definition', 'claimed_by', 'status', 'is_item_paid', 'is_frete_inter_paid', 'is_taxa_aduaneira_paid')
+    readonly_fields = ('item_definition', 'claimed_by', 'status')
+    can_delete = True
+
+
+class ItemIndividualPacoteInline(admin.TabularInline):
+    model = ItemIndividual
+    extra = 0
+    fields = ('nome', 'comprador', 'status', 'frete_inter_pago', 'taxa_aduaneira_paga')
+    readonly_fields = ('nome', 'comprador', 'status')
+    can_delete = True
+
+
+@admin.register(PacoteNacional)
+class PacoteNacionalAdmin(admin.ModelAdmin):
+    list_display = ('identificador', 'participant', 'status_badge', 'codigo_rastreio_link', 'transportadora', 'total_itens_display', 'valor_frete_nacional', 'is_frete_pago', 'data_envio', 'created_at')
+    list_filter = ('status', 'transportadora', 'is_frete_pago')
+    search_fields = ('identificador', 'codigo_rastreio', 'participant__name', 'participant__whatsapp', 'participant__social_handle', 'observacoes')
+    inlines = [ItemSlotPacoteInline, ItemIndividualPacoteInline]
+
+    def status_badge(self, obj):
+        colors = {
+            PacoteNacional.Status.EM_PREPARACAO: '#ffc107',
+            PacoteNacional.Status.ENVIADO: '#0d6efd',
+            PacoteNacional.Status.ENTREGUE: '#198754',
+        }
+        text_color = '#000' if obj.status == PacoteNacional.Status.EM_PREPARACAO else '#fff'
+        color = colors.get(obj.status, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            color, text_color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Status'
+
+    def total_itens_display(self, obj):
+        return f"{obj.total_itens} item(ns)"
+    total_itens_display.short_description = 'Itens'
+
+    def codigo_rastreio_link(self, obj):
+        if obj.codigo_rastreio:
+            url = obj.tracking_url
+            return format_html('<a href="{}" target="_blank" style="font-weight:bold; color:#0d6efd;">{} ↗</a>', url, obj.codigo_rastreio)
+        return "-"
+    codigo_rastreio_link.short_description = 'Rastreamento'
+

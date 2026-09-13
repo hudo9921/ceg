@@ -63,62 +63,96 @@
                             </a>
                         {% endif %}
 
-                        <!-- Barrinha Separadora -->
-                        <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+                        {% if request.user.is_authenticated and request.user.is_staff %}
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
 
-                        <!-- 2. Hub de Criações -->
-                        {% if 'creations' in request.path or 'creations' in request.resolver_match.url_name %}
-                            <a href="{% url 'creations_hub' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                <span>✨</span>
-                                <span>Hub de Criações</span>
-                            </a>
-                        {% else %}
-                            <a href="{% url 'creations_hub' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                <span class="opacity-70">✨</span>
-                                <span>Hub de Criações</span>
+                            <!-- 2. Hub de Criações -->
+                            {% if 'creations' in request.path or 'creations' in request.resolver_match.url_name %}
+                                <a href="{% url 'creations_hub' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span>✨</span>
+                                    <span>Hub de Criações</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'creations_hub' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                    <span class="opacity-70">✨</span>
+                                    <span>Hub de Criações</span>
+                                </a>
+                            {% endif %}
+
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
+                            <!-- 3. Status das CEGs -->
+                            {% if request.resolver_match.url_name == 'cegs_status' or request.resolver_match.url_name == 'cegs_status_tab' or request.path == '/analytics/' or '/analytics/cegs' in request.path %}
+                                <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span>📦</span>
+                                    <span>Status das CEGs</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                    <span class="opacity-70">📦</span>
+                                    <span>Status das CEGs</span>
+                                </a>
+                            {% endif %}
+
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
+                            <!-- Caixas & Remessas (KR / JP) -->
+                            {% if 'caixa' in request.path or 'caixa' in request.resolver_match.url_name %}
+                                <a href="{% url 'caixas_dashboard' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span>✈️</span>
+                                    <span>Caixas & Remessas</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'caixas_dashboard' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                    <span class="opacity-70">✈️</span>
+                                    <span>Caixas & Remessas</span>
+                                </a>
+                            {% endif %}
+
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
+                            <!-- Consulta Joiner (Joiners / Itens, Pagamentos & Rastreios) -->
+                            {% if 'consulta-joiner' in request.path or 'envio' in request.path or request.resolver_match.url_name == 'consulta_joiner' or request.resolver_match.url_name == 'envios_nacionais' %}
+                                <a href="{% url 'consulta_joiner' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span>🔍</span>
+                                    <span>Consulta Joiner</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'consulta_joiner' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                    <span class="opacity-70">🔍</span>
+                                    <span>Consulta Joiner</span>
+                                </a>
+                            {% endif %}
+
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
+                            <!-- 4. Relatório de Vendas -->
+                            {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.url_name == 'sales_report_alias' or '/analytics/vendas' in request.path or '/analytics/sales' in request.path %}
+                                <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span>📈</span>
+                                    <span>Relatório de Vendas</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                    <span class="opacity-70">📈</span>
+                                    <span>Relatório de Vendas</span>
+                                </a>
+                            {% endif %}
+
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
+                            <!-- 5. Painel Admin -->
+                            <a href="/admin/" target="_blank" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition flex items-center gap-1">
+                                <span>Painel Admin</span>
+                                <span class="text-xs text-slate-400">↗</span>
                             </a>
                         {% endif %}
-
-                        <!-- Barrinha Separadora -->
-                        <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                        <!-- 3. Status das CEGs -->
-                        {% if request.resolver_match.url_name == 'cegs_status' or request.resolver_match.url_name == 'cegs_status_tab' or request.path == '/analytics/' or '/analytics/cegs' in request.path %}
-                            <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                <span>📦</span>
-                                <span>Status das CEGs</span>
-                            </a>
-                        {% else %}
-                            <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                <span class="opacity-70">📦</span>
-                                <span>Status das CEGs</span>
-                            </a>
-                        {% endif %}
-
-                        <!-- Barrinha Separadora -->
-                        <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                        <!-- 4. Relatório de Vendas -->
-                        {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.url_name == 'sales_report_alias' or '/analytics/vendas' in request.path or '/analytics/sales' in request.path %}
-                            <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                <span>📈</span>
-                                <span>Relatório de Vendas</span>
-                            </a>
-                        {% else %}
-                            <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                <span class="opacity-70">📈</span>
-                                <span>Relatório de Vendas</span>
-                            </a>
-                        {% endif %}
-
-                        <!-- Barrinha Separadora -->
-                        <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                        <!-- 4. Painel Admin -->
-                        <a href="/admin/" target="_blank" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition flex items-center gap-1">
-                            <span>Painel Admin</span>
-                            <span class="text-xs text-slate-400">↗</span>
-                        </a>
                     </div>
                 </div>
 

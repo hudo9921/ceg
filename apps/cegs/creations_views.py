@@ -11,7 +11,8 @@ from django.utils.dateparse import parse_datetime
 from django.views import View
 
 from apps.groups.models import KpopGroup, Era
-from apps.cegs.models import CEG, CEGItemDefinition, CEGSet, ItemSlot
+from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, ItemIndividual, TipoItem
+from apps.cegs.services import ClaimService
 from apps.participants.models import Participant, Claim
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,9 @@ class CreationsHubView(StaffRequiredMixin, View):
     def get(self, request):
         groups = KpopGroup.objects.prefetch_related('eras').order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        cegs = CEG.objects.select_related('era__group').prefetch_related('sets', 'item_definitions').order_by('-created_at')
+        cegs = CEG.objects.select_related('era__group', 'caixa').prefetch_related('sets', 'item_definitions').order_by('-created_at')
+        caixas = Caixa.objects.all().order_by('-created_at')
+        itens_individuais = ItemIndividual.objects.select_related('caixa', 'comprador').order_by('-created_at')
 
         # Dicionário de grupos e eras para seleção em cascata no Alpine.js
         groups_data = []
@@ -73,6 +76,11 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'era_name': c.era.name,
                 'status': c.status,
                 'status_display': c.get_status_display(),
+                'caixa_id': c.caixa.id if c.caixa else None,
+                'caixa_nome': c.caixa.nome if c.caixa else None,
+                'caixa_slug': c.caixa.slug if c.caixa else None,
+                'caixa_origem': c.caixa.origem if c.caixa else None,
+                'shipping_status_display': c.get_shipping_status_display(),
                 'sets_count': c.sets.count(),
                 'active_sets_count': c.sets.filter(is_active=True).count(),
                 'items_count': c.item_definitions.count(),
@@ -93,21 +101,88 @@ class CreationsHubView(StaffRequiredMixin, View):
             )
         )
 
+        # Itens Individuais (Mercari) serializados para modal de edição ágil
+        itens_individuais_data = []
+        for item in itens_individuais:
+            itens_individuais_data.append({
+                'id': item.id,
+                'nome': item.nome,
+                'tipo_item_id': item.tipo_item_id,
+                'tipo_item_nome': item.tipo_item.nome if item.tipo_item else 'Item',
+                'link_pedido': item.link_pedido,
+                'quantidade': item.quantidade,
+                'caixa_id': item.caixa_id,
+                'caixa_nome': item.caixa.nome if item.caixa else None,
+                'caixa_slug': item.caixa.slug if item.caixa else None,
+                'caixa_origem': item.caixa.origem if item.caixa else None,
+                'status': item.status,
+                'status_display': item.get_status_display(),
+                'comprador_id': item.comprador_id,
+                'comprador_nome': item.comprador.display_name if item.comprador else '',
+                'comprador_whatsapp': item.comprador.whatsapp if item.comprador else '',
+                'comprador_username': item.comprador.username if item.comprador else '',
+                'comprador_social': item.comprador.social_handle if item.comprador else '',
+                'preco_produto': str(item.preco_produto) if item.preco_produto else '',
+                'frete_inter': str(item.frete_inter) if item.frete_inter else '',
+                'frete_inter_pago': item.frete_inter_pago,
+                'prazo_frete_inter': item.prazo_frete_inter.strftime('%Y-%m-%dT%H:%M') if item.prazo_frete_inter else '',
+                'taxa_aduaneira': str(item.taxa_aduaneira) if item.taxa_aduaneira else '',
+                'taxa_aduaneira_paga': item.taxa_aduaneira_paga,
+                'prazo_taxa_aduaneira': item.prazo_taxa_aduaneira.strftime('%Y-%m-%dT%H:%M') if item.prazo_taxa_aduaneira else '',
+                'image_url': item.image_display_url,
+                'observacoes': item.observacoes or '',
+            })
+
+        caixas_data = [
+            {
+                'id': cx.id,
+                'nome': cx.nome,
+                'slug': cx.slug,
+                'origem': cx.origem,
+                'origem_display': cx.get_origem_display(),
+                'status': cx.status,
+                'status_display': cx.get_status_display(),
+                'is_mercari': cx.origem == 'JP',
+            }
+            for cx in caixas
+        ]
+        caixas_mercari = [cx for cx in caixas if cx.origem == 'JP']
+
+        category_filter = request.GET.get('category', request.GET.get('tab', 'all'))
+        if category_filter not in ['all', 'ceg', 'mercari']:
+            category_filter = 'all'
+
+        tipos_item = list(TipoItem.objects.all().order_by('nome'))
+        tipos_item_data = [{'id': t.id, 'nome': t.nome} for t in tipos_item]
+
         context = {
             'groups': groups,
             'eras': eras,
             'cegs': cegs,
+            'caixas': caixas,
+            'caixas_mercari': caixas_mercari,
+            'caixas_json': json.dumps(caixas_data),
             'groups_json': json.dumps(groups_data),
             'participants': participants,
             'participants_json': json.dumps(participants),
             'cegs_summary': cegs_summary,
             'item_types': CEGItemDefinition.ItemType.choices,
+            'tipos_item': tipos_item,
+            'tipos_item_json': json.dumps(tipos_item_data),
             'ceg_statuses': CEG.Status.choices,
             'active_tab': request.GET.get('tab', 'ceg'),
+            'category_filter': category_filter,
+            'category': category_filter,
+            'preselected_caixa_id': int(request.GET.get('caixa_id')) if request.GET.get('caixa_id', '').isdigit() else '',
+            'auto_open_modal': request.GET.get('open', ''),
             'total_groups': groups.count(),
             'total_eras': eras.count(),
             'total_cegs': cegs.count(),
             'open_cegs': cegs.filter(status=CEG.Status.OPEN).count(),
+            'itens_individuais': itens_individuais,
+            'itens_individuais_json': json.dumps(itens_individuais_data),
+            'total_itens_individuais': itens_individuais.count(),
+            'item_individual_statuses': ItemIndividual.Status.choices,
         }
         return render(request, 'cegs/creations.html', context)
 
@@ -180,6 +255,7 @@ class CreateCEGView(StaffRequiredMixin, View):
 
     def post(self, request):
         era_id = request.POST.get('era_id')
+        caixa_id = request.POST.get('caixa_id', '').strip()
         title = request.POST.get('title', '').strip()
         status = request.POST.get('status', CEG.Status.OPEN)
         opens_at_str = request.POST.get('opens_at', '').strip()
@@ -239,6 +315,7 @@ class CreateCEGView(StaffRequiredMixin, View):
             item_types = request.POST.getlist('item_type[]')
             item_prices = request.POST.getlist('item_price[]')
             item_images = request.POST.getlist('item_image[]')
+            item_tipos = request.POST.getlist('item_tipo_id[]')
 
             for idx, i_name in enumerate(item_names):
                 if i_name.strip():
@@ -246,16 +323,30 @@ class CreateCEGView(StaffRequiredMixin, View):
                         'name': i_name.strip(),
                         'member_name': item_members[idx].strip() if idx < len(item_members) else '',
                         'item_type': item_types[idx].strip() if idx < len(item_types) else CEGItemDefinition.ItemType.PHOTOCARD,
+                        'tipo_item_id': item_tipos[idx].strip() if idx < len(item_tipos) else '',
                         'default_price': item_prices[idx].strip() if idx < len(item_prices) else '45.00',
                         'image_url': item_images[idx].strip() if idx < len(item_images) else '',
                         'order_index': idx + 1,
                     })
+
+        # Atrela caixa existente se especificada
+        caixa = None
+        shipping_status = Caixa.Status.EM_CONSOLIDACAO
+        if caixa_id:
+            try:
+                caixa = Caixa.objects.filter(id=int(caixa_id)).first()
+                if caixa:
+                    shipping_status = caixa.status
+            except (ValueError, TypeError):
+                caixa = None
 
         try:
             with transaction.atomic():
                 # 1. Cria a CEG
                 ceg = CEG.objects.create(
                     era=era,
+                    caixa=caixa,
+                    shipping_status=shipping_status,
                     title=title,
                     status=status,
                     opens_at=opens_at,
@@ -284,11 +375,20 @@ class CreateCEGView(StaffRequiredMixin, View):
                     except (InvalidOperation, ValueError):
                         price = Decimal('0.00')
 
+                    tipo_item_id = item_data.get('tipo_item_id')
+                    tipo_item = None
+                    if tipo_item_id:
+                        try:
+                            tipo_item = TipoItem.objects.filter(id=int(tipo_item_id)).first()
+                        except (ValueError, TypeError):
+                            tipo_item = None
+
                     item_def = CEGItemDefinition.objects.create(
                         ceg=ceg,
                         name=i_name,
                         member_name=item_data.get('member_name', '').strip(),
                         item_type=item_data.get('item_type', CEGItemDefinition.ItemType.PHOTOCARD),
+                        tipo_item=tipo_item,
                         default_price=price,
                         image_url=item_data.get('image_url', '').strip(),
                         order_index=int(item_data.get('order_index', order_idx))
@@ -386,12 +486,16 @@ class CreateSetView(StaffRequiredMixin, View):
                     notes=notes or f"Set #{set_number}"
                 )
                 created_slots = new_set.generate_slots()
+                promoted_count = ClaimService.allocate_waiting_list_for_slots(created_slots)
 
-            messages.success(
-                request,
+            msg = (
                 f"📦 Set #{new_set.set_number} adicionado com sucesso à CEG '{ceg.title}'! "
-                f"{len(created_slots)} slots físicos foram gerados e estão prontos."
+                f"{len(created_slots)} slots físicos foram gerados."
             )
+            if promoted_count > 0:
+                msg += f" 🎯 {promoted_count} participante(s) da Lista de Espera foram alocados automaticamente nas vagas do novo set!"
+
+            messages.success(request, msg)
             return redirect('ceg_detail', slug=ceg.slug)
         except Exception as e:
             logger.error(f"Erro ao criar set: {e}")
@@ -425,11 +529,20 @@ class AddItemToCEGView(StaffRequiredMixin, View):
         try:
             with transaction.atomic():
                 last_order = ceg.item_definitions.count()
+                tipo_item_id = request.POST.get('tipo_item_id')
+                tipo_item = None
+                if tipo_item_id:
+                    try:
+                        tipo_item = TipoItem.objects.filter(id=int(tipo_item_id)).first()
+                    except (ValueError, TypeError):
+                        tipo_item = None
+
                 item_def = CEGItemDefinition.objects.create(
                     ceg=ceg,
                     name=name,
                     member_name=member_name,
                     item_type=item_type,
+                    tipo_item=tipo_item,
                     default_price=price,
                     image_url=image_url,
                     order_index=last_order + 1

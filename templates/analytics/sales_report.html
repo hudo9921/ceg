@@ -35,6 +35,41 @@
         </div>
     </div>
 
+    <!-- Category Switcher Bar (Geral / CEGs / Mercari) -->
+    <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto">
+            <span class="text-xs font-bold text-slate-400 px-2 flex items-center gap-1">
+                <span>📁</span> Categoria:
+            </span>
+            <button type="button"
+                    @click="setCategory('all')"
+                    class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                    :class="selectedCategory === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'">
+                <span>🌐</span>
+                <span>Geral (CEGs + Mercari)</span>
+            </button>
+            <button type="button"
+                    @click="setCategory('ceg')"
+                    class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                    :class="selectedCategory === 'ceg' ? 'bg-pink-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'">
+                <span>✨</span>
+                <span>Apenas CEGs</span>
+            </button>
+            <button type="button"
+                    @click="setCategory('mercari')"
+                    class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                    :class="selectedCategory === 'mercari' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'">
+                <span>🇯🇵</span>
+                <span>Apenas Caixa Mercari</span>
+            </button>
+        </div>
+        <div class="text-[11px] font-semibold text-slate-400 px-2">
+            <span x-show="selectedCategory === 'all'">Faturamento unificado (CEGs + Itens Mercari)</span>
+            <span x-show="selectedCategory === 'ceg'">Faturamento exclusivo de compras em grupo (CEGs)</span>
+            <span x-show="selectedCategory === 'mercari'">Faturamento exclusivo de itens avulsos Mercari</span>
+        </div>
+    </div>
+
     <!-- Header & Barra de Filtros (Grupo, Era, Janela de Tempo) -->
     <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -52,7 +87,7 @@
 
             <!-- Botão Limpar Filtros -->
             <button type="button"
-                    x-show="selectedGroup || selectedEra || selectedWindow !== 'all' || selectedMonth"
+                    x-show="selectedCategory !== 'all' || selectedGroup || selectedEra || selectedWindow !== 'all' || selectedMonth"
                     x-cloak
                     @click="clearFilters()"
                     class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
@@ -211,61 +246,150 @@
         </div>
     </div>
 
-    <!-- GRÁFICO PRINCIPAL: Fluxo de Vendas por Mês (Valores R$ e Volume de Claims com Escala Dupla) -->
-    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-5">
+    <!-- GRÁFICO PRINCIPAL: Série Temporal de Vendas (# Vendas) e Faturamento (R$) por Mês -->
+    <div class="space-y-4">
+        <!-- Top Bar com Título e Seletor de Visualização -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h2 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
                     <span>📈</span>
-                    Vendas Mês a Mês — Volume e Faturamento
+                    Série Temporal — Vendas e Faturamento por Mês
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">
-                    Gráfico comparativo combinando barras de faturamento em R$ (eixo esquerdo) e linha de volume de vendas em quantidade de claims (eixo direito).
+                    Acompanhe a evolução histórica da quantidade de vendas (# claims) e do valor faturado (R$) mês a mês.
                 </p>
             </div>
 
-            <!-- Alternador de visualização do gráfico -->
-            <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <!-- Alternador de Modos de Visualização -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold gap-1 self-stretch sm:self-auto">
                 <button type="button"
-                        @click="setChartViewMode('combined')"
-                        class="px-3 py-1 rounded-lg transition"
-                        :class="chartViewMode === 'combined' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
-                    Combinado
+                        @click="setChartViewMode('side_by_side')"
+                        class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        :class="chartViewMode === 'side_by_side' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
+                    <span>📊</span>
+                    <span>Lado a Lado</span>
                 </button>
                 <button type="button"
                         @click="setChartViewMode('revenue')"
-                        class="px-3 py-1 rounded-lg transition"
+                        class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
                         :class="chartViewMode === 'revenue' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
-                    Apenas Faturamento (R$)
+                    <span>💰</span>
+                    <span>Faturamento (R$)</span>
                 </button>
                 <button type="button"
                         @click="setChartViewMode('volume')"
-                        class="px-3 py-1 rounded-lg transition"
+                        class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
                         :class="chartViewMode === 'volume' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
-                    Apenas Volume (Claims)
+                    <span>🛍️</span>
+                    <span># de Vendas</span>
+                </button>
+                <button type="button"
+                        @click="setChartViewMode('combined')"
+                        class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        :class="chartViewMode === 'combined' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
+                    <span>🔄</span>
+                    <span>Combinado</span>
                 </button>
             </div>
         </div>
 
-        <!-- Canvas do Chart.js -->
-        <div class="h-80 w-full relative">
-            <canvas id="salesMonthlyChart"></canvas>
-        </div>
+        <!-- Grid dos Gráficos de Série Temporal -->
+        <div class="grid grid-cols-1 gap-6"
+             :class="chartViewMode === 'side_by_side' ? 'lg:grid-cols-2' : ''">
 
-        <!-- Legenda e Rodapé explicativo -->
-        <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100 gap-3">
-            <div class="flex items-center gap-4">
-                <span class="flex items-center gap-1.5 font-semibold">
-                    <span class="w-3 h-3 rounded-xs bg-emerald-500"></span> Faturamento Pago (R$)
-                </span>
-                <span class="flex items-center gap-1.5 font-semibold">
-                    <span class="w-3 h-3 rounded-xs bg-amber-500"></span> Faturamento Pendente (R$)
-                </span>
-                <span class="flex items-center gap-1.5 font-semibold">
-                    <span class="w-3 h-1 bg-pink-500 rounded-full"></span> Volume de Vendas (Claims)
-                </span>
+            <!-- Card 1: Faturamento Mensal (R$) -->
+            <div x-show="chartViewMode === 'side_by_side' || chartViewMode === 'revenue' || chartViewMode === 'combined'"
+                 class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4 flex flex-col justify-between"
+                 :class="(chartViewMode === 'revenue' || chartViewMode === 'combined') ? 'col-span-full' : ''">
+
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-sm">💰</span>
+                            <h3 class="text-base font-black text-slate-900">
+                                <span x-show="chartViewMode !== 'combined'">Faturamento Mensal (R$)</span>
+                                <span x-show="chartViewMode === 'combined'">Faturamento (R$) & Volume de Vendas (# Claims)</span>
+                            </h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1" x-show="chartViewMode !== 'combined'">
+                            Evolução da receita total faturada por mês em reais.
+                        </p>
+                        <p class="text-xs text-slate-500 mt-1" x-show="chartViewMode === 'combined'">
+                            Barras de faturamento em R$ (eixo esquerdo) e linha de volume de claims (eixo direito).
+                        </p>
+                    </div>
+
+                    <div class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-black self-start sm:self-auto flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Total: R$ {{ summary.total_sales|floatformat:2 }}</span>
+                    </div>
+                </div>
+
+                <!-- Canvas Chart.js Faturamento / Combinado -->
+                <div class="w-full relative" :class="(chartViewMode === 'revenue' || chartViewMode === 'combined') ? 'h-80' : 'h-72'">
+                    <canvas id="salesMonthlyChart"></canvas>
+                </div>
+
+                <!-- Legenda do Gráfico -->
+                <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100 gap-2">
+                    <div class="flex items-center gap-3 font-semibold">
+                        <span class="flex items-center gap-1.5 text-emerald-700">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Faturamento Total (R$)
+                        </span>
+                        <span x-show="chartViewMode === 'combined'" class="flex items-center gap-1.5 text-pink-600 font-semibold">
+                            <span class="w-3 h-1 bg-pink-500 rounded-full"></span> # Vendas (Claims)
+                        </span>
+                        <span x-show="chartViewMode !== 'combined'" class="text-slate-400 font-normal">
+                            (Pago: R$ {{ summary.total_paid|floatformat:2 }} • Pendente: R$ {{ summary.total_pending|floatformat:2 }})
+                        </span>
+                    </div>
+                    <span class="text-[11px] text-slate-400">Passe o mouse nos pontos para detalhes</span>
+                </div>
             </div>
-            <span class="text-[11px] text-slate-400">Passe o mouse ou toque nos pontos para detalhes</span>
+
+            <!-- Card 2: Volume de Vendas (# de Vendas / Claims) -->
+            <div x-show="chartViewMode === 'side_by_side' || chartViewMode === 'volume'"
+                 class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7 space-y-4 flex flex-col justify-between"
+                 :class="chartViewMode === 'volume' ? 'col-span-full' : ''">
+
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 rounded-lg bg-pink-50 text-pink-600 text-sm">🛍️</span>
+                            <h3 class="text-base font-black text-slate-900">
+                                Volume de Vendas (# Claims por Mês)
+                            </h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Quantidade de claims e vendas fechadas ao longo do tempo.
+                        </p>
+                    </div>
+
+                    <div class="px-3 py-1.5 rounded-xl bg-pink-50 border border-pink-100 text-pink-800 text-xs font-black self-start sm:self-auto flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                        <span>Total: {{ summary.total_claims }} vendas</span>
+                    </div>
+                </div>
+
+                <!-- Canvas Chart.js Volume -->
+                <div class="w-full relative" :class="chartViewMode === 'volume' ? 'h-80' : 'h-72'">
+                    <canvas id="salesVolumeChart"></canvas>
+                </div>
+
+                <!-- Legenda do Gráfico de Volume -->
+                <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100 gap-2">
+                    <div class="flex items-center gap-3 font-semibold">
+                        <span class="flex items-center gap-1.5 text-pink-600">
+                            <span class="w-3 h-3 rounded-full bg-pink-500"></span> Quantidade de Vendas
+                        </span>
+                        <span class="text-slate-400 font-normal">
+                            ({{ summary.total_participants }} compradores únicos)
+                        </span>
+                    </div>
+                    <span class="text-[11px] text-slate-400">Passe o mouse nos pontos para quantidades</span>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -431,19 +555,25 @@ function salesReportApp() {
     }
 
     return {
+        selectedCategory: '{{ category|default:"all" }}',
         selectedGroup: '{{ selected_group|default:"" }}',
         selectedEra: '{{ selected_era|default:"" }}',
         selectedWindow: '{{ selected_window|default:"all" }}',
         selectedMonth: '{{ selected_month|default:"" }}',
-        chartViewMode: 'combined', // 'combined', 'volume', 'revenue'
+        chartViewMode: 'side_by_side', // 'side_by_side', 'revenue', 'volume', 'combined'
         filterOptions: filterOptions,
         chartData: chartData,
         monthlyChart: null,
+        volumeChart: null,
         donutChart: null,
         groupsChart: null,
         get availableEras() {
             if (!this.selectedGroup) return this.filterOptions.eras;
             return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+        },
+        setCategory(cat) {
+            this.selectedCategory = cat;
+            this.applyFilter();
         },
         onGroupChange() {
             this.selectedEra = '';
@@ -451,6 +581,7 @@ function salesReportApp() {
         },
         applyFilter() {
             const params = new URLSearchParams();
+            if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
             if (this.selectedGroup) params.set('group', this.selectedGroup);
             if (this.selectedEra) params.set('era', this.selectedEra);
             if (this.selectedWindow && this.selectedWindow !== 'all') params.set('window', this.selectedWindow);
@@ -467,26 +598,17 @@ function salesReportApp() {
         },
         setChartViewMode(mode) {
             this.chartViewMode = mode;
-            if (!this.monthlyChart) return;
-            const ds = this.monthlyChart.data.datasets;
-            if (mode === 'volume') {
-                ds[0].hidden = true;  // paid sales
-                ds[1].hidden = true;  // pending sales
-                ds[2].hidden = false; // volume line
-            } else if (mode === 'revenue') {
-                ds[0].hidden = false; // paid sales
-                ds[1].hidden = false; // pending sales
-                ds[2].hidden = true;  // volume line
-            } else {
-                ds[0].hidden = false;
-                ds[1].hidden = false;
-                ds[2].hidden = false;
-            }
-            this.monthlyChart.update();
+            this.$nextTick(() => {
+                this.renderMonthlyChart();
+                if (mode === 'side_by_side' || mode === 'volume') {
+                    this.renderVolumeChart();
+                }
+            });
         },
         initCharts() {
             const startRendering = () => {
                 this.renderMonthlyChart();
+                this.renderVolumeChart();
                 this.renderDonutChart();
                 this.renderGroupsChart();
             };
@@ -510,45 +632,241 @@ function salesReportApp() {
 
             const labels = (this.chartData.monthly && this.chartData.monthly.labels) || [];
             const claimsCount = (this.chartData.monthly && this.chartData.monthly.claims_count) || [];
+            const totalSales = (this.chartData.monthly && this.chartData.monthly.total_sales) || [];
             const paidSales = (this.chartData.monthly && this.chartData.monthly.paid_sales) || [];
             const pendingSales = (this.chartData.monthly && this.chartData.monthly.pending_sales) || [];
 
-            this.monthlyChart = new Chart(ctx, {
-                type: 'bar',
+            const isCombined = this.chartViewMode === 'combined';
+
+            if (isCombined) {
+                this.monthlyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Faturamento Total (R$)',
+                                data: totalSales,
+                                backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                                hoverBackgroundColor: 'rgba(5, 150, 105, 0.95)',
+                                borderRadius: 8,
+                                maxBarThickness: 36,
+                                yAxisID: 'yRevenue',
+                                order: 2
+                            },
+                            {
+                                type: 'line',
+                                label: 'Volume de Vendas (Claims)',
+                                data: claimsCount,
+                                borderColor: '#ec4899',
+                                backgroundColor: 'rgba(236, 72, 153, 0.15)',
+                                borderWidth: 3,
+                                pointBackgroundColor: '#ec4899',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 8,
+                                tension: 0.35,
+                                yAxisID: 'yVolume',
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: { weight: 'bold', size: 11 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        if (context.dataset.yAxisID === 'yRevenue') {
+                                            const val = context.parsed.y || 0;
+                                            return 'Faturamento: R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                        }
+                                        const count = context.parsed.y || 0;
+                                        return 'Volume: ' + count + (count === 1 ? ' venda' : ' vendas');
+                                    },
+                                    afterLabel: function(context) {
+                                        if (context.dataset.yAxisID === 'yRevenue') {
+                                            const idx = context.dataIndex;
+                                            const p = paidSales[idx] || 0;
+                                            const pend = pendingSales[idx] || 0;
+                                            if (p > 0 || pend > 0) {
+                                                return ' (Pago: R$ ' + p.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' • Pendente: R$ ' + pend.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ')';
+                                            }
+                                        }
+                                        return '';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { weight: 'bold', size: 11 } }
+                            },
+                            yRevenue: {
+                                type: 'linear',
+                                position: 'left',
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Faturamento (R$)',
+                                    font: { weight: 'bold', size: 11 }
+                                },
+                                ticks: {
+                                    callback: function(val) { return 'R$ ' + val.toLocaleString('pt-BR'); },
+                                    font: { size: 10 }
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            },
+                            yVolume: {
+                                type: 'linear',
+                                position: 'right',
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Qtd Vendas (Claims)',
+                                    font: { weight: 'bold', size: 11 }
+                                },
+                                grid: { drawOnChartArea: false },
+                                ticks: {
+                                    precision: 0,
+                                    font: { size: 10 }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                const c2d = ctx.getContext('2d');
+                let gradient = 'rgba(16, 185, 129, 0.15)';
+                if (c2d) {
+                    const g = c2d.createLinearGradient(0, 0, 0, 260);
+                    g.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+                    g.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+                    gradient = g;
+                }
+
+                this.monthlyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Faturamento Mensal (R$)',
+                                data: totalSales,
+                                borderColor: '#10b981',
+                                backgroundColor: gradient,
+                                fill: true,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#10b981',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 8,
+                                tension: 0.35
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const val = context.parsed.y || 0;
+                                        return 'Faturamento: R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                    },
+                                    afterLabel: function(context) {
+                                        const idx = context.dataIndex;
+                                        const p = paidSales[idx] || 0;
+                                        const pend = pendingSales[idx] || 0;
+                                        if (p > 0 || pend > 0) {
+                                            return '• Pago: R$ ' + p.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) +
+                                                   '\n• Pendente: R$ ' + pend.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                        }
+                                        return '';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { weight: 'bold', size: 11 } }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Faturamento (R$)',
+                                    font: { weight: 'bold', size: 11 }
+                                },
+                                ticks: {
+                                    callback: function(val) { return 'R$ ' + val.toLocaleString('pt-BR'); },
+                                    font: { size: 10 }
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+        renderVolumeChart() {
+            const ctx = document.getElementById('salesVolumeChart');
+            if (!ctx) return;
+            if (this.volumeChart) this.volumeChart.destroy();
+
+            const labels = (this.chartData.monthly && this.chartData.monthly.labels) || [];
+            const claimsCount = (this.chartData.monthly && this.chartData.monthly.claims_count) || [];
+
+            const c2d = ctx.getContext('2d');
+            let gradient = 'rgba(236, 72, 153, 0.15)';
+            if (c2d) {
+                const g = c2d.createLinearGradient(0, 0, 0, 260);
+                g.addColorStop(0, 'rgba(236, 72, 153, 0.35)');
+                g.addColorStop(1, 'rgba(236, 72, 153, 0.01)');
+                gradient = g;
+            }
+
+            this.volumeChart = new Chart(ctx, {
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Faturamento Pago (R$)',
-                            data: paidSales,
-                            backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                            borderRadius: 6,
-                            yAxisID: 'yRevenue',
-                            order: 2,
-                            stack: 'revenue'
-                        },
-                        {
-                            label: 'Faturamento Pendente (R$)',
-                            data: pendingSales,
-                            backgroundColor: 'rgba(245, 158, 11, 0.7)',
-                            borderRadius: 6,
-                            yAxisID: 'yRevenue',
-                            order: 3,
-                            stack: 'revenue'
-                        },
-                        {
-                            type: 'line',
-                            label: 'Volume de Vendas (Claims)',
+                            label: '# de Vendas (Claims)',
                             data: claimsCount,
                             borderColor: '#ec4899',
-                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                            backgroundColor: gradient,
+                            fill: true,
                             borderWidth: 3,
                             pointBackgroundColor: '#ec4899',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
                             pointRadius: 5,
-                            pointHoverRadius: 7,
-                            tension: 0.3,
-                            yAxisID: 'yVolume',
-                            order: 1
+                            pointHoverRadius: 8,
+                            tension: 0.35
                         }
                     ]
                 },
@@ -560,59 +878,33 @@ function salesReportApp() {
                         intersect: false
                     },
                     plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                boxWidth: 12,
-                                font: { weight: 'bold', size: 11 }
-                            }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.dataset.yAxisID === 'yRevenue') {
-                                        label += 'R$ ' + (context.parsed.y || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                                    } else {
-                                        label += (context.parsed.y || 0) + ' claims';
-                                    }
-                                    return label;
+                                    const val = context.parsed.y || 0;
+                                    return 'Volume: ' + val + (val === 1 ? ' venda' : ' vendas');
                                 }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            stacked: true,
                             grid: { display: false },
                             ticks: { font: { weight: 'bold', size: 11 } }
                         },
-                        yRevenue: {
-                            type: 'linear',
-                            position: 'left',
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Faturamento (R$)',
-                                font: { weight: 'bold', size: 11 }
-                            },
-                            ticks: {
-                                callback: function(value) { return 'R$ ' + value; }
-                            },
-                            grid: { color: 'rgba(0,0,0,0.05)' }
-                        },
-                        yVolume: {
-                            type: 'linear',
-                            position: 'right',
+                        y: {
                             beginAtZero: true,
                             title: {
                                 display: true,
                                 text: 'Qtd Vendas (Claims)',
                                 font: { weight: 'bold', size: 11 }
                             },
-                            grid: { drawOnChartArea: false },
-                            ticks: { precision: 0 }
+                            ticks: {
+                                precision: 0,
+                                font: { size: 10 }
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
                         }
                     }
                 }

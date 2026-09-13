@@ -154,24 +154,31 @@
         </div>
     {% endif %}
 
+    <!-- Dados serializados para Alpine.js -->
+    {{ cegs_filter_list|json_script:"cegs-filter-data" }}
+    {{ mercari_filter_list|json_script:"mercari-filter-data" }}
+
     <!-- Metric Cards: Contagem de Itens e Status Interativo -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1: Total de Itens -->
-        <div @click="statusFilter = 'ALL'"
-             :class="statusFilter === 'ALL' ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/20' : 'border-slate-200 hover:border-slate-300'"
+        <div @click="resetToAll()"
+             :class="(statusFilter === 'ALL' && categoryFilter === 'ALL' && selectedCaixa === 'ALL') ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/20 shadow-sm' : 'border-slate-200 hover:border-slate-300'"
              class="bg-white p-5 rounded-2xl border shadow-sm space-y-1.5 cursor-pointer transition select-none">
             <div class="flex items-center justify-between">
                 <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Itens</div>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      :class="statusFilter === 'ALL' ? 'bg-pink-100 text-pink-700' : 'bg-slate-100 text-slate-500'">
+                      :class="(statusFilter === 'ALL' && categoryFilter === 'ALL' && selectedCaixa === 'ALL') ? 'bg-pink-100 text-pink-700' : 'bg-slate-100 text-slate-500'">
                     Todos
                 </span>
             </div>
             <div class="flex items-baseline gap-2">
-                <span class="text-2xl sm:text-3xl font-black text-slate-900">{{ total_claims_count }}</span>
-                <span class="text-sm font-semibold text-slate-500">{% if total_claims_count == 1 %}item reservado{% else %}itens reservados{% endif %}</span>
+                <span class="text-2xl sm:text-3xl font-black text-slate-900">{{ total_claims_count|add:itens_individuais_count }}</span>
+                <span class="text-sm font-semibold text-slate-500">{% if total_claims_count|add:itens_individuais_count == 1 %}item total{% else %}itens no total{% endif %}</span>
             </div>
-            <div class="text-[11px] text-slate-500">Reservas em todas as suas CEGs</div>
+            <div class="text-[11px] text-slate-500">
+                <span x-show="categoryFilter !== 'ALL' || selectedCaixa !== 'ALL' || statusFilter !== 'ALL'" class="text-pink-600 font-bold">Clique para ver tudo</span>
+                <span x-show="categoryFilter === 'ALL' && selectedCaixa === 'ALL' && statusFilter === 'ALL'">Reservas em CEGs e compras avulsas</span>
+            </div>
         </div>
 
         <!-- Card 2: Aguardando Pagamento (Número de Itens Pendentes) -->
@@ -219,10 +226,172 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Card 4: Itens Mercari / Avulsos (Clicável para Filtrar) -->
+        <div @click="toggleMercariFilter()"
+             :class="categoryFilter === 'MERCARI' ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/70 shadow-md' : 'border-slate-200 hover:border-pink-300 hover:bg-pink-50/20'"
+             class="bg-white p-5 rounded-2xl border shadow-sm space-y-1.5 cursor-pointer transition select-none">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Itens Mercari</div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      :class="categoryFilter === 'MERCARI' ? 'bg-pink-600 text-white' : 'bg-pink-100 text-pink-700'">
+                    Avulsos
+                </span>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl sm:text-3xl font-black text-slate-900">{{ itens_individuais_count|default:0 }}</span>
+                <span class="text-sm font-semibold text-slate-500">{% if itens_individuais_count == 1 %}item avulso{% else %}itens avulsos{% endif %}</span>
+            </div>
+            <div class="text-[11px] text-slate-500 flex items-center justify-between">
+                <span x-text="categoryFilter === 'MERCARI' ? 'Filtrando apenas Mercari' : 'Clique para filtrar Mercari'"></span>
+                {% if itens_frete_unpaid_count > 0 or itens_taxa_unpaid_count > 0 %}
+                    <span class="font-bold text-amber-600 text-[11px]">Frete/Taxa a pagar</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro por Caixa / Remessa Internacional -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base">
+                    📦
+                </div>
+                <div>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                        <span>Filtrar por Caixa / Remessa</span>
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                            {{ caixas_list|length }} {% if caixas_list|length == 1 %}caixa{% else %}caixas{% endif %}
+                        </span>
+                    </h3>
+                    <p class="text-xs text-slate-500">
+                        Selecione uma caixa para acompanhar seus itens em trânsito, ou veja itens que ainda não têm remessa vinculada.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Indicador e botão para limpar filtro de caixa -->
+            <div x-show="selectedCaixa !== 'ALL'" class="flex items-center gap-2 self-start sm:self-auto">
+                <button type="button" @click="selectedCaixa = 'ALL'; onCaixaChange();"
+                        class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition border border-indigo-200 flex items-center gap-1 shadow-xs">
+                    <span>✕</span> Ver Todas as Caixas
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista / Tabs de Caixas Interativas -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+            <!-- Opção 1: Todas as Caixas -->
+            <button type="button"
+                    @click="selectedCaixa = 'ALL'; onCaixaChange();"
+                    :class="selectedCaixa === 'ALL' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium'"
+                    class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none">
+                <span>🌐 Todas as Caixas</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                      :class="selectedCaixa === 'ALL' ? 'bg-indigo-700 text-white' : 'bg-slate-200 text-slate-700'">
+                    {{ total_claims_count|add:itens_individuais_count }}
+                </span>
+            </button>
+
+            <!-- Opção 2: Cada Caixa que o participante tem itens -->
+            {% for c in caixas_list %}
+                <button type="button"
+                        @click="selectedCaixa = '{{ c.id }}'; onCaixaChange();"
+                        :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium'"
+                        class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none">
+                    <span class="text-sm">
+                        {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% elif c.origem == 'CN' %}🇨🇳{% elif c.origem == 'US' %}🇺🇸{% else %}📦{% endif %}
+                    </span>
+                    <span>{{ c.nome }}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                          :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-700 text-white' : 'bg-slate-200 text-slate-700'">
+                        {{ c.items_count }}
+                    </span>
+                </button>
+            {% endfor %}
+
+            <!-- Opção 3: Fora de Caixas / Sem Remessa -->
+            <button type="button"
+                    @click="selectedCaixa = 'NONE'; onCaixaChange();"
+                    :class="selectedCaixa === 'NONE' ? 'bg-amber-600 text-white font-bold shadow-sm ring-2 ring-amber-300' : 'bg-amber-50/50 hover:bg-amber-50 text-amber-900 border border-amber-200 font-medium'"
+                    class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none">
+                <span>⏳ Itens Fora de Caixas (Sem Remessa)</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                      :class="selectedCaixa === 'NONE' ? 'bg-amber-700 text-white' : 'bg-amber-200 text-amber-900'">
+                    {{ itens_sem_caixa_count }}
+                </span>
+            </button>
+        </div>
+
+        <!-- Painel informativo quando uma Caixa específica está selecionada -->
+        {% for c in caixas_list %}
+            <div x-show="selectedCaixa === '{{ c.id }}'"
+                 class="mt-2 p-3.5 bg-indigo-50/60 border border-indigo-200/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-bold text-indigo-950 text-sm flex items-center gap-1">
+                            <span>{% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% elif c.origem == 'CN' %}🇨🇳{% elif c.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                            <span>{{ c.nome }}</span>
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-indigo-200/70 text-indigo-900">
+                            {{ c.status_display }}
+                        </span>
+                        <span class="text-slate-500 font-medium">
+                            ({{ c.items_count }} {% if c.items_count == 1 %}item seu nesta caixa{% else %}itens seus nesta caixa{% endif %})
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600 text-[11px]">
+                        {% if c.codigo_rastreio %}
+                            <div class="flex items-center gap-1">
+                                <span class="text-slate-400">Rastreio:</span>
+                                {% if c.tracking_url %}
+                                    <a href="{{ c.tracking_url }}" target="_blank" rel="noopener noreferrer"
+                                       class="font-mono font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                        {{ c.codigo_rastreio }} ↗
+                                    </a>
+                                {% else %}
+                                    <span class="font-mono font-bold text-slate-700">{{ c.codigo_rastreio }}</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        {% if c.prazo_frete %}
+                            <div class="flex items-center gap-1">
+                                <span class="text-slate-400">Prazo Frete:</span>
+                                <span class="font-bold text-slate-700">{{ c.prazo_frete|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        {% endif %}
+                        {% if c.prazo_taxa %}
+                            <div class="flex items-center gap-1">
+                                <span class="text-slate-400">Prazo Taxa:</span>
+                                <span class="font-bold text-slate-700">{{ c.prazo_taxa|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <a href="{% url 'caixa_detail' slug=c.slug %}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition">
+                        <span>Ver Página da Caixa</span>
+                        <span>↗</span>
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Painel informativo quando "Itens Fora de Caixas" está selecionado -->
+        <div x-show="selectedCaixa === 'NONE'"
+             class="mt-2 p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900">
+            <div class="flex items-center gap-2">
+                <span class="text-base">⏳</span>
+                <span>Exibindo <strong>{{ itens_sem_caixa_count }} {% if itens_sem_caixa_count == 1 %}item{% else %}itens{% endif %}</strong> que ainda não foram alocados em nenhuma remessa internacional (aguardando fechamento/envio).</span>
+            </div>
+        </div>
     </div>
 
     <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->
-    <div class="space-y-6">
+    <div x-show="categoryFilter === 'ALL'" class="space-y-6">
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
@@ -263,7 +432,7 @@
 
                     <!-- Botão Limpar Filtros -->
                     <button type="button"
-                            x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL'"
+                            x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL' || selectedCaixa !== 'ALL'"
                             @click="clearFilters()"
                             class="px-3 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
                         <span>✕</span>
@@ -322,16 +491,16 @@
                 </button>
 
                 <!-- Feedback de filtro ativo -->
-                <div x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL'" class="ml-auto text-xs text-slate-500 font-medium flex items-center gap-1">
+                <div x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL' || selectedCaixa !== 'ALL'" class="ml-auto text-xs text-slate-500 font-medium flex items-center gap-1">
                     <span>Filtro ativo:</span>
                     <span class="font-bold text-pink-600"
-                          x-text="(statusFilter === 'PENDING' ? 'Faltam Pagar' : (statusFilter === 'PAID' ? 'Já Pagos' : (statusFilter === 'INTER_UNPAID' ? 'Inter Não Pago' : (statusFilter === 'TAXA_UNPAID' ? 'Taxa Não Paga' : 'Todos')))) + (selectedGroup ? ' • Grupo filtrado' : '') + (selectedCeg ? ' • CEG filtrada' : '')"></span>
+                          x-text="(statusFilter === 'PENDING' ? 'Faltam Pagar' : (statusFilter === 'PAID' ? 'Já Pagos' : (statusFilter === 'INTER_UNPAID' ? 'Inter Não Pago' : (statusFilter === 'TAXA_UNPAID' ? 'Taxa Não Paga' : 'Todos')))) + (selectedCaixa === 'NONE' ? ' • Sem Caixa' : (selectedCaixa !== 'ALL' ? ' • Caixa Filtrada' : '')) + (selectedGroup ? ' • Grupo filtrado' : '') + (selectedCeg ? ' • CEG filtrada' : '')"></span>
                 </div>
             </div>
         </div>
 
         {% for group in cegs_groups %}
-            <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }})"
+            <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }})"
                  class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm space-y-4">
                 
                 <!-- CEG Header -->
@@ -345,6 +514,24 @@
                                 {{ group.ceg.title }} ↗
                             </a>
                         </h3>
+                        {% if group.ceg.caixa %}
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}"
+                                   class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">
+                                    <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
+                                    <span>Remessa: {{ group.ceg.caixa.nome }}</span>
+                                </a>
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                    <span>✈️ {{ group.ceg.get_shipping_status_display }}</span>
+                                </span>
+                                {% if group.ceg.caixa.codigo_rastreio %}
+                                    <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank"
+                                       class="inline-flex items-center gap-1 text-xs font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline">
+                                        <span>🔗 Rastreio: {{ group.ceg.caixa.codigo_rastreio }}</span>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div class="text-right flex items-center gap-3">
@@ -522,11 +709,11 @@
 
         <!-- Mensagem quando filtros não encontram correspondência -->
         {% if cegs_groups %}
-            <div x-show="allCegs.length > 0 && !allCegs.some(c => matchesCeg(c.groupId, c.id, c.countPending, c.countPaid, c.countInterUnpaid, c.countTaxaUnpaid))"
+            <div x-show="allCegs.length > 0 && !allCegs.some(c => matchesCeg(c.groupId, c.id, c.caixaId, c.countPending, c.countPaid, c.countInterUnpaid, c.countTaxaUnpaid))"
                  class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500 space-y-2">
                 <div class="text-3xl">🔍</div>
                 <p class="text-sm font-bold text-slate-800">Nenhuma reserva encontrada para os filtros selecionados.</p>
-                <p class="text-xs text-slate-500">Tente selecionar outro grupo, CEG ou status.</p>
+                <p class="text-xs text-slate-500">Tente selecionar outro grupo, CEG, caixa ou status.</p>
                 <div class="pt-2">
                     <button type="button" @click="clearFilters()"
                             class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow transition">
@@ -536,6 +723,179 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Seção de Itens Individuais & Caixas Mercari -->
+    {% if itens_individuais %}
+    <div id="secao-mercari"
+         x-show="categoryFilter === 'ALL' || categoryFilter === 'MERCARI'"
+         class="space-y-6 pt-2">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4"
+             :class="categoryFilter === 'MERCARI' ? 'ring-2 ring-pink-400 border-pink-300' : ''">
+            
+            <!-- Banner quando filtro Mercari está ativo -->
+            <div x-show="categoryFilter === 'MERCARI'"
+                 class="p-3.5 bg-pink-50 border border-pink-200 rounded-xl flex items-center justify-between gap-3 text-xs text-pink-900">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🇯🇵</span>
+                    <span>Filtro ativo: Exibindo apenas <strong>Itens Mercari / Compras no Japão</strong>.</span>
+                </div>
+                <button type="button" @click="categoryFilter = 'ALL'"
+                        class="px-3 py-1 bg-white hover:bg-pink-100 text-pink-700 border border-pink-300 rounded-lg font-bold text-[11px] transition shadow-xs">
+                    Ver Todas as CEGs e Itens
+                </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>🇯🇵</span>
+                        <span>Meus Itens Avulsos & Mercari</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 pt-0.5">
+                        Itens individuais comprados para você em caixas do Japão / Mercari.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-bold">
+                        {{ itens_individuais_count }} {% if itens_individuais_count == 1 %}item individual{% else %}itens individuais{% endif %}
+                    </span>
+                    {% if itens_frete_unpaid_count > 0 or itens_taxa_unpaid_count > 0 %}
+                        <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+                            ⚠️ Frete/Taxa Pendente
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tabela dos Itens Individuais do Participante -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="text-[11px] text-slate-400 uppercase bg-slate-50 border-y border-slate-100 font-bold tracking-wider">
+                        <tr>
+                            <th class="py-3 px-3">Item / Foto</th>
+                            <th class="py-3 px-3">Caixa Vinculada</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                            <th class="py-3 px-3 text-center">Frete Inter</th>
+                            <th class="py-3 px-3 text-center">Taxa Aduaneira</th>
+                            <th class="py-3 px-3 text-right">Link Original</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for item in itens_individuais %}
+                            <tr x-show="matchesMercariItem('{{ item.caixa_id|default:'' }}', '{{ item.status }}', {{ item.frete_inter_pago|yesno:'true,false' }}, {{ item.taxa_aduaneira_paga|yesno:'true,false' }}, {{ item.frete_inter|default:0 }}, {{ item.taxa_aduaneira|default:0 }})"
+                                class="hover:bg-slate-50/60 transition">
+                                <td class="py-3.5 px-3">
+                                    <div class="flex items-center gap-3">
+                                        {% if item.image_display_url %}
+                                            <img src="{{ item.image_display_url }}" 
+                                                 alt="{{ item.nome }}" 
+                                                 class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm flex-shrink-0 cursor-pointer hover:opacity-90"
+                                                 @click="window.open('{{ item.image_display_url }}', '_blank')">
+                                        {% else %}
+                                            <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 font-bold text-lg flex-shrink-0">
+                                                📦
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="font-bold text-slate-900 text-sm">{{ item.nome }}</div>
+                                            <div class="text-[11px] text-slate-400">Qtd: <span class="font-bold text-slate-700">{{ item.quantidade }}</span> • Cadastrado em {{ item.created_at|date:"d/m/Y" }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-3">
+                                    {% if item.caixa %}
+                                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                                            <span>{% if item.caixa.origem == 'JP' %}🇯🇵{% elif item.caixa.origem == 'KR' %}🇰🇷{% else %}📦{% endif %}</span>
+                                            <span>{{ item.caixa.nome }}</span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-500">Status: {{ item.caixa.get_status_display }}</div>
+                                        {% if item.caixa.codigo_rastreio %}
+                                            <a href="{{ item.caixa.tracking_url|default:'#' }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] text-pink-600 hover:underline font-mono">
+                                                <span>🔍</span> {{ item.caixa.codigo_rastreio }}
+                                            </a>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-400 italic">Sem caixa vinculada</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-3 text-center">
+                                    {% if item.status == 'COMPRADO' %}
+                                        <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full font-bold text-[11px]">🛒 Comprado</span>
+                                    {% elif item.status == 'WAREHOUSE' %}
+                                        <span class="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-bold text-[11px]">🏢 Na Warehouse</span>
+                                    {% elif item.status == 'EM_CONSOLIDACAO' %}
+                                        <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded-full font-bold text-[11px]">📦 Em Consolidação</span>
+                                    {% elif item.status == 'ENVIADO' %}
+                                        <span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-full font-bold text-[11px]">✈️ Enviado ao Brasil</span>
+                                    {% elif item.status == 'NO_BRASIL' or item.status == 'LIBERADO' %}
+                                        <span class="px-2.5 py-1 bg-teal-100 text-teal-800 rounded-full font-bold text-[11px]">🇧🇷 No Brasil</span>
+                                    {% elif item.status == 'TRIBUTADO' %}
+                                        <span class="px-2.5 py-1 bg-red-100 text-red-800 rounded-full font-bold text-[11px]">⚠️ Tributado</span>
+                                    {% elif item.status == 'NA_GOM' %}
+                                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[11px]">🏠 Na GOM</span>
+                                    {% elif item.status == 'FINALIZADO' %}
+                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-full font-bold text-[11px]">✔ Finalizado</span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-full font-bold text-[11px]">{{ item.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-3 text-center">
+                                    {% if item.frete_inter and item.frete_inter > 0 %}
+                                        <div class="font-bold text-slate-800">R$ {{ item.frete_inter|floatformat:2 }}</div>
+                                        {% if item.frete_inter_pago %}
+                                            <span class="inline-block mt-0.5 px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">✔ Pago</span>
+                                        {% else %}
+                                            <span class="inline-block mt-0.5 px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">⏳ Pendente</span>
+                                            {% if item.prazo_frete_inter %}
+                                                <div class="text-[10px] text-slate-400 mt-0.5">Prazo: {{ item.prazo_frete_inter|date:"d/m/Y" }}</div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-300 font-bold text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-3 text-center">
+                                    {% if item.taxa_aduaneira and item.taxa_aduaneira > 0 %}
+                                        <div class="font-bold text-slate-800">R$ {{ item.taxa_aduaneira|floatformat:2 }}</div>
+                                        {% if item.taxa_aduaneira_paga %}
+                                            <span class="inline-block mt-0.5 px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">✔ Pago</span>
+                                        {% else %}
+                                            <span class="inline-block mt-0.5 px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">⏳ Pendente</span>
+                                            {% if item.prazo_taxa_aduaneira %}
+                                                <div class="text-[10px] text-slate-400 mt-0.5">Prazo: {{ item.prazo_taxa_aduaneira|date:"d/m/Y" }}</div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-300 font-bold text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-3 text-right">
+                                    {% if item.link_pedido %}
+                                        <a href="{{ item.link_pedido }}" target="_blank" rel="noopener noreferrer"
+                                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">
+                                            <span>🔗 Ver Anúncio</span>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-slate-300 text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                        <!-- Mensagem quando filtros não encontram correspondência na tabela Mercari -->
+                        <tr x-show="allMercari.length > 0 && !allMercari.some(it => matchesMercariItem(it.caixa_id, it.status, it.frete_inter_pago, it.taxa_aduaneira_paga, it.frete_inter, it.taxa_aduaneira))">
+                            <td colspan="6" class="py-10 text-center text-slate-400">
+                                <div class="text-3xl mb-1">🔍</div>
+                                <div class="text-xs font-bold text-slate-700">Nenhum item Mercari encontrado para os filtros selecionados.</div>
+                                <div class="text-[11px] text-slate-400 mt-0.5">Tente selecionar outra caixa ou status.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Modal de Edição de Perfil (Nome, WhatsApp, Twitter/Instagram) -->
     <div x-show="profileModalOpen" x-cloak
@@ -632,8 +992,6 @@
 
 </div>
 
-{{ cegs_filter_list|json_script:"cegs-filter-data" }}
-
 <script>
 function myClaimsApp() {
     let allCegs = [];
@@ -644,15 +1002,27 @@ function myClaimsApp() {
         console.error('Erro ao ler cegs-filter-data:', e);
     }
 
+    let allMercari = [];
+    try {
+        const elMercari = document.getElementById('mercari-filter-data');
+        if (elMercari) allMercari = JSON.parse(elMercari.textContent);
+    } catch (e) {
+        console.error('Erro ao ler mercari-filter-data:', e);
+    }
+
     return {
         profileModalOpen: {% if is_placeholder_name %}true{% else %}false{% endif %},
         selectedGroup: '',
         selectedCeg: '',
+        selectedCaixa: 'ALL',
+        categoryFilter: 'ALL',
         statusFilter: 'ALL',
+        allMercari: allMercari,
         allCegs: allCegs.map(c => ({
             id: String(c.id),
             title: c.title,
             groupId: String(c.group_id),
+            caixaId: String(c.caixa_id || ''),
             count: c.items_count,
             countPending: c.count_pending,
             countPaid: c.count_paid,
@@ -660,8 +1030,18 @@ function myClaimsApp() {
             countTaxaUnpaid: c.count_taxa_unpaid || 0
         })),
         get filteredCegsOptions() {
-            if (!this.selectedGroup) return this.allCegs;
-            return this.allCegs.filter(c => String(c.groupId) === String(this.selectedGroup));
+            let list = this.allCegs;
+            if (this.selectedGroup) {
+                list = list.filter(c => String(c.groupId) === String(this.selectedGroup));
+            }
+            if (this.selectedCaixa !== 'ALL') {
+                if (this.selectedCaixa === 'NONE') {
+                    list = list.filter(c => !c.caixaId);
+                } else {
+                    list = list.filter(c => String(c.caixaId) === String(this.selectedCaixa));
+                }
+            }
+            return list;
         },
         onGroupChange() {
             if (this.selectedCeg) {
@@ -669,18 +1049,76 @@ function myClaimsApp() {
                 if (!exists) this.selectedCeg = '';
             }
         },
+        onCaixaChange() {
+            if (this.selectedCeg) {
+                const exists = this.filteredCegsOptions.some(c => String(c.id) === String(this.selectedCeg));
+                if (!exists) this.selectedCeg = '';
+            }
+        },
+        toggleMercariFilter() {
+            if (this.categoryFilter === 'MERCARI') {
+                this.categoryFilter = 'ALL';
+            } else {
+                this.categoryFilter = 'MERCARI';
+                setTimeout(() => {
+                    document.getElementById('secao-mercari')?.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+            }
+        },
+        resetToAll() {
+            this.selectedGroup = '';
+            this.selectedCeg = '';
+            this.selectedCaixa = 'ALL';
+            this.categoryFilter = 'ALL';
+            this.statusFilter = 'ALL';
+        },
         clearFilters() {
             this.selectedGroup = '';
             this.selectedCeg = '';
+            this.selectedCaixa = 'ALL';
+            this.categoryFilter = 'ALL';
             this.statusFilter = 'ALL';
         },
-        matchesCeg(groupId, cegId, countPending, countPaid, countInterUnpaid = 0, countTaxaUnpaid = 0) {
+        matchesCeg(groupId, cegId, caixaId = '', countPending, countPaid, countInterUnpaid = 0, countTaxaUnpaid = 0) {
+            if (this.categoryFilter === 'MERCARI') return false;
+            if (this.selectedCaixa !== 'ALL') {
+                if (this.selectedCaixa === 'NONE') {
+                    if (caixaId) return false;
+                } else {
+                    if (String(caixaId) !== String(this.selectedCaixa)) return false;
+                }
+            }
             if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
             if (this.selectedCeg && String(this.selectedCeg) !== String(cegId)) return false;
             if (this.statusFilter === 'PENDING' && countPending === 0) return false;
             if (this.statusFilter === 'PAID' && countPaid === 0) return false;
             if (this.statusFilter === 'INTER_UNPAID' && countInterUnpaid === 0) return false;
             if (this.statusFilter === 'TAXA_UNPAID' && countTaxaUnpaid === 0) return false;
+            return true;
+        },
+        matchesMercariItem(caixaId, itemStatus, freteInterPago, taxaAduaneiraPaga, freteInter = 0, taxaAduaneira = 0) {
+            // 1. Filtro por Caixa
+            if (this.selectedCaixa !== 'ALL') {
+                if (this.selectedCaixa === 'NONE') {
+                    if (caixaId) return false;
+                } else {
+                    if (String(caixaId) !== String(this.selectedCaixa)) return false;
+                }
+            }
+            // 2. Filtro por Status
+            if (this.statusFilter === 'PENDING') {
+                const hasUnpaidFrete = freteInter > 0 && !freteInterPago;
+                const hasUnpaidTaxa = taxaAduaneira > 0 && !taxaAduaneiraPaga;
+                if (!hasUnpaidFrete && !hasUnpaidTaxa && itemStatus !== 'COMPRADO') return false;
+            } else if (this.statusFilter === 'PAID') {
+                const hasUnpaidFrete = freteInter > 0 && !freteInterPago;
+                const hasUnpaidTaxa = taxaAduaneira > 0 && !taxaAduaneiraPaga;
+                if (hasUnpaidFrete || hasUnpaidTaxa) return false;
+            } else if (this.statusFilter === 'INTER_UNPAID') {
+                if (!(freteInter > 0 && !freteInterPago)) return false;
+            } else if (this.statusFilter === 'TAXA_UNPAID') {
+                if (!(taxaAduaneira > 0 && !taxaAduaneiraPaga)) return false;
+            }
             return true;
         },
         matchesRow(filter, claimStatus, isInterUnpaid, isTaxaUnpaid) {

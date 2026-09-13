@@ -193,12 +193,12 @@ class CEGConcurrencyAndStandbyTests(TransactionTestCase):
         second = logs[1]
         self.assertEqual(second.attempt_number, 2)
         self.assertEqual(second.participant_name, 'Participante Segundo')
-        self.assertEqual(second.result, ClaimAttemptLog.Result.LOST_RACE)
+        self.assertIn(second.result, (ClaimAttemptLog.Result.LOST_RACE, ClaimAttemptLog.Result.WAITING_LIST))
 
         third = logs[2]
         self.assertEqual(third.attempt_number, 3)
         self.assertEqual(third.participant_name, 'Participante Terceiro')
-        self.assertEqual(third.result, ClaimAttemptLog.Result.LOST_RACE)
+        self.assertIn(third.result, (ClaimAttemptLog.Result.LOST_RACE, ClaimAttemptLog.Result.WAITING_LIST))
 
 
 class OTPServiceTests(TestCase):
@@ -413,6 +413,13 @@ class ViewsAndAnalyticsIntegrationTests(TestCase):
         self.assertEqual(sets_near[0]['set_number'], 1)
 
         # Testa visualização do dashboard de analítica e novos módulos
+        admin_user = User.objects.create_superuser(
+            username='admin_analytics',
+            email='admin_analytics@test.com',
+            password='password123'
+        )
+        self.client.force_login(admin_user)
+
         response = self.client.get('/analytics/dashboard/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Seoyeon')
@@ -1288,6 +1295,281 @@ class DeleteSetViewTests(TestCase):
 
         # Notificação interna no painel deve ter sido gerada
         self.assertTrue(ParticipantNotification.objects.filter(participant=self.participant).exists())
+
+
+class CEGItemManagementTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser('admin_items', 'admin@items.com', 'password123')
+        self.normal_user = User.objects.create_user('normal_user', 'normal@items.com', 'password123')
+        self.group = KpopGroup.objects.create(name='LE SSERAFIM', slug='le-sserafim')
+        self.era = Era.objects.create(group=self.group, name='CRAZY', slug='crazy')
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='CEG Test Items',
+            slug='ceg-test-items',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(days=1),
+            pix_key='pix@lessera.com'
+        )
+        from apps.cegs.models import TipoItem
+        self.tipo_pob = TipoItem.objects.create(nome='POB Weverse')
+        self.tipo_album = TipoItem.objects.create(nome='Álbum Compact')
+
+        self.item_def1 = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Sakura 1',
+            member_name='Sakura',
+            item_type=CEGItemDefinition.ItemType.PHOTOCARD,
+            default_price=Decimal('65.00')
+        )
+        self.item_def2 = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Chaewon 1',
+            member_name='Chaewon',
+            item_type=CEGItemDefinition.ItemType.PHOTOCARD,
+            default_price=Decimal('70.00')
+        )
+
+        self.set1 = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.set1.generate_slots()
+        self.set2 = CEGSet.objects.create(ceg=self.ceg, set_number=2)
+        self.set2.generate_slots()
+
+        self.slot1_set1 = self.set1.slots.get(item_definition=self.item_def1)
+        self.slot1_set2 = self.set2.slots.get(item_definition=self.item_def1)
+        self.slot2_set1 = self.set1.slots.get(item_definition=self.item_def2)
+        self.slot2_set2 = self.set2.slots.get(item_definition=self.item_def2)
+
+    def test_manage_slot_edit_item_properties(self):
+        """Organizador edita tipo, classificação dinâmica, nome, membro e preço via ManageSlotView."""
+        self.client.force_login(self.admin_user)
+        payload = {
+            'name': 'POB Sakura Exclusive',
+            'member_name': 'Miyawaki Sakura',
+            'item_type': 'POB',
+            'tipo_item_id': self.tipo_pob.id,
+            'price': '85.00',
+            'apply_to_all_sets': True
+        }
+        res = self.client.post(
+            f'/slots/{self.slot1_set1.id}/manage/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+
+        self.item_def1.refresh_from_db()
+        self.assertEqual(self.item_def1.name, 'POB Sakura Exclusive')
+        self.assertEqual(self.item_def1.member_name, 'Miyawaki Sakura')
+        self.assertEqual(self.item_def1.item_type, CEGItemDefinition.ItemType.POB)
+        self.assertEqual(self.item_def1.tipo_item, self.tipo_pob)
+        self.assertEqual(self.item_def1.default_price, Decimal('85.00'))
+
+        self.slot1_set1.refresh_from_db()
+        self.slot1_set2.refresh_from_db()
+        self.assertEqual(self.slot1_set1.price, Decimal('85.00'))
+        self.assertEqual(self.slot1_set2.price, Decimal('85.00'))
+
+    def test_manage_slot_delete_single_slot(self):
+        """Organizador remove apenas uma vaga específica de um Set."""
+        self.client.force_login(self.admin_user)
+        slot_id = self.slot1_set2.id
+        res = self.client.post(
+            f'/slots/{slot_id}/manage/',
+            data=json.dumps({'action': 'delete_slot'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(ItemSlot.objects.filter(id=slot_id).exists())
+        # Set 1 ainda deve manter sua vaga e o item_def ainda existe
+        self.assertTrue(ItemSlot.objects.filter(id=self.slot1_set1.id).exists())
+        self.assertTrue(CEGItemDefinition.objects.filter(id=self.item_def1.id).exists())
+
+    def test_manage_slot_delete_item_definition(self):
+        """Organizador exclui um item inteiro da CEG (todas as vagas em todos os sets)."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post(
+            f'/slots/{self.slot1_set1.id}/manage/',
+            data=json.dumps({'action': 'delete_item_definition'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(CEGItemDefinition.objects.filter(id=self.item_def1.id).exists())
+        self.assertFalse(ItemSlot.objects.filter(id=self.slot1_set1.id).exists())
+        self.assertFalse(ItemSlot.objects.filter(id=self.slot1_set2.id).exists())
+
+    def test_bulk_manage_update_type_and_prefix(self):
+        """Edição em massa de tipo de item com substituição inteligente de prefixo."""
+        self.client.force_login(self.admin_user)
+        payload = {
+            'action': 'update_type',
+            'slot_ids': [self.slot1_set1.id, self.slot2_set1.id],
+            'item_def_ids': [self.item_def1.id, self.item_def2.id],
+            'new_item_type': 'POB',
+            'new_tipo_item_id': self.tipo_pob.id,
+            'update_prefix': True
+        }
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/bulk-manage-items/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+
+        self.item_def1.refresh_from_db()
+        self.item_def2.refresh_from_db()
+        self.assertEqual(self.item_def1.item_type, 'POB')
+        self.assertEqual(self.item_def1.tipo_item, self.tipo_pob)
+        self.assertEqual(self.item_def1.name, 'POB Weverse Sakura 1')
+        self.assertEqual(self.item_def2.item_type, 'POB')
+        self.assertEqual(self.item_def2.name, 'POB Weverse Chaewon 1')
+
+    def test_bulk_manage_update_type_using_only_tipo_item_id(self):
+        """Edição em massa enviando apenas o ID do TipoItem da pool compartilhada."""
+        self.client.force_login(self.admin_user)
+        payload = {
+            'action': 'update_type',
+            'slot_ids': [self.slot1_set1.id],
+            'item_def_ids': [self.item_def1.id],
+            'new_tipo_item_id': self.tipo_album.id,
+            'update_prefix': True
+        }
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/bulk-manage-items/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        self.item_def1.refresh_from_db()
+        self.assertEqual(self.item_def1.tipo_item, self.tipo_album)
+        self.assertEqual(self.item_def1.item_type, CEGItemDefinition.ItemType.ALBUM)
+        self.assertEqual(self.item_def1.name, 'Álbum Compact Sakura 1')
+
+
+    def test_bulk_manage_update_price(self):
+        """Alteração de preço em massa em todos os sets."""
+        self.client.force_login(self.admin_user)
+        payload = {
+            'action': 'update_price',
+            'slot_ids': [self.slot1_set1.id, self.slot2_set1.id],
+            'item_def_ids': [self.item_def1.id, self.item_def2.id],
+            'new_price': '75.50',
+            'apply_all_sets': True
+        }
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/bulk-manage-items/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        self.slot1_set1.refresh_from_db()
+        self.slot1_set2.refresh_from_db()
+        self.slot2_set1.refresh_from_db()
+        self.slot2_set2.refresh_from_db()
+        self.assertEqual(self.slot1_set1.price, Decimal('75.50'))
+        self.assertEqual(self.slot1_set2.price, Decimal('75.50'))
+        self.assertEqual(self.slot2_set1.price, Decimal('75.50'))
+        self.assertEqual(self.slot2_set2.price, Decimal('75.50'))
+
+    def test_bulk_manage_delete_items(self):
+        """Exclusão em massa de itens da CEG."""
+        self.client.force_login(self.admin_user)
+        payload = {
+            'action': 'delete_items',
+            'slot_ids': [self.slot1_set1.id],
+            'item_def_ids': [self.item_def1.id, self.item_def2.id]
+        }
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/bulk-manage-items/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(CEGItemDefinition.objects.filter(id__in=[self.item_def1.id, self.item_def2.id]).exists())
+        self.assertEqual(ItemSlot.objects.filter(set__ceg=self.ceg).count(), 0)
+
+    def test_bulk_manage_permission_denied_for_non_staff(self):
+        """Usuário não staff não pode executar bulk manage."""
+        self.client.force_login(self.normal_user)
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/bulk-manage-items/',
+            data=json.dumps({'action': 'update_type'}),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 403)
+
+
+class UpdateCEGViewTests(TestCase):
+    def setUp(self):
+        self.staff_user = User.objects.create_user(username='admin_ceg', password='pwd', is_staff=True)
+        self.normal_user = User.objects.create_user(username='normal_user', password='pwd', is_staff=False)
+        self.group = KpopGroup.objects.create(name='LE SSERAFIM', slug='le-sserafim')
+        self.era1 = Era.objects.create(group=self.group, name='Crazy', slug='crazy')
+        self.era2 = Era.objects.create(group=self.group, name='Easy', slug='easy')
+        self.ceg = CEG.objects.create(
+            era=self.era1,
+            title='LE SSERAFIM — Crazy Fansign',
+            slug='le-sserafim-crazy-fansign',
+            status=CEG.Status.OPEN,
+            description='Regras originais',
+            pix_key='chave@pix.com',
+            pix_instructions='Enviar comprovante'
+        )
+
+    def test_non_staff_cannot_edit_ceg(self):
+        self.client.force_login(self.normal_user)
+        res = self.client.post(f'/ceg/{self.ceg.slug}/edit/', {'title': 'Novo Titulo'})
+        self.assertNotEqual(res.status_code, 200)
+        self.ceg.refresh_from_db()
+        self.assertEqual(self.ceg.title, 'LE SSERAFIM — Crazy Fansign')
+
+    def test_staff_can_update_ceg_details(self):
+        self.client.force_login(self.staff_user)
+        res = self.client.post(f'/ceg/{self.ceg.slug}/edit/', {
+            'title': 'LE SSERAFIM — Crazy Global Fansign (Atualizado)',
+            'era_id': str(self.era2.id),
+            'status': CEG.Status.CLOSED,
+            'description': 'Novas regras e prazos estendidos.',
+            'pix_key': 'novachave@pix.com',
+            'pix_instructions': 'Mandar no zap com urgencia',
+            'banner_url': 'https://exemplo.com/banner-novo.jpg'
+        })
+        self.assertEqual(res.status_code, 302)
+        self.ceg.refresh_from_db()
+        self.assertEqual(self.ceg.title, 'LE SSERAFIM — Crazy Global Fansign (Atualizado)')
+        self.assertEqual(self.ceg.era, self.era2)
+        self.assertEqual(self.ceg.status, CEG.Status.CLOSED)
+        self.assertEqual(self.ceg.description, 'Novas regras e prazos estendidos.')
+        self.assertEqual(self.ceg.pix_key, 'novachave@pix.com')
+        self.assertEqual(self.ceg.banner_url, 'https://exemplo.com/banner-novo.jpg')
+
+    def test_staff_can_upload_banner_file_and_remove_banner(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff_user)
+        # 1. Upload de imagem
+        image_file = SimpleUploadedFile("banner_teste.jpg", b"fake_image_content", content_type="image/jpeg")
+        res = self.client.post(f'/ceg/{self.ceg.slug}/edit/', {
+            'title': self.ceg.title,
+            'banner_file': image_file
+        })
+        self.assertEqual(res.status_code, 302)
+        self.ceg.refresh_from_db()
+        self.assertTrue(self.ceg.banner_url.startswith('/media/cegs/banners/ceg_'))
+
+        # 2. Remover foto
+        res2 = self.client.post(f'/ceg/{self.ceg.slug}/edit/', {
+            'title': self.ceg.title,
+            'remove_banner': '1'
+        })
+        self.assertEqual(res2.status_code, 302)
+        self.ceg.refresh_from_db()
+        self.assertEqual(self.ceg.banner_url, '')
+
+
 
 
 

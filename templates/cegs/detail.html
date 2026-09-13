@@ -11,6 +11,27 @@
          isLoggedIn: {{ logged_participant|yesno:'true,false' }} || {{ user.is_staff|yesno:'true,false' }},
          isAdmin: {{ user.is_staff|yesno:'true,false' }},
          allParticipants: JSON.parse('{{ all_participants_json|default:'[]'|escapejs }}'),
+         itemTypeChoices: JSON.parse('{{ item_type_choices_json|default:'[]'|escapejs }}'),
+         tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
+         selectedSlotIds: [],
+         selectedItemDefIds: [],
+         bulkTypeModalOpen: false,
+         bulkPriceModalOpen: false,
+         bulkNewType: 'PHOTOCARD',
+         bulkNewTipoItemId: '',
+         bulkNewPrice: '',
+         bulkUpdatePrefix: true,
+         bulkApplyAllSets: true,
+         bulkLoading: false,
+         manageName: '',
+         manageMember: '',
+         manageItemType: 'PHOTOCARD',
+         manageTipoItemId: '',
+         showNewTipoModal: false,
+         newTipoNome: '',
+         newTipoDesc: '',
+         newTipoTarget: 'manage',
+         newTipoLoading: false,
          formName: '{{ logged_participant.name|default:''|escapejs }}',
          formUsername: '{{ logged_participant.username|default:''|escapejs }}',
          formWhatsapp: '{{ logged_participant.whatsapp|default:''|escapejs }}',
@@ -18,8 +39,30 @@
          // Modal State
          modalOpen: false,
          feeModalOpen: false,
+         editCegModalOpen: false,
          manageSlotModalOpen: false,
          deleteSetModalOpen: false,
+         editPhotoPreview: '{{ ceg.banner_url|default:''|escapejs }}',
+         removeBannerFlag: false,
+         onPhotoSelected(e) {
+             const file = e.target.files[0];
+             if (file) {
+                 this.removeBannerFlag = false;
+                 const reader = new FileReader();
+                 reader.onload = (event) => {
+                     this.editPhotoPreview = event.target.result;
+                 };
+                 reader.readAsDataURL(file);
+             }
+         },
+         clearPhoto() {
+             this.editPhotoPreview = '';
+             this.removeBannerFlag = true;
+             const fileInput = document.getElementById('ceg_banner_file_input');
+             if (fileInput) fileInput.value = '';
+             const urlInput = document.getElementById('ceg_banner_url_input');
+             if (urlInput) urlInput.value = '';
+         },
          selectedSlot: null,
          managedSlot: null,
          setToDelete: null,
@@ -32,6 +75,53 @@
          manageParticipantId: '',
          manageRemoveClaim: false,
          manageLoading: false,
+         logsModalOpen: false,
+         logsLoading: false,
+         logsTab: 'logs',
+         disputeLogs: [],
+         waitingList: [],
+         async openLogsModal() {
+             this.logsModalOpen = true;
+             this.logsLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/logs-espera/');
+                 const data = await res.json();
+                 if (data.success) {
+                     this.disputeLogs = data.logs || [];
+                     this.waitingList = data.waiting_list || [];
+                 }
+             } catch(e) {
+                 console.error('Erro ao carregar logs:', e);
+             } finally {
+                 this.logsLoading = false;
+             }
+         },
+         closeLogsModal() {
+             this.logsModalOpen = false;
+         },
+         async promoteWaitingOnSlot(slotId) {
+             if (!confirm('Deseja promover o 1º colocado da Fila de Espera para este slot?')) return;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/slots/' + slotId + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf
+                     },
+                     body: JSON.stringify({ action: 'promote_waiting' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message);
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao promover participante.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             }
+         },
          openDeleteSetModal(setObj) {
              this.setToDelete = setObj;
              this.deleteSetLoading = false;
@@ -74,11 +164,81 @@
                  p = String(slot.price).replace('R$', '').replace(/\s/g, '').replace(',', '.').trim();
              }
              this.managePrice = p;
+             this.manageName = slot.name || '';
+             this.manageMember = slot.member || '';
+             this.manageItemType = slot.itemType || 'PHOTOCARD';
+             this.manageTipoItemId = slot.tipoItemId ? String(slot.tipoItemId) : '';
+             if (!this.manageTipoItemId && this.tipoItemList && this.tipoItemList.length > 0) {
+                 const match = this.tipoItemList.find(t => t.nome.toLowerCase() === (slot.tipoItemNome || '').toLowerCase()) ||
+                               this.tipoItemList.find(t => t.nome.toLowerCase().includes((slot.itemType || '').toLowerCase()));
+                 this.manageTipoItemId = match ? String(match.id) : String(this.tipoItemList[0].id);
+             }
              this.manageApplyAllSets = false;
              this.manageParticipantId = slot.claimedById ? String(slot.claimedById) : '';
              this.manageRemoveClaim = false;
              this.manageLoading = false;
              this.manageSlotModalOpen = true;
+         },
+         applyTipoPrefixToName() {
+             if (!this.manageTipoItemId) return;
+             const tipo = this.tipoItemList.find(t => String(t.id) === String(this.manageTipoItemId));
+             if (!tipo) return;
+             const prefix = tipo.nome;
+             const pattern = /^(Photocard|POB|Pre-Order Benefit|Álbum|Album|Compact ver\.|Lucky Draw|Fansign|Inclusão|Lightstick|Item)\s*/i;
+             if (pattern.test(this.manageName)) {
+                 this.manageName = this.manageName.replace(pattern, prefix + ' ').trim();
+             } else if (this.manageMember) {
+                 this.manageName = prefix + ' ' + this.manageMember;
+             } else {
+                 this.manageName = prefix + ' ' + this.manageName;
+             }
+         },
+         openNewTipoInline(target) {
+             this.newTipoTarget = target || 'manage';
+             this.newTipoNome = '';
+             this.newTipoDesc = '';
+             this.showNewTipoModal = true;
+         },
+         async submitInlineNewTipo() {
+             const nome = (this.newTipoNome || '').trim();
+             if (!nome) return;
+             this.newTipoLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('nome', nome);
+                 formData.append('descricao', this.newTipoDesc || '');
+                 const res = await fetch('/tipos-item/criar/', {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     const newTipo = data.tipo || { id: data.id, nome: data.nome, descricao: this.newTipoDesc };
+                     if (!this.tipoItemList.some(t => t.id === newTipo.id)) {
+                         this.tipoItemList.push(newTipo);
+                         this.tipoItemList.sort((a, b) => a.nome.localeCompare(b.nome));
+                     }
+                     if (this.newTipoTarget === 'bulk') {
+                         this.bulkNewTipoItemId = String(newTipo.id);
+                     } else {
+                         this.manageTipoItemId = String(newTipo.id);
+                     }
+                     this.showNewTipoModal = false;
+                     this.newTipoNome = '';
+                     this.newTipoDesc = '';
+                 } else {
+                     alert(data.message || 'Erro ao criar tipo de item.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão ao criar tipo de item: ' + e);
+             } finally {
+                 this.newTipoLoading = false;
+             }
          },
          closeManageSlotModal() {
              this.manageSlotModalOpen = false;
@@ -97,6 +257,10 @@
                      body: JSON.stringify({
                          price: this.managePrice,
                          apply_to_all_sets: this.manageApplyAllSets,
+                         name: this.manageName,
+                         member_name: this.manageMember,
+                         item_type: this.manageItemType,
+                         tipo_item_id: this.manageTipoItemId || null,
                          remove_claim: this.manageRemoveClaim,
                          participant_id: this.manageRemoveClaim ? null : (this.manageParticipantId || null)
                      })
@@ -111,6 +275,224 @@
                  alert('Erro de conexão ao gerenciar slot: ' + e);
              } finally {
                  this.manageLoading = false;
+             }
+         },
+         async deleteManagedItemDefinition() {
+             if (!this.managedSlot) return;
+             let msg = `⚠️ ATENÇÃO: Deseja realmente EXCLUIR o item '${this.managedSlot.name}' da CEG?\n\nEsta ação excluirá este item e todas as suas vagas de TODOS os Sets desta CEG!`;
+             if (this.managedSlot.claimedByName) {
+                 msg += `\n\n🚨 CUIDADO: Este item possui reserva ativa para: ${this.managedSlot.claimedByName}!`;
+             }
+             if (!confirm(msg)) return;
+
+             this.manageLoading = true;
+             try {
+                 const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({ action: 'delete_item_definition' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Item excluído com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao excluir item.');
+                 }
+             } catch(e) {
+                 alert('Erro ao excluir item: ' + e);
+             } finally {
+                 this.manageLoading = false;
+             }
+         },
+         async deleteManagedSingleSlot() {
+             if (!this.managedSlot) return;
+             let msg = `Deseja remover apenas esta vaga do Set #${this.managedSlot.setNumber}?`;
+             if (this.managedSlot.claimedByName) {
+                 msg += `\n\n🚨 CUIDADO: Este slot está reservado para: ${this.managedSlot.claimedByName}!`;
+             }
+             if (!confirm(msg)) return;
+
+             this.manageLoading = true;
+             try {
+                 const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({ action: 'delete_slot' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Slot removido com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao remover slot.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.manageLoading = false;
+             }
+         },
+         toggleSlotSelection(slotId, itemDefId) {
+             const idx = this.selectedSlotIds.indexOf(slotId);
+             if (idx > -1) {
+                 this.selectedSlotIds.splice(idx, 1);
+                 const defIdx = this.selectedItemDefIds.indexOf(itemDefId);
+                 if (defIdx > -1) this.selectedItemDefIds.splice(defIdx, 1);
+             } else {
+                 this.selectedSlotIds.push(slotId);
+                 if (!this.selectedItemDefIds.includes(itemDefId)) {
+                     this.selectedItemDefIds.push(itemDefId);
+                 }
+             }
+         },
+         selectAllInSet(slotsArray) {
+             const allSelected = slotsArray.every(s => this.selectedSlotIds.includes(s.id));
+             if (allSelected) {
+                 slotsArray.forEach(s => {
+                     const idx = this.selectedSlotIds.indexOf(s.id);
+                     if (idx > -1) this.selectedSlotIds.splice(idx, 1);
+                     const defIdx = this.selectedItemDefIds.indexOf(s.itemDefId);
+                     if (defIdx > -1) this.selectedItemDefIds.splice(defIdx, 1);
+                 });
+             } else {
+                 slotsArray.forEach(s => {
+                     if (!this.selectedSlotIds.includes(s.id)) this.selectedSlotIds.push(s.id);
+                     if (!this.selectedItemDefIds.includes(s.itemDefId)) this.selectedItemDefIds.push(s.itemDefId);
+                 });
+             }
+         },
+         clearSelection() {
+             this.selectedSlotIds = [];
+             this.selectedItemDefIds = [];
+         },
+         openBulkTypeModal() {
+             if (this.selectedSlotIds.length === 0) {
+                 alert('Selecione pelo menos um item para editar o tipo em massa.');
+                 return;
+             }
+             if (this.tipoItemList && this.tipoItemList.length > 0) {
+                 this.bulkNewTipoItemId = String(this.tipoItemList[0].id);
+             }
+             this.bulkUpdatePrefix = true;
+             this.bulkApplyAllSets = true;
+             this.bulkTypeModalOpen = true;
+         },
+         closeBulkTypeModal() {
+             this.bulkTypeModalOpen = false;
+         },
+         async submitBulkType() {
+             if (this.bulkLoading) return;
+             this.bulkLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         action: 'update_type',
+                         slot_ids: this.selectedSlotIds,
+                         item_def_ids: this.selectedItemDefIds,
+                         new_item_type: this.bulkNewType,
+                         new_tipo_item_id: this.bulkNewTipoItemId || null,
+                         update_prefix: this.bulkUpdatePrefix,
+                         apply_all_sets: this.bulkApplyAllSets
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Tipos atualizados com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao atualizar tipos em massa.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkLoading = false;
+             }
+         },
+         openBulkPriceModal() {
+             if (this.selectedSlotIds.length === 0) {
+                 alert('Selecione pelo menos um item para alterar o preço.');
+                 return;
+             }
+             this.bulkNewPrice = '';
+             this.bulkApplyAllSets = true;
+             this.bulkPriceModalOpen = true;
+         },
+         closeBulkPriceModal() {
+             this.bulkPriceModalOpen = false;
+         },
+         async submitBulkPrice() {
+             if (this.bulkLoading || !this.bulkNewPrice) return;
+             this.bulkLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         action: 'update_price',
+                         slot_ids: this.selectedSlotIds,
+                         item_def_ids: this.selectedItemDefIds,
+                         new_price: this.bulkNewPrice,
+                         apply_all_sets: this.bulkApplyAllSets
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Preços atualizados com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao atualizar preços em massa.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkLoading = false;
+             }
+         },
+         async bulkDeleteItems() {
+             if (this.selectedSlotIds.length === 0) return;
+             if (!confirm(`⚠️ ATENÇÃO: Deseja realmente EXCLUIR os ${this.selectedItemDefIds.length} itens selecionados da CEG?\n\nEsta ação excluirá permanentemente esses itens e todas as suas vagas em todos os sets desta CEG!`)) {
+                 return;
+             }
+             this.bulkLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         action: 'delete_items',
+                         slot_ids: this.selectedSlotIds,
+                         item_def_ids: this.selectedItemDefIds
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Itens excluídos com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao excluir itens.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkLoading = false;
              }
          },
          selectParticipantForClaim(pId) {
@@ -168,10 +550,38 @@
     </div>
 
     <!-- CEG Header Banner -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 overflow-hidden">
+        
+        <!-- Foto / Banner de Capa da CEG -->
+        {% if ceg.banner_url %}
+            <div class="relative w-full h-48 sm:h-64 md:h-72 rounded-xl overflow-hidden border border-slate-200 shadow-inner group">
+                <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent pointer-events-none"></div>
+                <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
+                    <div class="text-white drop-shadow-md">
+                        <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded bg-black/60 backdrop-blur-xs border border-white/20">
+                            {{ ceg.era.group.name }} • {{ ceg.era.name }}
+                        </span>
+                    </div>
+                    {% if user.is_staff %}
+                        <button type="button" @click="editCegModalOpen = true"
+                                class="px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-lg backdrop-blur-md shadow transition flex items-center gap-1.5 cursor-pointer border border-white/25">
+                            <span>📷</span> Alterar Foto
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif user.is_staff %}
+            <div @click="editCegModalOpen = true"
+                 class="w-full py-4 border-2 border-dashed border-pink-200 hover:border-pink-400 bg-pink-50/50 hover:bg-pink-50/90 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-pink-700 cursor-pointer transition shadow-2xs">
+                <span>📷</span>
+                <span>Adicionar Foto / Banner de Capa para esta CEG</span>
+            </div>
+        {% endif %}
+
         <div class="flex flex-col lg:flex-row justify-between gap-6">
             <div class="space-y-2 max-w-3xl">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span class="px-2.5 py-1 bg-pink-100 text-pink-800 text-xs font-black rounded-md uppercase tracking-wider">
                         {{ ceg.era.group.name }} • Era {{ ceg.era.name }}
                     </span>
@@ -187,6 +597,27 @@
                         <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-md uppercase tracking-wider">
                             {{ ceg.get_status_display }}
                         </span>
+                    {% endif %}
+
+                    {% if ceg.caixa %}
+                        <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}"
+                           class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-black rounded-md uppercase tracking-wider hover:bg-blue-200 transition flex items-center gap-1"
+                           title="Caixa / Remessa vinculada">
+                            <span>{% if ceg.caixa.origem == 'KR' %}🇰🇷{% elif ceg.caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
+                            <span>{{ ceg.caixa.nome }}</span>
+                        </a>
+                        <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 text-xs font-black rounded-md uppercase tracking-wider flex items-center gap-1"
+                              title="Status do Envio Internacional">
+                            <span>✈️</span>
+                            <span>{{ ceg.get_shipping_status_display }}</span>
+                        </span>
+                    {% endif %}
+
+                    {% if user.is_staff %}
+                        <button type="button" @click="editCegModalOpen = true"
+                                class="px-3 py-1 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-md transition shadow flex items-center gap-1.5 cursor-pointer ml-auto">
+                            <span>✏️</span> Editar CEG
+                        </button>
                     {% endif %}
                 </div>
 
@@ -225,6 +656,43 @@
             {% endif %}
         </div>
 
+        {% if ceg.caixa %}
+            <!-- Card de Logística Internacional / Caixa -->
+            <div class="bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-900 text-white rounded-xl p-4 sm:p-5 border border-blue-700/40 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-2xl shrink-0">
+                        {% if ceg.caixa.origem == 'KR' %}🇰🇷{% elif ceg.caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-blue-300">
+                                Remessa Internacional Vinculada
+                            </span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/30">
+                                {{ ceg.caixa.get_origem_display }}
+                            </span>
+                        </div>
+                        <h4 class="text-sm sm:text-base font-black text-white mt-0.5">
+                            {{ ceg.caixa.nome }} &bull; <span class="text-blue-300">{{ ceg.get_shipping_status_display }}</span>
+                        </h4>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 self-end sm:self-center">
+                    {% if ceg.caixa.codigo_rastreio %}
+                        <a href="{{ ceg.caixa.tracking_url }}" target="_blank"
+                           class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5">
+                            <span>🔗 Rastrear: {{ ceg.caixa.codigo_rastreio }}</span>
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}"
+                       class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/20 transition">
+                        Ver Caixa ↗
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
         <!-- Painel de Prazos e Taxas (Item, Frete Internacional e Taxa Aduaneira) -->
         <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-xl p-5 border border-purple-800/40 shadow-md space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-800/60 pb-3">
@@ -238,10 +706,20 @@
                     </div>
                 </div>
                 {% if user.is_staff %}
-                    <button type="button" @click="feeModalOpen = true"
-                            class="self-start sm:self-auto px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
-                        <span>✏️</span> Atualizar Taxas & Prazos
-                    </button>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" @click="openLogsModal()"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>⚡</span> Logs & Fila de Espera
+                        </button>
+                        <button type="button" @click="feeModalOpen = true"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>✏️</span> Atualizar Taxas & Prazos
+                        </button>
+                        <button type="button" @click="editCegModalOpen = true"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>⚙️</span> Editar CEG & Foto
+                        </button>
+                    </div>
                 {% endif %}
             </div>
 
@@ -273,7 +751,12 @@
                         <span class="text-[9px] bg-blue-500/20 text-blue-200 font-bold px-1.5 py-0.5 rounded">Fase 2</span>
                     </div>
                     <div class="text-sm font-black text-white">
-                        {% if ceg.frete_inter is not None %}
+                        {% if ceg.has_multiple_frete_rates %}
+                            <span>R$ {{ ceg.min_frete_inter|floatformat:2 }} ~ R$ {{ ceg.max_frete_inter|floatformat:2 }}</span>
+                            <span class="block text-[10px] font-medium text-blue-200/90 mt-0.5">Valores variados por tipo de item</span>
+                        {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
+                            R$ {{ ceg.frete_inter|floatformat:2 }}
+                        {% elif ceg.frete_inter is not None and not ceg.caixa %}
                             R$ {{ ceg.frete_inter|floatformat:2 }}
                         {% else %}
                             <span class="text-slate-400 text-xs font-normal">Aguardando cotação/pesagem</span>
@@ -297,7 +780,12 @@
                         <span class="text-[9px] bg-emerald-500/20 text-emerald-200 font-bold px-1.5 py-0.5 rounded">Fase 3</span>
                     </div>
                     <div class="text-sm font-black text-white">
-                        {% if ceg.taxa_aduaneira is not None %}
+                        {% if ceg.has_multiple_taxa_rates %}
+                            <span>R$ {{ ceg.min_taxa_aduaneira|floatformat:2 }} ~ R$ {{ ceg.max_taxa_aduaneira|floatformat:2 }}</span>
+                            <span class="block text-[10px] font-medium text-emerald-200/90 mt-0.5">Valores variados por tipo de item</span>
+                        {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
+                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                        {% elif ceg.taxa_aduaneira is not None and not ceg.caixa %}
                             R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
                         {% else %}
                             <span class="text-slate-400 text-xs font-normal">Aguardando Receita Federal</span>
@@ -362,6 +850,38 @@
         </div>
     </div>
 
+    <!-- Sticky Bulk Actions Toolbar para o Organizador -->
+    {% if user.is_staff %}
+        <div x-show="selectedSlotIds.length > 0" x-cloak
+             class="sticky top-4 z-40 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-xl border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-purple-500/30 flex items-center justify-center text-base">⚡</span>
+                <div>
+                    <span class="font-extrabold text-sm" x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></span>
+                    <p class="text-[11px] text-purple-200">Escolha uma ação em lote para aplicar aos itens selecionados</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" @click="openBulkTypeModal()"
+                        class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <span>🏷️</span> Alterar Tipo em Massa
+                </button>
+                <button type="button" @click="openBulkPriceModal()"
+                        class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <span>💰</span> Alterar Preço em Massa
+                </button>
+                <button type="button" @click="bulkDeleteItems()" :disabled="bulkLoading"
+                        class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <span>🗑️</span> Excluir Itens
+                </button>
+                <button type="button" @click="clearSelection()"
+                        class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer">
+                    ✕ Desmarcar
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Sets & Slots List -->
     <div class="space-y-8">
         {% for set in sets %}
@@ -395,6 +915,19 @@
                         {% endif %}
 
                         {% if user.is_staff %}
+                            <!-- Botão Selecionar Todos deste Set -->
+                            <button type="button"
+                                    @click="selectAllInSet([
+                                        {% for s in set.slots.all %}
+                                            { id: {{ s.id }}, itemDefId: {{ s.item_definition.id }} },
+                                        {% endfor %}
+                                    ])"
+                                    class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md border border-purple-200 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs"
+                                    title="Selecionar todos os itens deste Set para ações em lote">
+                                <span>☑️</span>
+                                <span class="hidden sm:inline">Selecionar Set</span>
+                            </button>
+
                             <!-- Botão Excluir Set -->
                             <button type="button"
                                     @click="openDeleteSetModal({
@@ -485,25 +1018,36 @@
                                  'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED'
                              }">
 
-                            <!-- Top Tag / Member -->
+                            <!-- Top Tag / Member / Item Type -->
                             <div class="flex justify-between items-start">
-                                {% if slot.item_definition.member_name %}
-                                    <span class="text-xs font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
-                                        {{ slot.item_definition.member_name }}
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    {% if user.is_staff %}
+                                        <input type="checkbox"
+                                               :checked="selectedSlotIds.includes({{ slot.id }})"
+                                               @click.stop="toggleSlotSelection({{ slot.id }}, {{ slot.item_definition.id }})"
+                                               class="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-2xs"
+                                               title="Selecionar para edição ou exclusão em massa">
+                                    {% endif %}
+                                    {% if slot.item_definition.member_name %}
+                                        <span class="text-xs font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
+                                            {{ slot.item_definition.member_name }}
+                                        </span>
+                                    {% endif %}
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {% if slot.item_definition.item_type == 'POB' or 'pob' in slot.item_definition.tipo_item_nome|lower %}bg-amber-100 text-amber-800 border border-amber-200{% elif slot.item_definition.item_type == 'ALBUM' or 'álbum' in slot.item_definition.tipo_item_nome|lower or 'album' in slot.item_definition.tipo_item_nome|lower %}bg-blue-100 text-blue-800 border border-blue-200{% elif slot.item_definition.item_type == 'INCLUSION' or 'inclus' in slot.item_definition.tipo_item_nome|lower %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif 'lucky' in slot.item_definition.tipo_item_nome|lower or 'fansign' in slot.item_definition.tipo_item_nome|lower %}bg-purple-100 text-purple-800 border border-purple-200{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                                        🏷️ {{ slot.item_definition.tipo_item_nome }}
                                     </span>
-                                {% else %}
-                                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                                        {{ slot.item_definition.get_item_type_display }}
-                                    </span>
-                                {% endif %}
+                                </div>
 
                                 <div class="flex items-center gap-1.5">
                                     {% if user.is_staff %}
                                         <button type="button"
                                                 @click="openManageSlotModal({
                                                     id: {{ slot.id }},
+                                                    itemDefId: {{ slot.item_definition.id }},
                                                     name: '{{ slot.item_definition.name|escapejs }}',
                                                     member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                    itemType: '{{ slot.item_definition.item_type }}',
+                                                    tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
                                                     setNumber: {{ set.set_number }},
                                                     price: '{{ slot.price|stringformat:".2f" }}',
                                                     status: status,
@@ -514,7 +1058,7 @@
                                                     isItemPaid: isItemPaid
                                                 })"
                                                 class="w-6 h-6 flex items-center justify-center bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs rounded border border-purple-200 transition shadow-2xs cursor-pointer"
-                                                title="Editar valor ou gerenciar reserva deste item">
+                                                title="Editar item (tipo, nome, valor) ou gerenciar reserva">
                                             ✏️
                                         </button>
                                     {% endif %}
@@ -548,9 +1092,13 @@
                                             Pendente
                                         </span>
                                     </div>
-                                    <span class="font-extrabold text-xs mt-0.5 {% if ceg.frete_inter is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
-                                        {% if ceg.frete_inter is not None %}
+                                    <span class="font-extrabold text-xs mt-0.5 {% if slot.frete_inter is not None and slot.frete_inter > 0 or ceg.frete_inter is not None and ceg.frete_inter > 0 %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                        {% if slot.frete_inter is not None and slot.frete_inter > 0 %}
+                                            R$ {{ slot.frete_inter|floatformat:2 }}
+                                        {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
                                             R$ {{ ceg.frete_inter|floatformat:2 }}
+                                        {% elif slot.frete_inter is not None and not ceg.caixa %}
+                                            R$ {{ slot.frete_inter|floatformat:2 }}
                                         {% else %}
                                             A definir
                                         {% endif %}
@@ -570,9 +1118,13 @@
                                             Pendente
                                         </span>
                                     </div>
-                                    <span class="font-extrabold text-xs mt-0.5 {% if ceg.taxa_aduaneira is not None %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
-                                        {% if ceg.taxa_aduaneira is not None %}
+                                    <span class="font-extrabold text-xs mt-0.5 {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 or ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                        {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}
+                                            R$ {{ slot.taxa_aduaneira|floatformat:2 }}
+                                        {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
                                             R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                                        {% elif slot.taxa_aduaneira is not None and not ceg.caixa %}
+                                            R$ {{ slot.taxa_aduaneira|floatformat:2 }}
                                         {% else %}
                                             A definir
                                         {% endif %}
@@ -600,8 +1152,11 @@
                                             <button type="button"
                                                     @click="openManageSlotModal({
                                                         id: {{ slot.id }},
+                                                        itemDefId: {{ slot.item_definition.id }},
                                                         name: '{{ slot.item_definition.name|escapejs }}',
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                        itemType: '{{ slot.item_definition.item_type }}',
+                                                        tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
                                                         setNumber: {{ set.set_number }},
                                                         price: '{{ slot.price|stringformat:".2f" }}',
                                                         status: status,
@@ -634,8 +1189,11 @@
                                             <button type="button"
                                                     @click="openManageSlotModal({
                                                         id: {{ slot.id }},
+                                                        itemDefId: {{ slot.item_definition.id }},
                                                         name: '{{ slot.item_definition.name|escapejs }}',
                                                         member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                        itemType: '{{ slot.item_definition.item_type }}',
+                                                        tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
                                                         setNumber: {{ set.set_number }},
                                                         price: '{{ slot.price|stringformat:".2f" }}',
                                                         status: status,
@@ -669,8 +1227,8 @@
                                                             member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
                                                             setNumber: {{ set.set_number }},
                                                             price: '{{ slot.price|floatformat:2 }}',
-                                                            frete: '{% if ceg.frete_inter is not None %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
-                                                            taxa: '{% if ceg.taxa_aduaneira is not None %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
+                                                            frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% elif slot.frete_inter is not None and not ceg.caixa %}{{ slot.frete_inter|floatformat:2 }}{% endif %}',
+                                                            taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% elif slot.taxa_aduaneira is not None and not ceg.caixa %}{{ slot.taxa_aduaneira|floatformat:2 }}{% endif %}'
                                                         })"
                                                         class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
                                                     <span>⚡</span> Reservar (Claim)
@@ -715,14 +1273,14 @@
                                         <button type="button" @click="toggle('inter')" :disabled="loading"
                                                 :class="isInterPaid ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'"
                                                 class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                                                title="Frete Internacional: {% if ceg.frete_inter is not None %}R$ {{ ceg.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}">
+                                                title="Frete Internacional: {% if slot.frete_inter is not None and slot.frete_inter > 0 %}R$ {{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}R$ {{ ceg.frete_inter|floatformat:2 }}{% elif slot.frete_inter is not None and not ceg.caixa %}R$ {{ slot.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}">
                                             <span x-text="isInterPaid ? '✔' : '○'"></span>
                                             <span>Inter</span>
                                         </button>
                                         <button type="button" @click="toggle('taxa')" :disabled="loading"
                                                 :class="isTaxaPaid ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-purple-300'"
                                                 class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                                                title="Taxa Aduaneira: {% if ceg.taxa_aduaneira is not None %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}">
+                                                title="Taxa Aduaneira: {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}R$ {{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% elif slot.taxa_aduaneira is not None and not ceg.caixa %}R$ {{ slot.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}">
                                             <span x-text="isTaxaPaid ? '✔' : '○'"></span>
                                             <span>Taxa</span>
                                         </button>
@@ -908,6 +1466,203 @@
         </div>
     </div>
 
+    <!-- Modal para Editar Informações e Foto da CEG (Organizador) -->
+    {% if user.is_staff %}
+        <div x-show="editCegModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+             @keydown.escape.window="editCegModalOpen = false">
+            <div class="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 transform transition-all max-h-[90vh] overflow-y-auto"
+                 @click.away="editCegModalOpen = false">
+                
+                <!-- Cabeçalho do Modal -->
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl shadow-xs">
+                            ✏️
+                        </span>
+                        <div>
+                            <h3 class="text-lg font-black text-slate-900">Editar Informações da CEG</h3>
+                            <p class="text-xs text-slate-500">Altere foto de capa, título, era, status, regras e dados de pagamento.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="editCegModalOpen = false" class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <form action="{% url 'update_ceg' ceg.slug %}" method="POST" enctype="multipart/form-data" class="space-y-5 text-xs">
+                    {% csrf_token %}
+                    <input type="hidden" name="remove_banner" :value="removeBannerFlag ? '1' : '0'">
+
+                    <!-- 1. Foto de Capa / Banner Promocional -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <span>📷</span> Foto de Capa / Banner da CEG
+                            </label>
+                            <span class="text-[10px] text-pink-600 font-bold bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
+                                Imagem de Destaque
+                            </span>
+                        </div>
+
+                        <!-- Preview da Imagem -->
+                        <div x-show="editPhotoPreview" class="relative rounded-xl overflow-hidden border border-slate-200 h-44 bg-slate-100 group">
+                            <img :src="editPhotoPreview" alt="Preview do Banner" class="w-full h-full object-cover">
+                            <button type="button" @click="clearPhoto()"
+                                    class="absolute top-2 right-2 px-2.5 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                <span>🗑️</span> Remover Foto
+                            </button>
+                        </div>
+
+                        <!-- Opções de Envio: Arquivo ou URL -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    📁 Upload de Arquivo (JPG, PNG, WEBP):
+                                </label>
+                                <input type="file" id="ceg_banner_file_input" name="banner_file" accept="image/*"
+                                       @change="onPhotoSelected($event)"
+                                       class="w-full text-slate-600 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    🔗 Ou Link / URL Direto da Imagem:
+                                </label>
+                                <input type="url" id="ceg_banner_url_input" name="banner_url"
+                                       value="{{ ceg.banner_url }}"
+                                       @input="if (!removeBannerFlag) editPhotoPreview = $event.target.value"
+                                       placeholder="https://exemplo.com/foto-ceg.jpg"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Identificação & Vinculações -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>📝</span> Identificação & Vínculos
+                        </label>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Título da CEG:</label>
+                            <input type="text" name="title" value="{{ ceg.title }}" required
+                                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Grupo & Era:</label>
+                                <select name="era_id" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    {% for e in all_eras %}
+                                        <option value="{{ e.id }}" {% if e.id == ceg.era_id %}selected{% endif %}>
+                                            {{ e.group.name }} — {{ e.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Caixa / Remessa Vinculada:</label>
+                                <select name="caixa_id" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    <option value="">Nenhuma Caixa Vinculada</option>
+                                    {% for c in all_caixas %}
+                                        <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                            {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% else %}📦{% endif %} {{ c.nome }} ({{ c.get_status_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Status e Prazos -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>🚦</span> Status & Prazos
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Status da CEG:</label>
+                                <select name="status" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    {% for code, label in status_choices %}
+                                        <option value="{{ code }}" {% if ceg.status == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Prazo Pagamento do Item:</label>
+                                <input type="datetime-local" name="prazo_pagamento_item"
+                                       value="{{ ceg.prazo_pagamento_item|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200/60">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    Abertura / Standby (Contagem Regressiva):
+                                </label>
+                                <input type="datetime-local" name="opens_at"
+                                       value="{{ ceg.opens_at|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <span class="text-[10px] text-slate-400">Se futura, a página pública ativa o cronômetro.</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Encerramento da CEG:</label>
+                                <input type="datetime-local" name="closes_at"
+                                       value="{{ ceg.closes_at|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <span class="text-[10px] text-slate-400">Opcional. Data em que as reservas fecham.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Pagamento Pix & Regras -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>💳</span> Dados Pix & Regras
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Chave Pix do Organizador:</label>
+                                <input type="text" name="pix_key" value="{{ ceg.pix_key }}"
+                                       placeholder="exemplo@email.com ou CPF/Telefone"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Instruções de Pagamento Pix:</label>
+                                <input type="text" name="pix_instructions" value="{{ ceg.pix_instructions }}"
+                                       placeholder="Ex: Anexar comprovante com nome no WhatsApp"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Regras e Informações da CEG:</label>
+                            <textarea name="description" rows="3"
+                                      placeholder="Regras de frete internacional, prazos, avisos e orientações aos participantes..."
+                                      class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-normal text-slate-800 focus:ring-2 focus:ring-pink-500">{{ ceg.description }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                        <button type="button" @click="editCegModalOpen = false"
+                                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+                            <span>💾</span> Salvar Alterações da CEG
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Modal para Atualizar Taxas e Prazos da CEG (Organizador) -->
     {% if user.is_staff %}
         <div x-show="feeModalOpen" x-cloak
@@ -980,6 +1735,31 @@
                         </div>
                     </div>
 
+                    <!-- Caixa / Remessa Internacional -->
+                    <div class="p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block font-bold text-indigo-950">4. Caixa / Remessa Internacional</label>
+                            {% if ceg.caixa %}
+                                <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}" target="_blank"
+                                   class="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 hover:underline">
+                                    Ver Remessa ↗
+                                </a>
+                            {% endif %}
+                        </div>
+                        <select name="caixa_id" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg font-semibold text-slate-800">
+                            <option value="" {% if not ceg.caixa %}selected{% endif %}>-- Nenhuma (Sem Caixa / Desvincular) --</option>
+                            {% for c in all_caixas %}
+                                <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                    {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
+                                    {{ c.nome }} ({{ c.get_status_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <span class="text-[10px] text-slate-500 block">
+                            Ao alterar a caixa, o status de envio da CEG é sincronizado automaticamente com o da remessa selecionada.
+                        </span>
+                    </div>
+
                     <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
                         <button type="button" @click="feeModalOpen = false"
                                 class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
@@ -1022,10 +1802,62 @@
                 <!-- Formulário de Gerenciamento -->
                 <form @submit.prevent="submitManageSlot()" class="space-y-4 text-xs">
                     
-                    <!-- 1. Edição do Valor do Item -->
+                    <!-- 1. Edição do Tipo do Item & Identificação -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <span>🏷️</span> Tipo e Identificação do Item
+                            </label>
+                            <span class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                Definição na CEG
+                            </span>
+                        </div>
+
+                        <!-- Seletor Unificado do Tipo do Item (Pool compartilhada com Caixas) -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-[11px] font-bold text-slate-700">Tipo do Item:</label>
+                                <button type="button" @click="openNewTipoInline('manage')"
+                                        class="text-[10px] text-purple-600 font-bold hover:text-purple-800 flex items-center gap-1 cursor-pointer">
+                                    <span>➕</span> Novo Tipo
+                                </button>
+                            </div>
+                            <select x-model="manageTipoItemId" required
+                                    class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                <template x-for="tip in tipoItemList" :key="tip.id">
+                                    <option :value="tip.id" x-text="tip.nome" :selected="String(tip.id) === String(manageTipoItemId)"></option>
+                                </template>
+                            </select>
+                            <div class="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                                <span>Pool compartilhada com o rateio das Caixas e Remessas.</span>
+                                <button type="button" @click="applyTipoPrefixToName()"
+                                        class="text-purple-600 font-semibold hover:underline cursor-pointer">
+                                    ✨ Ajustar prefixo no nome
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Nome do Item & Integrante -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Nome do Item:</label>
+                                <input type="text" x-model="manageName" required
+                                       placeholder="Ex: Photocard Sakura 1"
+                                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Integrante (Opcional):</label>
+                                <input type="text" x-model="manageMember"
+                                       placeholder="Ex: Sakura 1"
+                                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Edição do Valor do Item -->
                     <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                         <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                            <span>🏷️</span> Preço do Item neste Slot (R$)
+                            <span>💰</span> Preço do Item neste Slot (R$)
                         </label>
                         <div class="relative">
                             <span class="absolute left-3 top-2.5 font-bold text-slate-400">R$</span>
@@ -1043,7 +1875,7 @@
                         </label>
                     </div>
 
-                    <!-- 2. Gerenciamento de Reserva (Claim) -->
+                    <!-- 3. Gerenciamento de Reserva (Claim) -->
                     <div class="p-3.5 bg-purple-50/40 rounded-xl border border-purple-200/80 space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="font-black text-purple-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
@@ -1120,8 +1952,36 @@
                                         </option>
                                     </template>
                                 </select>
+                                <div class="pt-1">
+                                    <button type="button" @click="promoteWaitingOnSlot(managedSlot.id)"
+                                            class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span>⚡</span> Alocar 1º Colocado da Fila de Espera
+                                    </button>
+                                </div>
                             </div>
                         </template>
+                    </div>
+
+                    <!-- 4. Zona de Exclusão e Remoção do Item / Slot -->
+                    <div class="p-3.5 bg-rose-50/60 rounded-xl border border-rose-200 space-y-2">
+                        <label class="block font-black text-rose-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>🗑️</span> Exclusão e Remoção
+                        </label>
+                        <p class="text-[11px] text-slate-600 leading-tight">
+                            Exclua este item da CEG ou remova apenas a vaga deste Set caso não vá utilizá-lo.
+                        </p>
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            <button type="button" @click="deleteManagedItemDefinition()" :disabled="manageLoading"
+                                    class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                <span>🗑️</span> Excluir Item da CEG Inteira
+                            </button>
+                            {% if sets|length > 1 %}
+                                <button type="button" @click="deleteManagedSingleSlot()" :disabled="manageLoading"
+                                        class="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 font-bold text-xs rounded-lg border border-rose-300 transition shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                    Remover apenas este Slot do Set #<span x-text="managedSlot ? managedSlot.setNumber : ''"></span>
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <!-- Botões de Ação do Rodapé -->
@@ -1136,6 +1996,143 @@
                             <span>💾 Salvar Alterações</span>
                         </button>
                     </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal de Alteração de Tipo em Massa -->
+        <div x-show="bulkTypeModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeBulkTypeModal()">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+                 @click.away="closeBulkTypeModal()">
+                
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-lg shadow-xs">
+                            🏷️
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Alterar Tipo em Massa
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold" x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkTypeModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitBulkType()" class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block font-bold text-slate-700">Novo Tipo de Item para os Selecionados:</label>
+                                <button type="button" @click="openNewTipoInline('bulk')" class="text-[10px] text-pink-600 font-bold hover:underline flex items-center gap-1 cursor-pointer">
+                                    <span>➕</span> Novo Tipo
+                                </button>
+                            </div>
+                            <select x-model="bulkNewTipoItemId" required
+                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <template x-for="tip in tipoItemList" :key="tip.id">
+                                    <option :value="tip.id" x-text="tip.nome" :selected="String(tip.id) === String(bulkNewTipoItemId)"></option>
+                                </template>
+                            </select>
+                            <p class="text-[10px] text-slate-500 mt-1">
+                                Pool compartilhada com as Caixas e Itens da CEG.
+                            </p>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="bulkUpdatePrefix"
+                                       class="mt-0.5 rounded border-slate-300 text-pink-600 focus:ring-pink-500">
+                                <span class="text-[11px] text-slate-700 font-semibold leading-tight">
+                                    Atualizar automaticamente o prefixo do nome dos itens com o novo tipo (ex: trocar 'Photocard Sakura' por 'POB Sakura' ou 'Álbum Sakura').
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="closeBulkTypeModal()"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="bulkLoading"
+                                class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                            <span x-show="bulkLoading" class="animate-spin">⏳</span>
+                            <span>Aplicar aos Selecionados</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Alteração de Preço em Massa -->
+        <div x-show="bulkPriceModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeBulkPriceModal()">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+                 @click.away="closeBulkPriceModal()">
+                
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg shadow-xs">
+                            💰
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Alterar Preço em Massa
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold" x-text="selectedSlotIds.length + ' vaga(s) selecionada(s)'"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkPriceModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitBulkPrice()" class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Novo Preço Unitário (R$):</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 font-bold text-slate-400">R$</span>
+                                <input type="number" step="0.01" min="0" required
+                                       x-model="bulkNewPrice"
+                                       placeholder="0.00"
+                                       class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-black text-sm text-slate-900 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="bulkApplyAllSets"
+                                       class="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                <span class="text-[11px] text-slate-700 font-semibold leading-tight">
+                                    Aplicar este novo preço a todos os Sets dos itens selecionados nesta CEG.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="closeBulkPriceModal()"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="bulkLoading"
+                                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                            <span x-show="bulkLoading" class="animate-spin">⏳</span>
+                            <span>Aplicar Novo Preço</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
                 </form>
 
             </div>
@@ -1287,6 +2284,198 @@
                     </div>
                 </form>
 
+            </div>
+        </div>
+
+        <!-- Modal de Logs de Concorrência e Fila de Espera (Staff) -->
+        <div x-show="logsModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
+             @keydown.escape.window="closeLogsModal()">
+
+            <div class="bg-slate-900 border border-slate-700/80 text-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 transform transition-all max-h-[92vh] flex flex-col"
+                 @click.away="closeLogsModal()">
+
+                <!-- Modal Header -->
+                <div class="flex justify-between items-start border-b border-slate-800 pb-3 flex-shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl shadow-2xs">
+                            ⚡
+                        </span>
+                        <div>
+                            <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                                <span>Logs de Concorrência & Fila de Espera</span>
+                                <span class="text-xs px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-mono">Segundo Zero</span>
+                            </h3>
+                            <p class="text-xs text-slate-400 truncate max-w-sm sm:max-w-md">{{ ceg.title }}</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeLogsModal()"
+                            class="text-slate-400 hover:text-white text-2xl font-bold cursor-pointer transition">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Tabs Switcher -->
+                <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="logsTab = 'logs'"
+                                class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                                :class="logsTab === 'logs' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                            <span>📋</span> Logs de Tentativas & Disputas
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                                  :class="logsTab === 'logs' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
+                                  x-text="disputeLogs.length"></span>
+                        </button>
+                        <button type="button" @click="logsTab = 'waiting'"
+                                class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                                :class="logsTab === 'waiting' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                            <span>⏳</span> Fila de Espera por Item
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                                  :class="logsTab === 'waiting' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
+                                  x-text="waitingList.length"></span>
+                        </button>
+                    </div>
+                    <button type="button" @click="openLogsModal()"
+                            class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                            title="Recarregar logs">
+                        <span :class="logsLoading ? 'animate-spin' : ''">🔄</span> Atualizar
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="logsLoading" class="py-12 text-center text-slate-400 space-y-2">
+                    <div class="inline-block animate-spin text-2xl text-amber-400">⚡</div>
+                    <div class="text-xs font-semibold">Carregando logs de concorrência e fila de espera...</div>
+                </div>
+
+                <!-- Tab 1: Logs de Concorrência -->
+                <div x-show="!logsLoading && logsTab === 'logs'" class="overflow-y-auto space-y-2 pr-1 max-h-[60vh]">
+                    <template x-if="disputeLogs.length === 0">
+                        <div class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                            Nenhuma tentativa de claim registrada nesta CEG até o momento.
+                        </div>
+                    </template>
+
+                    <template x-if="disputeLogs.length > 0">
+                        <div class="space-y-2">
+                            <template x-for="log in disputeLogs" :key="log.id">
+                                <div class="p-3 bg-slate-800/70 border border-slate-700/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:border-slate-600 transition">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-black px-2 py-0.5 rounded text-[10px]"
+                                                  :class="{
+                                                      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': log.result === 'SUCCESS',
+                                                      'bg-blue-500/20 text-blue-300 border border-blue-500/30': log.result === 'AUTO_FALLBACK',
+                                                      'bg-amber-500/20 text-amber-300 border border-amber-500/30': log.result === 'WAITING_LIST',
+                                                      'bg-rose-500/20 text-rose-300 border border-rose-500/30': log.result === 'LOST_RACE',
+                                                      'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30': log.result === 'STANDBY_BLOCKED',
+                                                      'bg-slate-700 text-slate-300': log.result === 'ERROR'
+                                                  }"
+                                                  x-text="log.result_display"></span>
+                                            <span class="font-bold text-white text-xs" x-text="log.item_name + ' (Set #' + log.set_number + ')'"></span>
+                                            <span class="text-[10px] text-amber-400 font-black" x-text="'#' + log.attempt_number + 'º lugar'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-slate-300 text-[11px]">
+                                            <span class="font-semibold text-white" x-text="log.participant_name"></span>
+                                            <span class="text-pink-300 font-mono" x-show="log.social_handle" x-text="log.social_handle"></span>
+                                            <span class="text-slate-400 font-mono text-[10px]" x-text="'+' + log.phone"></span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-400 leading-snug" x-text="log.details"></div>
+                                    </div>
+                                    <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
+                                        <div x-text="log.created_at"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Tab 2: Fila de Espera por Item -->
+                <div x-show="!logsLoading && logsTab === 'waiting'" class="overflow-y-auto space-y-2 pr-1 max-h-[60vh]">
+                    <template x-if="waitingList.length === 0">
+                        <div class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                            Nenhum participante na fila de espera no momento. Todos os slots disponíveis supriram a demanda!
+                        </div>
+                    </template>
+
+                    <template x-if="waitingList.length > 0">
+                        <div class="space-y-2">
+                            <template x-for="w in waitingList" :key="w.id">
+                                <div class="p-3 bg-slate-800/70 border border-slate-700/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:border-slate-600 transition">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-black px-2 py-0.5 rounded text-[10px]"
+                                                  :class="w.status === 'WAITING' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : (w.status === 'PROMOTED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700 text-slate-400')"
+                                                  x-text="w.status_display"></span>
+                                            <span class="font-bold text-white text-xs" x-text="w.item_name"></span>
+                                            <span class="text-amber-400 font-black text-xs" x-text="'#' + w.position + 'º da Fila'"></span>
+                                            <span x-show="w.allocated_slot" class="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded" x-text="'Alocado em ' + w.allocated_slot"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-slate-300 text-[11px]">
+                                            <span class="font-semibold text-white" x-text="w.participant_name"></span>
+                                            <span class="text-pink-300 font-mono" x-show="w.social_handle" x-text="w.social_handle"></span>
+                                            <span class="text-slate-400 font-mono text-[10px]" x-text="'+' + w.phone"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
+                                        <div>Entrou em: <span x-text="w.created_at"></span></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-3 border-t border-slate-800 flex justify-end flex-shrink-0">
+                    <button type="button" @click="closeLogsModal()"
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs transition cursor-pointer">
+                        Fechar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Modal Inline para Criar Novo Tipo de Item (Pool Compartilhada) -->
+        <div x-show="showNewTipoModal" x-cloak
+             class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="showNewTipoModal = false">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-100 transform transition-all"
+                 @click.away="showNewTipoModal = false">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <h4 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                        <span>🏷️</span> Novo Tipo de Item
+                    </h4>
+                    <button type="button" @click="showNewTipoModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+                </div>
+                <form @submit.prevent="submitInlineNewTipo()" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nome do Tipo de Item *</label>
+                        <input type="text" x-model="newTipoNome" required placeholder="Ex: Mini Poster, Keyring, Labubu"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Descrição (opcional)</label>
+                        <input type="text" x-model="newTipoDesc" placeholder="Breve detalhe sobre esta categoria de item"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <p class="text-[10px] text-slate-500 leading-tight">
+                        💡 Este tipo fará parte da pool compartilhada e ficará disponível imediatamente para todas as CEGs, Caixas e Remessas do sistema.
+                    </p>
+                    <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" @click="showNewTipoModal = false"
+                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="newTipoLoading"
+                                class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                            <span x-show="newTipoLoading" class="animate-spin">⏳</span>
+                            <span>Criar Tipo</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     {% endif %}

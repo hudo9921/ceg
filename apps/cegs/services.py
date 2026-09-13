@@ -4,13 +4,14 @@ import time
 from collections import defaultdict
 from django.db import transaction, OperationalError
 from django.utils import timezone
-from apps.cegs.models import ItemSlot, CEG, ClaimAttemptLog
+from apps.cegs.models import ItemSlot, CEG, ClaimAttemptLog, ItemWaitingList
 from apps.participants.models import Participant, Claim, clean_phone_number
 
 logger = logging.getLogger('cegs.concurrency')
 
 _slot_counter_lock = threading.Lock()
 _slot_attempts_count = defaultdict(int)
+_claim_mutex = threading.RLock()
 LAST_CLAIM_DISPUTES = []
 
 
@@ -119,6 +120,17 @@ class SlotUnavailableError(CEGError):
     pass
 
 
+class AddedToWaitingListError(SlotUnavailableError):
+    def __init__(self, position: int, item_name: str, message: str = ""):
+        self.position = position
+        self.item_name = item_name
+        self.message = message or (
+            f"Todos os slots de '{item_name}' foram preenchidos! "
+            f"Você foi adicionado(a) à Lista de Espera como #{position}º lugar."
+        )
+        super().__init__(self.message)
+
+
 class ClaimService:
     @staticmethod
     def claim_slot(slot_id: int, name: str, phone: str, social_handle: str = "", notes: str = "", username: str = "") -> Claim:
@@ -127,6 +139,18 @@ class ClaimService:
         Garante que apenas 1 pessoa consiga reservar o slot físico no segundo zero
         e gera log output registrando a ordem exata de quem deu claim.
         """
+        with _claim_mutex:
+            return ClaimService._claim_slot_internal(
+                slot_id=slot_id,
+                name=name,
+                phone=phone,
+                social_handle=social_handle,
+                notes=notes,
+                username=username,
+            )
+
+    @staticmethod
+    def _claim_slot_internal(slot_id: int, name: str, phone: str, social_handle: str = "", notes: str = "", username: str = "") -> Claim:
         cleaned_phone = clean_phone_number(phone)
         if not cleaned_phone:
             raise CEGError("Número de WhatsApp inválido.")
@@ -260,9 +284,114 @@ class ClaimService:
                             return claim
 
                 # Fora do transaction.atomic: se perdeu a corrida ou o slot já estava tomado,
-                # persiste o log de auditoria sem sofrer rollback e levanta SlotUnavailableError
+                # tenta Auto-Fallback para os próximos sets ou adiciona à Lista de Espera por Item
                 if slot_already_taken or lost_race:
-                    detail_text = f"Slot já reservado por {winner_info}." if slot_already_taken else f"Perdeu por concorrência para {winner_info}."
+                    # 1. TENTA AUTO-FALLBACK PARA O MESMO ITEM EM OUTROS SETS ATIVOS DA CEG
+                    fallback_slots = list(
+                        ItemSlot.objects.filter(
+                            set__ceg=ceg,
+                            set__is_active=True,
+                            item_definition=slot.item_definition,
+                            status=ItemSlot.Status.AVAILABLE
+                        ).exclude(id=slot.id).order_by('set__set_number', 'id')
+                    )
+
+                    fallback_success = False
+                    fallback_claim = None
+                    fallback_target_slot = None
+
+                    for candidate in fallback_slots:
+                        now = timezone.now()
+                        with transaction.atomic():
+                            fb_updated = ItemSlot.objects.filter(
+                                id=candidate.id,
+                                status=ItemSlot.Status.AVAILABLE
+                            ).update(
+                                status=ItemSlot.Status.RESERVED,
+                                claimed_by=participant,
+                                claimed_at=now
+                            )
+                            if fb_updated == 1:
+                                candidate.refresh_from_db()
+                                fallback_claim = Claim.objects.create(
+                                    slot=candidate,
+                                    participant=participant,
+                                    status=Claim.Status.PENDING,
+                                    total_price=candidate.price,
+                                    participant_notes=notes.strip(),
+                                    claimed_at=now
+                                )
+                                fallback_success = True
+                                fallback_target_slot = candidate
+                                break
+
+                    if fallback_success and fallback_claim and fallback_target_slot:
+                        try:
+                            ClaimAttemptLog.objects.create(
+                                slot=fallback_target_slot,
+                                attempt_number=attempt_number,
+                                participant_name=name_clean,
+                                phone=cleaned_phone,
+                                social_handle=social_clean,
+                                result=ClaimAttemptLog.Result.AUTO_FALLBACK,
+                                details=(
+                                    f"Reserva garantida via Auto-Fallback! "
+                                    f"O Set #{set_number} estava ocupado, vaga alocada no Set #{fallback_target_slot.set.set_number}."
+                                )
+                            )
+                        except Exception:
+                            pass
+
+                        _emit_claim_order_log(
+                            slot_id=fallback_target_slot.id,
+                            item_name=item_name,
+                            set_number=fallback_target_slot.set.set_number,
+                            ceg_title=ceg_title,
+                            attempt_number=attempt_number,
+                            name=name_clean,
+                            phone=cleaned_phone,
+                            social_handle=social_clean,
+                            won=True,
+                            winner_info=f"Auto-fallback a partir do Set #{set_number}"
+                        )
+
+                        fallback_claim.auto_fallback_from_set = set_number
+                        fallback_claim.auto_fallback_to_set = fallback_target_slot.set.set_number
+                        return fallback_claim
+
+                    # 2. SE NENHUM SET TIVER O ITEM DISPONÍVEL (TODOS CHEIOS OU SÓ 1 SET EXISTE):
+                    # Adiciona o participante à Lista de Espera por Item
+                    with transaction.atomic():
+                        existing_entry = ItemWaitingList.objects.filter(
+                            item_definition=slot.item_definition,
+                            participant=participant,
+                            status=ItemWaitingList.Status.WAITING
+                        ).first()
+
+                        if existing_entry:
+                            waiting_pos = existing_entry.position
+                        else:
+                            waiting_count = ItemWaitingList.objects.filter(
+                                item_definition=slot.item_definition,
+                                status=ItemWaitingList.Status.WAITING
+                            ).count()
+                            waiting_pos = waiting_count + 1
+                            existing_entry = ItemWaitingList.objects.create(
+                                item_definition=slot.item_definition,
+                                participant=participant,
+                                name=name_clean,
+                                phone=cleaned_phone,
+                                social_handle=social_clean,
+                                position=waiting_pos,
+                                status=ItemWaitingList.Status.WAITING,
+                                notes=notes.strip()
+                            )
+
+                    detail_text = (
+                        f"Todos os sets ocupados. Adicionado(a) à Lista de Espera como #{waiting_pos}º lugar. "
+                        f"(Tentativa original no Set #{set_number}, ocupado por {winner_info})."
+                    )
+
                     try:
                         ClaimAttemptLog.objects.create(
                             slot=slot,
@@ -270,7 +399,7 @@ class ClaimService:
                             participant_name=name_clean,
                             phone=cleaned_phone,
                             social_handle=social_clean,
-                            result=ClaimAttemptLog.Result.LOST_RACE,
+                            result=ClaimAttemptLog.Result.WAITING_LIST,
                             details=detail_text
                         )
                     except Exception:
@@ -286,12 +415,17 @@ class ClaimService:
                         phone=cleaned_phone,
                         social_handle=social_clean,
                         won=False,
-                        winner_info=winner_info
+                        winner_info=f"Lista de Espera #{waiting_pos} (Set #{set_number} ocupado por {winner_info})"
                     )
 
-                    raise SlotUnavailableError(
-                        f"O item '{item_name}' do Set {set_number} "
-                        f"já foi pego por outro participante ({winner_info})!"
+                    raise AddedToWaitingListError(
+                        position=waiting_pos,
+                        item_name=item_name,
+                        message=(
+                            f"Todos os slots de '{item_name}' foram preenchidos! "
+                            f"Você foi adicionado(a) à Lista de Espera na posição #{waiting_pos}. "
+                            f"Se houver desistência ou um novo Set for aberto, sua vaga será alocada prioritariamente."
+                        )
                     )
 
             except OperationalError:
@@ -319,6 +453,137 @@ class ClaimService:
                 raise SlotUnavailableError(
                     "Este item está sob alta concorrência e acabou de ser reservado por outro participante."
                 )
+
+    @staticmethod
+    def allocate_waiting_list_for_slots(slots) -> int:
+        """
+        Aloca participantes da lista de espera para os slots disponíveis fornecidos.
+        Usado principalmente após a criação de um Set extra.
+        Retorna o total de vagas preenchidas a partir da fila de espera.
+        """
+        with _claim_mutex:
+            return ClaimService._allocate_waiting_list_for_slots_internal(slots)
+
+    @staticmethod
+    def _allocate_waiting_list_for_slots_internal(slots) -> int:
+        promoted_count = 0
+        now = timezone.now()
+        for slot in slots:
+            if slot.status != ItemSlot.Status.AVAILABLE:
+                continue
+
+            with transaction.atomic():
+                waiting_entry = ItemWaitingList.objects.select_for_update().filter(
+                    item_definition=slot.item_definition,
+                    status=ItemWaitingList.Status.WAITING
+                ).order_by('position', 'created_at').first()
+
+                if not waiting_entry:
+                    continue
+
+                slot.status = ItemSlot.Status.RESERVED
+                slot.claimed_by = waiting_entry.participant
+                slot.claimed_at = now
+                slot.save()
+
+                Claim.objects.create(
+                    slot=slot,
+                    participant=waiting_entry.participant,
+                    status=Claim.Status.PENDING,
+                    total_price=slot.price,
+                    participant_notes="Alocado automaticamente da Lista de Espera ao abrir novo Set.",
+                    claimed_at=now
+                )
+
+                waiting_entry.status = ItemWaitingList.Status.PROMOTED
+                waiting_entry.allocated_slot = slot
+                waiting_entry.promoted_at = now
+                waiting_entry.save()
+
+                try:
+                    ClaimAttemptLog.objects.create(
+                        slot=slot,
+                        attempt_number=1,
+                        participant_name=waiting_entry.name,
+                        phone=waiting_entry.phone,
+                        social_handle=waiting_entry.social_handle,
+                        result=ClaimAttemptLog.Result.SUCCESS,
+                        details=f"Promovido da Fila de Espera #{waiting_entry.position} ao abrir o Set #{slot.set.set_number}."
+                    )
+                except Exception:
+                    pass
+
+                promoted_count += 1
+
+        return promoted_count
+
+    @staticmethod
+    def promote_from_waiting_list_on_slot_released(slot) -> ItemWaitingList:
+        """
+        Quando uma reserva é cancelada/removida, verifica se há alguém aguardando
+        na Lista de Espera para o mesmo item e aloca a vaga imediatamente.
+        Retorna a entrada da lista de espera promovida, ou None se a fila estava vazia.
+        """
+        with _claim_mutex:
+            return ClaimService._promote_from_waiting_list_on_slot_released_internal(slot)
+
+    @staticmethod
+    def _promote_from_waiting_list_on_slot_released_internal(slot) -> ItemWaitingList:
+        now = timezone.now()
+        with transaction.atomic():
+            waiting_entry = ItemWaitingList.objects.select_for_update().filter(
+                item_definition=slot.item_definition,
+                status=ItemWaitingList.Status.WAITING
+            ).order_by('position', 'created_at').first()
+
+            if waiting_entry:
+                slot.status = ItemSlot.Status.RESERVED
+                slot.claimed_by = waiting_entry.participant
+                slot.claimed_at = now
+                slot.is_item_paid = False
+                slot.is_frete_inter_paid = False
+                slot.is_taxa_aduaneira_paid = False
+                slot.is_frete_nacional_paid = False
+                slot.save()
+
+                Claim.objects.create(
+                    slot=slot,
+                    participant=waiting_entry.participant,
+                    status=Claim.Status.PENDING,
+                    total_price=slot.price,
+                    participant_notes="Promovido da Lista de Espera por desistência anterior.",
+                    claimed_at=now
+                )
+
+                waiting_entry.status = ItemWaitingList.Status.PROMOTED
+                waiting_entry.allocated_slot = slot
+                waiting_entry.promoted_at = now
+                waiting_entry.save()
+
+                try:
+                    ClaimAttemptLog.objects.create(
+                        slot=slot,
+                        attempt_number=1,
+                        participant_name=waiting_entry.name,
+                        phone=waiting_entry.phone,
+                        social_handle=waiting_entry.social_handle,
+                        result=ClaimAttemptLog.Result.SUCCESS,
+                        details=f"Promovido da Fila de Espera #{waiting_entry.position} após cancelamento/desistência no Set #{slot.set.set_number}."
+                    )
+                except Exception:
+                    pass
+
+                return waiting_entry
+            else:
+                slot.status = ItemSlot.Status.AVAILABLE
+                slot.claimed_by = None
+                slot.claimed_at = None
+                slot.is_item_paid = False
+                slot.is_frete_inter_paid = False
+                slot.is_taxa_aduaneira_paid = False
+                slot.is_frete_nacional_paid = False
+                slot.save()
+                return None
 
     @staticmethod
     def get_slot_dispute_history(slot_id: int):

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
@@ -9,9 +10,13 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Q
-from .models import CEG, CEGSet, ItemSlot
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from apps.groups.models import Era
+from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem
 from apps.participants.models import Participant, Claim
-from .services import ClaimService, CEGError, enrich_cegs_with_availability
+from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
+from .creations_views import StaffRequiredMixin
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +59,16 @@ class HomeView(View):
             status__in=[CEG.Status.CLOSED, CEG.Status.COMPLETED]
         ).select_related('era__group')[:6]
 
-        # 4. Agrupa os grupos presentes nas CEGs abertas para o filtro de grupos da Home
+        # 4. Agrupa os grupos, eras e integrantes presentes nas CEGs abertas para os filtros da Home
         open_groups_dict = {}
+        open_eras_dict = {}
+        open_members_set = set()
+
         for ceg in active_cegs:
             grp = ceg.era.group
+            era = ceg.era
+
+            # Grupos
             if grp.id not in open_groups_dict:
                 open_groups_dict[grp.id] = {
                     'id': grp.id,
@@ -66,11 +77,36 @@ class HomeView(View):
                 }
             open_groups_dict[grp.id]['cegs_count'] += 1
 
+            # Eras
+            if era.id not in open_eras_dict:
+                open_eras_dict[era.id] = {
+                    'id': era.id,
+                    'name': era.name,
+                    'group_id': grp.id,
+                    'group_name': grp.name,
+                    'cegs_count': 0
+                }
+            open_eras_dict[era.id]['cegs_count'] += 1
+
+            # Integrantes disponíveis na CEG para busca/filtro
+            ceg_members = []
+            for item in getattr(ceg, 'grouped_available_items', []):
+                m_name = item.get('member_name') or item.get('item_name')
+                if m_name:
+                    m_clean = m_name.strip()
+                    open_members_set.add(m_clean)
+                    ceg_members.append(m_clean.lower())
+            ceg.available_members_str = ' '.join(ceg_members)
+
         open_groups = sorted(open_groups_dict.values(), key=lambda g: g['name'])
+        open_eras = sorted(open_eras_dict.values(), key=lambda e: (e['group_name'], e['name']))
+        open_members = sorted(open_members_set, key=lambda m: m.lower())
 
         return render(request, 'home.html', {
             'active_cegs': active_cegs,
             'open_groups': open_groups,
+            'open_eras': open_eras,
+            'open_members': open_members,
             'scheduled_cegs': scheduled_cegs,
             'closed_cegs': closed_cegs,
             'now': now,
@@ -80,7 +116,7 @@ class HomeView(View):
 class CEGDetailView(View):
     def get(self, request, slug):
         ceg = get_object_or_404(
-            CEG.objects.select_related('era__group'),
+            CEG.objects.select_related('era__group', 'caixa'),
             slug=slug
         )
 
@@ -95,8 +131,16 @@ class CEGDetailView(View):
             'slots__claimed_by'
         ).order_by('set_number')
 
-        # Se o usuário for administrador/staff, carrega lista de participantes para seleção rápida
+        # Se o usuário for administrador/staff, carrega lista de participantes para seleção rápida e caixas
         all_participants = []
+        all_caixas = []
+        all_eras = []
+        status_choices = []
+        tipo_item_list = []
+        item_type_choices = [
+            {'code': code, 'label': label}
+            for code, label in CEGItemDefinition.ItemType.choices
+        ]
         if request.user.is_authenticated and request.user.is_staff:
             from apps.participants.models import Participant
             all_participants = list(
@@ -104,6 +148,10 @@ class CEGDetailView(View):
                     'id', 'name', 'username', 'whatsapp', 'social_handle'
                 )
             )
+            all_caixas = Caixa.objects.all().order_by('-created_at')
+            all_eras = list(Era.objects.select_related('group').all().order_by('group__name', 'name'))
+            status_choices = CEG.Status.choices
+            tipo_item_list = list(TipoItem.objects.all().order_by('nome').values('id', 'nome', 'descricao'))
 
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
@@ -113,6 +161,13 @@ class CEGDetailView(View):
             'is_open_for_claims': ceg.is_open_for_claims,
             'all_participants': all_participants,
             'all_participants_json': json.dumps(all_participants),
+            'all_caixas': all_caixas,
+            'all_eras': all_eras,
+            'status_choices': status_choices,
+            'tipo_item_list': tipo_item_list,
+            'tipo_item_list_json': json.dumps(tipo_item_list),
+            'item_type_choices': item_type_choices,
+            'item_type_choices_json': json.dumps(item_type_choices),
         })
 
 
@@ -176,10 +231,17 @@ class ClaimSlotView(View):
             if not is_staff:
                 request.session['participant_id'] = claim.participant.id
 
-            success_msg = (
-                f"🎉 Reserva realizada com sucesso! Você pegou: {claim.slot.item_definition.name} "
-                f"(Set {claim.slot.set.set_number}). Efetue o pagamento Pix para confirmar."
-            )
+            if hasattr(claim, 'auto_fallback_from_set') and claim.auto_fallback_from_set:
+                success_msg = (
+                    f"🎉 Reserva realizada com sucesso via Auto-Fallback! "
+                    f"O Set #{claim.auto_fallback_from_set} já havia esgotado, mas você garantiu sua vaga automaticamente no Set #{claim.slot.set.set_number} "
+                    f"({claim.slot.item_definition.name}). Efetue o pagamento Pix para confirmar."
+                )
+            else:
+                success_msg = (
+                    f"🎉 Reserva realizada com sucesso! Você pegou: {claim.slot.item_definition.name} "
+                    f"(Set {claim.slot.set.set_number}). Efetue o pagamento Pix para confirmar."
+                )
 
             if is_ajax:
                 return JsonResponse({
@@ -191,6 +253,19 @@ class ClaimSlotView(View):
                 })
 
             messages.success(request, success_msg)
+            return redirect('ceg_detail', slug=ceg.slug)
+
+        except AddedToWaitingListError as e:
+            msg = str(e)
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'is_waiting_list': True,
+                    'position': e.position,
+                    'item_name': e.item_name,
+                    'message': msg,
+                })
+            messages.warning(request, msg)
             return redirect('ceg_detail', slug=ceg.slug)
 
         except CEGError as e:
@@ -207,6 +282,7 @@ class ClaimSlotView(View):
             return redirect('ceg_detail', slug=ceg.slug)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ToggleSlotPaymentView(View):
     """
     Endpoint para o Organizador (Staff) alternar check marks de pagamento por item:
@@ -239,8 +315,23 @@ class ToggleSlotPaymentView(View):
 
             new_val = slot.toggle_payment(field, value=value)
 
+            field_labels = {
+                'item': 'Item',
+                'is_item_paid': 'Item',
+                'inter': 'Frete Internacional',
+                'frete_inter': 'Frete Internacional',
+                'taxa': 'Taxa Aduaneira',
+                'taxa_aduaneira': 'Taxa Aduaneira',
+                'nacional': 'Frete Nacional',
+                'frete_nacional': 'Frete Nacional',
+            }
+            label = field_labels.get(field, field)
+            status_text = "Pago ✔" if new_val else "Pendente"
+            msg = f"{label} marcado como: {status_text}."
+
             return JsonResponse({
                 'success': True,
+                'message': msg,
                 'slot_id': slot.id,
                 'field': field,
                 'new_value': new_val,
@@ -308,15 +399,157 @@ class UpdateCEGFeesView(View):
         ceg.prazo_pagamento_frete_inter = parse_dt(prazo_frete_str) if prazo_frete_str else None
         ceg.prazo_pagamento_taxa_aduaneira = parse_dt(prazo_taxa_str) if prazo_taxa_str else None
 
-        ceg.save(update_fields=[
+        update_fields = [
             'prazo_pagamento_item',
             'frete_inter',
             'taxa_aduaneira',
             'prazo_pagamento_frete_inter',
             'prazo_pagamento_taxa_aduaneira',
-        ])
+        ]
 
-        messages.success(request, f"💰 Taxas e prazos da CEG '{ceg.title}' atualizados com sucesso!")
+        caixa_id = request.POST.get('caixa_id')
+        if caixa_id is not None:
+            if caixa_id.strip():
+                try:
+                    caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                    ceg.caixa = caixa
+                    if caixa:
+                        ceg.shipping_status = caixa.status
+                    update_fields.extend(['caixa', 'shipping_status'])
+                except (ValueError, TypeError):
+                    pass
+            else:
+                ceg.caixa = None
+                update_fields.append('caixa')
+
+        ceg.save(update_fields=update_fields)
+
+        # Propagação em cascata
+        if ceg.caixa:
+            # Se vinculada a uma caixa, propaga os rates e prazos da caixa para a CEG e seus slots
+            ceg.caixa.propagar_taxas_e_prazos_em_cascata()
+        else:
+            # Se não tiver caixa, mas tiver prazos ou valores definidos na CEG, propaga para os slots
+            slots_to_update = []
+            for slot in ItemSlot.objects.filter(set__ceg=ceg):
+                changed = False
+                if ceg.frete_inter is not None and slot.frete_inter_valor != ceg.frete_inter:
+                    slot.frete_inter_valor = ceg.frete_inter
+                    changed = True
+                if ceg.taxa_aduaneira is not None and slot.taxa_aduaneira_valor != ceg.taxa_aduaneira:
+                    slot.taxa_aduaneira_valor = ceg.taxa_aduaneira
+                    changed = True
+                if ceg.prazo_pagamento_frete_inter and slot.prazo_frete_inter != ceg.prazo_pagamento_frete_inter:
+                    slot.prazo_frete_inter = ceg.prazo_pagamento_frete_inter
+                    changed = True
+                if ceg.prazo_pagamento_taxa_aduaneira and slot.prazo_taxa_aduaneira != ceg.prazo_pagamento_taxa_aduaneira:
+                    slot.prazo_taxa_aduaneira = ceg.prazo_pagamento_taxa_aduaneira
+                    changed = True
+                if changed:
+                    slots_to_update.append(slot)
+            if slots_to_update:
+                ItemSlot.objects.bulk_update(
+                    slots_to_update,
+                    ['frete_inter_valor', 'taxa_aduaneira_valor', 'prazo_frete_inter', 'prazo_taxa_aduaneira']
+                )
+
+        messages.success(request, f"💰 Taxas, prazos e remessa da CEG '{ceg.title}' atualizados com sucesso!")
+        return redirect('ceg_detail', slug=ceg.slug)
+
+
+class UpdateCEGView(StaffRequiredMixin, View):
+    """
+    Permite ao organizador (admin/staff) editar as informações completas da CEG:
+    - Título, Era / Grupo, Caixa vinculada
+    - Banner / Foto da CEG (Upload direto de arquivo de imagem ou URL externa)
+    - Status (Aberta, Agendada/Standby, Rascunho, Fechada, Cancelada)
+    - Prazos e Datas (Abertura/Standby, Encerramento, Prazo do item)
+    - Regras / Descrição e Chave Pix / Instruções
+    """
+    def post(self, request, slug):
+        ceg = get_object_or_404(CEG, slug=slug)
+
+        title = request.POST.get('title', '').strip()
+        era_id = request.POST.get('era_id')
+        caixa_id = request.POST.get('caixa_id')
+        status = request.POST.get('status', '').strip()
+        opens_at_str = request.POST.get('opens_at', '').strip()
+        closes_at_str = request.POST.get('closes_at', '').strip()
+        prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
+        pix_key = request.POST.get('pix_key', '').strip()
+        pix_instructions = request.POST.get('pix_instructions', '').strip()
+        description = request.POST.get('description', '').strip()
+        banner_url = request.POST.get('banner_url', '').strip()
+        remove_banner = request.POST.get('remove_banner') in ('1', 'true', 'on')
+
+        if title:
+            ceg.title = title
+
+        if era_id:
+            try:
+                ceg.era = Era.objects.get(id=int(era_id))
+            except (Era.DoesNotExist, ValueError):
+                pass
+
+        if caixa_id is not None:
+            if caixa_id.strip():
+                try:
+                    caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                    ceg.caixa = caixa
+                    if caixa:
+                        ceg.shipping_status = caixa.status
+                except (ValueError, TypeError):
+                    pass
+            else:
+                ceg.caixa = None
+
+        if status in CEG.Status.values:
+            ceg.status = status
+
+        def parse_local_dt(dt_str):
+            if not dt_str:
+                return None
+            try:
+                dt = parse_datetime(dt_str)
+                if dt and timezone.is_naive(dt):
+                    dt = timezone.make_aware(dt, timezone.get_current_timezone())
+                return dt
+            except Exception:
+                return None
+
+        ceg.opens_at = parse_local_dt(opens_at_str)
+        ceg.closes_at = parse_local_dt(closes_at_str)
+        ceg.prazo_pagamento_item = parse_local_dt(prazo_item_str)
+
+        # Se tiver opens_at no futuro e status estiver como OPEN, converte para SCHEDULED automaticamente
+        if ceg.opens_at and timezone.now() < ceg.opens_at and ceg.status == CEG.Status.OPEN:
+            ceg.status = CEG.Status.SCHEDULED
+
+        ceg.pix_key = pix_key
+        ceg.pix_instructions = pix_instructions
+        ceg.description = description
+
+        # Upload de Imagem / Foto de Banner
+        if 'banner_file' in request.FILES:
+            banner_file = request.FILES['banner_file']
+            if banner_file:
+                import os, time
+                from django.core.files.storage import default_storage
+                ext = os.path.splitext(banner_file.name)[1].lower()
+                if ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+                    safe_name = f"cegs/banners/ceg_{ceg.id}_{int(time.time())}{ext}"
+                    saved_path = default_storage.save(safe_name, banner_file)
+                    ceg.banner_url = default_storage.url(saved_path)
+                else:
+                    messages.warning(request, "Formato de arquivo não suportado. Use JPG, PNG ou WEBP.")
+        elif remove_banner:
+            ceg.banner_url = ''
+        elif 'banner_url' in request.POST:
+            ceg.banner_url = banner_url
+
+        ceg.save()
+
+        messages.success(request, f"✨ Informações e foto da CEG '{ceg.title}' foram atualizadas com sucesso!")
         return redirect('ceg_detail', slug=ceg.slug)
 
 
@@ -349,10 +582,71 @@ class ManageSlotView(View):
         remove_claim = data.get('remove_claim', False)
         if isinstance(remove_claim, str):
             remove_claim = remove_claim.lower() in ('true', '1', 'yes', 'on')
+        promote_waiting = data.get('promote_waiting', False) or action == 'promote_waiting'
         participant_id = data.get('participant_id')
 
+        msg_text = 'Slot atualizado com sucesso!'
+
         with transaction.atomic():
-            # 1. Atualização de Preço
+            # 0. Ações de Exclusão de Slot ou Definição do Item
+            if action == 'delete_item_definition':
+                item_def = slot.item_definition
+                item_name = item_def.name
+                item_def.delete()
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Item '{item_name}' e todas as suas vagas na CEG foram excluídos com sucesso!",
+                    'deleted_item_definition': True
+                })
+
+            if action == 'delete_slot':
+                slot_name = slot.item_definition.name
+                set_num = slot.set.set_number
+                slot.delete()
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Vaga do item '{slot_name}' no Set #{set_num} foi excluída com sucesso!",
+                    'deleted_slot': True
+                })
+
+            # 1. Atualização de Tipo de Item, Nome e Integrante
+            item_type = data.get('item_type')
+            tipo_item_id = data.get('tipo_item_id')
+            name = data.get('name')
+            member_name = data.get('member_name')
+
+            item_def = slot.item_definition
+            item_def_changed = False
+
+            if tipo_item_id is not None:
+                if str(tipo_item_id).strip() == '':
+                    item_def.tipo_item = None
+                else:
+                    try:
+                        tipo_obj = TipoItem.objects.filter(id=int(tipo_item_id)).first()
+                        item_def.tipo_item = tipo_obj
+                        if tipo_obj:
+                            item_def.item_type = CEGItemDefinition.resolve_item_type_from_tipo_item(tipo_obj)
+                    except (ValueError, TypeError):
+                        pass
+                item_def_changed = True
+            elif item_type and item_type in CEGItemDefinition.ItemType.values:
+                item_def.item_type = item_type
+                item_def_changed = True
+
+
+            if name and str(name).strip():
+                item_def.name = str(name).strip()
+                item_def_changed = True
+
+            if member_name is not None:
+                item_def.member_name = str(member_name).strip()
+                item_def_changed = True
+
+            if item_def_changed:
+                item_def.save()
+
+            # 2. Atualização de Preço
             if price_val is not None and str(price_val).strip() != '':
                 val_clean = str(price_val).replace('R$', '').replace(' ', '').replace(',', '.').strip()
                 try:
@@ -378,19 +672,28 @@ class ManageSlotView(View):
                 except (InvalidOperation, ValueError):
                     return JsonResponse({'success': False, 'message': 'Valor de preço inválido.'}, status=400)
 
-            # 2. Remover Reserva
+            # 3. Remover Reserva / Desistência (repassa automaticamente para o 1º da fila se houver)
             if remove_claim or action == 'remove_claim':
                 if hasattr(slot, 'claim') and slot.claim:
                     slot.claim.delete()
-                slot.claimed_by = None
-                slot.claimed_at = None
-                slot.status = ItemSlot.Status.AVAILABLE
-                slot.is_item_paid = False
-                slot.is_frete_inter_paid = False
-                slot.is_taxa_aduaneira_paid = False
-                slot.is_frete_nacional_paid = False
+                promoted_entry = ClaimService.promote_from_waiting_list_on_slot_released(slot)
+                if promoted_entry:
+                    msg_text = (
+                        f"Reserva cancelada. O slot foi repassado com prioridade para o 1º da fila de espera: "
+                        f"{promoted_entry.name} ({promoted_entry.social_handle or promoted_entry.phone})!"
+                    )
+                else:
+                    msg_text = "Reserva removida. O slot voltou a ficar disponível."
 
-            # 3. Trocar ou Atribuir Participante
+            # 4. Promover manualmente da fila de espera
+            elif promote_waiting:
+                promoted_entry = ClaimService.promote_from_waiting_list_on_slot_released(slot)
+                if promoted_entry:
+                    msg_text = f"Participante {promoted_entry.name} promovido da fila de espera para o slot com sucesso!"
+                else:
+                    return JsonResponse({'success': False, 'message': 'Não há participantes aguardando na lista de espera para este item.'}, status=400)
+
+            # 5. Trocar ou Atribuir Participante
             elif participant_id:
                 try:
                     new_participant = Participant.objects.get(id=participant_id)
@@ -417,9 +720,15 @@ class ManageSlotView(View):
 
         return JsonResponse({
             'success': True,
-            'message': 'Slot atualizado com sucesso!',
+            'message': msg_text,
             'slot': {
                 'id': slot.id,
+                'name': slot.item_definition.name,
+                'member_name': slot.item_definition.member_name,
+                'item_type': slot.item_definition.item_type,
+                'item_type_display': slot.item_definition.get_item_type_display(),
+                'tipo_item_id': slot.item_definition.tipo_item_id,
+                'tipo_item_nome': slot.item_definition.tipo_item_nome,
                 'price': f"{slot.price:.2f}",
                 'status': slot.status,
                 'status_display': slot.get_status_display(),
@@ -435,6 +744,145 @@ class ManageSlotView(View):
                 } if slot.claimed_by else None,
             }
         })
+
+
+class BulkManageCEGItemsView(View):
+    """
+    Permite ao organizador (staff) realizar alterações e exclusões em massa de itens de uma CEG:
+    - Alterar tipo de múltiplos itens (item_type / tipo_item) com atualização opcional de prefixo
+    - Alterar preço de múltiplos itens
+    - Excluir múltiplos itens da CEG (CEGItemDefinition e seus slots)
+    - Excluir múltiplos slots específicos de sets
+    """
+    def post(self, request, slug):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+
+        ceg = get_object_or_404(CEG, slug=slug)
+
+        try:
+            if request.content_type == 'application/json':
+                data = json.loads(request.body.decode('utf-8') or '{}')
+            else:
+                data = request.POST
+        except Exception:
+            data = request.POST
+
+        action = data.get('action')
+        slot_ids = data.get('slot_ids', [])
+        item_def_ids = data.get('item_def_ids', [])
+
+        # Se passou slot_ids mas não item_def_ids, obtém as definições correspondentes
+        if slot_ids and not item_def_ids:
+            item_def_ids = list(ItemSlot.objects.filter(id__in=slot_ids, set__ceg=ceg).values_list('item_definition_id', flat=True).distinct())
+
+        with transaction.atomic():
+            if action == 'update_type':
+                new_item_type = data.get('new_item_type')
+                new_tipo_item_id = data.get('new_tipo_item_id')
+                update_prefix = data.get('update_prefix', True)
+                if isinstance(update_prefix, str):
+                    update_prefix = update_prefix.lower() in ('true', '1', 'yes', 'on')
+
+                if not new_tipo_item_id and not new_item_type:
+                    return JsonResponse({'success': False, 'message': 'Selecione o novo tipo de item a ser aplicado.'}, status=400)
+
+                target_tipo = None
+                if new_tipo_item_id:
+                    try:
+                        target_tipo = TipoItem.objects.filter(id=int(new_tipo_item_id)).first()
+                    except (ValueError, TypeError):
+                        pass
+
+                if target_tipo:
+                    new_prefix = target_tipo.nome
+                    derived_item_type = CEGItemDefinition.resolve_item_type_from_tipo_item(target_tipo)
+                else:
+                    prefix_map = {
+                        'PHOTOCARD': 'Photocard',
+                        'POB': 'POB',
+                        'ALBUM': 'Álbum',
+                        'INCLUSION': 'Inclusão',
+                        'OTHER': 'Item'
+                    }
+                    new_prefix = prefix_map.get(new_item_type, 'Item')
+                    derived_item_type = new_item_type if new_item_type in CEGItemDefinition.ItemType.values else CEGItemDefinition.ItemType.OTHER
+
+                prefix_pattern = r'^(Photocard|POB|Pre-Order Benefit|Álbum|Album|Compact ver\.|Lucky Draw|Fansign|Inclusão|Lightstick|Item)\s*'
+
+                item_defs = CEGItemDefinition.objects.filter(id__in=item_def_ids, ceg=ceg)
+                count = 0
+                for item_def in item_defs:
+                    if target_tipo:
+                        item_def.tipo_item = target_tipo
+                        item_def.item_type = derived_item_type
+                    elif new_item_type:
+                        item_def.item_type = derived_item_type
+
+                    if update_prefix and new_prefix:
+                        cur_name = item_def.name
+                        if re.search(prefix_pattern, cur_name, re.IGNORECASE):
+                            item_def.name = re.sub(prefix_pattern, f'{new_prefix} ', cur_name, flags=re.IGNORECASE).strip()
+                        elif item_def.member_name:
+                            item_def.name = f"{new_prefix} {item_def.member_name}"
+                        else:
+                            item_def.name = f"{new_prefix} {cur_name}"
+
+                    item_def.save()
+                    count += 1
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Tipo atualizado para '{new_prefix}' em {count} item(ns) da CEG com sucesso!"
+                })
+
+
+            elif action == 'update_price':
+                price_val = data.get('new_price')
+                apply_all_sets = data.get('apply_all_sets', True)
+                if price_val is None or str(price_val).strip() == '':
+                    return JsonResponse({'success': False, 'message': 'Informe o novo preço.'}, status=400)
+                try:
+                    new_price = Decimal(str(price_val).replace('R$', '').replace(' ', '').replace(',', '.').strip())
+                    if new_price < 0:
+                        return JsonResponse({'success': False, 'message': 'O preço não pode ser negativo.'}, status=400)
+                except (InvalidOperation, ValueError):
+                    return JsonResponse({'success': False, 'message': 'Valor de preço inválido.'}, status=400)
+
+                if apply_all_sets:
+                    slots = ItemSlot.objects.filter(set__ceg=ceg, item_definition_id__in=item_def_ids)
+                    CEGItemDefinition.objects.filter(id__in=item_def_ids, ceg=ceg).update(default_price=new_price)
+                else:
+                    slots = ItemSlot.objects.filter(id__in=slot_ids, set__ceg=ceg)
+
+                updated_count = slots.update(price=new_price)
+                Claim.objects.filter(slot__in=slots).update(total_price=new_price)
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Preço atualizado para R$ {new_price:.2f} em {updated_count} vaga(s)!"
+                })
+
+            elif action == 'delete_items':
+                item_defs = CEGItemDefinition.objects.filter(id__in=item_def_ids, ceg=ceg)
+                count = item_defs.count()
+                item_defs.delete()
+                return JsonResponse({
+                    'success': True,
+                    'message': f"{count} item(ns) e todas as suas vagas foram excluídos da CEG com sucesso!"
+                })
+
+            elif action == 'delete_slots':
+                slots = ItemSlot.objects.filter(id__in=slot_ids, set__ceg=ceg)
+                count = slots.count()
+                slots.delete()
+                return JsonResponse({
+                    'success': True,
+                    'message': f"{count} vaga(s) selecionada(s) foram excluídas com sucesso!"
+                })
+
+            else:
+                return JsonResponse({'success': False, 'message': 'Ação em massa não reconhecida.'}, status=400)
 
 
 class DeleteSetView(View):
@@ -571,6 +1019,71 @@ class DeleteSetView(View):
 
         messages.success(request, msg)
         return redirect('ceg_detail', slug=ceg.slug)
+
+
+class CEGLogsAndWaitingListView(View):
+    """
+    Endpoint JSON para o organizador visualizar os Logs de Disputa / Concorrência
+    e a Lista de Espera por Item na interface da CEG.
+    """
+    def get(self, request, slug):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+
+        ceg = get_object_or_404(CEG, slug=slug)
+
+        # 1. Logs de tentativas nos slots desta CEG
+        logs_qs = ClaimAttemptLog.objects.filter(
+            slot__set__ceg=ceg
+        ).select_related('slot__item_definition', 'slot__set').order_by('-created_at')[:150]
+
+        logs_data = []
+        for l in logs_qs:
+            logs_data.append({
+                'id': l.id,
+                'slot_id': l.slot_id,
+                'item_name': l.slot.item_definition.name,
+                'set_number': l.slot.set.set_number,
+                'attempt_number': l.attempt_number,
+                'participant_name': l.participant_name,
+                'phone': l.phone,
+                'social_handle': l.social_handle or '',
+                'result': l.result,
+                'result_display': l.get_result_display(),
+                'details': l.details,
+                'created_at': l.created_at.strftime('%d/%m/%Y %H:%M:%S.%f')[:-3],
+            })
+
+        # 2. Fila de Espera dos itens desta CEG
+        waiting_qs = ItemWaitingList.objects.filter(
+            item_definition__ceg=ceg
+        ).select_related('item_definition', 'participant', 'allocated_slot__set').order_by('item_definition__name', 'position')
+
+        waiting_data = []
+        for w in waiting_qs:
+            waiting_data.append({
+                'id': w.id,
+                'item_definition_id': w.item_definition_id,
+                'item_name': w.item_definition.name,
+                'participant_id': w.participant_id,
+                'participant_name': w.name,
+                'phone': w.phone,
+                'social_handle': w.social_handle or '',
+                'position': w.position,
+                'status': w.status,
+                'status_display': w.get_status_display(),
+                'allocated_slot': f"Set #{w.allocated_slot.set.set_number}" if w.allocated_slot else None,
+                'created_at': w.created_at.strftime('%d/%m/%Y %H:%M'),
+            })
+
+        return JsonResponse({
+            'success': True,
+            'ceg_title': ceg.title,
+            'logs': logs_data,
+            'waiting_list': waiting_data,
+            'total_logs': len(logs_data),
+            'total_waiting': len([w for w in waiting_data if w['status'] == 'WAITING']),
+        })
 
 
 

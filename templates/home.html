@@ -31,197 +31,281 @@
 
     <!-- Seção: CEGs Abertas para Reserva -->
     <section id="cegs-abertas" class="space-y-6"
-             x-data="{ selectedGroup: '' }">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
-                    <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
-                    CEGs Abertas para Reserva
-                </h2>
-                <p class="text-sm text-slate-500">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
-            </div>
-
-            <!-- Filtro de Grupos para CEGs Abertas -->
-            {% if open_groups %}
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Filtrar Grupo:</span>
-
-                    <!-- Botão Todos os Grupos -->
-                    <button type="button"
-                            @click="selectedGroup = ''"
-                            :class="selectedGroup === '' ? 'bg-pink-600 text-white font-bold shadow-sm' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium'"
-                            class="px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
-                        <span>Todos os Grupos</span>
-                        <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                              :class="selectedGroup === '' ? 'bg-pink-700 text-white' : 'bg-slate-100 text-slate-600'">
-                            {{ active_cegs|length }}
-                        </span>
-                    </button>
-
-                    <!-- Botão de cada Grupo com CEG aberta -->
-                    {% for g in open_groups %}
-                        <button type="button"
-                                @click="selectedGroup = selectedGroup === '{{ g.id }}' ? '' : '{{ g.id }}'"
-                                :class="selectedGroup === '{{ g.id }}' ? 'bg-pink-600 text-white font-bold shadow-sm' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium'"
-                                class="px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
-                            <span>{{ g.name }}</span>
-                            <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                                  :class="selectedGroup === '{{ g.id }}' ? 'bg-pink-700 text-white' : 'bg-slate-100 text-slate-600'">
-                                {{ g.cegs_count }}
-                            </span>
-                        </button>
-                    {% endfor %}
-                </div>
-            {% endif %}
+             x-data="{ selectedGroup: '', selectedEra: '', selectedMember: '' }">
+        <!-- Cabeçalho da Seção -->
+        <div class="space-y-1">
+            <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
+                <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
+                CEGs Abertas para Reserva
+            </h2>
+            <p class="text-sm text-slate-500">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
         </div>
 
+        <!-- Barra de Filtros Conforme Wireframe: Grupo | Era | Membro (Full Width acima das CEGs) -->
         {% if active_cegs %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="w-full bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+                        <!-- Filtro por Grupo -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                🎵 Filtrar Grupo:
+                            </label>
+                            <select x-model="selectedGroup"
+                                    @change="selectedEra = ''"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                <option value="">Todos os Grupos ({{ active_cegs|length }})</option>
+                                {% for g in open_groups %}
+                                    <option value="{{ g.id }}">{{ g.name }} ({{ g.cegs_count }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Filtro por Era -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                💿 Filtrar por Era:
+                            </label>
+                            <select x-model="selectedEra"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                <option value="">Todas as Eras</option>
+                                {% for e in open_eras %}
+                                    <option value="{{ e.id }}"
+                                            x-show="!selectedGroup || selectedGroup == '{{ e.group_id }}'">
+                                        {{ e.name }} ({{ e.group_name }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Filtro por Membro / Integrante -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                ✨ Filtrar por Membro:
+                            </label>
+                            <select x-model="selectedMember"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                <option value="">Todos os Integrantes</option>
+                                {% for m in open_members %}
+                                    <option value="{{ m|lower }}">{{ m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Botão Limpar Filtros -->
+                    <div x-show="selectedGroup || selectedEra || selectedMember"
+                         x-transition
+                         class="flex items-end justify-end pt-1 sm:pt-0">
+                        <button type="button"
+                                @click="selectedGroup = ''; selectedEra = ''; selectedMember = ''"
+                                class="px-3.5 py-2.5 text-xs font-bold text-pink-700 hover:text-pink-900 bg-pink-50 hover:bg-pink-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-pink-200">
+                            <span>✕</span>
+                            <span>Limpar Filtros</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if active_cegs %}
+            <!-- Lista de CEGs em Formato Retangular Horizontal (Wireframe) -->
+            <div class="space-y-4">
                 {% for ceg in active_cegs %}
-                    <div x-show="!selectedGroup || selectedGroup === '{{ ceg.era.group.id }}'"
+                    <div x-show="(!selectedGroup || selectedGroup == '{{ ceg.era.group.id }}') &&
+                                 (!selectedEra || selectedEra == '{{ ceg.era.id }}') &&
+                                 (!selectedMember || '{{ ceg.available_members_str }}'.indexOf(selectedMember.toLowerCase()) !== -1)"
                          x-transition
                          x-data="{ showAvailable: false }"
-                         class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
-                        {% if ceg.banner_url %}
-                            <div class="h-44 bg-slate-200 overflow-hidden relative">
-                                <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}" class="w-full h-full object-cover">
-                                <span class="absolute top-3 right-3 bg-emerald-600 text-white text-xs font-black px-2.5 py-1 rounded-md uppercase tracking-wider shadow">
-                                    Aberta
-                                </span>
-                            </div>
-                        {% else %}
-                            <div class="h-28 bg-gradient-to-r from-pink-500 to-purple-600 p-4 flex items-end justify-between text-white">
-                                <span class="font-bold text-sm bg-black/30 px-2.5 py-1 rounded">{{ ceg.era.group.name }}</span>
-                                <span class="bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded">Aberta</span>
-                            </div>
-                        {% endif %}
-
-                        <div class="p-5 flex-grow space-y-3">
-                            <div class="text-xs font-bold text-pink-600 uppercase tracking-wide">
-                                {{ ceg.era.group.name }} • {{ ceg.era.name }}
-                            </div>
-                            <h3 class="text-lg font-bold text-slate-900 leading-snug">
-                                <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-pink-600 transition">
-                                    {{ ceg.title }}
-                                </a>
-                            </h3>
-                            <p class="text-xs text-slate-600 line-clamp-2">
-                                {{ ceg.description|default:"Clique para ver os Sets e slots disponíveis." }}
-                            </p>
-
-                            <!-- Barra de progresso dos slots -->
-                            <div class="space-y-1 pt-2">
-                                <div class="flex justify-between text-xs text-slate-500">
-                                    <span>Preenchimento Geral</span>
-                                    <span class="font-semibold text-slate-800">{{ ceg.reserved_slots_count }}/{{ ceg.total_slots_count }} ({{ ceg.progress_percentage }}%)</span>
+                         class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-pink-200 transition-all duration-200 overflow-hidden">
+                        
+                        <!-- Linha Principal do Retângulo -->
+                        <div class="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+                            
+                            <!-- Bloco Esquerdo: Foto + Grupo + Era + Nome da CEG -->
+                            <div class="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
+                                <!-- Foto / Thumbnail -->
+                                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 relative bg-slate-100 border border-slate-200/80 shadow-2xs group">
+                                    {% if ceg.banner_url %}
+                                        <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                        <div class="w-full h-full bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex flex-col items-center justify-center text-white p-2 text-center">
+                                            <span class="text-xl sm:text-2xl filter drop-shadow">🎴</span>
+                                            <span class="text-[10px] font-black uppercase tracking-wider line-clamp-1 mt-0.5 opacity-90">{{ ceg.era.group.name }}</span>
+                                        </div>
+                                    {% endif %}
+                                    <span class="absolute top-1.5 left-1.5 bg-emerald-600/95 backdrop-blur-xs text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wider">
+                                        Aberta
+                                    </span>
                                 </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                    <div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: {{ ceg.progress_percentage }}%"></div>
+
+                                <!-- Detalhes: Grupo, Era, Nome da CEG e Preenchimento -->
+                                <div class="min-w-0 flex-1 space-y-1.5">
+                                    <!-- Badges: Grupo e Era -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold bg-pink-50 text-pink-700 border border-pink-200 uppercase tracking-wide">
+                                            {{ ceg.era.group.name }}
+                                        </span>
+                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wide">
+                                            {{ ceg.era.name }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Nome da CEG -->
+                                    <h3 class="text-base sm:text-lg font-black text-slate-900 leading-snug truncate">
+                                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-pink-600 transition" title="{{ ceg.title }}">
+                                            {{ ceg.title }}
+                                        </a>
+                                    </h3>
+
+                                    <!-- Progresso / Preenchimento -->
+                                    <div class="flex items-center gap-2.5 text-xs text-slate-500">
+                                        <div class="w-24 sm:w-32 bg-slate-100 rounded-full h-2 overflow-hidden shrink-0">
+                                            <div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: {{ ceg.progress_percentage }}%"></div>
+                                        </div>
+                                        <span class="text-[11px] font-medium text-slate-600">
+                                            {{ ceg.reserved_slots_count }}/{{ ceg.total_slots_count }} preenchidos ({{ ceg.progress_percentage }}%)
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Accordion: Itens Sobrando & Preços -->
-                            <div class="pt-2 border-t border-slate-100">
-                                <button type="button"
-                                        @click="showAvailable = !showAvailable"
-                                        class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs font-semibold transition group cursor-pointer border"
-                                        :class="showAvailable ? 'bg-pink-50 border-pink-200 text-pink-800' : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-700'">
-                                    <div class="flex items-center gap-1.5">
-                                        {% if ceg.available_slots_count > 0 %}
-                                            <span class="relative flex h-2 w-2">
+                            <!-- Bloco Direito: Valor dos Itens + Itens Sobrando (com expansão) + Botão Claim -->
+                            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between md:justify-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                
+                                <!-- Valor dos Itens -->
+                                <div class="shrink-0">
+                                    {% if ceg.has_single_price and ceg.single_price %}
+                                        <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-center">
+                                            <div class="text-[9px] uppercase font-bold text-emerald-600 tracking-wider">Valor por item</div>
+                                            <div class="text-xs sm:text-sm font-black text-emerald-800 whitespace-nowrap">
+                                                R$ {{ ceg.single_price|floatformat:2 }} cada
+                                            </div>
+                                        </div>
+                                    {% elif ceg.has_different_prices %}
+                                        <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-center">
+                                            <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Valor dos itens</div>
+                                            <div class="text-xs font-bold text-slate-600 whitespace-nowrap">
+                                                valores variados
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Itens Sobrando (Botão Accordion) -->
+                                <div class="shrink-0">
+                                    {% if ceg.available_slots_count > 0 %}
+                                        <button type="button"
+                                                @click="showAvailable = !showAvailable"
+                                                class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer border shadow-2xs"
+                                                :class="showAvailable ? 'bg-pink-100 border-pink-300 text-pink-900 ring-2 ring-pink-300' : 'bg-pink-50 hover:bg-pink-100 border-pink-200 text-pink-800'">
+                                            <span class="relative flex h-2 w-2 shrink-0">
                                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                             </span>
-                                            <span class="font-bold">Itens sobrando</span>
+                                            <span class="whitespace-nowrap font-bold">Itens sobrando</span>
                                             <span class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full"
                                                   :class="showAvailable ? 'bg-pink-200 text-pink-900' : 'bg-slate-200 text-slate-700'">
                                                 {{ ceg.available_slots_count }}
                                             </span>
-                                        {% else %}
-                                            <span class="w-2 h-2 rounded-full bg-slate-300"></span>
-                                            <span class="text-slate-500 font-medium">100% preenchida</span>
-                                        {% endif %}
-                                    </div>
-
-                                    <div class="flex items-center gap-1 text-slate-500 group-hover:text-slate-800">
-                                        <span class="text-[11px] font-medium" x-text="showAvailable ? 'Recolher' : 'Ver quais faltam'"></span>
-                                        <svg class="w-3.5 h-3.5 transition-transform duration-200"
-                                             :class="showAvailable ? 'rotate-180 text-pink-600' : 'text-slate-400'"
-                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                                        </svg>
-                                    </div>
-                                </button>
-
-                                <!-- Área Expansível -->
-                                <div x-show="showAvailable"
-                                     x-transition:enter="transition ease-out duration-200"
-                                     x-transition:enter-start="opacity-0 -translate-y-1"
-                                     x-transition:enter-end="opacity-100 translate-y-0"
-                                     x-transition:leave="transition ease-in duration-150"
-                                     x-transition:leave-start="opacity-100 translate-y-0"
-                                     x-transition:leave-end="opacity-0 -translate-y-1"
-                                     class="mt-2 p-3 bg-slate-50/90 rounded-xl border border-slate-200/80 space-y-2.5 text-xs">
-
-                                    <!-- Regra de Preços: se todos com o mesmo valor, mostrar o valor; caso contrário, falar pra consultar preços clicando -->
-                                    {% if ceg.has_single_price and ceg.single_price %}
-                                        <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg text-emerald-900">
-                                            <span class="font-medium text-[11px] flex items-center gap-1.5">
-                                                <span>🏷️</span>
-                                                <span>Preço por item:</span>
-                                            </span>
-                                            <span class="font-black text-xs text-emerald-700 bg-white px-2 py-0.5 rounded shadow-2xs border border-emerald-100">
-                                                R$ {{ ceg.single_price|floatformat:2 }} cada
-                                            </span>
-                                        </div>
-                                    {% elif ceg.has_different_prices %}
-                                        <div class="flex items-start gap-1.5 bg-amber-50 border border-amber-200/90 p-2 rounded-lg text-amber-900">
-                                            <span class="text-xs shrink-0 mt-0.5">ℹ️</span>
-                                            <p class="text-[11px] leading-tight text-amber-800">
-                                                Itens com <strong>valores variados</strong> na CEG. Consulte os preços clicando no botão abaixo.
-                                            </p>
-                                        </div>
-                                    {% endif %}
-
-                                    <!-- Lista de Itens que faltam por Set -->
-                                    {% if ceg.available_slots_count > 0 %}
-                                        <div class="space-y-1.5">
-                                            <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                <span>Vagas restantes por Set:</span>
-                                                <span>{{ ceg.grouped_available_items|length }} item(ns)</span>
-                                            </div>
-                                            <div class="max-h-44 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-200/60">
-                                                {% for item in ceg.grouped_available_items %}
-                                                    <div class="pt-1.5 first:pt-0 flex items-center justify-between gap-2">
-                                                        <span class="font-bold text-slate-800 truncate" title="{{ item.display_name }}">
-                                                            {{ item.display_name }}
-                                                        </span>
-                                                        <div class="flex flex-wrap gap-1 items-center justify-end shrink-0">
-                                                            {% for s in item.sets %}
-                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-pink-700 border border-pink-200 shadow-2xs">
-                                                                    Set #{{ s }}
-                                                                </span>
-                                                            {% endfor %}
-                                                        </div>
-                                                    </div>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
+                                            <span class="text-[11px] font-medium text-slate-500" x-text="showAvailable ? 'Recolher' : 'Ver quais faltam'">Ver quais faltam</span>
+                                            <svg class="w-3.5 h-3.5 transition-transform duration-200 shrink-0"
+                                                 :class="showAvailable ? 'rotate-180 text-pink-700' : 'text-pink-500'"
+                                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </button>
                                     {% else %}
-                                        <div class="text-center py-2 text-slate-500">
-                                            <span class="font-bold text-emerald-700 block">✨ 100% preenchida!</span>
-                                            <p class="text-[11px] text-slate-400">Todos os sets estão completos, não há itens sobrando.</p>
+                                        <div class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 border border-slate-200 text-slate-500 flex items-center gap-1.5 whitespace-nowrap">
+                                            <span>✨ 100% preenchida</span>
                                         </div>
                                     {% endif %}
                                 </div>
+
+                                <!-- Botão de Claim / Ir para CEG -->
+                                <div class="shrink-0">
+                                    <a href="{% url 'ceg_detail' slug=ceg.slug %}"
+                                       class="px-4 py-2 bg-slate-900 hover:bg-pink-600 text-white font-bold text-xs rounded-xl shadow transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap group">
+                                        <span>Fazer Claim</span>
+                                        <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                                    </a>
+                                </div>
+
                             </div>
                         </div>
 
-                        <div class="p-5 pt-0">
-                            <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="block w-full text-center py-2.5 bg-slate-900 hover:bg-pink-600 text-white text-xs font-bold rounded-xl transition shadow">
-                                Ver Sets & Reservar Itens →
-                            </a>
+                        <!-- Accordion Expansível para Baixo: Lista de Itens Sobrando -->
+                        <div x-show="showAvailable"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-2"
+                             class="border-t border-slate-100 bg-slate-50/80 p-4 sm:p-5">
+                            
+                            <div class="space-y-3">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-base">📋</span>
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                                Itens e vagas disponíveis nesta CEG
+                                            </h4>
+                                            <p class="text-[11px] text-slate-500">
+                                                {% if ceg.has_single_price and ceg.single_price %}
+                                                    Todos os itens custam <strong class="text-emerald-700">R$ {{ ceg.single_price|floatformat:2 }} cada</strong>.
+                                                {% elif ceg.has_different_prices %}
+                                                    Itens com valores variados conforme o slot.
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <a href="{% url 'ceg_detail' slug=ceg.slug %}"
+                                       class="text-xs font-bold text-pink-600 hover:text-pink-800 flex items-center gap-1 shrink-0">
+                                        <span>Abrir página da CEG para dar claim</span>
+                                        <span>➔</span>
+                                    </a>
+                                </div>
+
+                                {% if ceg.available_slots_count > 0 %}
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                                        {% for item in ceg.grouped_available_items %}
+                                            <div class="p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
+                                                <div class="flex items-center justify-between gap-1">
+                                                    <span class="text-xs font-bold text-slate-900 truncate" title="{{ item.display_name }}">
+                                                        {{ item.display_name }}
+                                                    </span>
+                                                    {% if ceg.has_different_prices and item.price %}
+                                                        <span class="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100 shrink-0">
+                                                            R$ {{ item.price|floatformat:2 }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+
+                                                <!-- Sets onde está sobrando -->
+                                                <div class="flex flex-wrap items-center gap-1">
+                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Vago em:</span>
+                                                    {% for s in item.sets %}
+                                                        <span class="px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-pink-50 text-pink-700 border border-pink-200 shadow-2xs">
+                                                            Set #{{ s }}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="py-3 text-center text-slate-500">
+                                        <span class="font-bold text-emerald-700 block">✨ 100% preenchida!</span>
+                                        <p class="text-xs text-slate-400">Todos os sets estão completos, não há itens sobrando nesta CEG.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+
                         </div>
+
                     </div>
                 {% endfor %}
             </div>

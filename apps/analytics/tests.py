@@ -10,6 +10,9 @@ from apps.analytics.services import AnalyticsService
 class AnalyticsServiceAndDashboardTests(TestCase):
     def setUp(self):
         self.client = Client()
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.staff_user = User.objects.create_user(username='admin_analytics', password='password', is_staff=True)
 
         # Grupo 1: TWICE
         self.group_twice = KpopGroup.objects.create(name='TWICE', slug='twice-analytics')
@@ -161,12 +164,18 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertContains(response_filtered, 'TWICE')
 
     def test_ceg_status_view_renders_successfully(self):
-        # Acesso ao novo painel de status das CEGs
+        # Acesso anônimo deve ser bloqueado e redirecionar para login
+        anon_res = self.client.get('/analytics/cegs/')
+        self.assertEqual(anon_res.status_code, 302)
+
+        # Acesso como Staff / Admin
+        self.client.force_login(self.staff_user)
         response = self.client.get('/analytics/cegs/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Status, Completude e Valores das CEGs')
         self.assertContains(response, 'Sets Incompletos')
-        self.assertContains(response, 'Sets 100% Preenchidos')
+        self.assertContains(response, 'Sets 100% Fechados')
+        self.assertContains(response, 'Sets 100% Pagos')
         self.assertContains(response, 'Sana')
 
         # Rota raiz /analytics/ também carrega o status das CEGs
@@ -175,7 +184,13 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertContains(res_root, 'Status, Completude e Valores das CEGs')
 
     def test_sales_report_view_renders_successfully(self):
-        # Acesso ao novo relatório de vendas e BI
+        # Acesso anônimo deve ser bloqueado
+        self.client.logout()
+        anon_res = self.client.get('/analytics/vendas/')
+        self.assertEqual(anon_res.status_code, 302)
+
+        # Acesso como Staff / Admin
+        self.client.force_login(self.staff_user)
         response = self.client.get('/analytics/vendas/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Relatório de Vendas e Income')
@@ -232,6 +247,76 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         missing_names = [item['member_name'] for item in incomplete['missing_items']]
         self.assertIn('Sana', missing_names)
 
+    def test_cegs_operational_status_active_fechados_pagos_terminados(self):
+        data = AnalyticsService.get_cegs_operational_status()
+        self.assertIn('sets_fechados', data)
+        self.assertIn('sets_pagos', data)
+        self.assertIn('sets_terminados', data)
+
+        # 1. Regra de CEG Ativa: apenas CEGs que têm vagas a serem preenchidas
+        # ceg_triples: 1 slot total, 1 ocupado -> 0 vagas -> is_ativa == False
+        # ceg_twice: 2 slots total, 1 ocupado, 1 livre (Sana) -> 1 vaga -> is_ativa == True
+        self.assertEqual(data['summary']['open_cegs'], 1)
+        self.assertEqual(data['summary']['active_cegs'], 1)
+
+        # 2. Regra de Set Fechado: 100% claimado, porém NÃO 100% pago
+        # set_triples está 100% claimado (1/1), mas is_item_paid é False
+        self.assertEqual(len(data['sets_fechados']), 1)
+        fechado = data['sets_fechados'][0]
+        self.assertEqual(fechado['ceg_title'], 'CEG tripleS Withmuu')
+        self.assertFalse(fechado['is_fully_paid'])
+        self.assertEqual(len(data['sets_pagos']), 0)
+        self.assertEqual(len(data['sets_terminados']), 0)
+
+        # 3. Regra de Set Pago e Set Terminado:
+        # Quando marcamos o item como pago, ele se torna Set Pago
+        self.slot_seoyeon.is_item_paid = True
+        self.slot_seoyeon.save()
+
+        data_pago = AnalyticsService.get_cegs_operational_status()
+        self.assertEqual(len(data_pago['sets_fechados']), 0)
+        self.assertEqual(len(data_pago['sets_pagos']), 1)
+        pago = data_pago['sets_pagos'][0]
+        self.assertTrue(pago['is_fully_paid'])
+        # Como não há frete_inter nem taxa_aduaneira na CEG, ele está com TUDO pago -> Set Terminado
+        self.assertTrue(pago['is_terminado'])
+        self.assertEqual(len(data_pago['sets_terminados']), 1)
+
+        # 4. Se adicionarmos frete_inter pendente:
+        # O set continua como Set Pago (item pago), mas NÃO está terminado
+        self.ceg_triples.frete_inter = 25.00
+        self.ceg_triples.save()
+
+        data_com_frete = AnalyticsService.get_cegs_operational_status()
+        self.assertEqual(len(data_com_frete['sets_pagos']), 1)
+        pago_com_frete = data_com_frete['sets_pagos'][0]
+        self.assertFalse(pago_com_frete['frete_inter_paid'])
+        self.assertTrue(pago_com_frete['frete_inter_pending'])
+        self.assertEqual(data_com_frete['summary']['paid_frete_sets_count'], 0)
+        self.assertEqual(data_com_frete['summary']['pending_frete_sets_count'], 1)
+        self.assertFalse(pago_com_frete['is_terminado'])
+        self.assertEqual(len(data_com_frete['sets_terminados']), 0)
+
+        # Ao pagar o frete, volta a ser Set Terminado
+        self.slot_seoyeon.is_frete_inter_paid = True
+        self.slot_seoyeon.save()
+
+        data_terminado = AnalyticsService.get_cegs_operational_status()
+        self.assertEqual(len(data_terminado['sets_pagos']), 1)
+        self.assertTrue(data_terminado['sets_pagos'][0]['frete_inter_paid'])
+        self.assertFalse(data_terminado['sets_pagos'][0]['frete_inter_pending'])
+        self.assertEqual(data_terminado['summary']['paid_frete_sets_count'], 1)
+        self.assertEqual(data_terminado['summary']['pending_frete_sets_count'], 0)
+        self.assertTrue(data_terminado['sets_pagos'][0]['is_terminado'])
+        self.assertEqual(len(data_terminado['sets_terminados']), 1)
+
+        # Restaurar
+        self.ceg_triples.frete_inter = None
+        self.ceg_triples.save()
+        self.slot_seoyeon.is_item_paid = False
+        self.slot_seoyeon.is_frete_inter_paid = False
+        self.slot_seoyeon.save()
+
     def test_sales_analytics_service(self):
         data = AnalyticsService.get_sales_analytics(time_window='all')
         self.assertIn('summary', data)
@@ -279,6 +364,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
             self.assertIn('incomplete_sets', c)
 
     def test_no_raw_javascript_leak_in_rendered_templates(self):
+        self.client.force_login(self.staff_user)
         # Verifica ceg_status.html
         res_cegs = self.client.get('/analytics/cegs/')
         self.assertEqual(res_cegs.status_code, 200)
@@ -298,6 +384,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
 
     def test_sales_report_page_render_and_chart_data_integrity(self):
         import json
+        self.client.force_login(self.staff_user)
         res = self.client.get('/analytics/vendas/')
         self.assertEqual(res.status_code, 200)
 

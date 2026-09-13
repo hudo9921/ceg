@@ -120,6 +120,7 @@ class MyClaimsView(View):
 
         claims = participant.claims.select_related(
             'slot__set__ceg__era__group',
+            'slot__set__ceg__caixa',
             'slot__item_definition'
         ).order_by('-claimed_at')
 
@@ -127,6 +128,13 @@ class MyClaimsView(View):
         total_claims_count = len(claims_list)
         pending_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PENDING)
         paid_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PAID)
+
+        # Itens Individuais (Mercari) vinculados ao participante
+        itens_individuais = participant.itens_individuais.select_related('caixa').order_by('-created_at')
+        itens_individuais_list = list(itens_individuais)
+        itens_individuais_count = len(itens_individuais_list)
+        itens_frete_unpaid_count = sum(1 for it in itens_individuais_list if it.frete_inter and it.frete_inter > 0 and not it.frete_inter_pago)
+        itens_taxa_unpaid_count = sum(1 for it in itens_individuais_list if it.taxa_aduaneira and it.taxa_aduaneira > 0 and not it.taxa_aduaneira_paga)
 
         # Contagens de frete inter e taxa não pagos (apenas quando o valor cadastrado na CEG for > 0)
         inter_unpaid_count = sum(
@@ -141,10 +149,36 @@ class MyClaimsView(View):
         # Agrupamento de reservas por CEG para facilitar o pagamento e visualização
         cegs_dict = {}
         groups_dict = {}
+        caixas_dict = {}
+        itens_sem_caixa_count = 0
 
         for claim in claims_list:
             ceg = claim.slot.set.ceg
             group = ceg.era.group
+
+            if ceg.caixa:
+                c = ceg.caixa
+                if c.id not in caixas_dict:
+                    caixas_dict[c.id] = {
+                        'id': c.id,
+                        'nome': c.nome,
+                        'slug': c.slug,
+                        'origem': c.origem,
+                        'origem_display': c.get_origem_display(),
+                        'status': c.status,
+                        'status_display': c.get_status_display(),
+                        'codigo_rastreio': c.codigo_rastreio,
+                        'tracking_url': c.tracking_url,
+                        'prazo_frete': c.prazo_frete,
+                        'prazo_taxa': c.prazo_taxa,
+                        'items_count': 0,
+                        'cegs_ids': set(),
+                        'mercari_count': 0,
+                    }
+                caixas_dict[c.id]['items_count'] += 1
+                caixas_dict[c.id]['cegs_ids'].add(ceg.id)
+            else:
+                itens_sem_caixa_count += 1
 
             if group.id not in groups_dict:
                 groups_dict[group.id] = {
@@ -158,6 +192,8 @@ class MyClaimsView(View):
                 cegs_dict[ceg.id] = {
                     'ceg': ceg,
                     'group': group,
+                    'caixa': ceg.caixa,
+                    'caixa_id': str(ceg.caixa_id) if ceg.caixa_id else '',
                     'claims': [],
                     'total_pending': 0,
                     'total_paid': 0,
@@ -179,6 +215,39 @@ class MyClaimsView(View):
             if ceg.taxa_aduaneira and ceg.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid:
                 cegs_dict[ceg.id]['count_taxa_unpaid'] += 1
 
+        for item in itens_individuais_list:
+            qtd = item.quantidade or 1
+            if item.caixa:
+                c = item.caixa
+                if c.id not in caixas_dict:
+                    caixas_dict[c.id] = {
+                        'id': c.id,
+                        'nome': c.nome,
+                        'slug': c.slug,
+                        'origem': c.origem,
+                        'origem_display': c.get_origem_display(),
+                        'status': c.status,
+                        'status_display': c.get_status_display(),
+                        'codigo_rastreio': c.codigo_rastreio,
+                        'tracking_url': c.tracking_url,
+                        'prazo_frete': c.prazo_frete,
+                        'prazo_taxa': c.prazo_taxa,
+                        'items_count': 0,
+                        'cegs_ids': set(),
+                        'mercari_count': 0,
+                    }
+                caixas_dict[c.id]['items_count'] += qtd
+                caixas_dict[c.id]['mercari_count'] += qtd
+            else:
+                itens_sem_caixa_count += qtd
+
+        caixas_list = []
+        for c_id, c_data in caixas_dict.items():
+            c_data['cegs_count'] = len(c_data['cegs_ids'])
+            caixas_list.append(c_data)
+
+        caixas_list.sort(key=lambda x: x['nome'])
+
         total_pending_all = sum(c['total_pending'] for c in cegs_dict.values())
         total_paid_all = sum(c['total_paid'] for c in cegs_dict.values())
 
@@ -188,6 +257,7 @@ class MyClaimsView(View):
                 'title': c_data['ceg'].title,
                 'group_id': c_data['group'].id,
                 'group_name': c_data['group'].name,
+                'caixa_id': c_data['caixa_id'],
                 'items_count': len(c_data['claims']),
                 'count_pending': c_data['count_pending'],
                 'count_paid': c_data['count_paid'],
@@ -198,17 +268,36 @@ class MyClaimsView(View):
         ]
         groups_filter_list = sorted(groups_dict.values(), key=lambda g: g['name'])
 
+        mercari_filter_list = [
+            {
+                'id': it.id,
+                'caixa_id': str(it.caixa_id) if it.caixa_id else '',
+                'status': it.status,
+                'frete_inter': float(it.frete_inter or 0),
+                'frete_inter_pago': it.frete_inter_pago,
+                'taxa_aduaneira': float(it.taxa_aduaneira or 0),
+                'taxa_aduaneira_paga': it.taxa_aduaneira_paga,
+            }
+            for it in itens_individuais_list
+        ]
+
         is_placeholder_name = participant.name.startswith('Participante ')
 
         # Notificações do participante
         notifications = list(participant.notifications.all()[:25])
         unread_notifications_count = sum(1 for n in notifications if not n.is_read)
 
+        itens_frete_unpaid_total = sum(it.frete_inter for it in itens_individuais_list if it.frete_inter and not it.frete_inter_pago)
+        itens_taxa_unpaid_total = sum(it.taxa_aduaneira for it in itens_individuais_list if it.taxa_aduaneira and not it.taxa_aduaneira_paga)
+
         return render(request, 'participants/my_claims.html', {
             'participant': participant,
             'cegs_groups': list(cegs_dict.values()),
             'groups_filter_list': groups_filter_list,
             'cegs_filter_list': cegs_filter_list,
+            'mercari_filter_list': mercari_filter_list,
+            'caixas_list': caixas_list,
+            'itens_sem_caixa_count': itens_sem_caixa_count,
             'total_claims_count': total_claims_count,
             'pending_claims_count': pending_claims_count,
             'paid_claims_count': paid_claims_count,
@@ -216,6 +305,12 @@ class MyClaimsView(View):
             'taxa_unpaid_count': taxa_unpaid_count,
             'total_pending_all': total_pending_all,
             'total_paid_all': total_paid_all,
+            'itens_individuais': itens_individuais_list,
+            'itens_individuais_count': itens_individuais_count,
+            'itens_frete_unpaid_count': itens_frete_unpaid_count,
+            'itens_taxa_unpaid_count': itens_taxa_unpaid_count,
+            'itens_frete_unpaid_total': itens_frete_unpaid_total,
+            'itens_taxa_unpaid_total': itens_taxa_unpaid_total,
             'is_placeholder_name': is_placeholder_name,
             'notifications': notifications,
             'unread_notifications_count': unread_notifications_count,

@@ -2,21 +2,24 @@ import json
 from django.shortcuts import render
 from django.views import View
 from django.http import JsonResponse
+from apps.cegs.models import TipoItem, Caixa, ItemIndividual
+from apps.cegs.creations_views import StaffRequiredMixin
 from .services import AnalyticsService
 
 
-class CEGStatusView(View):
+class CEGStatusView(StaffRequiredMixin, View):
     """
-    Página 1: Painel Operacional das CEGs e Sets.
+    Página 1: Painel Operacional das CEGs, Sets e Itens Individuais (Mercari).
     Foco em status de CEGs, completude de sets (o que falta para fechar),
-    sets completos porém pendentes (frete, taxa, pagamentos) e valores das CEGs.
+    sets completos porém pendentes (frete, taxa, pagamentos), valores das CEGs e fluxo Mercari.
     """
     def get(self, request):
+        category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
 
         filter_options = AnalyticsService.get_filter_options()
-        status_data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id)
+        status_data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id, category=category)
 
         selected_group_name = None
         if group_id:
@@ -32,27 +35,41 @@ class CEGStatusView(View):
                     selected_era_name = e['name']
                     break
 
+        tipos_item = list(TipoItem.objects.values('id', 'nome'))
+        caixas = Caixa.objects.all().order_by('-created_at')
+
         return render(request, 'analytics/ceg_status.html', {
             'filter_options': filter_options,
             'filter_options_json': json.dumps(filter_options),
+            'category': category,
             'selected_group': group_id or '',
             'selected_era': era_id or '',
             'selected_group_name': selected_group_name,
             'selected_era_name': selected_era_name,
             'summary': status_data['summary'],
+            'sets_fechados': status_data.get('sets_fechados', []),
+            'sets_pagos': status_data.get('sets_pagos', []),
+            'sets_terminados': status_data.get('sets_terminados', []),
             'sets_completed_pending': status_data['sets_completed_pending'],
             'sets_incomplete': status_data['sets_incomplete'],
             'cegs_overview': status_data['cegs_overview'],
+            'mercari_status': status_data.get('mercari_status'),
+            'tipos_item': tipos_item,
+            'tipos_item_json': json.dumps(tipos_item),
+            'caixas': caixas,
+            'item_individual_statuses': ItemIndividual.Status.choices,
+            'is_staff_user': request.user.is_authenticated and request.user.is_staff,
         })
 
 
-class SalesReportView(View):
+class SalesReportView(StaffRequiredMixin, View):
     """
     Página 2: Relatório Financeiro e Análise de Vendas (Income & BI).
-    Foco em faturamento, volume de claims, gráficos temporais mês a mês
+    Foco em faturamento, volume de claims/itens, gráficos temporais mês a mês
     (volume e valores em R$), ticket médio, ranking de itens e participantes.
     """
     def get(self, request):
+        category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
         time_window = request.GET.get('window') or 'all'
@@ -60,7 +77,7 @@ class SalesReportView(View):
 
         filter_options = AnalyticsService.get_filter_options()
         sales_data = AnalyticsService.get_sales_analytics(
-            group_id=group_id, era_id=era_id, time_window=time_window, month=month
+            group_id=group_id, era_id=era_id, time_window=time_window, month=month, category=category
         )
 
         selected_group_name = None
@@ -120,6 +137,7 @@ class SalesReportView(View):
         return render(request, 'analytics/sales_report.html', {
             'filter_options': filter_options,
             'filter_options_json': json.dumps(filter_options),
+            'category': category,
             'selected_group': group_id or '',
             'selected_era': era_id or '',
             'selected_window': time_window,
@@ -139,20 +157,22 @@ class SalesReportView(View):
 
 class CEGStatusApiView(View):
     def get(self, request):
+        category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
-        data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id)
+        data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id, category=category)
         return JsonResponse(data)
 
 
 class SalesReportApiView(View):
     def get(self, request):
+        category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
         time_window = request.GET.get('window') or 'all'
         month = request.GET.get('month') or None
         data = AnalyticsService.get_sales_analytics(
-            group_id=group_id, era_id=era_id, time_window=time_window, month=month
+            group_id=group_id, era_id=era_id, time_window=time_window, month=month, category=category
         )
         return JsonResponse(data)
 
