@@ -154,6 +154,123 @@
         </div>
     {% endif %}
 
+    <!-- SEÇÃO: MEUS PACOTES & ENVIOS NACIONAIS -->
+    {% if pacotes_nacionais %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-lg font-bold shadow-sm">
+                        🚚
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base sm:text-lg font-black text-slate-900">Meus Pacotes & Envios Nacionais</h2>
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full uppercase tracking-wider">
+                                {{ pacotes_nacionais|length }} pacote(s)
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Acompanhe os códigos de rastreamento dos cards enviados para sua residência pelo organizador.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for pacote in pacotes_nacionais %}
+                    <div class="border rounded-2xl p-4 shadow-2xs space-y-3.5 flex flex-col justify-between transition hover:shadow-sm
+                                {% if pacote.status == 'ENVIADO' %}border-emerald-300 bg-emerald-50/25{% elif pacote.status == 'ENTREGUE' %}border-slate-200 bg-slate-50/50{% else %}border-blue-200 bg-blue-50/20{% endif %}">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs sm:text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                                    <span>📦</span>
+                                    <span>{{ pacote.identificador }}</span>
+                                </span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider
+                                             {% if pacote.status == 'ENVIADO' %}bg-emerald-600 text-white shadow-2xs animate-pulse{% elif pacote.status == 'ENTREGUE' %}bg-slate-200 text-slate-700{% else %}bg-amber-100 text-amber-900{% endif %}">
+                                    {{ pacote.get_status_display }}
+                                </span>
+                            </div>
+
+                            <!-- Caixa de Rastreamento em Destaque -->
+                            {% if pacote.codigo_rastreio %}
+                                <div class="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs space-y-1.5">
+                                    <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                        <span>Código de Rastreio ({{ pacote.transportadora }}):</span>
+                                        {% if pacote.data_envio %}
+                                            <span>Postado: {{ pacote.data_envio|date:"d/m/Y" }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="font-mono text-sm font-black text-emerald-800 tracking-wider select-all">
+                                            {{ pacote.codigo_rastreio }}
+                                        </span>
+                                        <div class="flex items-center gap-1">
+                                            <a href="{{ pacote.tracking_url }}" target="_blank" rel="noopener noreferrer"
+                                               class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-black transition flex items-center gap-1 shadow-2xs">
+                                                <span>Rastrear</span>
+                                                <span class="text-[10px]">↗</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="bg-amber-50/80 p-2.5 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                                    <span>⏳</span>
+                                    <span>Em preparação / O organizador adicionará o código de rastreio assim que for postado.</span>
+                                </div>
+                            {% endif %}
+
+                            <!-- Itens inclusos neste pacote -->
+                            <div class="space-y-1.5">
+                                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Itens inclusos neste envio:</span>
+                                    <span class="text-slate-700 font-black">{{ pacote.total_itens }} item(ns)</span>
+                                </div>
+                                <div class="max-h-36 overflow-y-auto space-y-1 pr-1 text-xs">
+                                    {% for slot in pacote.slots.all %}
+                                        <div class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-100 text-xs">
+                                            {% if slot.item_definition.image_url %}
+                                                <img src="{{ slot.item_definition.image_url }}" alt="{{ slot.item_definition.name }}" class="w-6 h-6 rounded-md object-cover flex-shrink-0">
+                                            {% else %}
+                                                <span class="text-sm flex-shrink-0">🎴</span>
+                                            {% endif %}
+                                            <div class="truncate">
+                                                <strong class="text-slate-900">{{ slot.item_definition.name }}</strong>
+                                                <span class="text-[11px] text-slate-500 block truncate">{{ slot.set.ceg.title }}</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    {% for item in pacote.itens_individuais.all %}
+                                        <div class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-slate-100 text-xs">
+                                            {% if item.image_display_url %}
+                                                <img src="{{ item.image_display_url }}" alt="{{ item.nome }}" class="w-6 h-6 rounded-md object-cover flex-shrink-0">
+                                            {% else %}
+                                                <span class="text-sm flex-shrink-0">🛍️</span>
+                                            {% endif %}
+                                            <div class="truncate">
+                                                <strong class="text-slate-900">{{ item.nome }}</strong>
+                                                <span class="text-[11px] text-slate-500 block">Mercari / JP</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rodapé do Card do Pacote -->
+                        <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+                            <span>Modalidade: <strong>{{ pacote.transportadora }}</strong></span>
+                            {% if pacote.valor_frete_nacional %}
+                                <span>Frete: <strong>R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</strong></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Dados serializados para Alpine.js -->
     {{ cegs_filter_list|json_script:"cegs-filter-data" }}
     {{ mercari_filter_list|json_script:"mercari-filter-data" }}
@@ -619,6 +736,7 @@
                                         <span class="block text-[9px] text-purple-600 font-semibold lowercase">(R$ {{ group.ceg.taxa_aduaneira|floatformat:2 }})</span>
                                     {% endif %}
                                 </th>
+                                <th class="py-2.5 text-center">4. Envio Nacional</th>
                                 <th class="py-2.5">Data da Reserva</th>
                             </tr>
                         </thead>
@@ -682,6 +800,20 @@
                                             {% endif %}
                                         {% else %}
                                             <span class="text-slate-300 font-bold text-xs" title="Não aplicável">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        {% if claim.slot.pacote_nacional %}
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold {% if claim.slot.pacote_nacional.status == 'ENVIADO' %}bg-emerald-100 text-emerald-800{% elif claim.slot.pacote_nacional.status == 'ENTREGUE' %}bg-slate-100 text-slate-700{% else %}bg-blue-100 text-blue-800{% endif %}"
+                                                  title="Transportadora: {{ claim.slot.pacote_nacional.transportadora }}{% if claim.slot.pacote_nacional.codigo_rastreio %} | Rastreio: {{ claim.slot.pacote_nacional.codigo_rastreio }}{% endif %}">
+                                                <span>📦</span>
+                                                <span>{{ claim.slot.pacote_nacional.identificador }}</span>
+                                                {% if claim.slot.pacote_nacional.codigo_rastreio %}
+                                                    <a href="{{ claim.slot.pacote_nacional.tracking_url }}" target="_blank" class="text-blue-600 hover:text-blue-800 underline ml-0.5" title="Rastrear nos Correios">↗</a>
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-slate-300 font-bold text-xs" title="Aguardando empacotamento nacional">—</span>
                                         {% endif %}
                                     </td>
                                     <td class="py-3 text-slate-400">
@@ -777,6 +909,7 @@
                             <th class="py-3 px-3 text-center">Status</th>
                             <th class="py-3 px-3 text-center">Frete Inter</th>
                             <th class="py-3 px-3 text-center">Taxa Aduaneira</th>
+                            <th class="py-3 px-3 text-center">Envio Nacional</th>
                             <th class="py-3 px-3 text-right">Link Original</th>
                         </tr>
                     </thead>
@@ -865,6 +998,20 @@
                                                 <div class="text-[10px] text-slate-400 mt-0.5">Prazo: {{ item.prazo_taxa_aduaneira|date:"d/m/Y" }}</div>
                                             {% endif %}
                                         {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-300 font-bold text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-3 text-center">
+                                    {% if item.pacote_nacional %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold {% if item.pacote_nacional.status == 'ENVIADO' %}bg-emerald-100 text-emerald-800{% elif item.pacote_nacional.status == 'ENTREGUE' %}bg-slate-100 text-slate-700{% else %}bg-blue-100 text-blue-800{% endif %}"
+                                              title="Transportadora: {{ item.pacote_nacional.transportadora }}{% if item.pacote_nacional.codigo_rastreio %} | Rastreio: {{ item.pacote_nacional.codigo_rastreio }}{% endif %}">
+                                            <span>📦</span>
+                                            <span>{{ item.pacote_nacional.identificador }}</span>
+                                            {% if item.pacote_nacional.codigo_rastreio %}
+                                                <a href="{{ item.pacote_nacional.tracking_url }}" target="_blank" class="text-blue-600 hover:text-blue-800 underline ml-0.5" title="Rastrear nos Correios">↗</a>
+                                            {% endif %}
+                                        </span>
                                     {% else %}
                                         <span class="text-slate-300 font-bold text-xs">—</span>
                                     {% endif %}

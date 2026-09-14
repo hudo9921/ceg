@@ -121,7 +121,8 @@ class MyClaimsView(View):
         claims = participant.claims.select_related(
             'slot__set__ceg__era__group',
             'slot__set__ceg__caixa',
-            'slot__item_definition'
+            'slot__item_definition',
+            'slot__pacote_nacional'
         ).order_by('-claimed_at')
 
         claims_list = list(claims)
@@ -130,9 +131,16 @@ class MyClaimsView(View):
         paid_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PAID)
 
         # Itens Individuais (Mercari) vinculados ao participante
-        itens_individuais = participant.itens_individuais.select_related('caixa').order_by('-created_at')
+        itens_individuais = participant.itens_individuais.select_related('caixa', 'pacote_nacional').order_by('-created_at')
         itens_individuais_list = list(itens_individuais)
         itens_individuais_count = len(itens_individuais_list)
+
+        # Pacotes Nacionais de envio do participante
+        pacotes_nacionais = list(participant.pacotes_nacionais.prefetch_related(
+            'slots__item_definition',
+            'slots__set__ceg',
+            'itens_individuais'
+        ).order_by('-created_at'))
         itens_frete_unpaid_count = sum(1 for it in itens_individuais_list if it.frete_inter and it.frete_inter > 0 and not it.frete_inter_pago)
         itens_taxa_unpaid_count = sum(1 for it in itens_individuais_list if it.taxa_aduaneira and it.taxa_aduaneira > 0 and not it.taxa_aduaneira_paga)
 
@@ -314,6 +322,7 @@ class MyClaimsView(View):
             'is_placeholder_name': is_placeholder_name,
             'notifications': notifications,
             'unread_notifications_count': unread_notifications_count,
+            'pacotes_nacionais': pacotes_nacionais,
         })
 
 

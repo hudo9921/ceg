@@ -145,6 +145,7 @@ class ParticipantNotification(models.Model):
         SET_CANCELLED = 'SET_CANCELLED', 'Set Cancelado'
         CLAIM_UPDATE = 'CLAIM_UPDATE', 'Atualização de Reserva'
         GENERAL = 'GENERAL', 'Aviso Geral'
+        ENVIO_NACIONAL = 'ENVIO_NACIONAL', 'Envio Nacional Despachado'
 
     participant = models.ForeignKey(
         Participant,

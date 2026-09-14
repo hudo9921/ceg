@@ -39,12 +39,16 @@ class HomeView(View):
         ).update(status=CEG.Status.CLOSED)
 
         # 2. Busca CEGs abertas
-        active_cegs = list(
+        raw_open_cegs = list(
             CEG.objects.filter(
                 Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now)
             ).select_related('era__group').order_by('-created_at')
         )
-        enrich_cegs_with_availability(active_cegs)
+        enrich_cegs_with_availability(raw_open_cegs)
+
+        # Filtra para mostrar apenas CEGs onde existem itens vagos nos sets (ao menos 1 item disponível em algum set)
+        active_cegs = [c for c in raw_open_cegs if getattr(c, 'available_slots_count', 0) > 0]
+        full_cegs = [c for c in raw_open_cegs if getattr(c, 'available_slots_count', 0) == 0]
 
         # 3. Busca apenas as agendadas cujo horário AINDA está no futuro
         scheduled_cegs = list(
@@ -104,6 +108,7 @@ class HomeView(View):
 
         return render(request, 'home.html', {
             'active_cegs': active_cegs,
+            'full_cegs': full_cegs,
             'open_groups': open_groups,
             'open_eras': open_eras,
             'open_members': open_members,

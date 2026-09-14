@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.utils.dateparse import parse_datetime
 
 from apps.cegs.models import Caixa, ItemIndividual, TipoItem
 from apps.participants.models import Participant, clean_phone_number

@@ -1126,6 +1126,80 @@ class CEGAvailabilityCardTests(TestCase):
         # CEG 100% preenchida
         self.assertIn('100% preenchida', content)
 
+    def test_home_only_shows_cegs_with_vacant_items_in_sets(self):
+        """
+        Verifica a regra de negócio solicitada:
+        A seção de CEGs abertas deve mostrar APENAS CEGs com vagas/itens disponíveis nos sets:
+        - Se uma CEG tem 1 set e tem ao menos 1 item disponível: DEVE aparecer.
+        - Se uma CEG tem mais de 1 set e em algum desses sets tem ao menos 1 item disponível: DEVE aparecer.
+        - Se uma CEG tem 1 set e ele está 100% preenchido: NÃO deve aparecer em active_cegs (vai para full_cegs).
+        - Se uma CEG tem múltiplos sets e todos estão 100% preenchidos: NÃO deve aparecer em active_cegs.
+        """
+        # Cria CEG com 2 sets, onde Set 1 está 100% cheio, mas Set 2 tem 1 vaga disponível
+        ceg_multi = CEG.objects.create(
+            era=self.era,
+            title='CEG Multi Sets Vaga Test',
+            slug='ceg-multi-sets-vaga-test',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='multi@test.com'
+        )
+        def_multi = CEGItemDefinition.objects.create(
+            ceg=ceg_multi, name='Photocard Chae', member_name='Chaeyoung', default_price=40.00
+        )
+        s1 = CEGSet.objects.create(ceg=ceg_multi, set_number=1)
+        s1.generate_slots()
+        slot_s1 = s1.slots.first()
+        slot_s1.status = ItemSlot.Status.PAID
+        slot_s1.save()
+
+        s2 = CEGSet.objects.create(ceg=ceg_multi, set_number=2)
+        s2.generate_slots() # slot_s2 fica AVAILABLE
+
+        # Cria CEG com 2 sets onde AMBOS estão 100% cheios
+        ceg_all_full = CEG.objects.create(
+            era=self.era,
+            title='CEG Multi Sets 100% Full',
+            slug='ceg-multi-sets-all-full',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='full@test.com'
+        )
+        def_full2 = CEGItemDefinition.objects.create(
+            ceg=ceg_all_full, name='Photocard Mina', member_name='Mina', default_price=40.00
+        )
+        s_f1 = CEGSet.objects.create(ceg=ceg_all_full, set_number=1)
+        s_f1.generate_slots()
+        sl1 = s_f1.slots.first()
+        sl1.status = ItemSlot.Status.PAID
+        sl1.save()
+
+        s_f2 = CEGSet.objects.create(ceg=ceg_all_full, set_number=2)
+        s_f2.generate_slots()
+        sl2 = s_f2.slots.first()
+        sl2.status = ItemSlot.Status.PAID
+        sl2.save()
+
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        active_cegs_titles = [c.title for c in response.context['active_cegs']]
+        full_cegs_titles = [c.title for c in response.context['full_cegs']]
+
+        # 1. CEG com 1 set e vagas disponíveis
+        self.assertIn(self.ceg_varied.title, active_cegs_titles)
+
+        # 2. CEG com múltiplos sets e ao menos 1 set com vaga disponível
+        self.assertIn(ceg_multi.title, active_cegs_titles)
+
+        # 3. CEG com 1 set 100% cheio (ceg_full) NÃO deve estar em active_cegs
+        self.assertNotIn(self.ceg_full.title, active_cegs_titles)
+        self.assertIn(self.ceg_full.title, full_cegs_titles)
+
+        # 4. CEG com múltiplos sets 100% cheios (ceg_all_full) NÃO deve estar em active_cegs
+        self.assertNotIn(ceg_all_full.title, active_cegs_titles)
+        self.assertIn(ceg_all_full.title, full_cegs_titles)
+
 
 class DeleteSetViewTests(TestCase):
     def setUp(self):
