@@ -1320,149 +1320,175 @@
 
     <!-- Modal de Reserva (Claim Modal) -->
     <div x-show="modalOpen" x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
          @keydown.escape.window="closeClaimModal()">
         
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all"
+        <div class="bg-white rounded-3xl max-w-2xl sm:max-w-3xl w-full p-6 sm:p-7 shadow-2xl space-y-4 transform transition-all max-h-[92vh] flex flex-col border border-slate-100"
              @click.away="closeClaimModal()">
             
-            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
-                <div>
-                    <span class="text-xs font-black text-pink-600 uppercase tracking-wider">Confirmar Reserva</span>
-                    <h3 class="text-lg font-black text-slate-900" x-text="selectedSlot ? selectedSlot.name : ''"></h3>
-                    <p class="text-xs text-slate-500" x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber : ''"></p>
+            <!-- Header do Modal -->
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-lg font-black border border-pink-100 shadow-2xs">
+                        ⚡
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">Confirmar Reserva</span>
+                            <span class="text-xs font-bold text-slate-400" x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber : ''"></span>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-black text-slate-900 leading-tight mt-0.5" x-text="selectedSlot ? selectedSlot.name : ''"></h3>
+                    </div>
                 </div>
-                <button type="button" @click="closeClaimModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">
+                <button type="button" @click="closeClaimModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 text-sm font-bold flex items-center justify-center transition cursor-pointer">
                     ✕
                 </button>
             </div>
 
-            <!-- Valores das Fases da CEG para o Item -->
-            <div class="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200/90 text-center text-xs">
-                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
-                    <span class="block text-[10px] font-bold text-slate-400 uppercase">1. Item</span>
-                    <span class="font-black text-slate-900" x-text="selectedSlot ? 'R$ ' + selectedSlot.price : ''"></span>
-                </div>
-                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
-                    <span class="block text-[10px] font-bold text-blue-500 uppercase">2. Frete Inter</span>
-                    <span class="font-black text-blue-900" x-text="selectedSlot && selectedSlot.frete ? 'R$ ' + selectedSlot.frete : 'A definir'"></span>
-                </div>
-                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
-                    <span class="block text-[10px] font-bold text-purple-500 uppercase">3. Taxa</span>
-                    <span class="font-black text-purple-900" x-text="selectedSlot && selectedSlot.taxa ? 'R$ ' + selectedSlot.taxa : 'A definir'"></span>
-                </div>
-            </div>
-
-            <!-- Informação de Concorrência -->
-            <div class="p-3 bg-pink-50 border border-pink-100 rounded-xl text-pink-900 text-xs leading-relaxed">
-                ⚡ <strong>Atenção:</strong> Este slot é único! O primeiro participante a clicar em Confirmar garantirá a reserva no sistema.
-            </div>
-
-            {% if user.is_staff %}
-                <!-- Bloco do Administrador: Escolher Participante Cadastrado -->
-                <div class="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                            <span>👑</span> Modo Organizador (Admin)
-                        </span>
-                        <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">Admin</span>
-                    </div>
-                    <p class="text-[11px] text-amber-800 leading-snug">
-                        Selecione um participante cadastrado por <strong>Nome</strong> ou <strong>WhatsApp</strong> para autopreencher os dados abaixo:
-                    </p>
-                    <select @change="selectParticipantForClaim($event.target.value)"
-                            class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
-                        <option value="">-- Escolher por Nome ou WhatsApp --</option>
-                        <template x-for="p in allParticipants" :key="p.id">
-                            <option :value="p.id"
-                                    x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
-                            </option>
-                        </template>
-                    </select>
-                </div>
-            {% elif logged_participant %}
-                <!-- Bloco do Participante Logado -->
-                <div class="p-3 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-xl space-y-1">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
-                            <span>👤</span> Reservando com sua Conta
-                        </span>
-                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                            ● Autenticado
-                        </span>
-                    </div>
-                    <div class="text-xs text-slate-900 font-bold">
-                        {{ logged_participant.name }}
-                        {% if logged_participant.username %}
-                            <span class="text-pink-600 font-black">({{ logged_participant.username }})</span>
-                        {% endif %}
-                        <span class="text-slate-500 font-normal">• {{ logged_participant.formatted_phone }}</span>
-                    </div>
-                    {% if logged_participant.social_handle %}
-                        <div class="text-[11px] text-pink-700 font-mono">
-                            {{ logged_participant.social_handle }}
+            <!-- Corpo Rolável com Espaçamento Balanceado -->
+            <div class="overflow-y-auto pr-1 sm:pr-2 space-y-4 flex-1">
+                <!-- Informações Superiores: Valores das Fases + Alerta de Concorrência lado a lado -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <!-- Fases de Pagamento -->
+                    <div class="md:col-span-7 grid grid-cols-3 gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-200/80 text-center text-xs">
+                        <div class="bg-white p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">1. Item</span>
+                            <span class="font-black text-slate-900 text-xs sm:text-sm" x-text="selectedSlot ? 'R$ ' + selectedSlot.price : ''"></span>
                         </div>
-                    {% endif %}
-                </div>
-            {% endif %}
+                        <div class="bg-white p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                            <span class="block text-[10px] font-bold text-blue-500 uppercase">2. Frete Inter</span>
+                            <span class="font-black text-blue-900 text-xs sm:text-sm" x-text="selectedSlot && selectedSlot.frete ? 'R$ ' + selectedSlot.frete : 'A definir'"></span>
+                        </div>
+                        <div class="bg-white p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                            <span class="block text-[10px] font-bold text-purple-500 uppercase">3. Taxa</span>
+                            <span class="font-black text-purple-900 text-xs sm:text-sm" x-text="selectedSlot && selectedSlot.taxa ? 'R$ ' + selectedSlot.taxa : 'A definir'"></span>
+                        </div>
+                    </div>
 
-            <form :action="'/slots/' + (selectedSlot ? selectedSlot.id : 0) + '/claim/'" method="POST" class="space-y-4">
-                {% csrf_token %}
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo do Participante *</label>
-                    <input type="text" name="name" required
-                           x-model="formName"
-                           placeholder="Ex: Beatriz Silva"
-                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
-                    <span class="text-[10px] text-slate-400">Nome para conferência de pagamento Pix e identificação.</span>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Como prefere ser chamado(a)? <span class="text-slate-400 font-normal text-[11px]">(opcional)</span></label>
-                    <input type="text" name="username"
-                           x-model="formUsername"
-                           placeholder="Ex: Bia, Hudo, JihyoStan"
-                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
-                    <span class="text-[10px] text-slate-400">Nome de usuário ou apelido para saudações e exibição.</span>
+                    <!-- Alerta de Concorrência -->
+                    <div class="md:col-span-5 p-3 bg-pink-50 border border-pink-100/90 rounded-2xl text-pink-900 text-xs flex items-center gap-2.5">
+                        <span class="text-base flex-shrink-0">⚡</span>
+                        <p class="text-[11px] leading-snug">
+                            <strong>Slot único!</strong> O primeiro participante a clicar em Confirmar garantirá a reserva no sistema.
+                        </p>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp (com DDD) *</label>
-                    <input type="tel" name="whatsapp" required
-                           x-model="formWhatsapp"
-                           placeholder="Ex: 11999998888"
-                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
-                    <span class="text-[10px] text-slate-400">Usado para você consultar suas reservas sem senha via OTP.</span>
-                </div>
+                {% if user.is_staff %}
+                    <!-- Bloco do Administrador: Escolher Participante Cadastrado -->
+                    <div class="p-3 bg-amber-50/90 border border-amber-300/80 rounded-2xl space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>👑</span> Modo Organizador (Admin)
+                            </span>
+                            <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">Admin</span>
+                        </div>
+                        <p class="text-[11px] text-amber-800 leading-snug">
+                            Selecione um participante cadastrado para autopreencher os dados abaixo:
+                        </p>
+                        <select @change="selectParticipantForClaim($event.target.value)"
+                                class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm cursor-pointer">
+                            <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                            <template x-for="p in allParticipants" :key="p.id">
+                                <option :value="p.id"
+                                        x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+                {% elif logged_participant %}
+                    <!-- Bloco do Participante Logado -->
+                    <div class="p-3 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-2xl space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
+                                <span>👤</span> Reservando com sua Conta
+                            </span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                                ● Autenticado
+                            </span>
+                        </div>
+                        <div class="text-xs text-slate-900 font-bold">
+                            {{ logged_participant.name }}
+                            {% if logged_participant.username %}
+                                <span class="text-pink-600 font-black">({{ logged_participant.username }})</span>
+                            {% endif %}
+                            <span class="text-slate-500 font-normal">• {{ logged_participant.formatted_phone }}</span>
+                        </div>
+                        {% if logged_participant.social_handle %}
+                            <div class="text-[11px] text-pink-700 font-mono">
+                                {{ logged_participant.social_handle }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu @ no Twitter ou Instagram</label>
-                    <input type="text" name="social_handle"
-                           x-model="formSocial"
-                           placeholder="Ex: @jihyolover"
-                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
-                    <span class="text-[10px] text-slate-400">Exibido publicamente no card para confirmar seu slot.</span>
-                </div>
+                <!-- Formulário com Grid Retangular de 2 Colunas -->
+                <form id="claimSlotForm" :action="'/slots/' + (selectedSlot ? selectedSlot.id : 0) + '/claim/'" method="POST" class="space-y-3.5">
+                    {% csrf_token %}
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Observações (opcional)</label>
-                    <textarea name="notes" rows="2"
-                              placeholder="Alguma observação especial para o organizador?"
-                              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition"></textarea>
-                </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <!-- Coluna 1: Nome Completo -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo do Participante *</label>
+                            <input type="text" name="name" required
+                                   x-model="formName"
+                                   placeholder="Ex: Beatriz Silva"
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                            <span class="text-[10px] text-slate-400">Para conferência do pagamento Pix.</span>
+                        </div>
 
-                <div class="pt-2 flex gap-3">
-                    <button type="button" @click="closeClaimModal()"
-                            class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1 cursor-pointer">
-                        <span>✔</span> Confirmar Reserva Única
-                    </button>
-                </div>
-            </form>
+                        <!-- Coluna 2: Como prefere ser chamado(a) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Como prefere ser chamado(a)? <span class="text-slate-400 font-normal text-[11px]">(opcional)</span></label>
+                            <input type="text" name="username"
+                                   x-model="formUsername"
+                                   placeholder="Ex: Bia, Hudo, JihyoStan"
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                            <span class="text-[10px] text-slate-400">Apelido que aparece no card do slot.</span>
+                        </div>
+
+                        <!-- Coluna 1: WhatsApp -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp (com DDD) *</label>
+                            <input type="tel" name="whatsapp" required
+                                   x-model="formWhatsapp"
+                                   placeholder="Ex: 11999998888"
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                            <span class="text-[10px] text-slate-400">Para consulta das suas reservas sem senha via OTP.</span>
+                        </div>
+
+                        <!-- Coluna 2: @ Rede Social -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Seu @ no Twitter ou Instagram</label>
+                            <input type="text" name="social_handle"
+                                   x-model="formSocial"
+                                   placeholder="Ex: @jihyolover"
+                                   class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                            <span class="text-[10px] text-slate-400">Identificador público no card do slot.</span>
+                        </div>
+
+                        <!-- Linha Inteira: Observações -->
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Observações (opcional)</label>
+                            <textarea name="notes" rows="2"
+                                      placeholder="Alguma observação especial para o organizador?"
+                                      class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer Fixo com Botões bem distribuídos -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
+                <button type="button" @click="closeClaimModal()"
+                        class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="submit" form="claimSlotForm"
+                        class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span>✔</span> Confirmar Reserva Única
+                </button>
+            </div>
         </div>
     </div>
 
