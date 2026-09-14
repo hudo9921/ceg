@@ -10,7 +10,7 @@ services:
       - "8000:8000"
 
   evolution-api:
-    image: atendai/evolution-api:v2.2.3
+    image: evoapicloud/evolution-api:v2.3.0
     container_name: valcegs-evolution
     restart: unless-stopped
     env_file: .env
@@ -21,7 +21,7 @@ services:
       - evolution_store:/evolution/store
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:alpine
     container_name: valcegs-caddy
     restart: unless-stopped
     ports:
