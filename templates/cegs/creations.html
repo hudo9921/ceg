@@ -1686,10 +1686,11 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1">Caixa Mercari</label>
                                     <select name="caixa_id"
+                                            x-model="editingItem.caixa_id"
                                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
                                         <option value="">-- Sem Caixa --</option>
                                         {% for cx in caixas %}
-                                            <option value="{{ cx.id }}" :selected="editingItem.caixa_id == {{ cx.id }}">
+                                            <option value="{{ cx.id }}">
                                                 {% if cx.origem == 'JP' %}🇯🇵{% elif cx.origem == 'KR' %}🇰🇷{% else %}📦{% endif %}
                                                 {{ cx.nome }}
                                             </option>
@@ -1700,9 +1701,10 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1">Status do Item</label>
                                     <select name="status"
+                                            x-model="editingItem.status"
                                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
                                         {% for val, label in item_individual_statuses %}
-                                            <option value="{{ val }}" :selected="editingItem.status == '{{ val }}'">{{ label }}</option>
+                                            <option value="{{ val }}">{{ label }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -1871,17 +1873,34 @@
     </div>
 </div>
 
-<!-- Script Alpine.js com Componente Isolado (Evita qualquer erro de parsing de HTML) -->
+<!-- Dados Iniciais em JSON isolado (Permite que o script JS abaixo seja 100% livre de erros de lint) -->
+<script id="creations-hub-data" type="application/json">
+{
+    "currentCategory": "{{ category_filter|default:'all' }}",
+    "selectedCaixaId": "{{ preselected_caixa_id|default:'' }}",
+    "autoOpenModal": "{{ auto_open_modal|default:'' }}",
+    "groups": {{ groups_json|safe|default:"[]" }},
+    "participants": {{ participants_json|safe|default:"[]" }},
+    "caixas": {{ caixas_json|safe|default:"[]" }},
+    "itensIndividuais": {{ itens_individuais_json|safe|default:"[]" }},
+    "tiposItem": {{ tipos_item_json|safe|default:"[]" }}
+}
+</script>
+
+<!-- Script Alpine.js com Componente Isolado (Livre de erros de linter) -->
 <script>
 document.addEventListener('alpine:init', () => {
+    const hubDataEl = document.getElementById('creations-hub-data');
+    const hubData = hubDataEl ? JSON.parse(hubDataEl.textContent || '{}') : {};
+
     Alpine.data('creationsHub', () => ({
         activeModal: null, // 'group', 'era', 'ceg', 'set', 'item_individual', 'edit_item_individual'
-        currentCategory: '{{ category_filter|default:"all" }}', // 'all', 'ceg', 'mercari'
-        groups: {{ groups_json|safe }},
-        participants: {{ participants_json|safe }},
-        caixas: {{ caixas_json|safe }},
-        itensIndividuais: {{ itens_individuais_json|safe }},
-        tiposItem: {{ tipos_item_json|safe }},
+        currentCategory: hubData.currentCategory || 'all', // 'all', 'ceg', 'mercari'
+        groups: hubData.groups || [],
+        participants: hubData.participants || [],
+        caixas: hubData.caixas || [],
+        itensIndividuais: hubData.itensIndividuais || [],
+        tiposItem: hubData.tiposItem || [],
         itemSearch: '',
         itemStatusFilter: '',
         itemCaixaFilter: '',
@@ -1901,7 +1920,7 @@ document.addEventListener('alpine:init', () => {
         newTipoNome: '',
         newTipoDesc: '',
         newTipoSubmitting: false,
-        selectedCaixaId: '{{ preselected_caixa_id|default:"" }}',
+        selectedCaixaId: hubData.selectedCaixaId || '',
         selectedParticipantId: '',
         buyerPhone: '',
         buyerName: '',
@@ -1952,7 +1971,7 @@ document.addEventListener('alpine:init', () => {
             });
 
             // Se requisitado via URL (ex: a partir do detalhe da caixa), abre automaticamente o modal
-            if ('{{ auto_open_modal }}' === 'item_individual') {
+            if (hubData.autoOpenModal === 'item_individual') {
                 this.setCategory('mercari');
                 this.openModal('item_individual');
             }
@@ -2050,8 +2069,8 @@ document.addEventListener('alpine:init', () => {
                 this.selectedParticipantId = '';
                 this.showNameSuggestions = false;
                 this.showPhoneSuggestions = false;
-                if ('{{ preselected_caixa_id }}') {
-                    this.selectedCaixaId = '{{ preselected_caixa_id }}';
+                if (hubData.selectedCaixaId) {
+                    this.selectedCaixaId = hubData.selectedCaixaId;
                 }
             }
         },
