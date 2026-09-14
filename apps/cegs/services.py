@@ -199,7 +199,7 @@ class ClaimService:
                 # 1. Bloqueio seletivo de linha e transação atômica completa
                 with transaction.atomic():
                     try:
-                        slot = ItemSlot.objects.select_for_update().select_related(
+                        slot = ItemSlot.objects.select_for_update(of=('self',)).select_related(
                             'set__ceg', 'item_definition', 'claimed_by'
                         ).get(id=slot_id)
                     except ItemSlot.DoesNotExist:
