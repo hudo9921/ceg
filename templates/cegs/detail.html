@@ -707,6 +707,10 @@
                 </div>
                 {% if user.is_staff %}
                     <div class="flex items-center gap-2 flex-wrap">
+                        <a href="{% url 'ceg_bulk_allocator' slug=ceg.slug %}"
+                           class="self-start sm:self-auto px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>🎯</span> Alocar Joiners em Massa
+                        </a>
                         <button type="button" @click="openLogsModal()"
                                 class="self-start sm:self-auto px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                             <span>⚡</span> Logs & Fila de Espera

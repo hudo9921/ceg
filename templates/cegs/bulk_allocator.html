@@ -1,0 +1,808 @@
+{% extends 'base.html' %}
+
+{% block title %}Alocador de Joiners em Massa — {{ ceg.title|default:"CEG Manager" }}{% endblock %}
+
+{% block content %}
+<!-- Payload de dados isolado em JSON (Zero erros de lint no editor) -->
+<script id="allocator-data" type="application/json">
+{
+    "cegSlug": "{{ ceg.slug|default:'' }}",
+    "matrix": {{ matrix_json|safe|default:"{}" }},
+    "participants": {{ participants_json|safe|default:"[]" }}
+}
+</script>
+
+<div class="max-w-7xl mx-auto space-y-6" x-data="bulkAllocatorApp()">
+
+    <!-- Cabeçalho Principal e Seleção de CEG -->
+    <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-950 p-6 sm:p-8 rounded-3xl shadow-xl text-white relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-10 -top-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-pink-300 text-xs font-bold uppercase tracking-wider">
+                    <span>⚡ Produtividade do Organizador</span>
+                    <span>•</span>
+                    <span>Alocação Rápida de Vendas</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+                    <span>🎯 Alocador de Joiners em Massa</span>
+                </h1>
+                <p class="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                    Atribua múltiplos compradores e joiners aos slots desta CEG em segundos. Utilize a grade interativa tipo planilha ou cole listas brutas do Excel/Forms/Twitter.
+                </p>
+            </div>
+
+            <!-- Seletor de CEG e Links de Ação -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {% if cegs_list %}
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-300 pl-2">CEG:</span>
+                    <select @change="changeCeg($event.target.value)"
+                            class="bg-slate-900/90 text-white text-xs font-bold rounded-xl px-3 py-2 border-0 focus:ring-2 focus:ring-pink-500 cursor-pointer max-w-[240px] truncate">
+                        {% for c in cegs_list %}
+                            <option value="{{ c.slug }}" {% if c.slug == ceg.slug %}selected{% endif %}>
+                                {{ c.title }} ({{ c.sets_count }} sets)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                {% if ceg %}
+                <a href="{% url 'ceg_detail' slug=ceg.slug %}"
+                   class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-bold text-white transition shadow-sm">
+                    <span>👁️ Ver CEG Pública</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estatísticas da CEG Selecionada -->
+        {% if ceg %}
+        <div class="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total de Sets</span>
+                <span class="text-2xl font-black text-white" x-text="matrix.sets ? matrix.sets.length : 0"></span>
+            </div>
+            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Slots Ocupados</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-black text-pink-400" x-text="occupiedSlots"></span>
+                    <span class="text-xs text-slate-400">/ <span x-text="matrix.total_slots || 0"></span></span>
+                </div>
+            </div>
+            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Itens Pagos</span>
+                <span class="text-2xl font-black text-emerald-400" x-text="paidSlots"></span>
+            </div>
+            <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Taxa de Preenchimento</span>
+                <span class="text-2xl font-black text-indigo-300" x-text="occupancyRate + '%'"></span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Navegação por Abas -->
+    <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div class="flex items-center gap-2">
+            <button type="button"
+                    @click="activeTab = 'matrix'"
+                    :class="activeTab === 'matrix' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100'"
+                    class="px-5 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2">
+                <span>📊 Matriz Visual Interativa</span>
+                <span x-show="pendingMatrixChangesCount > 0"
+                      class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black"
+                      x-text="pendingMatrixChangesCount"></span>
+            </button>
+            <button type="button"
+                    @click="activeTab = 'paste'"
+                    :class="activeTab === 'paste' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100'"
+                    class="px-5 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2">
+                <span>📋 Colar em Lote (Excel / Forms)</span>
+            </button>
+        </div>
+
+        <div class="text-xs text-slate-500 font-semibold hidden sm:block">
+            <span x-text="participants.length"></span> participantes cadastrados no sistema
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ABA 1: MATRIZ VISUAL INTERATIVA            -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'matrix'" class="space-y-4">
+
+        <!-- Barra de Filtros e Ações da Matriz -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3 flex-1">
+                <div class="relative flex-1 max-w-xs">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                    <input type="text"
+                           x-model="matrixFilter"
+                           placeholder="Filtrar por integrante ou item..."
+                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <button type="button"
+                        x-show="matrixFilter"
+                        @click="matrixFilter = ''"
+                        class="text-xs text-slate-400 hover:text-slate-600">
+                    Limpar filtro
+                </button>
+            </div>
+
+            <!-- Botões de Lote da Matriz -->
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        @click="markAllFilledAsPaid()"
+                        class="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>💵 Marcar Todos Preenchidos como Pagos</span>
+                </button>
+
+                <button type="button"
+                        @click="saveMatrixChanges()"
+                        :disabled="matrixSaving || pendingMatrixChangesCount === 0"
+                        class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black transition flex items-center gap-2 shadow-sm">
+                    <span x-show="matrixSaving" class="animate-spin">⏳</span>
+                    <span>💾 Salvar Matriz</span>
+                    <span x-show="pendingMatrixChangesCount > 0"
+                          class="bg-white/20 px-1.5 py-0.5 rounded text-[10px]"
+                          x-text="pendingMatrixChangesCount"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Grade Tipo Planilha -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto max-h-[70vh]">
+                <table class="w-full text-left border-collapse">
+                    <!-- Cabeçalho com os Sets -->
+                    <thead class="bg-slate-900 text-white text-xs font-black sticky top-0 z-20 shadow-xs">
+                        <tr>
+                            <th class="py-3 px-4 w-72 min-w-[280px] sticky left-0 z-30 bg-slate-900 border-r border-slate-800">
+                                Item / Integrante
+                            </th>
+                            <template x-for="s in matrix.sets" :key="s.id">
+                                <th class="py-3 px-4 min-w-[240px] text-center border-r border-slate-800">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <span class="text-pink-400 text-sm">Set #<span x-text="s.set_number"></span></span>
+                                        <span class="text-[10px] px-2 py-0.5 rounded-full"
+                                              :class="s.is_active ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-slate-700 text-slate-300'">
+                                            <span x-text="s.is_active ? 'Ativo' : 'Inativo'"></span>
+                                        </span>
+                                    </div>
+                                </th>
+                            </template>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        <template x-for="item in filteredMatrixItems" :key="item.id">
+                            <tr class="hover:bg-slate-50/80 transition">
+                                <!-- Coluna Fixa do Item -->
+                                <td class="py-3 px-4 sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-2xs">
+                                    <div class="font-bold text-slate-900 text-sm" x-text="item.name"></div>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span x-show="item.member_name"
+                                              class="text-[10px] font-black uppercase text-pink-700 bg-pink-50 px-2 py-0.5 rounded"
+                                              x-text="item.member_name"></span>
+                                        <span class="text-[11px] text-slate-400 font-mono">R$ <span x-text="item.default_price"></span></span>
+                                    </div>
+                                </td>
+
+                                <!-- Células dos Sets -->
+                                <template x-for="s in matrix.sets" :key="s.id">
+                                    <td class="py-2.5 px-3 border-r border-slate-100 align-top">
+                                        <template x-if="item.slots && item.slots[s.id]">
+                                            <div class="p-2.5 rounded-xl border transition space-y-2 relative"
+                                                 :class="{
+                                                     'bg-emerald-50/70 border-emerald-300': item.slots[s.id].claimed_by && item.slots[s.id].is_item_paid,
+                                                     'bg-amber-50/70 border-amber-300': item.slots[s.id].claimed_by && !item.slots[s.id].is_item_paid,
+                                                     'bg-slate-50 border-slate-200 hover:border-slate-300': !item.slots[s.id].claimed_by
+                                                 }">
+
+                                                <!-- Slot Ocupado -->
+                                                <div x-show="item.slots[s.id].claimed_by" class="space-y-1.5">
+                                                    <div class="flex items-start justify-between gap-1">
+                                                        <div class="font-bold text-slate-900 text-xs leading-tight truncate"
+                                                             :title="item.slots[s.id].claimed_by ? item.slots[s.id].claimed_by.name : ''"
+                                                             x-text="item.slots[s.id].claimed_by ? item.slots[s.id].claimed_by.name : ''">
+                                                        </div>
+                                                        <button type="button"
+                                                                @click="releaseSlot(item.slots[s.id].slot_id)"
+                                                                class="text-slate-400 hover:text-rose-600 p-0.5 rounded"
+                                                                title="Liberar slot / remover participante">
+                                                            ✕
+                                                        </button>
+                                                    </div>
+
+                                                    <div class="flex items-center gap-1 text-[11px] text-slate-500 truncate">
+                                                        <span x-text="item.slots[s.id].claimed_by ? (item.slots[s.id].claimed_by.social_handle || item.slots[s.id].claimed_by.formatted_phone) : ''"></span>
+                                                    </div>
+
+                                                    <!-- Botão de Alternar Pagamento -->
+                                                    <div class="pt-1 flex items-center justify-between">
+                                                        <button type="button"
+                                                                @click="toggleSlotPayment(item.slots[s.id].slot_id)"
+                                                                class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider transition flex items-center gap-1"
+                                                                :class="item.slots[s.id].is_item_paid ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-500 text-white hover:bg-amber-600'">
+                                                            <span x-text="item.slots[s.id].is_item_paid ? '✔ Pago' : '⏳ Pendente'"></span>
+                                                        </button>
+                                                        <span class="text-[10px] font-mono text-slate-400">R$ <span x-text="item.slots[s.id].price"></span></span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Slot Disponível -->
+                                                <div x-show="!item.slots[s.id].claimed_by" class="py-1">
+                                                    <div x-show="activeSlotPicker !== item.slots[s.id].slot_id">
+                                                        <button type="button"
+                                                                @click="openSlotPicker(item.slots[s.id].slot_id)"
+                                                                class="w-full py-2 px-3 rounded-lg border border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/50 text-slate-500 hover:text-indigo-600 text-[11px] font-bold transition text-center flex items-center justify-center gap-1">
+                                                            <span>➕</span>
+                                                            <span>Alocar Joiner</span>
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Autocomplete Inline quando clicado -->
+                                                    <div x-show="activeSlotPicker === item.slots[s.id].slot_id"
+                                                         @click.away="closeSlotPicker()"
+                                                         class="space-y-1.5">
+                                                        <input type="text"
+                                                               x-ref="pickerInput"
+                                                               x-model="pickerQuery"
+                                                               placeholder="Digite nome, @ ou telefone..."
+                                                               class="w-full px-2.5 py-1.5 text-xs bg-white border border-indigo-500 rounded-lg focus:outline-none ring-2 ring-indigo-100 font-semibold">
+
+                                                        <div class="max-h-36 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg divide-y divide-slate-100">
+                                                            <template x-for="p in pickerFilteredParticipants" :key="p.id">
+                                                                <button type="button"
+                                                                        @click="assignParticipantToSlot(item.slots[s.id].slot_id, p)"
+                                                                        class="w-full px-2.5 py-1.5 text-left hover:bg-indigo-50 text-xs transition flex items-center justify-between">
+                                                                    <div class="truncate pr-2">
+                                                                        <div class="font-bold text-slate-800" x-text="p.name"></div>
+                                                                        <div class="text-[10px] text-slate-400" x-text="p.social_handle || p.formatted_phone"></div>
+                                                                    </div>
+                                                                    <span class="text-indigo-600 font-bold">➔</span>
+                                                                </button>
+                                                            </template>
+                                                            <div x-show="pickerFilteredParticipants.length === 0" class="p-2 text-center text-[11px] text-slate-400">
+                                                                Nenhum joiner encontrado.
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="flex items-center justify-between text-[10px]">
+                                                            <label class="flex items-center gap-1 text-slate-600 cursor-pointer">
+                                                                <input type="checkbox" x-model="pickerIsPaid" class="rounded text-indigo-600">
+                                                                <span>Já está Pago</span>
+                                                            </label>
+                                                            <button type="button" @click="closeSlotPicker()" class="text-slate-400 hover:text-slate-600 font-bold">Cancelar</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="!item.slots || !item.slots[s.id]">
+                                            <div class="text-center py-4 text-slate-300 text-xs">
+                                                —
+                                            </div>
+                                        </template>
+                                    </td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ABA 2: COLAR EM LOTE (EXCEL / FORMS)       -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'paste'" class="space-y-6">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Painel Esquerdo: Área de Colagem e Configurações -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                        <span>📝 Colar Linhas da Venda</span>
+                    </h3>
+                    <button type="button"
+                            @click="loadSamplePaste()"
+                            class="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                        ⚡ Exemplo de Teste
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Cole direto de planilhas (Excel/Google Sheets) ou texto livre separado por <strong>Tab</strong>, <strong>Vírgula</strong> ou <strong>Barra (|)</strong>.
+                </p>
+
+                <div>
+                    <textarea x-model="pasteRawText"
+                              rows="10"
+                              placeholder="Exemplos aceitos:
+Set 1 | Seoyeon | 11988887777 | Pago
+Chaeyeon | @userkpop | 11977776666
+Set 2 | Kaede | Bia Silva | 11955554444 | Sim
+Kotone | 11944443333"
+                              class="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <!-- Opções de Alocação -->
+                <div class="space-y-2.5 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-700">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="pasteOptions.auto_next_set" class="rounded text-indigo-600 focus:ring-indigo-500">
+                        <span>Alocar no próximo Set livre caso o número do Set não seja informado</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="pasteOptions.overwrite" class="rounded text-rose-600 focus:ring-rose-500">
+                        <span class="text-slate-800 font-bold">Sobrescrever slots que já possuem reservas em caso de conflito</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="pasteOptions.auto_create_participants" class="rounded text-indigo-600 focus:ring-indigo-500">
+                        <span>Cadastrar joiners novos automaticamente caso o telefone não exista no banco</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="pasteOptions.default_is_paid" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <span>Marcar como Pago por padrão se a linha não especificar</span>
+                    </label>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button"
+                            @click="parsePastedLines()"
+                            :disabled="parsing || !pasteRawText.trim()"
+                            class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm">
+                        <span x-show="parsing" class="animate-spin">⏳</span>
+                        <span>⚡ Analisar Linhas & Pré-visualizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Painel Direito: Pré-visualização e Confirmação -->
+            <div class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-900">🔍 Pré-visualização da Alocação</h3>
+                        <p class="text-xs text-slate-400">Verifique os slots correspondentes antes de gravar no banco.</p>
+                    </div>
+
+                    <!-- Resumo dos Status -->
+                    <div class="flex items-center gap-2 text-xs font-bold" x-show="parseResult.rows && parseResult.rows.length > 0">
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Prontos: <strong x-text="parseResult.summary ? parseResult.summary.ready : 0"></strong>
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800" x-show="parseResult.summary && parseResult.summary.conflicts > 0">
+                            Conflitos: <strong x-text="parseResult.summary.conflicts"></strong>
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800" x-show="parseResult.summary && parseResult.summary.errors > 0">
+                            Erros: <strong x-text="parseResult.summary.errors"></strong>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Lista de Pré-visualização -->
+                <div class="max-h-[50vh] overflow-y-auto space-y-2 pr-1" x-show="parseResult.rows && parseResult.rows.length > 0">
+                    <template x-for="row in parseResult.rows" :key="row.line_number">
+                        <div class="p-3 rounded-xl border text-xs transition space-y-1.5"
+                             :class="{
+                                 'bg-emerald-50/50 border-emerald-200': row.status === 'READY',
+                                 'bg-amber-50/60 border-amber-300': row.status === 'CONFLICT',
+                                 'bg-rose-50/60 border-rose-300': row.status === 'ERROR'
+                             }">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-[10px] text-slate-400">#<span x-text="row.line_number"></span></span>
+                                    <span class="font-black px-2 py-0.5 rounded text-[10px]"
+                                          :class="{
+                                              'bg-emerald-600 text-white': row.status === 'READY',
+                                              'bg-amber-500 text-white': row.status === 'CONFLICT',
+                                              'bg-rose-600 text-white': row.status === 'ERROR'
+                                          }"
+                                          x-text="row.status === 'READY' ? 'PRONTO' : (row.status === 'CONFLICT' ? 'CONFLITO' : 'ERRO')"></span>
+
+                                    <span class="font-black text-slate-900" x-text="row.target_item_name || 'Item não detectado'"></span>
+                                    <span x-show="row.target_set_number" class="text-pink-600 font-bold bg-pink-50 px-2 py-0.5 rounded text-[10px]">
+                                        Set #<span x-text="row.target_set_number"></span>
+                                    </span>
+                                </div>
+
+                                <span class="font-bold text-[10px] uppercase px-2 py-0.5 rounded"
+                                      :class="row.is_paid ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'"
+                                      x-text="row.is_paid ? '✔ Pago' : '⏳ Pendente'"></span>
+                            </div>
+
+                            <div class="flex items-center justify-between text-slate-600 pt-1 border-t border-slate-100/80">
+                                <div>
+                                    <span class="font-bold text-slate-800" x-text="row.participant_name || 'Sem nome'"></span>
+                                    <span class="text-slate-400" x-show="row.participant_handle" x-text="' (' + row.participant_handle + ')'"></span>
+                                    <span class="text-slate-400" x-show="row.participant_phone" x-text="' • ' + row.participant_phone"></span>
+                                    <span x-show="row.participant_is_new" class="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.2 rounded font-bold ml-1">
+                                        Novo Cadastro
+                                    </span>
+                                </div>
+
+                                <div class="text-[11px] text-right font-medium"
+                                     :class="row.status === 'ERROR' ? 'text-rose-600 font-bold' : (row.status === 'CONFLICT' ? 'text-amber-700' : 'text-emerald-700')"
+                                     x-text="row.message"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Estado Vazio -->
+                <div x-show="!parseResult.rows || parseResult.rows.length === 0"
+                     class="py-16 text-center border-2 border-dashed border-slate-200 rounded-2xl">
+                    <div class="text-3xl mb-2">📋</div>
+                    <div class="text-sm font-bold text-slate-700">Nenhuma linha analisada ainda</div>
+                    <div class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        Cole suas linhas de vendas no campo ao lado e clique em "Analisar Linhas & Pré-visualizar".
+                    </div>
+                </div>
+
+                <!-- Botão de Gravação Definitiva -->
+                <div class="pt-4 border-t border-slate-100" x-show="parseResult.rows && parseResult.rows.length > 0">
+                    <button type="button"
+                            @click="executeBulkAllocation()"
+                            :disabled="executing || (parseResult.summary && parseResult.summary.ready === 0)"
+                            class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 text-white rounded-xl text-sm font-black transition flex items-center justify-center gap-2 shadow-md">
+                        <span x-show="executing" class="animate-spin">⏳</span>
+                        <span>Confirmar e Alocar (<span x-text="parseResult.summary ? parseResult.summary.ready : 0"></span> Slots Prontos)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function bulkAllocatorApp() {
+    return {
+        activeTab: 'matrix',
+        cegSlug: '',
+        matrix: { sets: [], items: [], total_slots: 0, occupied_slots: 0, paid_slots: 0 },
+        participants: [],
+
+        // Matriz
+        matrixFilter: '',
+        activeSlotPicker: null,
+        pickerQuery: '',
+        pickerIsPaid: false,
+        pendingMatrixUpdates: {}, // { slot_id: { action, participant_id, is_paid } }
+        matrixSaving: false,
+
+        // Colagem
+        pasteRawText: '',
+        pasteOptions: {
+            auto_next_set: true,
+            overwrite: false,
+            auto_create_participants: true,
+            default_is_paid: false
+        },
+        parsing: false,
+        parseResult: { rows: [], summary: { total: 0, ready: 0, conflicts: 0, errors: 0 } },
+        executing: false,
+
+        init() {
+            const dataEl = document.getElementById('allocator-data');
+            if (dataEl) {
+                try {
+                    const parsed = JSON.parse(dataEl.textContent || '{}');
+                    this.cegSlug = parsed.cegSlug || '';
+                    this.matrix = parsed.matrix || { sets: [], items: [] };
+                    this.participants = parsed.participants || [];
+                } catch(e) {
+                    console.error("Erro ao carregar dados do alocador:", e);
+                }
+            }
+        },
+
+        get occupiedSlots() {
+            return this.matrix.occupied_slots || 0;
+        },
+
+        get paidSlots() {
+            return this.matrix.paid_slots || 0;
+        },
+
+        get occupancyRate() {
+            if (!this.matrix.total_slots) return 0;
+            return Math.round((this.occupiedSlots / this.matrix.total_slots) * 100);
+        },
+
+        get filteredMatrixItems() {
+            if (!this.matrix.items) return [];
+            const q = this.matrixFilter.trim().toLowerCase();
+            if (!q) return this.matrix.items;
+            return this.matrix.items.filter(it => {
+                const name = (it.name || '').toLowerCase();
+                const member = (it.member_name || '').toLowerCase();
+                return name.includes(q) || member.includes(q);
+            });
+        },
+
+        get pendingMatrixChangesCount() {
+            return Object.keys(this.pendingMatrixUpdates).length;
+        },
+
+        get pickerFilteredParticipants() {
+            const q = this.pickerQuery.trim().toLowerCase();
+            if (!q) return this.participants.slice(0, 10);
+            return this.participants.filter(p => {
+                const name = (p.name || '').toLowerCase();
+                const handle = (p.social_handle || '').toLowerCase();
+                const phone = (p.whatsapp || '');
+                return name.includes(q) || handle.includes(q) || phone.includes(q);
+            }).slice(0, 12);
+        },
+
+        changeCeg(newSlug) {
+            if (newSlug) {
+                window.location.href = '/ceg/' + newSlug + '/alocar-massa/';
+            }
+        },
+
+        openSlotPicker(slotId) {
+            this.activeSlotPicker = slotId;
+            this.pickerQuery = '';
+            this.pickerIsPaid = false;
+            this.$nextTick(() => {
+                if (this.$refs.pickerInput) {
+                    this.$refs.pickerInput.focus();
+                }
+            });
+        },
+
+        closeSlotPicker() {
+            this.activeSlotPicker = null;
+        },
+
+        assignParticipantToSlot(slotId, participant) {
+            // Atualiza no estado local da matriz
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.slot_id === slotId) {
+                        slot.claimed_by = {
+                            id: participant.id,
+                            name: participant.name,
+                            social_handle: participant.social_handle,
+                            whatsapp: participant.whatsapp,
+                            formatted_phone: participant.formatted_phone
+                        };
+                        slot.is_item_paid = this.pickerIsPaid;
+                        slot.status = this.pickerIsPaid ? 'PAID' : 'RESERVED';
+                        break;
+                    }
+                }
+            }
+
+            // Registra para salvar
+            this.pendingMatrixUpdates[slotId] = {
+                slot_id: slotId,
+                action: 'assign',
+                participant_id: participant.id,
+                is_paid: this.pickerIsPaid
+            };
+
+            this.recalculateMatrixStats();
+            this.closeSlotPicker();
+        },
+
+        releaseSlot(slotId) {
+            if (!confirm('Deseja liberar este slot e remover o comprador?')) return;
+
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.slot_id === slotId) {
+                        slot.claimed_by = null;
+                        slot.is_item_paid = false;
+                        slot.status = 'AVAILABLE';
+                        break;
+                    }
+                }
+            }
+
+            this.pendingMatrixUpdates[slotId] = {
+                slot_id: slotId,
+                action: 'release'
+            };
+
+            this.recalculateMatrixStats();
+        },
+
+        toggleSlotPayment(slotId) {
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.slot_id === slotId && slot.claimed_by) {
+                        slot.is_item_paid = !slot.is_item_paid;
+                        slot.status = slot.is_item_paid ? 'PAID' : 'RESERVED';
+
+                        this.pendingMatrixUpdates[slotId] = {
+                            slot_id: slotId,
+                            action: 'toggle_payment',
+                            is_paid: slot.is_item_paid
+                        };
+                        break;
+                    }
+                }
+            }
+            this.recalculateMatrixStats();
+        },
+
+        markAllFilledAsPaid() {
+            let count = 0;
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.claimed_by && !slot.is_item_paid) {
+                        slot.is_item_paid = true;
+                        slot.status = 'PAID';
+                        this.pendingMatrixUpdates[slot.slot_id] = {
+                            slot_id: slot.slot_id,
+                            action: 'toggle_payment',
+                            is_paid: true
+                        };
+                        count++;
+                    }
+                }
+            }
+            this.recalculateMatrixStats();
+            alert(count + ' slot(s) marcado(s) como pago(s). Clique em "Salvar Matriz" para confirmar no banco.');
+        },
+
+        recalculateMatrixStats() {
+            let occ = 0;
+            let paid = 0;
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.claimed_by) {
+                        occ++;
+                        if (slot.is_item_paid) paid++;
+                    }
+                }
+            }
+            this.matrix.occupied_slots = occ;
+            this.matrix.paid_slots = paid;
+        },
+
+        async saveMatrixChanges() {
+            if (this.matrixSaving || this.pendingMatrixChangesCount === 0) return;
+            this.matrixSaving = true;
+
+            const updates = Object.values(this.pendingMatrixUpdates);
+            try {
+                const res = await fetch('/ceg/' + this.cegSlug + '/alocar-massa/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'save_matrix',
+                        updates: updates
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.pendingMatrixUpdates = {};
+                    if (data.updated_matrix) {
+                        this.matrix = data.updated_matrix;
+                    }
+                    alert('Alterações da matriz gravadas com sucesso!');
+                } else {
+                    alert(data.message || 'Erro ao salvar alterações da matriz.');
+                }
+            } catch(e) {
+                alert('Erro ao conectar com o servidor: ' + e);
+            } finally {
+                this.matrixSaving = false;
+            }
+        },
+
+        // Métodos de Colagem em Lote
+        loadSamplePaste() {
+            const firstItem = (this.matrix.items && this.matrix.items[0]) ? this.matrix.items[0] : null;
+            const secondItem = (this.matrix.items && this.matrix.items[1]) ? this.matrix.items[1] : null;
+
+            const name1 = firstItem ? (firstItem.member_name || firstItem.name) : 'Integrante 1';
+            const name2 = secondItem ? (secondItem.member_name || secondItem.name) : 'Integrante 2';
+
+            this.pasteRawText = `Set 1 | ${name1} | Bia Silva | 11988887777 | Pago\n${name2} | @joiner_kpop | 11977776666 | Pendente`;
+        },
+
+        async parsePastedLines() {
+            if (!this.pasteRawText.trim() || this.parsing) return;
+            this.parsing = true;
+
+            try {
+                const res = await fetch('/ceg/' + this.cegSlug + '/alocar-massa/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'parse_text',
+                        raw_text: this.pasteRawText,
+                        auto_next_set: this.pasteOptions.auto_next_set,
+                        overwrite: this.pasteOptions.overwrite,
+                        default_is_paid: this.pasteOptions.default_is_paid
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.parseResult = data;
+                } else {
+                    alert(data.message || 'Erro ao analisar linhas.');
+                }
+            } catch(e) {
+                alert('Erro ao conectar com o servidor: ' + e);
+            } finally {
+                this.parsing = false;
+            }
+        },
+
+        async executeBulkAllocation() {
+            if (!this.parseResult.rows || this.executing) return;
+            const readyRows = this.parseResult.rows.filter(r => r.status === 'READY');
+            if (readyRows.length === 0) {
+                alert('Não há linhas válidas prontas para gravação.');
+                return;
+            }
+
+            if (!confirm(`Confirma a alocação de ${readyRows.length} slot(s) nesta CEG?`)) return;
+
+            this.executing = true;
+            try {
+                const res = await fetch('/ceg/' + this.cegSlug + '/alocar-massa/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'execute_bulk',
+                        rows: readyRows,
+                        overwrite: this.pasteOptions.overwrite,
+                        auto_create_participants: this.pasteOptions.auto_create_participants
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    let msg = `Sucesso! ${data.allocated_count} slot(s) alocado(s).`;
+                    if (data.new_participants_count > 0) {
+                        msg += ` ${data.new_participants_count} novo(s) participante(s) cadastrado(s).`;
+                    }
+                    alert(msg);
+
+                    if (data.updated_matrix) {
+                        this.matrix = data.updated_matrix;
+                    }
+                    this.pasteRawText = '';
+                    this.parseResult = { rows: [], summary: { total: 0, ready: 0, conflicts: 0, errors: 0 } };
+                    this.activeTab = 'matrix';
+                } else {
+                    alert(data.message || 'Erro ao executar alocação.');
+                }
+            } catch(e) {
+                alert('Erro ao conectar com o servidor: ' + e);
+            } finally {
+                this.executing = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

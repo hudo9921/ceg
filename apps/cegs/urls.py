@@ -49,15 +49,22 @@ from .envios_views import (
     ExcluirPacoteView,
 )
 
+from .allocator_views import (
+    CEGBulkAllocatorView,
+    CEGBulkAllocatorAPIView,
+)
 from apps.participants.views import BulkParticipantCreateView
 
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
+    path('cegs/alocar-joiners/', CEGBulkAllocatorView.as_view(), name='bulk_joiner_allocator_global'),
     path('ceg/<slug:slug>/', CEGDetailView.as_view(), name='ceg_detail'),
     path('ceg/<slug:slug>/edit/', UpdateCEGView.as_view(), name='update_ceg'),
     path('ceg/<slug:slug>/update-fees/', UpdateCEGFeesView.as_view(), name='update_ceg_fees'),
     path('ceg/<slug:slug>/logs-espera/', CEGLogsAndWaitingListView.as_view(), name='ceg_logs_espera'),
     path('ceg/<slug:slug>/bulk-manage-items/', BulkManageCEGItemsView.as_view(), name='bulk_manage_ceg_items'),
+    path('ceg/<slug:slug>/alocar-massa/', CEGBulkAllocatorView.as_view(), name='ceg_bulk_allocator'),
+    path('ceg/<slug:slug>/alocar-massa/api/', CEGBulkAllocatorAPIView.as_view(), name='ceg_bulk_allocator_api'),
     path('slots/<int:slot_id>/claim/', ClaimSlotView.as_view(), name='claim_slot'),
     path('slots/<int:slot_id>/toggle-payment/', ToggleSlotPaymentView.as_view(), name='toggle_slot_payment'),
     path('slots/<int:slot_id>/manage/', ManageSlotView.as_view(), name='manage_slot'),

@@ -189,6 +189,32 @@
                 </div>
             </a>
 
+            <!-- Card: Alocador de Joiners em Massa (Vendas de CEGs) -->
+            <a href="{% url 'bulk_joiner_allocator_global' %}"
+               class="group text-left bg-gradient-to-br from-pink-50 via-white to-rose-50 hover:from-pink-100/50 p-6 rounded-2xl border-2 border-pink-200 hover:border-pink-500 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer relative overflow-hidden">
+                <div class="absolute top-3 right-3 bg-pink-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                    Vendas / Slots
+                </div>
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-pink-100 group-hover:bg-pink-200 text-pink-700 flex items-center justify-center text-2xl mb-4 transition">
+                        🎯
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-pink-600 bg-pink-100/60 px-2 py-0.5 rounded">
+                        Alocação de Slots
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-pink-700 transition">
+                        Alocador de Joiners em Massa
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Atribua slots por planilha interativa (Sets x Itens) ou cole vendas brutas do Twitter/Excel com autocadastro de compradores.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-pink-100 flex items-center justify-between text-xs font-bold text-pink-700">
+                    <span>Abrir Alocador</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </a>
+
             <!-- Retângulo 1: Cadastrar Grupo Novo -->
             <button type="button" @click="openModal('group')"
                     x-show="currentCategory === 'all' || currentCategory === 'ceg'"
