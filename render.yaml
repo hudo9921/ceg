@@ -25,6 +25,30 @@ services:
         value: "https://*.onrender.com"
       - key: WHATSAPP_PROVIDER
         value: "console"
+      # Cloudflare R2 (Armazenamento de Imagens/Links na Nuvem)
+      - key: USE_R2
+        value: "False"
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_ENDPOINT_URL
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_CUSTOM_DOMAIN
+        sync: false
+      # WhatsApp Gateway (Evolution API / Z-API)
+      - key: EVOLUTION_API_URL
+        sync: false
+      - key: EVOLUTION_API_KEY
+        sync: false
+      - key: EVOLUTION_INSTANCE_NAME
+        value: "ceg-bot"
+      - key: ZAPI_INSTANCE_ID
+        sync: false
+      - key: ZAPI_TOKEN
+        sync: false
 
 databases:
   - name: ceg-database
