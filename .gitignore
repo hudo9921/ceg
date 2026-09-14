@@ -11,6 +11,8 @@ planilhas/*
 media/
 staticfiles/
 .env
+.env.*
+.env.oracle
 .DS_Store
 backups/
 mysterious-fermi/

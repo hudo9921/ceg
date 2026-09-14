@@ -147,6 +147,22 @@
                             <!-- Barrinha Separadora -->
                             <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
 
+                            <!-- WhatsApp Bot -->
+                            {% if request.resolver_match.url_name == 'admin_whatsapp' or '/admin/whatsapp' in request.path %}
+                                <a href="{% url 'admin_whatsapp' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span>🤖</span>
+                                    <span>Bot WhatsApp</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'admin_whatsapp' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                    <span class="opacity-70">🤖</span>
+                                    <span>Bot WhatsApp</span>
+                                </a>
+                            {% endif %}
+
+                            <!-- Barrinha Separadora -->
+                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
+
                             <!-- 5. Painel Admin -->
                             <a href="/admin/" target="_blank" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition flex items-center gap-1">
                                 <span>Painel Admin</span>

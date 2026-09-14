@@ -15,6 +15,7 @@ def health_check(request):
 
 urlpatterns = [
     path('health/', health_check, name='health_check'),
+    path('admin/whatsapp/', include('apps.auth_otp.urls')),
     path('admin/', admin.site.urls),
     path('me/', include('apps.participants.urls')),
     path('analytics/', include('apps.analytics.urls')),

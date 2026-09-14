@@ -1,4 +1,12 @@
 services:
+  redis:
+    image: redis:alpine
+    container_name: valcegs-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   ceg-web:
     build: .
     container_name: valcegs-web
@@ -8,6 +16,8 @@ services:
       - "8000"
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
 
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.0
@@ -19,6 +29,8 @@ services:
     volumes:
       - evolution_instances:/evolution/instances
       - evolution_store:/evolution/store
+    depends_on:
+      - redis
 
   caddy:
     image: caddy:alpine
@@ -36,7 +48,9 @@ services:
       - evolution-api
 
 volumes:
+  redis_data:
   evolution_instances:
   evolution_store:
   caddy_data:
   caddy_config:
+

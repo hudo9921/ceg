@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Conexão WhatsApp (Evolution API) - CEG Manager{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="whatsappManager()">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-2xl">🤖</span>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Gestão do Bot WhatsApp</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-700">
+                    Evolution API v2.3.0
+                </span>
+            </div>
+            <p class="text-sm text-slate-500">
+                Instância: <code class="font-bold text-slate-700">{{ instance_name }}</code> &bull; Provedor: <code class="font-bold text-slate-700">{{ provider_name }}</code>
+            </p>
+        </div>
+        <div class="mt-4 md:mt-0 flex items-center gap-2">
+            <template x-if="state === 'open'">
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
+                    <span class="w-2.5 h-2.5 mr-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    WhatsApp Conectado
+                </span>
+            </template>
+            <template x-if="state !== 'open'">
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-xs">
+                    <span class="w-2.5 h-2.5 mr-2 rounded-full bg-amber-500 animate-ping"></span>
+                    Aguardando Conexão
+                </span>
+            </template>
+        </div>
+    </div>
+
+    <!-- Mensagens do Django -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl text-sm font-medium border shadow-xs {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border-emerald-200{% elif message.tags == 'error' %}bg-rose-50 text-rose-800 border-rose-200{% else %}bg-sky-50 text-sky-800 border-sky-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Coluna Esquerda: QR Code ou Status Conectado -->
+        <div class="lg:col-span-6 space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>📱</span> Status do Aparelho
+                </h2>
+
+                <!-- Estado Conectado -->
+                <div x-show="state === 'open'" class="text-center py-8">
+                    <div class="w-20 h-20 mx-auto mb-4 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl shadow-inner">
+                        ✓
+                    </div>
+                    <h3 class="text-xl font-black text-slate-800 mb-1">WhatsApp Conectado e Pronto!</h3>
+                    <p class="text-sm text-slate-500 max-w-sm mx-auto mb-6">
+                        O bot está ativo e pronto para disparar códigos OTP de login, notificações de claims e avisos de pagamentos aos joiners.
+                    </p>
+
+                    <form method="post" onsubmit="return confirm('Tem certeza que deseja desconectar o WhatsApp desta instância?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="logout">
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition shadow-2xs">
+                            <span>🔌</span> Desconectar / Trocar de Aparelho
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Estado Aguardando QR Code -->
+                <div x-show="state !== 'open'" class="text-center py-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-pink-600 mb-2">Escaneie o QR Code abaixo</p>
+
+                    <div class="inline-block p-4 bg-white border-2 border-dashed border-pink-300 rounded-2xl shadow-md mb-4">
+                        <template x-if="qrBase64">
+                            <img :src="qrBase64" alt="QR Code WhatsApp" class="w-64 h-64 mx-auto rounded-lg" />
+                        </template>
+                        <template x-if="!qrBase64">
+                            <div class="w-64 h-64 mx-auto flex flex-col items-center justify-center text-slate-400">
+                                <span class="animate-spin text-3xl mb-2">⏳</span>
+                                <span class="text-xs">Gerando QR Code...</span>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Pairing Code (se disponível) -->
+                    <template x-if="pairingCode">
+                        <div class="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-xs text-slate-500 block mb-1">Ou conecte por código de pareamento:</span>
+                            <span class="text-lg font-mono font-bold tracking-widest text-slate-800" x-text="pairingCode"></span>
+                        </div>
+                    </template>
+
+                    <!-- Instruções de Conexão -->
+                    <div class="bg-slate-50 rounded-xl p-4 text-left border border-slate-200 text-xs text-slate-600 space-y-1.5">
+                        <p class="font-bold text-slate-800 mb-1">Como conectar no seu celular:</p>
+                        <p>1. Abra o WhatsApp no seu smartphone.</p>
+                        <p>2. Toque em <strong>Mais opções</strong> (Android: 3 pontinhos) ou <strong>Configurações</strong> (iPhone).</p>
+                        <p>3. Toque em <strong>Aparelhos conectados</strong> &rarr; <strong>Conectar um aparelho</strong>.</p>
+                        <p>4. Aponte a câmera para o QR Code acima.</p>
+                    </div>
+
+                    <div class="mt-4 flex justify-center gap-3">
+                        <button @click="refreshStatus()" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                            <span :class="loading ? 'animate-spin' : ''">🔄</span> Atualizar QR Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Teste de Envio e Configurações -->
+        <div class="lg:col-span-6 space-y-6">
+            <!-- Formulário de Teste de Disparo -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span>💬</span> Testar Envio de Mensagem
+                </h2>
+                <p class="text-xs text-slate-500 mb-4">
+                    Envie uma mensagem instantânea para o seu próprio WhatsApp para validar que a integração está funcionando perfeitamente.
+                </p>
+
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="send_test">
+
+                    <div>
+                        <label for="phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Número de WhatsApp (com DDI e DDD)
+                        </label>
+                        <input type="text" id="phone" name="phone" placeholder="Ex: 5511999998888" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-hidden transition" />
+                        <span class="text-2xs text-slate-400 mt-1 block">Apenas números (DDI Brasil = 55 + DDD + 9 dígitos).</span>
+                    </div>
+
+                    <div>
+                        <label for="message" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Texto da Mensagem
+                        </label>
+                        <textarea id="message" name="message" rows="3" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-hidden transition">Olá! Este é um teste oficial de mensagem via Bot WhatsApp do CEG Manager. ✨</textarea>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                        <span>🚀</span> Enviar Mensagem de Teste
+                    </button>
+                </form>
+            </div>
+
+            <!-- Card de Informações Técnicas -->
+            <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Ambiente & Conexões</h3>
+                <dl class="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <dt class="text-slate-400">Servidor Evolution</dt>
+                        <dd class="font-mono font-semibold text-slate-700 break-all">{{ evolution_url }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-400">Instância Baileys</dt>
+                        <dd class="font-mono font-semibold text-slate-700">{{ instance_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-400">Cache Redis</dt>
+                        <dd class="font-semibold text-emerald-600">Ativo (valcegs-redis)</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-400">Banco de Dados</dt>
+                        <dd class="font-semibold text-purple-600">Neon PostgreSQL (evolution)</dd>
+                    </div>
+                </dl>
+                <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center text-xs">
+                    <a href="http://150.136.166.17:8080/manager/" target="_blank" class="text-pink-600 hover:text-pink-700 font-semibold flex items-center gap-1">
+                        Abrir Evolution Manager Oficial ↗
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function whatsappManager() {
+    return {
+        state: '{{ state }}',
+        qrBase64: '{{ qr_data.base64|default:"" }}',
+        pairingCode: '{{ qr_data.pairingCode|default:"" }}',
+        loading: false,
+        pollInterval: null,
+
+        init() {
+            // Polling automático a cada 6 segundos se não estiver conectado
+            if (this.state !== 'open') {
+                this.pollInterval = setInterval(() => {
+                    this.pollStatus();
+                }, 6000);
+            }
+        },
+
+        async pollStatus() {
+            try {
+                const res = await fetch('{% url "admin_whatsapp_status" %}');
+                if (res.ok) {
+                    const data = await res.json();
+                    this.state = data.state;
+                    if (data.base64) {
+                        this.qrBase64 = data.base64;
+                    }
+                    if (data.pairingCode) {
+                        this.pairingCode = data.pairingCode;
+                    }
+                    if (this.state === 'open' && this.pollInterval) {
+                        clearInterval(this.pollInterval);
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao verificar status do WhatsApp:", err);
+            }
+        },
+
+        async refreshStatus() {
+            this.loading = true;
+            await this.pollStatus();
+            this.loading = false;
+        }
+    }
+}
+</script>
+{% endblock %}
