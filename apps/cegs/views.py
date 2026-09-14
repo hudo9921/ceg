@@ -264,7 +264,8 @@ class ClaimSlotView(View):
                 phone=whatsapp,
                 social_handle=social_handle,
                 notes=notes,
-                username=username
+                username=username,
+                bypass_status_check=is_staff,  # Admin pode reservar em qualquer status de CEG
             )
             # Salva o participante na sessão se não for o admin realizando a reserva em nome de terceiro
             if not is_staff:

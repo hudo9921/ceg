@@ -134,11 +134,12 @@ class AddedToWaitingListError(SlotUnavailableError):
 
 class ClaimService:
     @staticmethod
-    def claim_slot(slot_id: int, name: str, phone: str, social_handle: str = "", notes: str = "", username: str = "") -> Claim:
+    def claim_slot(slot_id: int, name: str, phone: str, social_handle: str = "", notes: str = "", username: str = "", bypass_status_check: bool = False) -> Claim:
         """
         Executa a reserva atômica de um ItemSlot com proteção de concorrência.
         Garante que apenas 1 pessoa consiga reservar o slot físico no segundo zero
         e gera log output registrando a ordem exata de quem deu claim.
+        bypass_status_check: se True (admin), ignora validações de status/data da CEG.
         """
         with _claim_mutex:
             return ClaimService._claim_slot_internal(
@@ -148,10 +149,11 @@ class ClaimService:
                 social_handle=social_handle,
                 notes=notes,
                 username=username,
+                bypass_status_check=bypass_status_check,
             )
 
     @staticmethod
-    def _claim_slot_internal(slot_id: int, name: str, phone: str, social_handle: str = "", notes: str = "", username: str = "") -> Claim:
+    def _claim_slot_internal(slot_id: int, name: str, phone: str, social_handle: str = "", notes: str = "", username: str = "", bypass_status_check: bool = False) -> Claim:
         cleaned_phone = clean_phone_number(phone)
         if not cleaned_phone:
             raise CEGError("Número de WhatsApp inválido.")
@@ -208,17 +210,18 @@ class ClaimService:
                     set_number = slot.set.set_number
                     ceg_title = ceg.title
 
-                    # 2. Validação do Modo Standby / Abertura da CEG
-                    if ceg.opens_at and timezone.now() < ceg.opens_at:
-                        raise CEGNotOpenYetError(
-                            f"A CEG ainda está em modo Standby! As reservas abrem em {ceg.opens_at.strftime('%d/%m/%Y às %H:%M:%S')}."
-                        )
+                    # 2. Validação do Modo Standby / Abertura da CEG (admin bypass)
+                    if not bypass_status_check:
+                        if ceg.opens_at and timezone.now() < ceg.opens_at:
+                            raise CEGNotOpenYetError(
+                                f"A CEG ainda está em modo Standby! As reservas abrem em {ceg.opens_at.strftime('%d/%m/%Y às %H:%M:%S')}."
+                            )
 
-                    if ceg.status not in (CEG.Status.OPEN, CEG.Status.SCHEDULED):
-                        raise CEGError("Esta CEG não está aceitando reservas no momento.")
+                        if ceg.status not in (CEG.Status.OPEN, CEG.Status.SCHEDULED):
+                            raise CEGError("Esta CEG não está aceitando reservas no momento.")
 
-                    if not slot.set.is_active:
-                        raise CEGError("Este Set está desativado para reservas.")
+                        if not slot.set.is_active:
+                            raise CEGError("Este Set está desativado para reservas.")
 
                     # 3. Verificação de Concorrência inicial
                     if slot.status != ItemSlot.Status.AVAILABLE:
