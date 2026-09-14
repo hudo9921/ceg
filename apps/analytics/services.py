@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import timedelta
 from django.db.models import Count, Sum, Q, F
 from django.db.models.functions import TruncMonth
@@ -25,10 +26,11 @@ class AnalyticsService:
         groups = KpopGroup.objects.prefetch_related('eras').all().order_by('name')
         groups_data = []
         for g in groups:
+            sorted_eras = sorted(g.eras.all(), key=lambda e: e.name.lower())
             groups_data.append({
                 'id': str(g.id),
                 'name': g.name,
-                'eras': [{'id': str(e.id), 'name': e.name} for e in g.eras.all().order_by('name')]
+                'eras': [{'id': str(e.id), 'name': e.name} for e in sorted_eras]
             })
 
         eras = Era.objects.select_related('group').all().order_by('group__name', 'name')
@@ -202,31 +204,43 @@ class AnalyticsService:
         if era_id:
             cegs = cegs.filter(era_id=era_id)
 
+        cegs_list = list(cegs)
+        ceg_ids = [c.id for c in cegs_list]
+
+        all_slots = list(
+            ItemSlot.objects.filter(set__ceg_id__in=ceg_ids, set__is_active=True)
+            .select_related('set')
+        )
+        slots_by_ceg = defaultdict(list)
+        for s in all_slots:
+            slots_by_ceg[s.set.ceg_id].append(s)
+
+        claim_aggregates = Claim.objects.filter(
+            slot__set__ceg_id__in=ceg_ids
+        ).values('slot__set__ceg_id', 'status').annotate(
+            total_val=Sum('total_price')
+        )
+        paid_val_by_ceg = defaultdict(float)
+        pending_val_by_ceg = defaultdict(float)
+        for row in claim_aggregates:
+            cid = row['slot__set__ceg_id']
+            val = float(row['total_val'] or 0)
+            if row['status'] == Claim.Status.PAID:
+                paid_val_by_ceg[cid] += val
+            elif row['status'] == Claim.Status.PENDING:
+                pending_val_by_ceg[cid] += val
+
         table_rows = []
-        for c in cegs:
-            total_slots = ItemSlot.objects.filter(set__ceg=c, set__is_active=True).count()
-            sold_slots = ItemSlot.objects.filter(
-                set__ceg=c, set__is_active=True,
-                status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]
-            ).count()
-            available_slots = ItemSlot.objects.filter(
-                set__ceg=c, set__is_active=True, status=ItemSlot.Status.AVAILABLE
-            ).count()
+        for c in cegs_list:
+            ceg_slots = slots_by_ceg.get(c.id, [])
+            total_slots = len(ceg_slots)
+            sold_slots = sum(1 for s in ceg_slots if s.status in [ItemSlot.Status.RESERVED, ItemSlot.Status.PAID])
+            available_slots = sum(1 for s in ceg_slots if s.status == ItemSlot.Status.AVAILABLE)
 
-            paid_sum = float(Claim.objects.filter(
-                slot__set__ceg=c, status=Claim.Status.PAID
-            ).aggregate(s=Sum('total_price'))['s'] or 0)
-
-            pending_sum = float(Claim.objects.filter(
-                slot__set__ceg=c, status=Claim.Status.PENDING
-            ).aggregate(s=Sum('total_price'))['s'] or 0)
-
+            paid_sum = paid_val_by_ceg.get(c.id, 0.0)
+            pending_sum = pending_val_by_ceg.get(c.id, 0.0)
             sold_sum = paid_sum + pending_sum
-
-            available_sum = float(ItemSlot.objects.filter(
-                set__ceg=c, set__is_active=True, status=ItemSlot.Status.AVAILABLE
-            ).aggregate(s=Sum('price'))['s'] or 0)
-
+            available_sum = sum(float(s.price) for s in ceg_slots if s.status == ItemSlot.Status.AVAILABLE)
             total_potential = sold_sum + available_sum
             fill_pct = int((sold_slots / total_slots) * 100) if total_slots > 0 else 0
 
@@ -255,26 +269,42 @@ class AnalyticsService:
 
     @staticmethod
     def get_group_comparison():
-        """Compara o faturamento e capacidade entre os grupos para gráficos"""
-        groups = KpopGroup.objects.all().order_by('name')
+        """Compara o faturamento e capacidade entre os grupos para gráficos (0 queries N+1)"""
+        groups = list(KpopGroup.objects.all().order_by('name'))
+        
+        claim_aggs = Claim.objects.exclude(status=Claim.Status.CANCELLED).values(
+            'slot__set__ceg__era__group_id', 'status'
+        ).annotate(
+            total_val=Sum('total_price'),
+            claims_count=Count('id')
+        )
+        paid_by_group = defaultdict(float)
+        pending_by_group = defaultdict(float)
+        claims_cnt_by_group = defaultdict(int)
+        for row in claim_aggs:
+            gid = row['slot__set__ceg__era__group_id']
+            if not gid:
+                continue
+            claims_cnt_by_group[gid] += row['claims_count']
+            val = float(row['total_val'] or 0)
+            if row['status'] == Claim.Status.PAID:
+                paid_by_group[gid] += val
+            elif row['status'] == Claim.Status.PENDING:
+                pending_by_group[gid] += val
+
+        slot_aggs = ItemSlot.objects.filter(
+            set__is_active=True, status=ItemSlot.Status.AVAILABLE
+        ).values('set__ceg__era__group_id').annotate(
+            avail_val=Sum('price')
+        )
+        avail_by_group = {row['set__ceg__era__group_id']: float(row['avail_val'] or 0) for row in slot_aggs}
+
         results = []
         for g in groups:
-            paid = float(Claim.objects.filter(
-                slot__set__ceg__era__group=g, status=Claim.Status.PAID
-            ).aggregate(s=Sum('total_price'))['s'] or 0)
-
-            pending = float(Claim.objects.filter(
-                slot__set__ceg__era__group=g, status=Claim.Status.PENDING
-            ).aggregate(s=Sum('total_price'))['s'] or 0)
-
-            available = float(ItemSlot.objects.filter(
-                set__ceg__era__group=g, set__is_active=True, status=ItemSlot.Status.AVAILABLE
-            ).aggregate(s=Sum('price'))['s'] or 0)
-
-            claims_cnt = Claim.objects.filter(
-                slot__set__ceg__era__group=g
-            ).exclude(status=Claim.Status.CANCELLED).count()
-
+            paid = paid_by_group.get(g.id, 0.0)
+            pending = pending_by_group.get(g.id, 0.0)
+            available = avail_by_group.get(g.id, 0.0)
+            claims_cnt = claims_cnt_by_group.get(g.id, 0)
             if (paid + pending + available) > 0 or claims_cnt > 0:
                 results.append({
                     'group_name': g.name,
@@ -330,11 +360,11 @@ class AnalyticsService:
 
     @staticmethod
     def get_sets_near_completion(group_id=None, era_id=None):
-        """Retorna sets com suporte a filtros de grupo e era."""
+        """Retorna sets com suporte a filtros de grupo e era (em memória, sem N+1)."""
         active_sets = CEGSet.objects.filter(
             is_active=True,
             ceg__status__in=[CEG.Status.OPEN, CEG.Status.SCHEDULED]
-        ).select_related('ceg', 'ceg__era', 'ceg__era__group')
+        ).select_related('ceg', 'ceg__era', 'ceg__era__group').prefetch_related('slots')
 
         if group_id:
             active_sets = active_sets.filter(ceg__era__group_id=group_id)
@@ -343,8 +373,9 @@ class AnalyticsService:
 
         sets_info = []
         for s in active_sets:
-            total = s.slots_count
-            reserved = s.reserved_count
+            slots = list(s.slots.all())
+            total = len(slots)
+            reserved = sum(1 for sl in slots if sl.status in [ItemSlot.Status.RESERVED, ItemSlot.Status.PAID])
             if total > 0:
                 pct = int((reserved / total) * 100)
                 sets_info.append({
@@ -357,7 +388,7 @@ class AnalyticsService:
                     'reserved_slots': reserved,
                     'remaining_slots': total - reserved,
                     'fill_percentage': pct,
-                    'is_full': s.is_full,
+                    'is_full': reserved == total,
                 })
 
         return sorted(sets_info, key=lambda x: x['fill_percentage'], reverse=True)
@@ -388,10 +419,7 @@ class AnalyticsService:
         cegs_qs = CEG.objects.none()
 
         if category in ['all', 'ceg']:
-            cegs_qs = CEG.objects.select_related('era__group', 'era', 'caixa').prefetch_related(
-                'sets__slots__item_definition',
-                'sets__slots__claimed_by'
-            ).all()
+            cegs_qs = CEG.objects.select_related('era__group', 'era', 'caixa').all()
 
             if group_id:
                 cegs_qs = cegs_qs.filter(era__group_id=group_id)
@@ -406,10 +434,49 @@ class AnalyticsService:
                     Q(sets__slots__item_definition__name__icontains=s_term)
                 ).distinct()
 
-            for ceg in cegs_qs:
-                for cset in ceg.sets.filter(is_active=True).order_by('set_number'):
+            cegs_list = list(cegs_qs)
+            ceg_ids = [c.id for c in cegs_list]
+
+            # 1. Carrega todos os sets ativos de uma vez
+            active_sets = list(
+                CEGSet.objects.filter(ceg_id__in=ceg_ids, is_active=True).order_by('set_number')
+            )
+            sets_by_ceg = defaultdict(list)
+            for s in active_sets:
+                sets_by_ceg[s.ceg_id].append(s)
+
+            # 2. Carrega todos os slots dos sets ativos de uma vez
+            all_slots = list(
+                ItemSlot.objects.filter(set__ceg_id__in=ceg_ids, set__is_active=True)
+                .select_related('set', 'item_definition')
+                .order_by('item_definition__name')
+            )
+            slots_by_set = defaultdict(list)
+            slots_by_ceg = defaultdict(list)
+            for slot in all_slots:
+                slots_by_set[slot.set_id].append(slot)
+                slots_by_ceg[slot.set.ceg_id].append(slot)
+
+            # 3. Agrega valores de Claims em 1 única query
+            claim_aggregates = Claim.objects.filter(
+                slot__set__ceg_id__in=ceg_ids
+            ).values('slot__set__ceg_id', 'status').annotate(
+                total_val=Sum('total_price')
+            )
+            paid_val_by_ceg = defaultdict(float)
+            pending_val_by_ceg = defaultdict(float)
+            for row in claim_aggregates:
+                cid = row['slot__set__ceg_id']
+                val = float(row['total_val'] or 0)
+                if row['status'] == Claim.Status.PAID:
+                    paid_val_by_ceg[cid] += val
+                elif row['status'] == Claim.Status.PENDING:
+                    pending_val_by_ceg[cid] += val
+
+            for ceg in cegs_list:
+                for cset in sets_by_ceg.get(ceg.id, []):
                     total_sets_count += 1
-                    slots = list(cset.slots.all().order_by('item_definition__name'))
+                    slots = slots_by_set.get(cset.id, [])
                     tot = len(slots)
                     total_slots_count += tot
 
@@ -510,18 +577,13 @@ class AnalyticsService:
                             'is_terminado': is_terminado,
                         }
 
-                        # Regra do Usuário:
-                        # "Set fechado eu quero q seja qq set que esta 100% claimado porem nao 100% pago"
                         if not is_fully_paid:
                             sets_fechados.append(set_dict)
                         else:
-                            # "sets pagos e em sets pagos quero poder ver quais estao com frete inter pagos,
-                            # quais estao com taxa aduaneira pagos e quando tiver com TUDO pago quero que ele seja classificado como set terminado"
                             sets_pagos.append(set_dict)
                             if is_terminado:
                                 sets_terminados.append(set_dict)
 
-                        # Mantém sets_completed_pending para retrocompatibilidade
                         if pending_reasons:
                             sets_completed_pending.append(set_dict)
 
@@ -557,22 +619,22 @@ class AnalyticsService:
                             'missing_items': missing_items,
                         })
 
-                # Estatísticas da CEG individual para cegs_overview
-                ceg_slots = ItemSlot.objects.filter(set__ceg=ceg, set__is_active=True)
-                ceg_total_slots_cnt = ceg_slots.count()
-                ceg_sold_slots_cnt = ceg_slots.filter(status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]).count()
-                ceg_avail_slots_cnt = ceg_slots.filter(status=ItemSlot.Status.AVAILABLE).count()
+                # Estatísticas da CEG individual em memória (0 queries adicionais!)
+                ceg_slots = slots_by_ceg.get(ceg.id, [])
+                ceg_total_slots_cnt = len(ceg_slots)
+                ceg_sold_slots_cnt = sum(1 for s in ceg_slots if s.status in [ItemSlot.Status.RESERVED, ItemSlot.Status.PAID])
+                ceg_avail_slots_cnt = sum(1 for s in ceg_slots if s.status == ItemSlot.Status.AVAILABLE)
 
-                ceg_paid_val = float(Claim.objects.filter(slot__set__ceg=ceg, status=Claim.Status.PAID).aggregate(s=Sum('total_price'))['s'] or 0)
-                ceg_pending_val = float(Claim.objects.filter(slot__set__ceg=ceg, status=Claim.Status.PENDING).aggregate(s=Sum('total_price'))['s'] or 0)
-                ceg_avail_val = float(ceg_slots.filter(status=ItemSlot.Status.AVAILABLE).aggregate(s=Sum('price'))['s'] or 0)
+                ceg_paid_val = paid_val_by_ceg.get(ceg.id, 0.0)
+                ceg_pending_val = pending_val_by_ceg.get(ceg.id, 0.0)
+                ceg_avail_val = sum(float(s.price) for s in ceg_slots if s.status == ItemSlot.Status.AVAILABLE)
                 ceg_pot_val = ceg_paid_val + ceg_pending_val + ceg_avail_val
                 ceg_fill_pct = int((ceg_sold_slots_cnt / ceg_total_slots_cnt) * 100) if ceg_total_slots_cnt > 0 else 0
 
                 has_ceg_frete = (ceg.frete_inter is not None and ceg.frete_inter > 0)
                 has_ceg_taxa = (ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0)
-                frete_inter_paid_slots = ceg_slots.filter(is_frete_inter_paid=True).count() if has_ceg_frete else 0
-                taxa_paid_slots = ceg_slots.filter(is_taxa_aduaneira_paid=True).count() if has_ceg_taxa else 0
+                frete_inter_paid_slots = sum(1 for s in ceg_slots if s.is_frete_inter_paid) if has_ceg_frete else 0
+                taxa_paid_slots = sum(1 for s in ceg_slots if s.is_taxa_aduaneira_paid) if has_ceg_taxa else 0
 
                 ceg_closed_cnt = sum(1 for s in sets_fechados if s['ceg_id'] == ceg.id)
                 ceg_paid_sets_cnt = sum(1 for s in sets_pagos if s['ceg_id'] == ceg.id)
@@ -580,7 +642,6 @@ class AnalyticsService:
                 ceg_incomplete_cnt = sum(1 for s in sets_incomplete if s['ceg_id'] == ceg.id)
                 ceg_completed_pending_cnt = sum(1 for s in sets_completed_pending if s['ceg_id'] == ceg.id)
 
-                # Regra do Usuário: "Ceg ativa tem que ser cegs que ainda tem vagas a serem preenchidas"
                 is_ceg_ativa = (ceg_avail_slots_cnt > 0)
 
                 cegs_overview.append({
@@ -592,7 +653,7 @@ class AnalyticsService:
                     'status_display': ceg.get_status_display(),
                     'group_name': ceg.era.group.name,
                     'era_name': ceg.era.name,
-                    'total_sets': ceg.sets.filter(is_active=True).count(),
+                    'total_sets': len(sets_by_ceg.get(ceg.id, [])),
                     'total_slots': ceg_total_slots_cnt,
                     'sold_slots': ceg_sold_slots_cnt,
                     'available_slots': ceg_avail_slots_cnt,

@@ -23,6 +23,11 @@ services:
         value: "https://*.onrender.com"
       - key: WHATSAPP_PROVIDER
         value: "console"
+      # Credenciais do Superusuário Admin
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       # Cloudflare R2 (Armazenamento de Imagens/Links na Nuvem)
       - key: USE_R2
         value: "False"

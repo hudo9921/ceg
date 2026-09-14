@@ -871,11 +871,23 @@ class CEGSet(models.Model):
 
     @property
     def slots_count(self) -> int:
+        if hasattr(self, '_slots_count'):
+            return self._slots_count
         return self.slots.count()
+
+    @slots_count.setter
+    def slots_count(self, value: int):
+        self._slots_count = value
 
     @property
     def reserved_count(self) -> int:
+        if hasattr(self, '_reserved_count'):
+            return self._reserved_count
         return self.slots.filter(status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]).count()
+
+    @reserved_count.setter
+    def reserved_count(self, value: int):
+        self._reserved_count = value
 
     @property
     def is_full(self) -> bool:
