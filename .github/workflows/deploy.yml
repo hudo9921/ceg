@@ -17,5 +17,7 @@ jobs:
           key: ${{ secrets.ORACLE_SSH_KEY }}
           script: |
             cd /home/ubuntu/ceg
+            git reset --hard
             git pull origin main
             docker compose up -d --build
+            docker image prune -f
