@@ -30,6 +30,74 @@ class BulkParticipantTests(TestCase):
         self.assertEqual(clean_phone_number('+55 11 91234-5678'), '5511912345678')
         self.assertEqual(clean_phone_number('5511912345678'), '5511912345678')
 
+        # Com zero ou operadora antes do DDD
+        self.assertEqual(clean_phone_number('011 91234-5678'), '5511912345678')
+        self.assertEqual(clean_phone_number('011912345678'), '5511912345678')
+        self.assertEqual(clean_phone_number('015 11 91234-5678'), '5511912345678')
+        self.assertEqual(clean_phone_number('+55 (011) 91234-5678'), '5511912345678')
+
+    def test_phone_format_unification_and_login(self):
+        """
+        Garante que todas as variações de entrada (com traço, sem traço, com espaços,
+        parênteses, com ou sem +55) sejam salvas no MESMO padrão canônico e que
+        o login encontre o mesmo participante independente de como ele digitar.
+        """
+        # Formatos diversos digitados pelo usuário
+        variations = [
+            '11 91234-5678',
+            '11912345678',
+            '1191234-5678',
+            '11 912345678',
+            '(11) 91234-5678',
+            '(11)91234-5678',
+            '(11) 912345678',
+            '+55 11 91234-5678',
+            '+55 (11) 91234-5678',
+            '+5511912345678',
+            '55 11 91234-5678',
+            '5511912345678',
+            '011 91234-5678',
+            '011912345678',
+        ]
+
+        # 1. Todas as variações convertem para o mesmo canônico
+        canonical = '5511912345678'
+        for v in variations:
+            self.assertEqual(clean_phone_number(v), canonical, f"Falha na conversão de '{v}'")
+
+        # 2. Salva participante com o primeiro formato
+        p = Participant.objects.create(name='Bia Silva', whatsapp='11 91234-5678', social_handle='@biasilva')
+        self.assertEqual(p.whatsapp, canonical)
+
+        # 3. Testa login OTP usando diferentes variações de escrita do número
+        from apps.auth_otp.services import OTPService
+        # Solicita OTP usando formato com parênteses e traço
+        success, msg, code = OTPService.send_otp('(11) 91234-5678')
+        self.assertTrue(success)
+        self.assertIsNotNone(code)
+
+        # Confirma OTP usando formato colado '11912345678'
+        success_v, msg_v, logged_p = OTPService.verify_otp('11912345678', code)
+        self.assertTrue(success_v)
+        self.assertEqual(logged_p.id, p.id)
+        self.assertEqual(logged_p.name, 'Bia Silva')
+
+        # 4. Testa via requisição HTTP do navegador
+        # Envia formulário com '1191234-5678'
+        res_send = self.client.post('/me/login/', {'action': 'send_otp', 'phone': '1191234-5678'})
+        self.assertEqual(res_send.status_code, 302)
+
+        # Recupera código gerado no banco para o canônico
+        from apps.auth_otp.models import WhatsAppOTP
+        otp_entry = WhatsAppOTP.objects.filter(phone=canonical, is_used=False).first()
+        self.assertIsNotNone(otp_entry)
+
+        # Confirma código digitando '+55 (11) 91234-5678'
+        res_verify = self.client.post('/me/login/', {'action': 'verify_otp', 'phone': '+55 (11) 91234-5678', 'code': otp_entry.code})
+        self.assertEqual(res_verify.status_code, 302)
+        # Sessão autenticada aponta para o participante correto
+        self.assertEqual(self.client.session.get('participant_id'), p.id)
+
     def test_clean_phone_number_international(self):
         """Testa números internacionais de diversos países com prefixo '+' ou '00'."""
         # EUA / Canadá (+1)

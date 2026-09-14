@@ -19,14 +19,16 @@ BRAZIL_DDDS = {
 
 def clean_phone_number(phone: str, default_country: str = '55') -> str:
     """
-    Remove caracteres não numéricos e formata o telefone para padrão internacional (E.164 sem o +).
+    Remove caracteres não numéricos e formata o telefone para um padrão canônico único (apenas dígitos internacionais E.164 sem o '+').
     Função idempotente: clean_phone_number(clean_phone_number(x)) == clean_phone_number(x).
-    - Se começar com '+', preserva o DDI informado (ex: +1 202 555 0199 -> 12025550199, +82 10 1234 5678 -> 821012345678).
-    - Se começar com '00', remove o '00' e preserva o DDI internacional.
-    - Se já tiver DDI 55 (12 ou 13 dígitos começando com 55): mantém sem duplicar.
-    - Se for padrão brasileiro sem DDI (10 dígitos fixo ou 11 dígitos celular com nono dígito 9 e DDD válido): adiciona '55'.
-    - Se for número internacional com 11 dígitos (DDI 1 EUA/Canadá): mantém DDI 1.
-    - Se for informado um default_country explícito diferente de '55', aplica-o caso não possua DDI.
+    
+    Padronização para qualquer formato de entrada:
+      - 'DDD 91234-5678', 'DDD912345678', 'DDD91234-5678', '(DDD) 91234-5678' -> '55DDD912345678'
+      - '+55 DDD 91234-5678', '+55DDD912345678', '55 DDD 91234-5678' -> '55DDD912345678'
+      - '0DDD 91234-5678' (zero comum de discagem) -> '55DDD912345678'
+      - '0XX DDD 91234-5678' (código de operadora 015, 021, 031, 041, etc.) -> '55DDD912345678'
+      - '+55 (0DDD) 91234-5678' -> '55DDD912345678'
+      - Números internacionais com '+' ou '00' (ex: '+1 202 555-0199', '+82 10 1234 5678') -> '12025550199', '821012345678'
     """
     if not phone:
         return ""
@@ -40,9 +42,28 @@ def clean_phone_number(phone: str, default_country: str = '55') -> str:
     if not digits:
         return ""
 
+    # Se começa com 55 e tem zero logo após (ex: +55 011 91234-5678 -> 55011912345678)
+    if digits.startswith('550') and len(digits) in (13, 14):
+        candidate_ddd = int(digits[3:5]) if digits[3:5].isdigit() else 0
+        if candidate_ddd in BRAZIL_DDDS:
+            digits = '55' + digits[3:]
+
     if is_explicit_intl:
         # Usuário informou DDI explicitamente com '+' ou '00'
         return digits
+
+    # Remove zero à esquerda no padrão de discagem nacional (ex: 011 91234-5678 -> 011...)
+    if digits.startswith('0'):
+        # Caso 1: 0 + DDD (2 dígitos) + 8 ou 9 dígitos (total 11 ou 12 dígitos)
+        if len(digits) in (11, 12):
+            candidate_ddd = int(digits[1:3]) if digits[1:3].isdigit() else 0
+            if candidate_ddd in BRAZIL_DDDS:
+                digits = digits[1:]
+        # Caso 2: 0 + Operadora (2 dígitos) + DDD (2 dígitos) + 8 ou 9 dígitos (total 13 ou 14 dígitos)
+        elif len(digits) in (13, 14):
+            candidate_ddd = int(digits[3:5]) if digits[3:5].isdigit() else 0
+            if candidate_ddd in BRAZIL_DDDS:
+                digits = digits[3:]
 
     # Se já possui DDI 55 (12 dígitos fixo ou 13 dígitos celular BR): já está normalizado!
     if digits.startswith('55') and len(digits) in (12, 13):
@@ -52,7 +73,7 @@ def clean_phone_number(phone: str, default_country: str = '55') -> str:
     if str(default_country) == '55':
         # Telefone fixo brasileiro com DDD: 10 dígitos (ex: 11 3456-7890)
         if len(digits) == 10:
-            ddd = int(digits[:2])
+            ddd = int(digits[:2]) if digits[:2].isdigit() else 0
             if ddd in BRAZIL_DDDS:
                 return '55' + digits
 
@@ -62,8 +83,10 @@ def clean_phone_number(phone: str, default_country: str = '55') -> str:
             if digits.startswith('1') and digits[1] in '23456789' and digits[2] != '9':
                 return digits
             # Se DDD válido do Brasil e o terceiro dígito for 9 (celular BR)
-            ddd = int(digits[:2])
+            ddd = int(digits[:2]) if digits[:2].isdigit() else 0
             if ddd in BRAZIL_DDDS and digits[2] == '9':
+                return '55' + digits
+            elif ddd in BRAZIL_DDDS:
                 return '55' + digits
 
     elif default_country:

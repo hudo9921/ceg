@@ -129,10 +129,18 @@ class LoginOtpView(View):
             if next_url and next_url.startswith('/'):
                 return redirect(next_url)
             return redirect('my_claims')
-        phone = request.GET.get('phone', '')
+        phone = request.GET.get('phone', '').strip()
         step = request.GET.get('step', 'phone')
+
+        formatted_phone_display = ""
+        if phone:
+            cleaned = clean_phone_number(phone)
+            dummy = Participant(whatsapp=cleaned)
+            formatted_phone_display = dummy.formatted_phone
+
         return render(request, 'participants/login_otp.html', {
             'phone': phone,
+            'formatted_phone': formatted_phone_display,
             'step': step,
             'next_url': next_url,
         })
