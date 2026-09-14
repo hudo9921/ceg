@@ -17,9 +17,15 @@ class CEGStatusView(StaffRequiredMixin, View):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
+        search = request.GET.get('search', '').strip()
 
         filter_options = AnalyticsService.get_filter_options()
-        status_data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id, category=category)
+        status_data = AnalyticsService.get_cegs_operational_status(
+            group_id=group_id,
+            era_id=era_id,
+            category=category,
+            search=search
+        )
 
         selected_group_name = None
         if group_id:
@@ -46,6 +52,7 @@ class CEGStatusView(StaffRequiredMixin, View):
             'selected_era': era_id or '',
             'selected_group_name': selected_group_name,
             'selected_era_name': selected_era_name,
+            'search_query': search,
             'summary': status_data['summary'],
             'sets_fechados': status_data.get('sets_fechados', []),
             'sets_pagos': status_data.get('sets_pagos', []),

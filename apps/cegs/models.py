@@ -500,6 +500,39 @@ class CEG(models.Model):
     def __str__(self):
         return f"{self.title} ({self.era.group.name})"
 
+    def clean_title(self, group_name: str = None) -> str:
+        """
+        Retorna o título da CEG sem o prefixo redundante do nome do grupo,
+        já que os cards da interface já exibem a badge/tag com o nome do grupo.
+        Ex: 'LE SSERAFIM — WEVERSE GLOBAL 1.0 (Mini camera weverse global) (PF-32)'
+            -> 'WEVERSE GLOBAL 1.0 (Mini camera weverse global) (PF-32)'
+            'LE SSERAFIM — SET SAKURA PUREFLOW' -> 'SET SAKURA PUREFLOW'
+            'Le sserafim - weverse global' -> 'weverse global'
+            'TWICE: Makestar Special' -> 'Makestar Special'
+        """
+        if not self.title:
+            return ""
+        grp = group_name
+        if not grp:
+            try:
+                if hasattr(self, 'era') and self.era and hasattr(self.era, 'group') and self.era.group:
+                    grp = self.era.group.name
+            except Exception:
+                pass
+
+        if grp:
+            grp_escaped = re.escape(grp.strip())
+            pattern = rf'^(?:ceg\s+)?{grp_escaped}\s*(?:[—–\-:]\s*|\s+)'
+            cleaned = re.sub(pattern, '', self.title, flags=re.IGNORECASE).strip()
+            if cleaned:
+                return cleaned
+        return self.title
+
+    @property
+    def display_title(self) -> str:
+        """Título amigável para exibição em cards onde a tag do grupo já está presente."""
+        return self.clean_title()
+
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)

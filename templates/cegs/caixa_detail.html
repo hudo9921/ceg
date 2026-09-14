@@ -381,8 +381,8 @@
                             <tr class="hover:bg-slate-50/80 transition">
                                 <td class="py-3 px-3">
                                     <div class="font-bold text-slate-900">
-                                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-blue-600 hover:underline">
-                                            {{ ceg.title }}
+                                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-blue-600 hover:underline" title="{{ ceg.title }}">
+                                            {{ ceg.display_title }}
                                         </a>
                                     </div>
                                     <div class="text-[11px] text-slate-500">

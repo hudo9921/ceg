@@ -83,7 +83,7 @@
 
             <!-- Botão Limpar Filtros -->
             <button type="button"
-                    x-show="selectedGroup || selectedEra"
+                    x-show="selectedGroup || selectedEra || searchQuery"
                     x-cloak
                     @click="clearFilters()"
                     class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
@@ -93,6 +93,28 @@
 
         <!-- Formulário de Filtros -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-white/10">
+            <!-- Busca Textual Rápida por Digitação -->
+            <div class="space-y-1.5 lg:col-span-2">
+                <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                    <span>🔍</span> Buscar CEG, Photocard ou Era
+                </label>
+                <div class="relative">
+                    <input type="text"
+                           x-model="searchQuery"
+                           @keydown.enter="applyFilter()"
+                           placeholder="Digite para buscar: ex. Weverse, Pureflow, Sakura, PF-32..."
+                           class="w-full pl-9 pr-8 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-xs font-bold text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-400 transition">
+                    <span class="absolute left-3 top-2 text-xs text-slate-400 pointer-events-none">🔍</span>
+                    <button type="button"
+                            x-show="searchQuery"
+                            x-cloak
+                            @click="searchQuery = ''; if ('{{ search_query|default:"" }}') applyFilter();"
+                            class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-white transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
             <!-- Filtro por Grupo -->
             <div class="space-y-1.5">
                 <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
@@ -122,17 +144,32 @@
                     </template>
                 </select>
             </div>
+        </div>
 
-            <!-- Resumo do Filtro Ativo -->
-            <div class="sm:col-span-2 flex items-end">
-                <div class="bg-white/5 border border-white/10 rounded-xl p-2.5 w-full text-xs flex items-center justify-between">
-                    <span class="text-slate-300">Exibindo dados de:</span>
-                    <span class="font-black text-pink-300">
-                        {% if selected_group_name %}{{ selected_group_name }}{% else %}Todos os Grupos{% endif %}
-                        {% if selected_era_name %} • {{ selected_era_name }}{% endif %}
+        <!-- Barra de Status dos Filtros Ativos -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs border-t border-white/10 text-slate-300">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span>Exibindo dados de:</span>
+                <span class="font-black text-pink-300">
+                    {% if selected_group_name %}{{ selected_group_name }}{% else %}Todos os Grupos{% endif %}
+                    {% if selected_era_name %} • {{ selected_era_name }}{% endif %}
+                </span>
+                <template x-if="searchQuery">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[11px] font-bold">
+                        <span>Texto:</span>
+                        <b x-text="'&ldquo;' + searchQuery + '&rdquo;'"></b>
+                        <button type="button" @click="searchQuery = ''; if ('{{ search_query|default:"" }}') applyFilter();" class="text-white hover:text-pink-200 ml-1 cursor-pointer">✕</button>
                     </span>
-                </div>
+                </template>
             </div>
+
+            <button type="button"
+                    x-show="selectedGroup || selectedEra || searchQuery"
+                    x-cloak
+                    @click="clearFilters()"
+                    class="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <span>✕</span> Limpar Todos os Filtros
+            </button>
         </div>
     </div>
 
@@ -341,7 +378,9 @@
         {% if sets_incomplete %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {% for s in sets_incomplete %}
-                    <div class="border border-slate-200 hover:border-pink-300 rounded-2xl p-4 transition bg-white shadow-2xs flex flex-col justify-between space-y-3">
+                    <div x-show="matchSearch('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }} {% for item in s.missing_items %}{{ item.item_name|escapejs }} {{ item.member_name|escapejs }} {% endfor %}')"
+                         x-transition
+                         class="border border-slate-200 hover:border-pink-300 rounded-2xl p-4 transition bg-white shadow-2xs flex flex-col justify-between space-y-3">
                         <!-- Header do Card -->
                         <div class="flex justify-between items-start">
                             <div>
@@ -357,7 +396,7 @@
                                     </span>
                                 </div>
                                 <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
-                                    {{ s.ceg_title }}
+                                    {{ s.ceg_clean_title|default:s.ceg_title }}
                                 </h3>
                             </div>
 
@@ -436,7 +475,9 @@
         {% if sets_fechados %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for s in sets_fechados %}
-                    <div class="border border-amber-200 bg-amber-50/20 hover:border-amber-300 rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3">
+                    <div x-show="matchSearch('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}')"
+                         x-transition
+                         class="border border-amber-200 bg-amber-50/20 hover:border-amber-300 rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3">
                         <!-- Header do Card -->
                         <div class="flex justify-between items-start">
                             <div>
@@ -452,7 +493,7 @@
                                     </span>
                                 </div>
                                 <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
-                                    {{ s.ceg_title }}
+                                    {{ s.ceg_clean_title|default:s.ceg_title }}
                                 </h3>
                             </div>
 
@@ -600,7 +641,7 @@
                              {{ s.has_taxa|yesno:'true,false' }},
                              {{ s.taxa_aduaneira_paid|yesno:'true,false' }},
                              {{ s.taxa_aduaneira_pending|yesno:'true,false' }}
-                         )"
+                         ) && matchSearch('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}')"
                          x-transition
                          class="border rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3
                              {% if s.is_terminado %}bg-gradient-to-br from-amber-50/40 via-yellow-50/20 to-white border-amber-300 ring-1 ring-amber-200{% else %}bg-emerald-50/15 border-emerald-200 hover:border-emerald-300{% endif %}">
@@ -628,7 +669,7 @@
                                     {% endif %}
                                 </div>
                                 <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
-                                    {{ s.ceg_title }}
+                                    {{ s.ceg_clean_title|default:s.ceg_title }}
                                 </h3>
                             </div>
 
@@ -785,11 +826,11 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for c in cegs_overview %}
-                        <tr x-show="isCegRowVisible({{ c.is_ativa|yesno:'true,false' }}, {{ c.has_incomplete_sets|yesno:'true,false' }}, {{ c.closed_sets_count|default:0 }}, {{ c.paid_sets_count|default:0 }}, {{ c.finished_sets_count|default:0 }})"
+                        <tr x-show="isCegRowVisible({{ c.is_ativa|yesno:'true,false' }}, {{ c.has_incomplete_sets|yesno:'true,false' }}, {{ c.closed_sets_count|default:0 }}, {{ c.paid_sets_count|default:0 }}, {{ c.finished_sets_count|default:0 }}) && matchSearch('{{ c.title|escapejs }} {{ c.clean_title|escapejs }} {{ c.group_name|escapejs }} {{ c.era_name|escapejs }} {{ c.caixa_nome|default:''|escapejs }}')"
                             x-transition
                             class="hover:bg-slate-50/80 transition">
                             <td class="py-3 px-4">
-                                <div class="font-black text-slate-900 text-sm leading-snug">{{ c.title }}</div>
+                                <div class="font-black text-slate-900 text-sm leading-snug">{{ c.clean_title|default:c.title }}</div>
                                 <div class="text-[11px] text-slate-500 font-semibold">
                                     {{ c.group_name }} • {{ c.era_name }}
                                 </div>
@@ -1000,7 +1041,9 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-800">
                         {% for it in mercari_status.items %}
-                            <tr class="hover:bg-amber-50/20 transition">
+                            <tr x-show="matchSearch('{{ it.nome|escapejs }} {{ it.comprador_name|escapejs }} {{ it.caixa_nome|default:''|escapejs }} {{ it.tipo_item_nome|default:''|escapejs }}')"
+                                x-transition
+                                class="hover:bg-amber-50/20 transition">
                                 <td class="py-3 px-3">
                                     <div class="flex items-center gap-3">
                                         {% if it.image_url %}
@@ -1386,8 +1429,14 @@ function cegStatusApp() {
         selectedCategory: '{{ category|default:"all" }}',
         selectedGroup: '{{ selected_group|default:"" }}',
         selectedEra: '{{ selected_era|default:"" }}',
+        searchQuery: '{{ search_query|default:""|escapejs }}',
         activeCardFilter: 'all', // 'all', 'active_cegs', 'incomplete', 'fechados', 'pagos', 'terminados'
         pagosSubFilter: 'all', // 'all', 'frete_pago', 'taxa_paga', 'terminados'
+        matchSearch(text) {
+            if (!this.searchQuery || !this.searchQuery.trim()) return true;
+            const q = this.searchQuery.toLowerCase().trim();
+            return (text || '').toLowerCase().includes(q);
+        },
         zoomPhoto: null,
         editItemModalOpen: false,
         editingItem: {},
@@ -1494,6 +1543,7 @@ function cegStatusApp() {
             if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
             if (this.selectedGroup) params.set('group', this.selectedGroup);
             if (this.selectedEra) params.set('era', this.selectedEra);
+            if (this.searchQuery && this.searchQuery.trim()) params.set('search', this.searchQuery.trim());
             window.location.search = params.toString();
         },
         clearFilters() {

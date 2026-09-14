@@ -351,6 +351,7 @@ class AnalyticsService:
                     'set_id': s.id,
                     'set_number': s.set_number,
                     'ceg_title': s.ceg.title,
+                    'ceg_clean_title': s.ceg.clean_title(s.ceg.era.group.name),
                     'group_name': s.ceg.era.group.name,
                     'total_slots': total,
                     'reserved_slots': reserved,
@@ -367,7 +368,7 @@ class AnalyticsService:
         return AnalyticsService.get_detailed_inventory_table()
 
     @staticmethod
-    def get_cegs_operational_status(group_id=None, era_id=None, category='all'):
+    def get_cegs_operational_status(group_id=None, era_id=None, category='all', search=None):
         """
         Retorna o status operacional detalhado das CEGs, Sets e Itens Individuais (Mercari):
         - sets_completed_pending: Sets 100% preenchidos, porém ainda não finalizados
@@ -396,6 +397,14 @@ class AnalyticsService:
                 cegs_qs = cegs_qs.filter(era__group_id=group_id)
             if era_id:
                 cegs_qs = cegs_qs.filter(era_id=era_id)
+            if search and search.strip():
+                s_term = search.strip()
+                cegs_qs = cegs_qs.filter(
+                    Q(title__icontains=s_term) |
+                    Q(era__name__icontains=s_term) |
+                    Q(era__group__name__icontains=s_term) |
+                    Q(sets__slots__item_definition__name__icontains=s_term)
+                ).distinct()
 
             for ceg in cegs_qs:
                 for cset in ceg.sets.filter(is_active=True).order_by('set_number'):
@@ -471,6 +480,7 @@ class AnalyticsService:
                             'set_number': cset.set_number,
                             'ceg_id': ceg.id,
                             'ceg_title': ceg.title,
+                            'ceg_clean_title': ceg.clean_title(ceg.era.group.name),
                             'ceg_slug': ceg.slug,
                             'group_name': ceg.era.group.name,
                             'era_name': ceg.era.name,
@@ -531,6 +541,7 @@ class AnalyticsService:
                             'set_number': cset.set_number,
                             'ceg_id': ceg.id,
                             'ceg_title': ceg.title,
+                            'ceg_clean_title': ceg.clean_title(ceg.era.group.name),
                             'ceg_slug': ceg.slug,
                             'group_name': ceg.era.group.name,
                             'era_name': ceg.era.name,
@@ -575,6 +586,7 @@ class AnalyticsService:
                 cegs_overview.append({
                     'ceg_id': ceg.id,
                     'title': ceg.title,
+                    'clean_title': ceg.clean_title(ceg.era.group.name),
                     'slug': ceg.slug,
                     'status': ceg.status,
                     'status_display': ceg.get_status_display(),
