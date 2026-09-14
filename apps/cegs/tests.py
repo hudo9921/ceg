@@ -1644,6 +1644,90 @@ class UpdateCEGViewTests(TestCase):
         self.assertEqual(self.ceg.banner_url, '')
 
 
+class CEGAvailabilityAndSortingTests(TestCase):
+    def setUp(self):
+        self.group = KpopGroup.objects.create(name='NewJeans', slug='newjeans')
+        self.era = Era.objects.create(group=self.group, name='Get Up', slug='get-up')
+        self.ceg_a = CEG.objects.create(
+            era=self.era,
+            title='CEG A - Barata e Vagas Livres',
+            slug='ceg-a',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=2),
+            pix_key='a@pix.com'
+        )
+        self.item_a1 = CEGItemDefinition.objects.create(ceg=self.ceg_a, name='Item A1', default_price=20.00, order_index=1)
+        self.item_a2 = CEGItemDefinition.objects.create(ceg=self.ceg_a, name='Item A2', default_price=30.00, order_index=2)
+        self.set_a = CEGSet.objects.create(ceg=self.ceg_a, set_number=1)
+        self.set_a.generate_slots()
+
+        self.ceg_b = CEG.objects.create(
+            era=self.era,
+            title='CEG B - Cara e Quase Cheia',
+            slug='ceg-b',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='b@pix.com'
+        )
+        self.item_b1 = CEGItemDefinition.objects.create(ceg=self.ceg_b, name='Item B1', default_price=90.00, order_index=1)
+        self.item_b2 = CEGItemDefinition.objects.create(ceg=self.ceg_b, name='Item B2', default_price=100.00, order_index=2)
+        self.set_b = CEGSet.objects.create(ceg=self.ceg_b, set_number=1)
+        self.set_b.generate_slots()
+        # Reserva 1 slot da CEG B
+        p = Participant.objects.create(name='Participante Teste', whatsapp='5511999998888')
+        slot_b1 = self.set_b.slots.first()
+        slot_b1.status = ItemSlot.Status.RESERVED
+        slot_b1.claimed_by = p
+        slot_b1.save()
+
+    def test_enrich_cegs_computes_prices_and_metrics(self):
+        from apps.cegs.services import enrich_cegs_with_availability
+        cegs = [self.ceg_a, self.ceg_b]
+        enrich_cegs_with_availability(cegs)
+
+        # CEG A
+        self.assertEqual(self.ceg_a.min_price, Decimal('20.00'))
+        self.assertEqual(self.ceg_a.max_price, Decimal('30.00'))
+        self.assertEqual(self.ceg_a.min_price_float, 20.0)
+        self.assertEqual(self.ceg_a.max_price_float, 30.0)
+        self.assertEqual(self.ceg_a.min_price_str, '20.00')
+        self.assertEqual(self.ceg_a.max_price_str, '30.00')
+        self.assertEqual(self.ceg_a.available_slots_count, 2)
+        self.assertEqual(self.ceg_a.progress_percentage, 0)
+
+        # CEG B
+        self.assertEqual(self.ceg_b.min_price, Decimal('90.00'))
+        self.assertEqual(self.ceg_b.max_price, Decimal('100.00'))
+        self.assertEqual(self.ceg_b.min_price_float, 90.0)
+        self.assertEqual(self.ceg_b.max_price_float, 100.0)
+        self.assertEqual(self.ceg_b.min_price_str, '90.00')
+        self.assertEqual(self.ceg_b.max_price_str, '100.00')
+        self.assertEqual(self.ceg_b.available_slots_count, 1)
+        self.assertEqual(self.ceg_b.progress_percentage, 50)
+
+    def test_home_page_renders_sort_selector_and_card_data_attributes(self):
+        client = Client()
+        response = client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        # Verifica presenca das opcoes de ordenacao
+        self.assertContains(response, 'x-model="sortBy"')
+        self.assertContains(response, 'value="recentes"')
+        self.assertContains(response, 'value="preco_asc"')
+        self.assertContains(response, 'value="preco_desc"')
+        self.assertContains(response, 'value="vagas_desc"')
+        self.assertContains(response, 'value="vagas_asc"')
+        self.assertContains(response, 'value="complitude_desc"')
+        self.assertContains(response, 'value="complitude_asc"')
+
+        # Verifica atributos no card HTML
+        self.assertContains(response, 'data-price="20.00"')
+        self.assertContains(response, 'data-price="90.00"')
+        self.assertContains(response, 'data-vagas="2"')
+        self.assertContains(response, 'data-vagas="1"')
+
+
+
 
 
 

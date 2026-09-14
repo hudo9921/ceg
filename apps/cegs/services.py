@@ -2,6 +2,7 @@ import logging
 import threading
 import time
 from collections import defaultdict
+from decimal import Decimal
 from django.db import transaction, OperationalError
 from django.utils import timezone
 from apps.cegs.models import ItemSlot, CEG, ClaimAttemptLog, ItemWaitingList
@@ -650,6 +651,12 @@ def enrich_cegs_with_availability(cegs_list):
         ceg.has_single_price = has_single_price
         ceg.single_price = list(all_prices)[0] if has_single_price else None
         ceg.has_different_prices = (len(all_prices) > 1)
+        ceg.min_price = min(all_prices) if all_prices else Decimal('0.00')
+        ceg.max_price = max(all_prices) if all_prices else Decimal('0.00')
+        ceg.min_price_float = float(ceg.min_price)
+        ceg.max_price_float = float(ceg.max_price)
+        ceg.min_price_str = str(ceg.min_price)
+        ceg.max_price_str = str(ceg.max_price)
 
         # Mapeamento para desambiguação de nomes se houver o mesmo member_name em múltiplos itens da CEG
         member_item_defs = defaultdict(set)

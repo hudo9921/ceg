@@ -31,7 +31,35 @@
 
     <!-- Seção: CEGs Abertas para Reserva -->
     <section id="cegs-abertas" class="space-y-6"
-             x-data="{ selectedGroup: '', selectedEra: '', selectedMember: '' }">
+             x-data="{
+                 selectedGroup: '',
+                 selectedEra: '',
+                 selectedMember: '',
+                 sortBy: 'recentes',
+                 sortCards() {
+                     const container = this.$refs.cegsContainer;
+                     if (!container) return;
+                     const cards = Array.from(container.querySelectorAll('.ceg-card'));
+                     cards.sort((a, b) => {
+                         if (this.sortBy === 'preco_asc') {
+                             return parseFloat(a.dataset.price || 0) - parseFloat(b.dataset.price || 0);
+                         } else if (this.sortBy === 'preco_desc') {
+                             return parseFloat(b.dataset.price || 0) - parseFloat(a.dataset.price || 0);
+                         } else if (this.sortBy === 'vagas_desc') {
+                             return parseInt(b.dataset.vagas || 0) - parseInt(a.dataset.vagas || 0);
+                         } else if (this.sortBy === 'vagas_asc') {
+                             return parseInt(a.dataset.vagas || 0) - parseInt(b.dataset.vagas || 0);
+                         } else if (this.sortBy === 'complitude_desc') {
+                             return parseInt(b.dataset.progress || 0) - parseInt(a.dataset.progress || 0);
+                         } else if (this.sortBy === 'complitude_asc') {
+                             return parseInt(a.dataset.progress || 0) - parseInt(b.dataset.progress || 0);
+                         } else {
+                             return parseInt(a.dataset.index || 0) - parseInt(b.dataset.index || 0);
+                         }
+                     });
+                     cards.forEach(c => container.appendChild(c));
+                 }
+             }">
         <!-- Cabeçalho da Seção -->
         <div class="space-y-1">
             <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
@@ -41,11 +69,11 @@
             <p class="text-sm text-slate-500">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
         </div>
 
-        <!-- Barra de Filtros Conforme Wireframe: Grupo | Era | Membro (Full Width acima das CEGs) -->
+        <!-- Barra de Filtros Conforme Wireframe: Grupo | Era | Membro | Ordenar (Full Width acima das CEGs) -->
         {% if active_cegs %}
             <div class="w-full bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
                         <!-- Filtro por Grupo -->
                         <div class="space-y-1">
                             <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -91,14 +119,32 @@
                                 {% endfor %}
                             </select>
                         </div>
+
+                        <!-- Ordenador por Preço / Vagas / Completude -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                ↕️ Ordenar por:
+                            </label>
+                            <select x-model="sortBy"
+                                    @change="sortCards()"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                <option value="recentes">⚡ Mais Recentes</option>
+                                <option value="preco_asc">💰 Menor Preço (Acessíveis)</option>
+                                <option value="preco_desc">💎 Maior Preço</option>
+                                <option value="vagas_desc">📦 Mais Vagas Sobrando</option>
+                                <option value="vagas_asc">🔥 Poucas Vagas (Quase Esgotando)</option>
+                                <option value="complitude_desc">📈 Mais Completa (% Maior)</option>
+                                <option value="complitude_asc">📉 Menos Completa (% Menor)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Botão Limpar Filtros -->
-                    <div x-show="selectedGroup || selectedEra || selectedMember"
+                    <div x-show="selectedGroup || selectedEra || selectedMember || sortBy !== 'recentes'"
                          x-transition
                          class="flex items-end justify-end pt-1 sm:pt-0">
                         <button type="button"
-                                @click="selectedGroup = ''; selectedEra = ''; selectedMember = ''"
+                                @click="selectedGroup = ''; selectedEra = ''; selectedMember = ''; sortBy = 'recentes'; sortCards()"
                                 class="px-3.5 py-2.5 text-xs font-bold text-pink-700 hover:text-pink-900 bg-pink-50 hover:bg-pink-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-pink-200">
                             <span>✕</span>
                             <span>Limpar Filtros</span>
@@ -110,14 +156,18 @@
 
         {% if active_cegs %}
             <!-- Lista de CEGs em Formato Retangular Horizontal (Wireframe) -->
-            <div class="space-y-4">
+            <div class="flex flex-col gap-4" x-ref="cegsContainer">
                 {% for ceg in active_cegs %}
                     <div x-show="(!selectedGroup || selectedGroup == '{{ ceg.era.group.id }}') &&
                                  (!selectedEra || selectedEra == '{{ ceg.era.id }}') &&
                                  (!selectedMember || '{{ ceg.available_members_str }}'.indexOf(selectedMember.toLowerCase()) !== -1)"
                          x-transition
                          x-data="{ showAvailable: false }"
-                         class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-pink-200 transition-all duration-200 overflow-hidden">
+                         data-index="{{ forloop.counter0 }}"
+                         data-price="{{ ceg.min_price_str }}"
+                         data-vagas="{{ ceg.available_slots_count }}"
+                         data-progress="{{ ceg.progress_percentage }}"
+                         class="ceg-card bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-pink-200 transition-all duration-200 overflow-hidden">
                         
                         <!-- Linha Principal do Retângulo -->
                         <div class="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
