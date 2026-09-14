@@ -1,10 +1,124 @@
+import json
 from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib import messages
+from django.contrib.auth.mixins import AccessMixin
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
+from .services import BulkParticipantService
 from apps.auth_otp.services import OTPService
+
+
+class StaffRequiredMixin(AccessMixin):
+    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
+            return redirect(f"/admin/login/?next={request.path}")
+        return super().dispatch(request, *args, **kwargs)
+
+
+class BulkParticipantCreateView(StaffRequiredMixin, View):
+    """
+    Interface para cadastro de participantes em massa.
+    Permite colar linhas (Excel, Sheets, CSV, TSV) ou usar grade dinâmica interativa,
+    com suporte robusto a números brasileiros (DDD 9 dígitos) e internacionais (+DDI).
+    """
+
+    def get(self, request):
+        recent_participants = Participant.objects.all().order_by('-created_at')[:25]
+        total_participants = Participant.objects.count()
+        with_twitter = Participant.objects.exclude(social_handle='').count()
+
+        return render(request, 'participants/bulk_create.html', {
+            'recent_participants': recent_participants,
+            'total_participants': total_participants,
+            'with_twitter': with_twitter,
+        })
+
+    def post(self, request):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json'
+
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                return JsonResponse({'success': False, 'message': 'JSON inválido.'}, status=400)
+            action = data.get('action', 'save')
+            raw_text = data.get('raw_text', '')
+            items = data.get('items', [])
+            default_ddi = str(data.get('default_ddi', '55')).strip() or '55'
+            update_existing = bool(data.get('update_existing', True))
+        else:
+            action = request.POST.get('action', 'save')
+            raw_text = request.POST.get('raw_text', '')
+            items_json = request.POST.get('items_json', '')
+            items = json.loads(items_json) if items_json else []
+            default_ddi = str(request.POST.get('default_ddi', '55')).strip() or '55'
+            update_existing = request.POST.get('update_existing', 'true').lower() in ('true', '1', 'yes', 'on')
+
+        # Ação 1: Apenas pré-visualizar / parsear linhas coladas
+        if action == 'parse':
+            parsed_items = BulkParticipantService.parse_pasted_text(raw_text, default_ddi=default_ddi)
+            # Verifica quais já existem no banco
+            for item in parsed_items:
+                if item.get('whatsapp'):
+                    existing = Participant.objects.filter(whatsapp=item['whatsapp']).first()
+                    item['already_exists'] = bool(existing)
+                    item['existing_name'] = existing.name if existing else ''
+                    item['existing_handle'] = existing.social_handle if existing else ''
+                else:
+                    item['already_exists'] = False
+                    item['existing_name'] = ''
+                    item['existing_handle'] = ''
+            return JsonResponse({'success': True, 'items': parsed_items, 'total': len(parsed_items)})
+
+        # Ação 2: Salvar no banco (direto do texto colado ou do array de itens)
+        if not items and raw_text:
+            items = BulkParticipantService.parse_pasted_text(raw_text, default_ddi=default_ddi)
+
+        if not items:
+            msg = "Nenhum participante válido foi informado para cadastro."
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('bulk_participant_create')
+
+        report = BulkParticipantService.bulk_create_or_update(
+            items=items,
+            update_existing=update_existing,
+            default_ddi=default_ddi,
+        )
+
+        created_c = report['created_count']
+        updated_c = report['updated_count']
+        errors_c = report['errors_count']
+
+        success_msg = f"Sucesso: {created_c} novo(s) participante(s) cadastrado(s)"
+        if updated_c:
+            success_msg += f" e {updated_c} atualizado(s)"
+        success_msg += "."
+
+        if errors_c:
+            success_msg += f" ({errors_c} linha(s) ignorada(s) por dados incompletos)."
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': success_msg,
+                'created_count': created_c,
+                'updated_count': updated_c,
+                'errors_count': errors_c,
+                'errors': report['errors'],
+            })
+
+        messages.success(request, success_msg)
+        return redirect('bulk_participant_create')
+
 
 
 

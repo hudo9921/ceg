@@ -1,0 +1,718 @@
+{% extends 'base.html' %}
+
+{% block title %}Cadastro de Participantes em Massa — Painel do Organizador{% endblock %}
+
+{% block content %}
+<div x-data="bulkParticipantsApp()" class="space-y-8">
+
+    <!-- Header com Gradiente Moderno e Badges Informativas -->
+    <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 text-white p-6 sm:p-8 rounded-2xl shadow-xl border border-white/10">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'creations_hub' %}" class="inline-flex items-center gap-1 text-xs text-pink-300 hover:text-white transition">
+                        <span>← Voltar ao Hub de Criações</span>
+                    </a>
+                    <span class="text-white/30">•</span>
+                    <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                        👥 Gestão de Joiners
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5">
+                    <span>Cadastro de Participantes em Massa</span>
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Importe compradores de uma só vez colando do Excel/Google Sheets ou preenchendo a grade interativa.
+                    Suporta números brasileiros (DDD 9 dígitos) e internacionais (+DDI de qualquer país) e handles do Twitter/X.
+                </p>
+            </div>
+
+            <!-- Resumo e Estatísticas Rápidas -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
+                <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
+                    <span class="block text-2xl font-black text-pink-300">{{ total_participants }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Total Cadastrados</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
+                    <span class="block text-2xl font-black text-indigo-300">{{ with_twitter }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Com Twitter / X</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 col-span-2 sm:col-span-1">
+                    <span class="block text-2xl font-black text-emerald-300">🌍 Global</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">BR + Internacional</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação por Abas -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" @click="activeTab = 'paste'"
+                    :class="activeTab === 'paste' ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 font-bold'"
+                    class="px-4 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer">
+                <span>📋</span>
+                <span>Colar em Lote (Excel / Sheets / Texto)</span>
+            </button>
+            <button type="button" @click="activeTab = 'table'"
+                    :class="activeTab === 'table' ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 font-bold'"
+                    class="px-4 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer">
+                <span>✍️</span>
+                <span>Grade Interativa (Linha por Linha)</span>
+                <span class="bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 rounded-full font-black" x-text="tableRows.length"></span>
+            </button>
+            <button type="button" @click="activeTab = 'recent'"
+                    :class="activeTab === 'recent' ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 font-bold'"
+                    class="px-4 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer">
+                <span>👥</span>
+                <span>Cadastrados Recentemente</span>
+                <span class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-full font-black">{{ recent_participants|length }}</span>
+            </button>
+        </div>
+
+        <!-- Opções Globais de Configuração -->
+        <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                <input type="checkbox" x-model="updateExisting" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                <span>Atualizar se já existir (Upsert)</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- ABA 1: COLAR EM LOTE (EXCEL / SHEETS / TEXTO) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeTab === 'paste'" x-transition class="space-y-6">
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+
+            <!-- Instruções Rápidas e DDI Padrão -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start pb-6 border-b border-slate-100">
+                <div class="lg:col-span-2 space-y-2">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>1. Cole as linhas abaixo</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Você pode copiar diretamente de uma coluna do Excel/Sheets ou digitar livremente.
+                        Cada linha pode ter os campos separados por <b>tabulação (Ctrl+V do Excel)</b>, <b>vírgula (,)</b>, <b>ponto e vírgula (;)</b> ou <b>barra vertical (|)</b>.
+                    </p>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] font-mono text-slate-700 space-y-1">
+                        <div class="text-slate-400 uppercase text-[9px] font-sans font-bold">Exemplos válidos aceitos automaticamente:</div>
+                        <div>Maria Silva, 11 98888-7777, @mariasilva <span class="text-slate-400 font-sans font-normal">(Brasil com DDD)</span></div>
+                        <div>John Doe	+1 202 555 0199	@johndoe <span class="text-slate-400 font-sans font-normal">(EUA / Canadá)</span></div>
+                        <div>Kim Minji | +82 10 1234 5678 | @minjikim <span class="text-slate-400 font-sans font-normal">(Coreia do Sul)</span></div>
+                        <div>Pedro Santos, 55998765432, @pedrokpop <span class="text-slate-400 font-sans font-normal">(Brasil com DDD 55 RS)</span></div>
+                    </div>
+                </div>
+
+                <!-- Seletor de DDI Padrão para números sem prefixo '+' -->
+                <div class="bg-indigo-50/50 border border-indigo-100 p-4 rounded-xl space-y-3">
+                    <label class="block text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                        🌎 DDI Padrão (quando não tiver +)
+                    </label>
+                    <select x-model="defaultDDI" @change="parsePastedText()"
+                            class="w-full text-xs font-semibold bg-white border border-indigo-200 rounded-lg px-3 py-2 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="55">🇧🇷 Brasil (+55) — Adiciona 55 em números estilo DDD 9XXXX-XXXX</option>
+                        <option value="1">🇺🇸 EUA / Canadá (+1)</option>
+                        <option value="82">🇰🇷 Coreia do Sul (+82)</option>
+                        <option value="81">🇯🇵 Japão (+81)</option>
+                        <option value="351">🇵🇹 Portugal (+351)</option>
+                        <option value="44">🇬🇧 Reino Unido (+44)</option>
+                        <option value="54">🇦🇷 Argentina (+54)</option>
+                        <option value="56">🇨🇱 Chile (+56)</option>
+                        <option value="52">🇲🇽 México (+52)</option>
+                        <option value="34">🇪🇸 Espanha (+34)</option>
+                    </select>
+                    <p class="text-[11px] text-indigo-700/80">
+                        * Números que começarem com <b>+</b> (ex: +1, +82) sempre preservam seu próprio código de país automaticamente.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Área de Colagem (Textarea) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Área de Texto (Cole aqui)
+                    </label>
+                    <div class="flex items-center gap-2 text-xs">
+                        <button type="button" @click="loadSampleData()" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer">
+                            + Preencher Exemplo de Teste
+                        </button>
+                        <span class="text-slate-300">|</span>
+                        <button type="button" @click="rawText = ''; previewItems = []" class="text-slate-400 hover:text-slate-600 font-medium cursor-pointer">
+                            Limpar
+                        </button>
+                    </div>
+                </div>
+                <textarea x-model="rawText" @input.debounce.300ms="parsePastedText()"
+                          rows="8"
+                          placeholder="Cole as linhas aqui...
+Exemplo:
+Beatriz Lima	11 98888-7777	@bialima
+John Walker	+1 202 555 0199	@jwalker
+Park Jihyo	+82 10 9999 8888	@jihyofan"
+                          class="w-full text-xs font-mono p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-slate-50/50"></textarea>
+            </div>
+
+            <!-- Ações e Pré-Visualização Instantânea -->
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <button type="button" @click="parsePastedText(true)" :disabled="isParsing"
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                            <span x-show="!isParsing">⚡</span>
+                            <span x-show="isParsing" class="animate-spin">⌛</span>
+                            <span x-text="isParsing ? 'Analisando...' : 'Analisar & Pré-visualizar'"></span>
+                        </button>
+
+                        <button type="button" @click="saveParsedItems()" :disabled="isSaving || validPreviewCount === 0"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition cursor-pointer">
+                            <span x-show="!isSaving">💾</span>
+                            <span x-show="isSaving" class="animate-spin">⌛</span>
+                            <span x-text="isSaving ? 'Salvando Participantes...' : `Cadastrar ${validPreviewCount} Participante(s)`"></span>
+                        </button>
+                    </div>
+
+                    <!-- Contadores de Validação -->
+                    <div class="flex items-center gap-2 text-xs" x-show="previewItems.length > 0">
+                        <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                            <span>✅</span> <span x-text="`${validPreviewCount} Válidos`"></span>
+                        </span>
+                        <span x-show="invalidPreviewCount > 0" class="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                            <span>❌</span> <span x-text="`${invalidPreviewCount} Com Erro`"></span>
+                        </span>
+                        <span x-show="existingPreviewCount > 0" class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                            <span>🔄</span> <span x-text="`${existingPreviewCount} Já Cadastrados (serão atualizados)`"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Tabela de Pré-visualização -->
+                <div x-show="previewItems.length > 0" class="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+                    <div class="max-h-80 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-slate-200 text-xs">
+                            <thead class="bg-slate-50 sticky top-0 z-10 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                                <tr>
+                                    <th class="px-3 py-2.5 text-left w-12">#</th>
+                                    <th class="px-3 py-2.5 text-left">Status</th>
+                                    <th class="px-3 py-2.5 text-left">Nome Completo</th>
+                                    <th class="px-3 py-2.5 text-left">Telefone Formatado</th>
+                                    <th class="px-3 py-2.5 text-left">WhatsApp (Banco)</th>
+                                    <th class="px-3 py-2.5 text-left">Twitter / X</th>
+                                    <th class="px-3 py-2.5 text-left">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                <template x-for="(item, idx) in previewItems" :key="idx">
+                                    <tr :class="!item.is_valid ? 'bg-rose-50/50' : (item.already_exists ? 'bg-amber-50/30' : '')">
+                                        <td class="px-3 py-2 text-slate-400 font-mono text-[11px]" x-text="idx + 1"></td>
+                                        <td class="px-3 py-2">
+                                            <template x-if="item.is_valid && !item.already_exists">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
+                                                    Novo
+                                                </span>
+                                            </template>
+                                            <template x-if="item.is_valid && item.already_exists">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold text-[10px]" title="Número já existe no banco de dados. Os dados serão atualizados.">
+                                                    Atualizar
+                                                </span>
+                                            </template>
+                                            <template x-if="!item.is_valid">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-bold text-[10px]" :title="item.error">
+                                                    Erro
+                                                </span>
+                                            </template>
+                                        </td>
+                                        <td class="px-3 py-2 font-bold text-slate-800" x-text="item.name || '—'"></td>
+                                        <td class="px-3 py-2 font-mono text-slate-700" x-text="formatPhoneDisplay(item.whatsapp)"></td>
+                                        <td class="px-3 py-2 font-mono text-slate-500 text-[11px]" x-text="item.whatsapp || '—'"></td>
+                                        <td class="px-3 py-2 text-indigo-600 font-bold" x-text="item.social_handle || '—'"></td>
+                                        <td class="px-3 py-2 text-right">
+                                            <button type="button" @click="removePreviewItem(idx)" class="text-slate-400 hover:text-rose-600 font-bold text-sm cursor-pointer" title="Remover esta linha">
+                                                ×
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- ABA 2: GRADE INTERATIVA (LINHA POR LINHA) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeTab === 'table'" x-transition class="space-y-6">
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">
+                        Grade Interativa de Cadastro
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Preencha os campos diretamente na tabela abaixo. Adicione quantas linhas precisar com o botão abaixo.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="addRow()"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition cursor-pointer">
+                        <span>+</span>
+                        <span>Adicionar Linha</span>
+                    </button>
+                    <button type="button" @click="addMultipleRows(5)"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        <span>+5 Linhas</span>
+                    </button>
+                    <button type="button" @click="clearTableRows()"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-slate-400 hover:text-rose-600 font-medium text-xs transition cursor-pointer">
+                        Limpar Tudo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela de Linhas Editáveis -->
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                        <tr>
+                            <th class="px-3 py-2.5 text-left w-10">#</th>
+                            <th class="px-3 py-2.5 text-left">Nome Completo *</th>
+                            <th class="px-3 py-2.5 text-left w-44">País / DDI</th>
+                            <th class="px-3 py-2.5 text-left">Número de Telefone *</th>
+                            <th class="px-3 py-2.5 text-left">Twitter / X (@handle)</th>
+                            <th class="px-3 py-2.5 text-left">Apelido (opcional)</th>
+                            <th class="px-3 py-2.5 text-center w-12">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        <template x-for="(row, idx) in tableRows" :key="row.id">
+                            <tr class="hover:bg-slate-50/80 transition">
+                                <td class="px-3 py-2 text-slate-400 font-mono text-[11px]" x-text="idx + 1"></td>
+                                <td class="px-3 py-2">
+                                    <input type="text" x-model="row.name" placeholder="Ex: Lucas Silva"
+                                           class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                                </td>
+                                <td class="px-3 py-2">
+                                    <select x-model="row.ddi"
+                                            class="w-full text-xs p-2 bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none font-semibold text-slate-700">
+                                        <option value="55">🇧🇷 Brasil (+55)</option>
+                                        <option value="1">🇺🇸 EUA / CA (+1)</option>
+                                        <option value="82">🇰🇷 Coreia (+82)</option>
+                                        <option value="81">🇯🇵 Japão (+81)</option>
+                                        <option value="351">🇵🇹 Portugal (+351)</option>
+                                        <option value="44">🇬🇧 Reino Unido (+44)</option>
+                                        <option value="54">🇦🇷 Argentina (+54)</option>
+                                        <option value="56">🇨🇱 Chile (+56)</option>
+                                        <option value="custom">🌐 Outro / Manual (+)</option>
+                                    </select>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" x-model="row.phone"
+                                           :placeholder="row.ddi === '55' ? '11 98888-7777 ou 11988887777' : (row.ddi === 'custom' ? '+DDI número completo' : 'DDD e número sem +')"
+                                           class="w-full text-xs font-mono p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" x-model="row.social_handle" placeholder="@usuario"
+                                           class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none text-indigo-600 font-semibold">
+                                </td>
+                                <td class="px-3 py-2">
+                                    <input type="text" x-model="row.username" placeholder="Apelido curto"
+                                           class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <button type="button" @click="removeTableRow(idx)"
+                                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                            title="Remover linha">
+                                        🗑️
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Botões de Envio da Grade -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                <button type="button" @click="addRow()"
+                        class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer">
+                    <span>+ Adicionar mais uma linha</span>
+                </button>
+
+                <button type="button" @click="saveTableRows()" :disabled="isSaving || tableRows.length === 0"
+                        class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition cursor-pointer">
+                    <span x-show="!isSaving">💾</span>
+                    <span x-show="isSaving" class="animate-spin">⌛</span>
+                    <span x-text="isSaving ? 'Salvando...' : 'Cadastrar Participantes da Grade'"></span>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- ABA 3: PARTICIPANTES CADASTRADOS RECENTEMENTE -->
+    <!-- ========================================================================= -->
+    <div x-show="activeTab === 'recent'" x-transition class="space-y-6">
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">
+                        Últimos Participantes Cadastrados
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Exibindo os participantes mais recentes no sistema com dados de contato direto.
+                    </p>
+                </div>
+                <a href="/admin/participants/participant/" target="_blank"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+                    <span>⚙️ Ver Todos no Django Admin ↗</span>
+                </a>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Nome / Identificação</th>
+                            <th class="px-4 py-3 text-left">Telefone Formatado</th>
+                            <th class="px-4 py-3 text-left">DDI / Origem</th>
+                            <th class="px-4 py-3 text-left">Twitter / X</th>
+                            <th class="px-4 py-3 text-left">Cadastrado em</th>
+                            <th class="px-4 py-3 text-right">Contato</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        {% for p in recent_participants %}
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-slate-900">{{ p.name }}</div>
+                                {% if p.username %}
+                                <div class="text-[11px] text-slate-500 font-medium">@{{ p.username }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 font-mono font-medium text-slate-800">
+                                {{ p.formatted_phone }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if p.whatsapp|slice:":2" == "55" %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded text-[11px] font-bold">
+                                    🇧🇷 Brasil (+55)
+                                </span>
+                                {% elif p.whatsapp|slice:":1" == "1" %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[11px] font-bold">
+                                    🇺🇸 EUA (+1)
+                                </span>
+                                {% elif p.whatsapp|slice:":2" == "82" %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[11px] font-bold">
+                                    🇰🇷 Coreia (+82)
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[11px] font-bold">
+                                    🌍 Internacional
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 font-semibold text-indigo-600">
+                                {% if p.social_handle %}
+                                <a href="https://x.com/{{ p.social_handle|cut:'@' }}" target="_blank" class="hover:underline flex items-center gap-1">
+                                    <span>𝕏</span> <span>{{ p.social_handle }}</span>
+                                </a>
+                                {% else %}
+                                <span class="text-slate-300 font-normal">Não informado</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-slate-400 text-[11px]">
+                                {{ p.created_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="https://wa.me/{{ p.whatsapp }}" target="_blank"
+                                   class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition">
+                                    <span>💬 WhatsApp</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-slate-400">
+                                Nenhum participante cadastrado ainda.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal / Toast de Sucesso ou Erro -->
+    <div x-show="toast.show" x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 right-6 z-50 max-w-md bg-white border-2 rounded-2xl shadow-2xl p-4 flex items-start gap-3"
+         :class="toast.type === 'success' ? 'border-emerald-500 bg-emerald-50/90 text-emerald-950' : 'border-rose-500 bg-rose-50/90 text-rose-950'">
+        <div class="text-2xl" x-text="toast.type === 'success' ? '🎉' : '⚠️'"></div>
+        <div class="flex-1">
+            <h4 class="text-sm font-black" x-text="toast.title"></h4>
+            <p class="text-xs mt-0.5 leading-relaxed" x-text="toast.message"></p>
+        </div>
+        <button type="button" @click="toast.show = false" class="text-slate-400 hover:text-slate-700 font-black text-sm">×</button>
+    </div>
+
+</div>
+
+<script>
+function bulkParticipantsApp() {
+    return {
+        activeTab: 'paste',
+        rawText: '',
+        defaultDDI: '55',
+        updateExisting: true,
+        previewItems: [],
+        isParsing: false,
+        isSaving: false,
+        toast: { show: false, type: 'success', title: '', message: '' },
+
+        // Linhas da grade interativa
+        tableRows: [
+            { id: 1, name: '', ddi: '55', phone: '', social_handle: '', username: '' },
+            { id: 2, name: '', ddi: '55', phone: '', social_handle: '', username: '' },
+            { id: 3, name: '', ddi: '55', phone: '', social_handle: '', username: '' },
+        ],
+        nextRowId: 4,
+
+        get validPreviewCount() {
+            return this.previewItems.filter(i => i.is_valid).length;
+        },
+
+        get invalidPreviewCount() {
+            return this.previewItems.filter(i => !i.is_valid).length;
+        },
+
+        get existingPreviewCount() {
+            return this.previewItems.filter(i => i.is_valid && i.already_exists).length;
+        },
+
+        showToast(type, title, message) {
+            this.toast = { show: true, type, title, message };
+            setTimeout(() => { this.toast.show = false; }, 6000);
+        },
+
+        loadSampleData() {
+            this.rawText = [
+                "Lucas Silva\t11 98888-7777\t@lucaskpop",
+                "Maria Souza\t21 97777-6666\t@mariasouza",
+                "John Walker\t+1 202 555 0199\t@jwalker",
+                "Minji Kim\t+82 10 1234 5678\t@minjikpop",
+                "Beatriz Santos | 55998765432 | @biakpop",
+                "Carlos Oliveira, 31987654321, @carlos_ceg"
+            ].join("\n");
+            this.parsePastedText();
+        },
+
+        formatPhoneDisplay(digits) {
+            if (!digits) return "—";
+            if (digits.startsWith("55") && digits.length === 13) {
+                return `+55 (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9)}`;
+            }
+            if (digits.startsWith("55") && digits.length === 12) {
+                return `+55 (${digits.slice(2, 4)}) ${digits.slice(4, 8)}-${digits.slice(8)}`;
+            }
+            if (digits.startsWith("1") && digits.length === 11) {
+                return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+            }
+            if (digits.startsWith("82") && digits.length >= 11) {
+                return `+82 ${digits.slice(2, 4)} ${digits.slice(4, 8)}-${digits.slice(8)}`;
+            }
+            return `+${digits}`;
+        },
+
+        removePreviewItem(idx) {
+            this.previewItems.splice(idx, 1);
+        },
+
+        async parsePastedText(forceServer = false) {
+            if (!this.rawText.trim()) {
+                this.previewItems = [];
+                return;
+            }
+
+            this.isParsing = true;
+            try {
+                const res = await fetch("{% url 'bulk_participant_create' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: 'parse',
+                        raw_text: this.rawText,
+                        default_ddi: this.defaultDDI
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.previewItems = data.items || [];
+                }
+            } catch (err) {
+                console.error("Erro ao analisar texto colado:", err);
+            } finally {
+                this.isParsing = false;
+            }
+        },
+
+        async saveParsedItems() {
+            const validItems = this.previewItems.filter(i => i.is_valid);
+            if (validItems.length === 0) {
+                this.showToast('error', 'Atenção', 'Nenhum participante válido para cadastrar.');
+                return;
+            }
+
+            this.isSaving = true;
+            try {
+                const res = await fetch("{% url 'bulk_participant_create' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: 'save',
+                        items: validItems,
+                        default_ddi: this.defaultDDI,
+                        update_existing: this.updateExisting
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast('success', 'Cadastrados com Sucesso!', data.message);
+                    this.rawText = '';
+                    this.previewItems = [];
+                    setTimeout(() => { window.location.reload(); }, 1800);
+                } else {
+                    this.showToast('error', 'Erro ao salvar', data.message || 'Ocorreu um erro.');
+                }
+            } catch (err) {
+                this.showToast('error', 'Erro de Conexão', 'Não foi possível salvar os participantes.');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        // Gestão de Linhas na Grade Interativa
+        addRow() {
+            this.tableRows.push({
+                id: this.nextRowId++,
+                name: '',
+                ddi: this.defaultDDI,
+                phone: '',
+                social_handle: '',
+                username: ''
+            });
+        },
+
+        addMultipleRows(count = 5) {
+            for (let i = 0; i < count; i++) {
+                this.addRow();
+            }
+        },
+
+        removeTableRow(idx) {
+            this.tableRows.splice(idx, 1);
+        },
+
+        clearTableRows() {
+            this.tableRows = [];
+            this.addRow();
+        },
+
+        async saveTableRows() {
+            const items = [];
+            for (const r of this.tableRows) {
+                if (!r.name.trim() && !r.phone.trim()) continue;
+
+                let raw = r.phone.trim();
+                let chosenDDI = r.ddi;
+                if (chosenDDI !== 'custom' && !raw.startsWith('+') && !raw.startsWith('00')) {
+                    // Se não tiver +, adiciona o ddi escolhido
+                    if (chosenDDI === '55') {
+                        // Limpa números e aplica regra BR se 10/11 dígitos
+                        let digits = raw.replace(/\D/g, '');
+                        if (digits.length === 10 || digits.length === 11) {
+                            raw = '55' + digits;
+                        }
+                    } else {
+                        let cleanD = chosenDDI.replace(/\D/g, '');
+                        let digits = raw.replace(/\D/g, '');
+                        if (!digits.startsWith(cleanD)) {
+                            raw = cleanD + digits;
+                        }
+                    }
+                }
+
+                items.push({
+                    name: r.name.trim(),
+                    raw_phone: raw,
+                    social_handle: r.social_handle.trim(),
+                    username: r.username.trim(),
+                });
+            }
+
+            if (items.length === 0) {
+                this.showToast('error', 'Atenção', 'Preencha ao menos uma linha com Nome e Telefone.');
+                return;
+            }
+
+            this.isSaving = true;
+            try {
+                const res = await fetch("{% url 'bulk_participant_create' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: 'save',
+                        items: items,
+                        default_ddi: this.defaultDDI,
+                        update_existing: this.updateExisting
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast('success', 'Participantes Salvos!', data.message);
+                    this.clearTableRows();
+                    setTimeout(() => { window.location.reload(); }, 1800);
+                } else {
+                    this.showToast('error', 'Erro', data.message || 'Falha ao salvar participantes.');
+                }
+            } catch (err) {
+                this.showToast('error', 'Erro', 'Falha ao comunicar com o servidor.');
+            } finally {
+                this.isSaving = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

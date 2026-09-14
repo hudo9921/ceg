@@ -49,6 +49,8 @@ from .envios_views import (
     ExcluirPacoteView,
 )
 
+from apps.participants.views import BulkParticipantCreateView
+
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
     path('ceg/<slug:slug>/', CEGDetailView.as_view(), name='ceg_detail'),
@@ -61,6 +63,7 @@ urlpatterns = [
     path('slots/<int:slot_id>/manage/', ManageSlotView.as_view(), name='manage_slot'),
     path('sets/<int:set_id>/delete/', DeleteSetView.as_view(), name='delete_set'),
     path('creations/', CreationsHubView.as_view(), name='creations_hub'),
+    path('creations/participantes/em-massa/', BulkParticipantCreateView.as_view(), name='creations_bulk_participant'),
     path('creations/group/create/', CreateGroupView.as_view(), name='create_group'),
     path('creations/era/create/', CreateEraView.as_view(), name='create_era'),
     path('creations/ceg/create/', CreateCEGView.as_view(), name='create_ceg'),

@@ -1,0 +1,9 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools-items %}
+    <li>
+        <a href="{% url 'bulk_participant_create' %}" class="addlink" style="background: #4f46e5; color: white; font-weight: bold; border-radius: 6px; padding: 6px 12px; margin-right: 6px;">
+            👥 Cadastrar em Massa (Excel/Texto)
+        </a>
+    </li>
+    {{ block.super }}
+{% endblock %}

@@ -3,13 +3,74 @@ from django.utils import timezone
 import re
 
 
-def clean_phone_number(phone: str) -> str:
+# Conjunto oficial de DDDs válidos no Brasil (Anatel)
+BRAZIL_DDDS = {
+    11, 12, 13, 14, 15, 16, 17, 18, 19,
+    21, 22, 24, 27, 28,
+    31, 32, 33, 34, 35, 37, 38,
+    41, 42, 43, 44, 45, 46, 47, 48, 49,
+    51, 53, 54, 55,
+    61, 62, 63, 64, 65, 66, 67, 68, 69,
+    71, 73, 74, 75, 77, 79,
+    81, 82, 83, 84, 85, 86, 87, 88, 89,
+    91, 92, 93, 94, 95, 96, 97, 98, 99
+}
+
+
+def clean_phone_number(phone: str, default_country: str = '55') -> str:
     """
-    Remove caracteres não numéricos. Se não tiver DDI (+55), adiciona 55 caso seja padrão BR com DDD.
+    Remove caracteres não numéricos e formata o telefone para padrão internacional (E.164 sem o +).
+    Função idempotente: clean_phone_number(clean_phone_number(x)) == clean_phone_number(x).
+    - Se começar com '+', preserva o DDI informado (ex: +1 202 555 0199 -> 12025550199, +82 10 1234 5678 -> 821012345678).
+    - Se começar com '00', remove o '00' e preserva o DDI internacional.
+    - Se já tiver DDI 55 (12 ou 13 dígitos começando com 55): mantém sem duplicar.
+    - Se for padrão brasileiro sem DDI (10 dígitos fixo ou 11 dígitos celular com nono dígito 9 e DDD válido): adiciona '55'.
+    - Se for número internacional com 11 dígitos (DDI 1 EUA/Canadá): mantém DDI 1.
+    - Se for informado um default_country explícito diferente de '55', aplica-o caso não possua DDI.
     """
-    digits = re.sub(r'\D', '', phone)
-    if len(digits) in (10, 11) and not digits.startswith('55'):
-        digits = '55' + digits
+    if not phone:
+        return ""
+
+    phone_str = str(phone).strip()
+    is_explicit_intl = phone_str.startswith('+') or phone_str.startswith('00')
+    if phone_str.startswith('00'):
+        phone_str = phone_str[2:]
+
+    digits = re.sub(r'\D', '', phone_str)
+    if not digits:
+        return ""
+
+    if is_explicit_intl:
+        # Usuário informou DDI explicitamente com '+' ou '00'
+        return digits
+
+    # Se já possui DDI 55 (12 dígitos fixo ou 13 dígitos celular BR): já está normalizado!
+    if digits.startswith('55') and len(digits) in (12, 13):
+        return digits
+
+    # Se default_country for '55':
+    if str(default_country) == '55':
+        # Telefone fixo brasileiro com DDD: 10 dígitos (ex: 11 3456-7890)
+        if len(digits) == 10:
+            ddd = int(digits[:2])
+            if ddd in BRAZIL_DDDS:
+                return '55' + digits
+
+        # 11 dígitos: pode ser Celular BR (DDD + 9XXXX-XXXX) ou EUA/Canadá (1 + 10 dígitos)
+        elif len(digits) == 11:
+            # Verifica se é formato EUA/Canadá (DDI 1 seguido de área 200-999)
+            if digits.startswith('1') and digits[1] in '23456789' and digits[2] != '9':
+                return digits
+            # Se DDD válido do Brasil e o terceiro dígito for 9 (celular BR)
+            ddd = int(digits[:2])
+            if ddd in BRAZIL_DDDS and digits[2] == '9':
+                return '55' + digits
+
+    elif default_country:
+        clean_default = re.sub(r'\D', '', str(default_country))
+        if clean_default and not digits.startswith(clean_default):
+            digits = clean_default + digits
+
     return digits
 
 
@@ -26,7 +87,7 @@ class Participant(models.Model):
         max_length=30,
         unique=True,
         db_index=True,
-        help_text='Apenas números com DDD e DDI (ex: 5511999998888)'
+        help_text='Apenas números com DDD e DDI (ex: 5511999998888 ou 12025550199)'
     )
     social_handle = models.CharField(
         '@ Rede Social (Twitter / Instagram)',
@@ -50,6 +111,16 @@ class Participant(models.Model):
     def save(self, *args, **kwargs):
         if self.whatsapp:
             self.whatsapp = clean_phone_number(self.whatsapp)
+        if self.social_handle:
+            handle = self.social_handle.strip()
+            if handle and not handle.startswith('@'):
+                self.social_handle = f"@{handle}"
+            else:
+                self.social_handle = handle
+        if self.name:
+            self.name = self.name.strip()
+        if self.username:
+            self.username = self.username.strip()
         super().save(*args, **kwargs)
 
     @property
@@ -63,10 +134,22 @@ class Participant(models.Model):
 
     @property
     def formatted_phone(self):
-        """Retorna formato amigável (XX) XXXXX-XXXX se for BR"""
+        """Retorna formato amigável para exibição."""
         w = self.whatsapp
+        if not w:
+            return ""
+        # Brasil celular: +55 (XX) XXXXX-XXXX
         if w.startswith('55') and len(w) == 13:
             return f"+55 ({w[2:4]}) {w[4:9]}-{w[9:]}"
+        # Brasil fixo: +55 (XX) XXXX-XXXX
+        if w.startswith('55') and len(w) == 12:
+            return f"+55 ({w[2:4]}) {w[4:8]}-{w[8:]}"
+        # EUA / Canadá: +1 (XXX) XXX-XXXX
+        if w.startswith('1') and len(w) == 11:
+            return f"+1 ({w[1:4]}) {w[4:7]}-{w[7:]}"
+        # Coreia do Sul: +82 XX XXXX-XXXX ou +82 XXX XXXX-XXXX
+        if w.startswith('82') and len(w) in (11, 12):
+            return f"+82 {w[2:4]} {w[4:8]}-{w[8:]}"
         return f"+{w}"
 
     @property
