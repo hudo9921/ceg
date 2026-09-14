@@ -181,6 +181,16 @@ class CEGDetailView(View):
             status_choices = CEG.Status.choices
             tipo_item_list = list(TipoItem.objects.all().order_by('nome').values('id', 'nome', 'descricao'))
 
+        # Carrega participante logado via sessão (para pré-preencher o formulário de reserva)
+        logged_participant = None
+        participant_id = request.session.get('participant_id')
+        if participant_id and not (request.user.is_authenticated and request.user.is_staff):
+            from apps.participants.models import Participant
+            try:
+                logged_participant = Participant.objects.get(id=participant_id)
+            except Participant.DoesNotExist:
+                request.session.pop('participant_id', None)
+
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
             'sets': active_sets,
@@ -196,6 +206,7 @@ class CEGDetailView(View):
             'tipo_item_list_json': json.dumps(tipo_item_list),
             'item_type_choices': item_type_choices,
             'item_type_choices_json': json.dumps(item_type_choices),
+            'logged_participant': logged_participant,
         })
 
 
