@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ceg-manager
+    name: valcegs
     runtime: python
     plan: free
     region: oregon
@@ -16,9 +16,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: ceg-database
-          property: connectionString
+        sync: false
       - key: ALLOWED_HOSTS
         value: ".onrender.com,localhost,127.0.0.1"
       - key: CSRF_TRUSTED_ORIGINS
@@ -50,9 +48,3 @@ services:
       - key: ZAPI_TOKEN
         sync: false
 
-databases:
-  - name: ceg-database
-    plan: free
-    region: oregon
-    databaseName: cegdb
-    user: ceguser
