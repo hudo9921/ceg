@@ -5,8 +5,8 @@ services:
     plan: free
     region: oregon
     buildCommand: "bash ./build.sh"
-    startCommand: "gunicorn ceg_project.wsgi:application"
-    healthCheckPath: "/"
+    startCommand: "gunicorn ceg_project.wsgi:application --workers 1 --threads 4 --worker-class gthread --worker-tmp-dir /dev/shm --max-requests 250 --max-requests-jitter 25 --timeout 60"
+    healthCheckPath: "/health/"
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION

@@ -8,7 +8,13 @@ admin.site.site_header = "K-pop CEG Manager"
 admin.site.site_title = "Painel do Organizador de CEGs"
 admin.site.index_title = "Gestão de Compras em Grupo (K-pop)"
 
+from django.http import HttpResponse
+
+def health_check(request):
+    return HttpResponse("OK", content_type="text/plain")
+
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
     path('me/', include('apps.participants.urls')),
     path('analytics/', include('apps.analytics.urls')),
