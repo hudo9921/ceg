@@ -215,12 +215,17 @@ class ClaimSlotView(View):
         slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg'), id=slot_id)
         ceg = slot.set.ceg
 
+        # Detecta AJAX logo no início para garantir resposta JSON em todos os caminhos
+        is_ajax = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.content_type == 'application/json'
+        )
+
         logged_id = request.session.get('participant_id')
         is_staff = request.user.is_authenticated and request.user.is_staff
 
-        # 1. Se não estiver logado via telefone e não for staff, bloqueia e redireciona para login OTP
+        # 1. Se não estiver logado via telefone e não for staff, bloqueia
         if not logged_id and not is_staff:
-            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json'
             if is_ajax:
                 return JsonResponse({
                     'success': False,
@@ -252,10 +257,15 @@ class ClaimSlotView(View):
                     social_handle = p.social_handle
             except Participant.DoesNotExist:
                 request.session.pop('participant_id', None)
+                if is_ajax:
+                    return JsonResponse({
+                        'success': False,
+                        'requires_auth': True,
+                        'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
+                        'message': 'Sessão expirada. Por favor, autentique novamente.'
+                    }, status=401)
                 messages.error(request, 'Sessão expirada. Por favor, autentique novamente.')
                 return redirect(f"/me/login/?next=/ceg/{ceg.slug}/")
-
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         try:
             claim = ClaimService.claim_slot(
@@ -315,6 +325,7 @@ class ClaimSlotView(View):
             messages.error(request, err_msg)
             return redirect('ceg_detail', slug=ceg.slug)
         except Exception as e:
+            import traceback
             err_msg = f"Erro inesperado ao processar reserva: {e}"
             if is_ajax:
                 return JsonResponse({'success': False, 'message': err_msg}, status=500)
