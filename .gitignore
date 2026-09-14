@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+db.sqlite3
+db.sqlite3-journal
+*.backup*
+planilhas/
+media/
+staticfiles/
+.env
+.DS_Store
+backups/
+mysterious-fermi/
+
+# Root scratch duplicates
+/admin.py
+/base.html
+/envios_nacionais.html
+/envios_views.py
+/models.py
+/my_claims.html
+/tests.py
+/tests_envios_nacionais.py
+/urls.py
+/views.py

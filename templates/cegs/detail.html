@@ -1,0 +1,2484 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ ceg.title }} — {{ ceg.era.group.name }} | K-pop CEG{% endblock %}
+
+{% block content %}
+<div class="space-y-8"
+     x-data="{
+         isStandby: {{ ceg.is_standby|yesno:'true,false' }},
+         secondsLeft: {{ ceg.countdown_seconds }},
+         timer: null,
+         isLoggedIn: {{ logged_participant|yesno:'true,false' }} || {{ user.is_staff|yesno:'true,false' }},
+         isAdmin: {{ user.is_staff|yesno:'true,false' }},
+         allParticipants: JSON.parse('{{ all_participants_json|default:'[]'|escapejs }}'),
+         itemTypeChoices: JSON.parse('{{ item_type_choices_json|default:'[]'|escapejs }}'),
+         tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
+         selectedSlotIds: [],
+         selectedItemDefIds: [],
+         bulkTypeModalOpen: false,
+         bulkPriceModalOpen: false,
+         bulkNewType: 'PHOTOCARD',
+         bulkNewTipoItemId: '',
+         bulkNewPrice: '',
+         bulkUpdatePrefix: true,
+         bulkApplyAllSets: true,
+         bulkLoading: false,
+         manageName: '',
+         manageMember: '',
+         manageItemType: 'PHOTOCARD',
+         manageTipoItemId: '',
+         showNewTipoModal: false,
+         newTipoNome: '',
+         newTipoDesc: '',
+         newTipoTarget: 'manage',
+         newTipoLoading: false,
+         formName: '{{ logged_participant.name|default:''|escapejs }}',
+         formUsername: '{{ logged_participant.username|default:''|escapejs }}',
+         formWhatsapp: '{{ logged_participant.whatsapp|default:''|escapejs }}',
+         formSocial: '{{ logged_participant.social_handle|default:''|escapejs }}',
+         // Modal State
+         modalOpen: false,
+         feeModalOpen: false,
+         editCegModalOpen: false,
+         manageSlotModalOpen: false,
+         deleteSetModalOpen: false,
+         editPhotoPreview: '{{ ceg.banner_url|default:''|escapejs }}',
+         removeBannerFlag: false,
+         onPhotoSelected(e) {
+             const file = e.target.files[0];
+             if (file) {
+                 this.removeBannerFlag = false;
+                 const reader = new FileReader();
+                 reader.onload = (event) => {
+                     this.editPhotoPreview = event.target.result;
+                 };
+                 reader.readAsDataURL(file);
+             }
+         },
+         clearPhoto() {
+             this.editPhotoPreview = '';
+             this.removeBannerFlag = true;
+             const fileInput = document.getElementById('ceg_banner_file_input');
+             if (fileInput) fileInput.value = '';
+             const urlInput = document.getElementById('ceg_banner_url_input');
+             if (urlInput) urlInput.value = '';
+         },
+         selectedSlot: null,
+         managedSlot: null,
+         setToDelete: null,
+         deleteSetLoading: false,
+         notifyParticipants: true,
+         customCancelMessage: '',
+         copySuccess: false,
+         managePrice: '',
+         manageApplyAllSets: false,
+         manageParticipantId: '',
+         manageRemoveClaim: false,
+         manageLoading: false,
+         logsModalOpen: false,
+         logsLoading: false,
+         logsTab: 'logs',
+         disputeLogs: [],
+         waitingList: [],
+         async openLogsModal() {
+             this.logsModalOpen = true;
+             this.logsLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/logs-espera/');
+                 const data = await res.json();
+                 if (data.success) {
+                     this.disputeLogs = data.logs || [];
+                     this.waitingList = data.waiting_list || [];
+                 }
+             } catch(e) {
+                 console.error('Erro ao carregar logs:', e);
+             } finally {
+                 this.logsLoading = false;
+             }
+         },
+         closeLogsModal() {
+             this.logsModalOpen = false;
+         },
+         async promoteWaitingOnSlot(slotId) {
+             if (!confirm('Deseja promover o 1º colocado da Fila de Espera para este slot?')) return;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/slots/' + slotId + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf
+                     },
+                     body: JSON.stringify({ action: 'promote_waiting' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message);
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao promover participante.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             }
+         },
+         openDeleteSetModal(setObj) {
+             this.setToDelete = setObj;
+             this.deleteSetLoading = false;
+             this.notifyParticipants = true;
+             this.customCancelMessage = '';
+             this.copySuccess = false;
+             this.deleteSetModalOpen = true;
+         },
+         closeDeleteSetModal() {
+             this.deleteSetModalOpen = false;
+             this.setToDelete = null;
+             this.copySuccess = false;
+         },
+         copyCancelMessage(slot) {
+             let paymentNote = slot.isPaid
+                 ? '⚠️ Como você já havia efetuado o pagamento deste item, entre em contato para estorno via Pix ou transferência de crédito.'
+                 : 'ℹ️ Nenhuma cobrança foi efetuada para este item.';
+             let extra = this.customCancelMessage ? '\n\n💬 Recado do organizador:\n' + this.customCancelMessage : '';
+             let text = `Olá, ${slot.participantName}! 📢\n\nInformamos que o Set #${this.setToDelete.setNumber} da compra em grupo '{{ ceg.title|escapejs }}' não atingiu o fechamento e precisou ser cancelado.\n\n📦 Item que você tinha neste set:\n• ${slot.name} — R$ ${slot.price} (${slot.isPaid ? 'Pago ✔' : 'Pendente'})\n\n${paymentNote}${extra}\n\nAgradecemos pelo seu apoio e compreensão!`;
+             navigator.clipboard.writeText(text);
+             this.copySuccess = true;
+             setTimeout(() => { this.copySuccess = false; }, 2500);
+         },
+         openClaimModal(slot) {
+             if (!this.isLoggedIn) {
+                 window.location.href = '{% url "login_otp" %}?next=' + encodeURIComponent(window.location.pathname);
+                 return;
+             }
+             this.selectedSlot = slot;
+             this.modalOpen = true;
+         },
+         closeClaimModal() {
+             this.modalOpen = false;
+             this.selectedSlot = null;
+         },
+         openManageSlotModal(slot) {
+             this.managedSlot = slot;
+             let p = '';
+             if (slot && slot.price !== undefined && slot.price !== null) {
+                 p = String(slot.price).replace('R$', '').replace(/\s/g, '').replace(',', '.').trim();
+             }
+             this.managePrice = p;
+             this.manageName = slot.name || '';
+             this.manageMember = slot.member || '';
+             this.manageItemType = slot.itemType || 'PHOTOCARD';
+             this.manageTipoItemId = slot.tipoItemId ? String(slot.tipoItemId) : '';
+             if (!this.manageTipoItemId && this.tipoItemList && this.tipoItemList.length > 0) {
+                 const match = this.tipoItemList.find(t => t.nome.toLowerCase() === (slot.tipoItemNome || '').toLowerCase()) ||
+                               this.tipoItemList.find(t => t.nome.toLowerCase().includes((slot.itemType || '').toLowerCase()));
+                 this.manageTipoItemId = match ? String(match.id) : String(this.tipoItemList[0].id);
+             }
+             this.manageApplyAllSets = false;
+             this.manageParticipantId = slot.claimedById ? String(slot.claimedById) : '';
+             this.manageRemoveClaim = false;
+             this.manageLoading = false;
+             this.manageSlotModalOpen = true;
+         },
+         applyTipoPrefixToName() {
+             if (!this.manageTipoItemId) return;
+             const tipo = this.tipoItemList.find(t => String(t.id) === String(this.manageTipoItemId));
+             if (!tipo) return;
+             const prefix = tipo.nome;
+             const pattern = /^(Photocard|POB|Pre-Order Benefit|Álbum|Album|Compact ver\.|Lucky Draw|Fansign|Inclusão|Lightstick|Item)\s*/i;
+             if (pattern.test(this.manageName)) {
+                 this.manageName = this.manageName.replace(pattern, prefix + ' ').trim();
+             } else if (this.manageMember) {
+                 this.manageName = prefix + ' ' + this.manageMember;
+             } else {
+                 this.manageName = prefix + ' ' + this.manageName;
+             }
+         },
+         openNewTipoInline(target) {
+             this.newTipoTarget = target || 'manage';
+             this.newTipoNome = '';
+             this.newTipoDesc = '';
+             this.showNewTipoModal = true;
+         },
+         async submitInlineNewTipo() {
+             const nome = (this.newTipoNome || '').trim();
+             if (!nome) return;
+             this.newTipoLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('nome', nome);
+                 formData.append('descricao', this.newTipoDesc || '');
+                 const res = await fetch('/tipos-item/criar/', {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     const newTipo = data.tipo || { id: data.id, nome: data.nome, descricao: this.newTipoDesc };
+                     if (!this.tipoItemList.some(t => t.id === newTipo.id)) {
+                         this.tipoItemList.push(newTipo);
+                         this.tipoItemList.sort((a, b) => a.nome.localeCompare(b.nome));
+                     }
+                     if (this.newTipoTarget === 'bulk') {
+                         this.bulkNewTipoItemId = String(newTipo.id);
+                     } else {
+                         this.manageTipoItemId = String(newTipo.id);
+                     }
+                     this.showNewTipoModal = false;
+                     this.newTipoNome = '';
+                     this.newTipoDesc = '';
+                 } else {
+                     alert(data.message || 'Erro ao criar tipo de item.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão ao criar tipo de item: ' + e);
+             } finally {
+                 this.newTipoLoading = false;
+             }
+         },
+         closeManageSlotModal() {
+             this.manageSlotModalOpen = false;
+             this.managedSlot = null;
+         },
+         async submitManageSlot() {
+             if (this.manageLoading || !this.managedSlot) return;
+             this.manageLoading = true;
+             try {
+                 const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         price: this.managePrice,
+                         apply_to_all_sets: this.manageApplyAllSets,
+                         name: this.manageName,
+                         member_name: this.manageMember,
+                         item_type: this.manageItemType,
+                         tipo_item_id: this.manageTipoItemId || null,
+                         remove_claim: this.manageRemoveClaim,
+                         participant_id: this.manageRemoveClaim ? null : (this.manageParticipantId || null)
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao atualizar slot');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão ao gerenciar slot: ' + e);
+             } finally {
+                 this.manageLoading = false;
+             }
+         },
+         async deleteManagedItemDefinition() {
+             if (!this.managedSlot) return;
+             let msg = `⚠️ ATENÇÃO: Deseja realmente EXCLUIR o item '${this.managedSlot.name}' da CEG?\n\nEsta ação excluirá este item e todas as suas vagas de TODOS os Sets desta CEG!`;
+             if (this.managedSlot.claimedByName) {
+                 msg += `\n\n🚨 CUIDADO: Este item possui reserva ativa para: ${this.managedSlot.claimedByName}!`;
+             }
+             if (!confirm(msg)) return;
+
+             this.manageLoading = true;
+             try {
+                 const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({ action: 'delete_item_definition' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Item excluído com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao excluir item.');
+                 }
+             } catch(e) {
+                 alert('Erro ao excluir item: ' + e);
+             } finally {
+                 this.manageLoading = false;
+             }
+         },
+         async deleteManagedSingleSlot() {
+             if (!this.managedSlot) return;
+             let msg = `Deseja remover apenas esta vaga do Set #${this.managedSlot.setNumber}?`;
+             if (this.managedSlot.claimedByName) {
+                 msg += `\n\n🚨 CUIDADO: Este slot está reservado para: ${this.managedSlot.claimedByName}!`;
+             }
+             if (!confirm(msg)) return;
+
+             this.manageLoading = true;
+             try {
+                 const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({ action: 'delete_slot' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Slot removido com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao remover slot.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.manageLoading = false;
+             }
+         },
+         toggleSlotSelection(slotId, itemDefId) {
+             const idx = this.selectedSlotIds.indexOf(slotId);
+             if (idx > -1) {
+                 this.selectedSlotIds.splice(idx, 1);
+                 const defIdx = this.selectedItemDefIds.indexOf(itemDefId);
+                 if (defIdx > -1) this.selectedItemDefIds.splice(defIdx, 1);
+             } else {
+                 this.selectedSlotIds.push(slotId);
+                 if (!this.selectedItemDefIds.includes(itemDefId)) {
+                     this.selectedItemDefIds.push(itemDefId);
+                 }
+             }
+         },
+         selectAllInSet(slotsArray) {
+             const allSelected = slotsArray.every(s => this.selectedSlotIds.includes(s.id));
+             if (allSelected) {
+                 slotsArray.forEach(s => {
+                     const idx = this.selectedSlotIds.indexOf(s.id);
+                     if (idx > -1) this.selectedSlotIds.splice(idx, 1);
+                     const defIdx = this.selectedItemDefIds.indexOf(s.itemDefId);
+                     if (defIdx > -1) this.selectedItemDefIds.splice(defIdx, 1);
+                 });
+             } else {
+                 slotsArray.forEach(s => {
+                     if (!this.selectedSlotIds.includes(s.id)) this.selectedSlotIds.push(s.id);
+                     if (!this.selectedItemDefIds.includes(s.itemDefId)) this.selectedItemDefIds.push(s.itemDefId);
+                 });
+             }
+         },
+         clearSelection() {
+             this.selectedSlotIds = [];
+             this.selectedItemDefIds = [];
+         },
+         openBulkTypeModal() {
+             if (this.selectedSlotIds.length === 0) {
+                 alert('Selecione pelo menos um item para editar o tipo em massa.');
+                 return;
+             }
+             if (this.tipoItemList && this.tipoItemList.length > 0) {
+                 this.bulkNewTipoItemId = String(this.tipoItemList[0].id);
+             }
+             this.bulkUpdatePrefix = true;
+             this.bulkApplyAllSets = true;
+             this.bulkTypeModalOpen = true;
+         },
+         closeBulkTypeModal() {
+             this.bulkTypeModalOpen = false;
+         },
+         async submitBulkType() {
+             if (this.bulkLoading) return;
+             this.bulkLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         action: 'update_type',
+                         slot_ids: this.selectedSlotIds,
+                         item_def_ids: this.selectedItemDefIds,
+                         new_item_type: this.bulkNewType,
+                         new_tipo_item_id: this.bulkNewTipoItemId || null,
+                         update_prefix: this.bulkUpdatePrefix,
+                         apply_all_sets: this.bulkApplyAllSets
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Tipos atualizados com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao atualizar tipos em massa.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkLoading = false;
+             }
+         },
+         openBulkPriceModal() {
+             if (this.selectedSlotIds.length === 0) {
+                 alert('Selecione pelo menos um item para alterar o preço.');
+                 return;
+             }
+             this.bulkNewPrice = '';
+             this.bulkApplyAllSets = true;
+             this.bulkPriceModalOpen = true;
+         },
+         closeBulkPriceModal() {
+             this.bulkPriceModalOpen = false;
+         },
+         async submitBulkPrice() {
+             if (this.bulkLoading || !this.bulkNewPrice) return;
+             this.bulkLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         action: 'update_price',
+                         slot_ids: this.selectedSlotIds,
+                         item_def_ids: this.selectedItemDefIds,
+                         new_price: this.bulkNewPrice,
+                         apply_all_sets: this.bulkApplyAllSets
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Preços atualizados com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao atualizar preços em massa.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkLoading = false;
+             }
+         },
+         async bulkDeleteItems() {
+             if (this.selectedSlotIds.length === 0) return;
+             if (!confirm(`⚠️ ATENÇÃO: Deseja realmente EXCLUIR os ${this.selectedItemDefIds.length} itens selecionados da CEG?\n\nEsta ação excluirá permanentemente esses itens e todas as suas vagas em todos os sets desta CEG!`)) {
+                 return;
+             }
+             this.bulkLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': '{{ csrf_token }}'
+                     },
+                     body: JSON.stringify({
+                         action: 'delete_items',
+                         slot_ids: this.selectedSlotIds,
+                         item_def_ids: this.selectedItemDefIds
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Itens excluídos com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao excluir itens.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkLoading = false;
+             }
+         },
+         selectParticipantForClaim(pId) {
+             if (!pId) {
+                 this.formName = '';
+                 this.formUsername = '';
+                 this.formWhatsapp = '';
+                 this.formSocial = '';
+                 return;
+             }
+             const p = this.allParticipants.find(item => String(item.id) === String(pId));
+             if (p) {
+                 this.formName = p.name || '';
+                 this.formUsername = p.username || '';
+                 this.formWhatsapp = p.whatsapp || '';
+                 this.formSocial = p.social_handle || '';
+             }
+         },
+         copyPix(key) {
+             navigator.clipboard.writeText(key);
+             alert('Chave Pix copiada para a área de transferência! ' + key);
+         },
+         formatCountdown() {
+             if (this.secondsLeft <= 0) {
+                 this.isStandby = false;
+                 return 'ABERTO AGORA!';
+             }
+             let d = Math.floor(this.secondsLeft / 86400);
+             let h = Math.floor((this.secondsLeft % 86400) / 3600);
+             let m = Math.floor((this.secondsLeft % 3600) / 60);
+             let s = this.secondsLeft % 60;
+             return { d, h: String(h).padStart(2, '0'), m: String(m).padStart(2, '0'), s: String(s).padStart(2, '0') };
+         }
+     }"
+     x-init="
+         if (secondsLeft > 0) {
+             timer = setInterval(() => {
+                 if (secondsLeft > 0) {
+                     secondsLeft--;
+                 } else {
+                     isStandby = false;
+                     clearInterval(timer);
+                 }
+             }, 1000);
+         }
+     ">
+
+    <!-- Top Breadcrumb -->
+    <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500">
+        <a href="{% url 'home' %}" class="hover:text-pink-600">Home</a>
+        <span>/</span>
+        <span class="text-pink-600 font-bold">{{ ceg.era.group.name }}</span>
+        <span>/</span>
+        <span class="text-slate-800">{{ ceg.title }}</span>
+    </div>
+
+    <!-- CEG Header Banner -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 overflow-hidden">
+        
+        <!-- Foto / Banner de Capa da CEG -->
+        {% if ceg.banner_url %}
+            <div class="relative w-full h-48 sm:h-64 md:h-72 rounded-xl overflow-hidden border border-slate-200 shadow-inner group">
+                <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent pointer-events-none"></div>
+                <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
+                    <div class="text-white drop-shadow-md">
+                        <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded bg-black/60 backdrop-blur-xs border border-white/20">
+                            {{ ceg.era.group.name }} • {{ ceg.era.name }}
+                        </span>
+                    </div>
+                    {% if user.is_staff %}
+                        <button type="button" @click="editCegModalOpen = true"
+                                class="px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-lg backdrop-blur-md shadow transition flex items-center gap-1.5 cursor-pointer border border-white/25">
+                            <span>📷</span> Alterar Foto
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        {% elif user.is_staff %}
+            <div @click="editCegModalOpen = true"
+                 class="w-full py-4 border-2 border-dashed border-pink-200 hover:border-pink-400 bg-pink-50/50 hover:bg-pink-50/90 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-pink-700 cursor-pointer transition shadow-2xs">
+                <span>📷</span>
+                <span>Adicionar Foto / Banner de Capa para esta CEG</span>
+            </div>
+        {% endif %}
+
+        <div class="flex flex-col lg:flex-row justify-between gap-6">
+            <div class="space-y-2 max-w-3xl">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-2.5 py-1 bg-pink-100 text-pink-800 text-xs font-black rounded-md uppercase tracking-wider">
+                        {{ ceg.era.group.name }} • Era {{ ceg.era.name }}
+                    </span>
+                    {% if ceg.status == 'OPEN' %}
+                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-md uppercase tracking-wider">
+                            ● Aberta
+                        </span>
+                    {% elif ceg.status == 'SCHEDULED' %}
+                        <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-black rounded-md uppercase tracking-wider">
+                            ⏳ Agendada (Standby)
+                        </span>
+                    {% else %}
+                        <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-md uppercase tracking-wider">
+                            {{ ceg.get_status_display }}
+                        </span>
+                    {% endif %}
+
+                    {% if ceg.caixa %}
+                        <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}"
+                           class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-black rounded-md uppercase tracking-wider hover:bg-blue-200 transition flex items-center gap-1"
+                           title="Caixa / Remessa vinculada">
+                            <span>{% if ceg.caixa.origem == 'KR' %}🇰🇷{% elif ceg.caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
+                            <span>{{ ceg.caixa.nome }}</span>
+                        </a>
+                        <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 text-xs font-black rounded-md uppercase tracking-wider flex items-center gap-1"
+                              title="Status do Envio Internacional">
+                            <span>✈️</span>
+                            <span>{{ ceg.get_shipping_status_display }}</span>
+                        </span>
+                    {% endif %}
+
+                    {% if user.is_staff %}
+                        <button type="button" @click="editCegModalOpen = true"
+                                class="px-3 py-1 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-md transition shadow flex items-center gap-1.5 cursor-pointer ml-auto">
+                            <span>✏️</span> Editar CEG
+                        </button>
+                    {% endif %}
+                </div>
+
+                <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                    {{ ceg.title }}
+                </h1>
+
+                {% if ceg.description %}
+                    <p class="text-slate-600 text-sm leading-relaxed whitespace-pre-line pt-2">
+                        {{ ceg.description }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Card de Dados de Pagamento Pix -->
+            {% if ceg.pix_key %}
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl p-5 w-full lg:w-80 shadow-md space-y-3 flex-shrink-0">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-400">
+                        <span>PAGAMENTO DA CEG</span>
+                        <span class="text-pink-400">PIX</span>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-slate-300">Chave Pix do Organizador:</div>
+                        <div class="font-mono text-sm font-bold truncate text-pink-300 select-all">{{ ceg.pix_key }}</div>
+                    </div>
+                    <button type="button" @click="copyPix('{{ ceg.pix_key }}')"
+                            class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg transition shadow">
+                        📋 Copiar Chave Pix
+                    </button>
+                    {% if ceg.pix_instructions %}
+                        <p class="text-[11px] text-slate-300 leading-snug border-t border-slate-700/60 pt-2">
+                            ℹ️ {{ ceg.pix_instructions }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if ceg.caixa %}
+            <!-- Card de Logística Internacional / Caixa -->
+            <div class="bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-900 text-white rounded-xl p-4 sm:p-5 border border-blue-700/40 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-2xl shrink-0">
+                        {% if ceg.caixa.origem == 'KR' %}🇰🇷{% elif ceg.caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-blue-300">
+                                Remessa Internacional Vinculada
+                            </span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/30">
+                                {{ ceg.caixa.get_origem_display }}
+                            </span>
+                        </div>
+                        <h4 class="text-sm sm:text-base font-black text-white mt-0.5">
+                            {{ ceg.caixa.nome }} &bull; <span class="text-blue-300">{{ ceg.get_shipping_status_display }}</span>
+                        </h4>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 self-end sm:self-center">
+                    {% if ceg.caixa.codigo_rastreio %}
+                        <a href="{{ ceg.caixa.tracking_url }}" target="_blank"
+                           class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5">
+                            <span>🔗 Rastrear: {{ ceg.caixa.codigo_rastreio }}</span>
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}"
+                       class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/20 transition">
+                        Ver Caixa ↗
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Painel de Prazos e Taxas (Item, Frete Internacional e Taxa Aduaneira) -->
+        <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-xl p-5 border border-purple-800/40 shadow-md space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-800/60 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">💰</span>
+                    <div>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-purple-200">
+                            Etapas de Pagamento da CEG (3 Fases)
+                        </h3>
+                        <p class="text-[11px] text-slate-300">Acompanhe os prazos de pagamento de cada etapa desta compra em grupo.</p>
+                    </div>
+                </div>
+                {% if user.is_staff %}
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" @click="openLogsModal()"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>⚡</span> Logs & Fila de Espera
+                        </button>
+                        <button type="button" @click="feeModalOpen = true"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>✏️</span> Atualizar Taxas & Prazos
+                        </button>
+                        <button type="button" @click="editCegModalOpen = true"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>⚙️</span> Editar CEG & Foto
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <!-- Fase 1: Item -->
+                <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-pink-300 tracking-wider">1. Pagamento do Item</span>
+                        <span class="text-[9px] bg-pink-500/20 text-pink-200 font-bold px-1.5 py-0.5 rounded">Fase 1</span>
+                    </div>
+                    <div class="text-xs text-slate-300 font-medium">
+                        Valor individual de cada slot / photocard
+                    </div>
+                    <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                        {% if ceg.prazo_pagamento_item %}
+                            <span class="text-amber-300 flex items-center gap-1">
+                                <span>⏰</span> Prazo: {{ ceg.prazo_pagamento_item|date:"d/m/Y às H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="text-slate-400 font-normal">Sem prazo limite estipulado</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fase 2: Frete Internacional -->
+                <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-blue-300 tracking-wider">2. Frete Internacional</span>
+                        <span class="text-[9px] bg-blue-500/20 text-blue-200 font-bold px-1.5 py-0.5 rounded">Fase 2</span>
+                    </div>
+                    <div class="text-sm font-black text-white">
+                        {% if ceg.has_multiple_frete_rates %}
+                            <span>R$ {{ ceg.min_frete_inter|floatformat:2 }} ~ R$ {{ ceg.max_frete_inter|floatformat:2 }}</span>
+                            <span class="block text-[10px] font-medium text-blue-200/90 mt-0.5">Valores variados por tipo de item</span>
+                        {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
+                            R$ {{ ceg.frete_inter|floatformat:2 }}
+                        {% elif ceg.frete_inter is not None and not ceg.caixa %}
+                            R$ {{ ceg.frete_inter|floatformat:2 }}
+                        {% else %}
+                            <span class="text-slate-400 text-xs font-normal">Aguardando cotação/pesagem</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                        {% if ceg.prazo_pagamento_frete_inter %}
+                            <span class="text-blue-300 flex items-center gap-1">
+                                <span>⏰</span> Prazo: {{ ceg.prazo_pagamento_frete_inter|date:"d/m/Y às H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="text-slate-400 font-normal">Prazo a definir</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fase 3: Taxa Aduaneira -->
+                <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-emerald-300 tracking-wider">3. Taxa Aduaneira</span>
+                        <span class="text-[9px] bg-emerald-500/20 text-emerald-200 font-bold px-1.5 py-0.5 rounded">Fase 3</span>
+                    </div>
+                    <div class="text-sm font-black text-white">
+                        {% if ceg.has_multiple_taxa_rates %}
+                            <span>R$ {{ ceg.min_taxa_aduaneira|floatformat:2 }} ~ R$ {{ ceg.max_taxa_aduaneira|floatformat:2 }}</span>
+                            <span class="block text-[10px] font-medium text-emerald-200/90 mt-0.5">Valores variados por tipo de item</span>
+                        {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
+                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                        {% elif ceg.taxa_aduaneira is not None and not ceg.caixa %}
+                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                        {% else %}
+                            <span class="text-slate-400 text-xs font-normal">Aguardando Receita Federal</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                        {% if ceg.prazo_pagamento_taxa_aduaneira %}
+                            <span class="text-emerald-300 flex items-center gap-1">
+                                <span>⏰</span> Prazo: {{ ceg.prazo_pagamento_taxa_aduaneira|date:"d/m/Y às H:i" }}
+                            </span>
+                        {% else %}
+                            <span class="text-slate-400 font-normal">Prazo a definir</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Standby Countdown Alert Banner -->
+        <div x-show="isStandby" x-cloak
+             class="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 p-6 rounded-xl text-white shadow-lg space-y-3">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-lg font-black tracking-tight flex items-center gap-2">
+                        <span>⏳</span>
+                        MODO STANDBY ATIVO (HYPE & COUNTDOWN)
+                    </h3>
+                    <p class="text-xs text-amber-100">
+                        Esta CEG abre oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y às H:i:s" }}</strong>.
+                        Os botões de reserva estão travados e destravarão no segundo zero!
+                    </p>
+                </div>
+                <div class="flex space-x-2 text-center">
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black" x-text="formatCountdown().d"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Dias</span>
+                    </div>
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black" x-text="formatCountdown().h"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Horas</span>
+                    </div>
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black" x-text="formatCountdown().m"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Min</span>
+                    </div>
+                    <div class="bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg min-w-[55px]">
+                        <span class="block text-xl font-black text-yellow-300" x-text="formatCountdown().s"></span>
+                        <span class="text-[10px] uppercase font-bold text-amber-200">Seg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner de Abertura Real Time -->
+        <div x-show="!isStandby && {{ ceg.is_open_for_claims|yesno:'true,false' }}"
+             class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center justify-between text-emerald-900 text-sm font-semibold shadow-sm">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
+                <span>🔥 As reservas estão <strong>abertas em tempo real</strong>! Cada slot físico é único por Set.</span>
+            </div>
+            <span class="text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full font-bold">1 pessoa por slot</span>
+        </div>
+    </div>
+
+    <!-- Sticky Bulk Actions Toolbar para o Organizador -->
+    {% if user.is_staff %}
+        <div x-show="selectedSlotIds.length > 0" x-cloak
+             class="sticky top-4 z-40 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-xl border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-purple-500/30 flex items-center justify-center text-base">⚡</span>
+                <div>
+                    <span class="font-extrabold text-sm" x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></span>
+                    <p class="text-[11px] text-purple-200">Escolha uma ação em lote para aplicar aos itens selecionados</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" @click="openBulkTypeModal()"
+                        class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <span>🏷️</span> Alterar Tipo em Massa
+                </button>
+                <button type="button" @click="openBulkPriceModal()"
+                        class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <span>💰</span> Alterar Preço em Massa
+                </button>
+                <button type="button" @click="bulkDeleteItems()" :disabled="bulkLoading"
+                        class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                    <span>🗑️</span> Excluir Itens
+                </button>
+                <button type="button" @click="clearSelection()"
+                        class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer">
+                    ✕ Desmarcar
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Sets & Slots List -->
+    <div class="space-y-8">
+        {% for set in sets %}
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <!-- Set Header -->
+                <div class="bg-slate-100 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center space-x-3">
+                        <span class="w-8 h-8 rounded-lg bg-pink-600 text-white font-black text-sm flex items-center justify-center shadow">
+                            #{{ set.set_number }}
+                        </span>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">Set {{ set.set_number }}</h2>
+                            {% if set.notes %}
+                                <p class="text-xs text-slate-500">{{ set.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="font-bold text-slate-600">
+                            {{ set.reserved_count }}/{{ set.slots_count }} preenchidos
+                        </span>
+                        {% if set.is_full %}
+                            <span class="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-md">
+                                ✔ Set 100% Fechado
+                            </span>
+                        {% else %}
+                            <span class="px-2.5 py-1 bg-slate-200 text-slate-700 font-medium rounded-md">
+                                {{ set.slots_count|add:"-"|add:set.reserved_count }} vagas restantes
+                            </span>
+                        {% endif %}
+
+                        {% if user.is_staff %}
+                            <!-- Botão Selecionar Todos deste Set -->
+                            <button type="button"
+                                    @click="selectAllInSet([
+                                        {% for s in set.slots.all %}
+                                            { id: {{ s.id }}, itemDefId: {{ s.item_definition.id }} },
+                                        {% endfor %}
+                                    ])"
+                                    class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md border border-purple-200 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs"
+                                    title="Selecionar todos os itens deste Set para ações em lote">
+                                <span>☑️</span>
+                                <span class="hidden sm:inline">Selecionar Set</span>
+                            </button>
+
+                            <!-- Botão Excluir Set -->
+                            <button type="button"
+                                    @click="openDeleteSetModal({
+                                        id: {{ set.id }},
+                                        setNumber: {{ set.set_number }},
+                                        reservedCount: {{ set.reserved_count }},
+                                        slotsCount: {{ set.slots_count }},
+                                        isFull: {{ set.is_full|yesno:'true,false' }},
+                                        claimedSlots: [
+                                            {% for slot in set.slots.all %}
+                                                {% if slot.claimed_by %}
+                                                    {
+                                                        id: {{ slot.id }},
+                                                        name: '{{ slot.item_definition.name|escapejs }}',
+                                                        price: '{{ slot.price|floatformat:2 }}',
+                                                        isPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                                        participantName: '{{ slot.claimed_by.display_name|escapejs }}',
+                                                        whatsapp: '{{ slot.claimed_by.whatsapp|default:''|escapejs }}',
+                                                        formattedPhone: '{{ slot.claimed_by.formatted_phone|default:''|escapejs }}',
+                                                        socialHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}'
+                                                    },
+                                                {% endif %}
+                                            {% endfor %}
+                                        ]
+                                    })"
+                                    class="px-2.5 py-1 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-md border border-rose-200 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs"
+                                    title="Excluir Set #{{ set.set_number }} da CEG">
+                                <span>🗑️</span>
+                                <span class="hidden sm:inline">Excluir Set</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Slots Grid -->
+                <div class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {% for slot in set.slots.all %}
+                        <div class="border rounded-xl p-4 flex flex-col justify-between space-y-3 transition
+                            {% if slot.status == 'AVAILABLE' %}
+                                border-slate-200 hover:border-pink-300 hover:shadow bg-white
+                            {% elif slot.status == 'RESERVED' %}
+                                border-amber-200 bg-amber-50/50
+                            {% elif slot.status == 'PAID' %}
+                                border-blue-200 bg-blue-50/40
+                            {% else %}
+                                border-slate-200 bg-slate-50 opacity-60
+                            {% endif %}"
+                             x-data="{
+                                 slotId: {{ slot.id }},
+                                 status: '{{ slot.status }}',
+                                 isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                 isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
+                                 isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
+                                 loading: false,
+                                 async toggle(field) {
+                                     if (this.loading) return;
+                                     this.loading = true;
+                                     try {
+                                         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                                         const res = await fetch('/slots/' + this.slotId + '/toggle-payment/', {
+                                             method: 'POST',
+                                             headers: {
+                                                 'Content-Type': 'application/json',
+                                                 'X-CSRFToken': csrf
+                                             },
+                                             body: JSON.stringify({ field: field })
+                                         });
+                                         const data = await res.json();
+                                         if (data.success) {
+                                             this.status = data.status;
+                                             this.isItemPaid = data.is_item_paid;
+                                             this.isInterPaid = data.is_frete_inter_paid;
+                                             this.isTaxaPaid = data.is_taxa_aduaneira_paid;
+                                         } else {
+                                             alert(data.message || 'Erro ao alterar status');
+                                         }
+                                     } catch(e) {
+                                         alert('Erro de conexão ao alterar status: ' + e);
+                                     } finally {
+                                         this.loading = false;
+                                     }
+                                 }
+                             }"
+                             :class="{
+                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE',
+                                 'border-amber-300 bg-amber-50/50 shadow-2xs': status === 'RESERVED',
+                                 'border-blue-300 bg-blue-50/40 shadow-2xs': status === 'PAID',
+                                 'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED'
+                             }">
+
+                            <!-- Top Tag / Member / Item Type -->
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    {% if user.is_staff %}
+                                        <input type="checkbox"
+                                               :checked="selectedSlotIds.includes({{ slot.id }})"
+                                               @click.stop="toggleSlotSelection({{ slot.id }}, {{ slot.item_definition.id }})"
+                                               class="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-2xs"
+                                               title="Selecionar para edição ou exclusão em massa">
+                                    {% endif %}
+                                    {% if slot.item_definition.member_name %}
+                                        <span class="text-xs font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
+                                            {{ slot.item_definition.member_name }}
+                                        </span>
+                                    {% endif %}
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {% if slot.item_definition.item_type == 'POB' or 'pob' in slot.item_definition.tipo_item_nome|lower %}bg-amber-100 text-amber-800 border border-amber-200{% elif slot.item_definition.item_type == 'ALBUM' or 'álbum' in slot.item_definition.tipo_item_nome|lower or 'album' in slot.item_definition.tipo_item_nome|lower %}bg-blue-100 text-blue-800 border border-blue-200{% elif slot.item_definition.item_type == 'INCLUSION' or 'inclus' in slot.item_definition.tipo_item_nome|lower %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif 'lucky' in slot.item_definition.tipo_item_nome|lower or 'fansign' in slot.item_definition.tipo_item_nome|lower %}bg-purple-100 text-purple-800 border border-purple-200{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                                        🏷️ {{ slot.item_definition.tipo_item_nome }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center gap-1.5">
+                                    {% if user.is_staff %}
+                                        <button type="button"
+                                                @click="openManageSlotModal({
+                                                    id: {{ slot.id }},
+                                                    itemDefId: {{ slot.item_definition.id }},
+                                                    name: '{{ slot.item_definition.name|escapejs }}',
+                                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                    itemType: '{{ slot.item_definition.item_type }}',
+                                                    tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
+                                                    setNumber: {{ set.set_number }},
+                                                    price: '{{ slot.price|stringformat:".2f" }}',
+                                                    status: status,
+                                                    statusDisplay: status === 'PAID' ? 'Confirmado / Pago' : (status === 'RESERVED' ? 'Reservado' : 'Disponível'),
+                                                    claimedById: '{{ slot.claimed_by.id|default:'' }}',
+                                                    claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
+                                                    claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
+                                                    isItemPaid: isItemPaid
+                                                })"
+                                                class="w-6 h-6 flex items-center justify-center bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs rounded border border-purple-200 transition shadow-2xs cursor-pointer"
+                                                title="Editar item (tipo, nome, valor) ou gerenciar reserva">
+                                            ✏️
+                                        </button>
+                                    {% endif %}
+                                    <div class="text-right">
+                                        <span class="text-xs font-black text-slate-900">
+                                            R$ {{ slot.price|floatformat:2 }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item Name -->
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900 leading-snug">
+                                    {{ slot.item_definition.name }}
+                                </h3>
+                            </div>
+
+                            <!-- Valores de Frete e Taxa no Card -->
+                            <div class="grid grid-cols-2 gap-2 p-2 bg-slate-50/80 rounded-xl border border-slate-200/80 text-[11px]">
+                                <!-- Frete Inter -->
+                                <div class="flex flex-col min-w-0 justify-between">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 truncate flex items-center gap-0.5">
+                                            <span>✈️</span> Inter
+                                        </span>
+                                        <span x-show="isInterPaid" class="text-[9px] font-black text-blue-700 bg-blue-100 px-1 py-0.5 rounded leading-none whitespace-nowrap shrink-0">
+                                            ✔ Pago
+                                        </span>
+                                        <span x-show="!isInterPaid" class="text-[9px] font-medium text-slate-400 leading-none whitespace-nowrap shrink-0">
+                                            Pendente
+                                        </span>
+                                    </div>
+                                    <span class="font-extrabold text-xs mt-0.5 {% if slot.frete_inter is not None and slot.frete_inter > 0 or ceg.frete_inter is not None and ceg.frete_inter > 0 %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                        {% if slot.frete_inter is not None and slot.frete_inter > 0 %}
+                                            R$ {{ slot.frete_inter|floatformat:2 }}
+                                        {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
+                                            R$ {{ ceg.frete_inter|floatformat:2 }}
+                                        {% elif slot.frete_inter is not None and not ceg.caixa %}
+                                            R$ {{ slot.frete_inter|floatformat:2 }}
+                                        {% else %}
+                                            A definir
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- Taxa Aduaneira -->
+                                <div class="flex flex-col min-w-0 justify-between border-l border-slate-200 pl-2">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-purple-600 truncate flex items-center gap-0.5">
+                                            <span>🏛️</span> Taxa
+                                        </span>
+                                        <span x-show="isTaxaPaid" class="text-[9px] font-black text-purple-700 bg-purple-100 px-1 py-0.5 rounded leading-none whitespace-nowrap shrink-0">
+                                            ✔ Paga
+                                        </span>
+                                        <span x-show="!isTaxaPaid" class="text-[9px] font-medium text-slate-400 leading-none whitespace-nowrap shrink-0">
+                                            Pendente
+                                        </span>
+                                    </div>
+                                    <span class="font-extrabold text-xs mt-0.5 {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 or ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}text-slate-900{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                                        {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}
+                                            R$ {{ slot.taxa_aduaneira|floatformat:2 }}
+                                        {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
+                                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                                        {% elif slot.taxa_aduaneira is not None and not ceg.caixa %}
+                                            R$ {{ slot.taxa_aduaneira|floatformat:2 }}
+                                        {% else %}
+                                            A definir
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Status / Action Button -->
+                            <div class="pt-2 border-t border-slate-100">
+                                {% if slot.claimed_by %}
+                                    <!-- Bloco quando RESERVADO (Item ainda pendente de pagamento) -->
+                                    <div x-show="status === 'RESERVED'"
+                                         class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>🔒</span> Reservado
+                                        </span>
+                                        <div class="text-[10px] text-amber-700 truncate font-mono">
+                                            {% if slot.claimed_by.social_handle %}
+                                                {{ slot.claimed_by.social_handle }}
+                                            {% else %}
+                                                {{ slot.claimed_by.display_name }}
+                                            {% endif %}
+                                        </div>
+                                        {% if user.is_staff %}
+                                            <button type="button"
+                                                    @click="openManageSlotModal({
+                                                        id: {{ slot.id }},
+                                                        itemDefId: {{ slot.item_definition.id }},
+                                                        name: '{{ slot.item_definition.name|escapejs }}',
+                                                        member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                        itemType: '{{ slot.item_definition.item_type }}',
+                                                        tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
+                                                        setNumber: {{ set.set_number }},
+                                                        price: '{{ slot.price|stringformat:".2f" }}',
+                                                        status: status,
+                                                        statusDisplay: 'Reservado',
+                                                        claimedById: '{{ slot.claimed_by.id|default:'' }}',
+                                                        claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
+                                                        claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
+                                                        isItemPaid: isItemPaid
+                                                    })"
+                                                    class="mt-1 text-[10px] font-bold text-amber-900 hover:text-purple-700 underline flex items-center justify-center gap-1 w-full cursor-pointer">
+                                                <span>🔄</span> Trocar ou Remover Claim
+                                            </button>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Bloco quando PAGO (Item confirmado / pago) -->
+                                    <div x-show="status === 'PAID'"
+                                         class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>✔</span> Confirmado / Pago
+                                        </span>
+                                        <div class="text-[10px] text-blue-700 truncate font-mono">
+                                            {% if slot.claimed_by.social_handle %}
+                                                {{ slot.claimed_by.social_handle }}
+                                            {% else %}
+                                                {{ slot.claimed_by.display_name }}
+                                            {% endif %}
+                                        </div>
+                                        {% if user.is_staff %}
+                                            <button type="button"
+                                                    @click="openManageSlotModal({
+                                                        id: {{ slot.id }},
+                                                        itemDefId: {{ slot.item_definition.id }},
+                                                        name: '{{ slot.item_definition.name|escapejs }}',
+                                                        member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                        itemType: '{{ slot.item_definition.item_type }}',
+                                                        tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
+                                                        setNumber: {{ set.set_number }},
+                                                        price: '{{ slot.price|stringformat:".2f" }}',
+                                                        status: status,
+                                                        statusDisplay: 'Confirmado / Pago',
+                                                        claimedById: '{{ slot.claimed_by.id|default:'' }}',
+                                                        claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
+                                                        claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
+                                                        isItemPaid: isItemPaid
+                                                    })"
+                                                    class="mt-1 text-[10px] font-bold text-blue-900 hover:text-purple-700 underline flex items-center justify-center gap-1 w-full cursor-pointer">
+                                                <span>🔄</span> Trocar ou Remover Claim
+                                            </button>
+                                        {% endif %}
+                                    </div>
+
+                                {% else %}
+                                    <!-- Slot sem claim (Disponível) -->
+                                    <div x-show="status === 'AVAILABLE'">
+                                        <template x-if="isStandby">
+                                            <button type="button" disabled
+                                                    class="w-full py-2 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed flex items-center justify-center gap-1">
+                                                <span>🔒</span> Aguarde abertura
+                                            </button>
+                                        </template>
+                                        <template x-if="!isStandby">
+                                            {% if logged_participant or user.is_staff %}
+                                                <button type="button"
+                                                        @click="openClaimModal({
+                                                            id: {{ slot.id }},
+                                                            name: '{{ slot.item_definition.name|escapejs }}',
+                                                            member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                            setNumber: {{ set.set_number }},
+                                                            price: '{{ slot.price|floatformat:2 }}',
+                                                            frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% elif slot.frete_inter is not None and not ceg.caixa %}{{ slot.frete_inter|floatformat:2 }}{% endif %}',
+                                                            taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% elif slot.taxa_aduaneira is not None and not ceg.caixa %}{{ slot.taxa_aduaneira|floatformat:2 }}{% endif %}'
+                                                        })"
+                                                        class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
+                                                    <span>⚡</span> Reservar (Claim)
+                                                </button>
+                                            {% else %}
+                                                <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                                                   class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer text-center">
+                                                    <span>⚡</span> Reservar (Claim)
+                                                </a>
+                                            {% endif %}
+                                        </template>
+                                    </div>
+
+                                    <!-- Caso o slot passe para PAID ou RESERVED mesmo sem claimed_by previamente renderizado -->
+                                    <div x-show="status === 'PAID'"
+                                         class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>✔</span> Confirmado / Pago
+                                        </span>
+                                    </div>
+                                    <div x-show="status === 'RESERVED'"
+                                         class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                        <span class="font-bold flex items-center justify-center gap-1">
+                                            <span>🔒</span> Reservado
+                                        </span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Bloco de Status de Pagamento & Check Marks -->
+                            {% if user.is_staff %}
+                                <!-- Check Marks Interativos para o Organizador -->
+                                <div class="mt-2 pt-2 border-t border-slate-100 bg-slate-50 -mx-4 -mb-4 p-2 rounded-b-xl">
+                                    <div class="grid grid-cols-3 gap-1.5 text-[10px] font-bold">
+                                        <button type="button" @click="toggle('item')" :disabled="loading"
+                                                :class="isItemPaid ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'"
+                                                class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                                                title="Item: R$ {{ slot.price|floatformat:2 }}">
+                                            <span x-text="isItemPaid ? '✔' : '○'"></span>
+                                            <span>Item</span>
+                                        </button>
+                                        <button type="button" @click="toggle('inter')" :disabled="loading"
+                                                :class="isInterPaid ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'"
+                                                class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                                                title="Frete Internacional: {% if slot.frete_inter is not None and slot.frete_inter > 0 %}R$ {{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}R$ {{ ceg.frete_inter|floatformat:2 }}{% elif slot.frete_inter is not None and not ceg.caixa %}R$ {{ slot.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}">
+                                            <span x-text="isInterPaid ? '✔' : '○'"></span>
+                                            <span>Inter</span>
+                                        </button>
+                                        <button type="button" @click="toggle('taxa')" :disabled="loading"
+                                                :class="isTaxaPaid ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-500 border-slate-200 hover:border-purple-300'"
+                                                class="py-1.5 px-1 border rounded-lg transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                                                title="Taxa Aduaneira: {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}R$ {{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% elif slot.taxa_aduaneira is not None and not ceg.caixa %}R$ {{ slot.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}">
+                                            <span x-text="isTaxaPaid ? '✔' : '○'"></span>
+                                            <span>Taxa</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% elif slot.claimed_by %}
+                                <!-- Badges de Status Informativos para Participantes -->
+                                <div class="mt-1 pt-2 border-t border-slate-100 grid grid-cols-3 gap-1 text-[10px] font-semibold text-slate-600 text-center">
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100"
+                                         :class="isItemPaid ? 'text-emerald-700 font-bold bg-emerald-50/60 border-emerald-100' : 'text-slate-400'">
+                                        <span x-text="isItemPaid ? '✔ Item' : '○ Item'"></span>
+                                    </div>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100"
+                                         :class="isInterPaid ? 'text-blue-700 font-bold bg-blue-50/60 border-blue-100' : 'text-slate-400'">
+                                        <span x-text="isInterPaid ? '✔ Inter' : '○ Inter'"></span>
+                                    </div>
+                                    <div class="py-1 px-0.5 rounded bg-slate-50 border border-slate-100"
+                                         :class="isTaxaPaid ? 'text-purple-700 font-bold bg-purple-50/60 border-purple-100' : 'text-slate-400'">
+                                        <span x-text="isTaxaPaid ? '✔ Taxa' : '○ Taxa'"></span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <div class="col-span-full py-8 text-center text-slate-400 text-sm">
+                            Nenhum slot gerado para este Set ainda.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
+                Nenhum Set disponível para esta CEG no momento.
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Modal de Reserva (Claim Modal) -->
+    <div x-show="modalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+         @keydown.escape.window="closeClaimModal()">
+        
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all"
+             @click.away="closeClaimModal()">
+            
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span class="text-xs font-black text-pink-600 uppercase tracking-wider">Confirmar Reserva</span>
+                    <h3 class="text-lg font-black text-slate-900" x-text="selectedSlot ? selectedSlot.name : ''"></h3>
+                    <p class="text-xs text-slate-500" x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber : ''"></p>
+                </div>
+                <button type="button" @click="closeClaimModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Valores das Fases da CEG para o Item -->
+            <div class="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200/90 text-center text-xs">
+                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">1. Item</span>
+                    <span class="font-black text-slate-900" x-text="selectedSlot ? 'R$ ' + selectedSlot.price : ''"></span>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
+                    <span class="block text-[10px] font-bold text-blue-500 uppercase">2. Frete Inter</span>
+                    <span class="font-black text-blue-900" x-text="selectedSlot && selectedSlot.frete ? 'R$ ' + selectedSlot.frete : 'A definir'"></span>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200/60 shadow-2xs">
+                    <span class="block text-[10px] font-bold text-purple-500 uppercase">3. Taxa</span>
+                    <span class="font-black text-purple-900" x-text="selectedSlot && selectedSlot.taxa ? 'R$ ' + selectedSlot.taxa : 'A definir'"></span>
+                </div>
+            </div>
+
+            <!-- Informação de Concorrência -->
+            <div class="p-3 bg-pink-50 border border-pink-100 rounded-xl text-pink-900 text-xs leading-relaxed">
+                ⚡ <strong>Atenção:</strong> Este slot é único! O primeiro participante a clicar em Confirmar garantirá a reserva no sistema.
+            </div>
+
+            {% if user.is_staff %}
+                <!-- Bloco do Administrador: Escolher Participante Cadastrado -->
+                <div class="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>👑</span> Modo Organizador (Admin)
+                        </span>
+                        <span class="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">Admin</span>
+                    </div>
+                    <p class="text-[11px] text-amber-800 leading-snug">
+                        Selecione um participante cadastrado por <strong>Nome</strong> ou <strong>WhatsApp</strong> para autopreencher os dados abaixo:
+                    </p>
+                    <select @change="selectParticipantForClaim($event.target.value)"
+                            class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+                        <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                        <template x-for="p in allParticipants" :key="p.id">
+                            <option :value="p.id"
+                                    x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                            </option>
+                        </template>
+                    </select>
+                </div>
+            {% elif logged_participant %}
+                <!-- Bloco do Participante Logado -->
+                <div class="p-3 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-xl space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
+                            <span>👤</span> Reservando com sua Conta
+                        </span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                            ● Autenticado
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-900 font-bold">
+                        {{ logged_participant.name }}
+                        {% if logged_participant.username %}
+                            <span class="text-pink-600 font-black">({{ logged_participant.username }})</span>
+                        {% endif %}
+                        <span class="text-slate-500 font-normal">• {{ logged_participant.formatted_phone }}</span>
+                    </div>
+                    {% if logged_participant.social_handle %}
+                        <div class="text-[11px] text-pink-700 font-mono">
+                            {{ logged_participant.social_handle }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <form :action="'/slots/' + (selectedSlot ? selectedSlot.id : 0) + '/claim/'" method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo do Participante *</label>
+                    <input type="text" name="name" required
+                           x-model="formName"
+                           placeholder="Ex: Beatriz Silva"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Nome para conferência de pagamento Pix e identificação.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Como prefere ser chamado(a)? <span class="text-slate-400 font-normal text-[11px]">(opcional)</span></label>
+                    <input type="text" name="username"
+                           x-model="formUsername"
+                           placeholder="Ex: Bia, Hudo, JihyoStan"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Nome de usuário ou apelido para saudações e exibição.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp (com DDD) *</label>
+                    <input type="tel" name="whatsapp" required
+                           x-model="formWhatsapp"
+                           placeholder="Ex: 11999998888"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Usado para você consultar suas reservas sem senha via OTP.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Seu @ no Twitter ou Instagram</label>
+                    <input type="text" name="social_handle"
+                           x-model="formSocial"
+                           placeholder="Ex: @jihyolover"
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Exibido publicamente no card para confirmar seu slot.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Observações (opcional)</label>
+                    <textarea name="notes" rows="2"
+                              placeholder="Alguma observação especial para o organizador?"
+                              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" @click="closeClaimModal()"
+                            class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1 cursor-pointer">
+                        <span>✔</span> Confirmar Reserva Única
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Informações e Foto da CEG (Organizador) -->
+    {% if user.is_staff %}
+        <div x-show="editCegModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+             @keydown.escape.window="editCegModalOpen = false">
+            <div class="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 transform transition-all max-h-[90vh] overflow-y-auto"
+                 @click.away="editCegModalOpen = false">
+                
+                <!-- Cabeçalho do Modal -->
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl shadow-xs">
+                            ✏️
+                        </span>
+                        <div>
+                            <h3 class="text-lg font-black text-slate-900">Editar Informações da CEG</h3>
+                            <p class="text-xs text-slate-500">Altere foto de capa, título, era, status, regras e dados de pagamento.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="editCegModalOpen = false" class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <form action="{% url 'update_ceg' ceg.slug %}" method="POST" enctype="multipart/form-data" class="space-y-5 text-xs">
+                    {% csrf_token %}
+                    <input type="hidden" name="remove_banner" :value="removeBannerFlag ? '1' : '0'">
+
+                    <!-- 1. Foto de Capa / Banner Promocional -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <span>📷</span> Foto de Capa / Banner da CEG
+                            </label>
+                            <span class="text-[10px] text-pink-600 font-bold bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
+                                Imagem de Destaque
+                            </span>
+                        </div>
+
+                        <!-- Preview da Imagem -->
+                        <div x-show="editPhotoPreview" class="relative rounded-xl overflow-hidden border border-slate-200 h-44 bg-slate-100 group">
+                            <img :src="editPhotoPreview" alt="Preview do Banner" class="w-full h-full object-cover">
+                            <button type="button" @click="clearPhoto()"
+                                    class="absolute top-2 right-2 px-2.5 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                <span>🗑️</span> Remover Foto
+                            </button>
+                        </div>
+
+                        <!-- Opções de Envio: Arquivo ou URL -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    📁 Upload de Arquivo (JPG, PNG, WEBP):
+                                </label>
+                                <input type="file" id="ceg_banner_file_input" name="banner_file" accept="image/*"
+                                       @change="onPhotoSelected($event)"
+                                       class="w-full text-slate-600 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    🔗 Ou Link / URL Direto da Imagem:
+                                </label>
+                                <input type="url" id="ceg_banner_url_input" name="banner_url"
+                                       value="{{ ceg.banner_url }}"
+                                       @input="if (!removeBannerFlag) editPhotoPreview = $event.target.value"
+                                       placeholder="https://exemplo.com/foto-ceg.jpg"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Identificação & Vinculações -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>📝</span> Identificação & Vínculos
+                        </label>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Título da CEG:</label>
+                            <input type="text" name="title" value="{{ ceg.title }}" required
+                                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Grupo & Era:</label>
+                                <select name="era_id" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    {% for e in all_eras %}
+                                        <option value="{{ e.id }}" {% if e.id == ceg.era_id %}selected{% endif %}>
+                                            {{ e.group.name }} — {{ e.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Caixa / Remessa Vinculada:</label>
+                                <select name="caixa_id" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    <option value="">Nenhuma Caixa Vinculada</option>
+                                    {% for c in all_caixas %}
+                                        <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                            {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% else %}📦{% endif %} {{ c.nome }} ({{ c.get_status_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Status e Prazos -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>🚦</span> Status & Prazos
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Status da CEG:</label>
+                                <select name="status" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    {% for code, label in status_choices %}
+                                        <option value="{{ code }}" {% if ceg.status == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Prazo Pagamento do Item:</label>
+                                <input type="datetime-local" name="prazo_pagamento_item"
+                                       value="{{ ceg.prazo_pagamento_item|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200/60">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    Abertura / Standby (Contagem Regressiva):
+                                </label>
+                                <input type="datetime-local" name="opens_at"
+                                       value="{{ ceg.opens_at|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <span class="text-[10px] text-slate-400">Se futura, a página pública ativa o cronômetro.</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Encerramento da CEG:</label>
+                                <input type="datetime-local" name="closes_at"
+                                       value="{{ ceg.closes_at|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <span class="text-[10px] text-slate-400">Opcional. Data em que as reservas fecham.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Pagamento Pix & Regras -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <label class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>💳</span> Dados Pix & Regras
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Chave Pix do Organizador:</label>
+                                <input type="text" name="pix_key" value="{{ ceg.pix_key }}"
+                                       placeholder="exemplo@email.com ou CPF/Telefone"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Instruções de Pagamento Pix:</label>
+                                <input type="text" name="pix_instructions" value="{{ ceg.pix_instructions }}"
+                                       placeholder="Ex: Anexar comprovante com nome no WhatsApp"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Regras e Informações da CEG:</label>
+                            <textarea name="description" rows="3"
+                                      placeholder="Regras de frete internacional, prazos, avisos e orientações aos participantes..."
+                                      class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-normal text-slate-800 focus:ring-2 focus:ring-pink-500">{{ ceg.description }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                        <button type="button" @click="editCegModalOpen = false"
+                                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+                            <span>💾</span> Salvar Alterações da CEG
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Modal para Atualizar Taxas e Prazos da CEG (Organizador) -->
+    {% if user.is_staff %}
+        <div x-show="feeModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="feeModalOpen = false">
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all"
+                 @click.away="feeModalOpen = false">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">💰</span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">Atualizar Taxas & Prazos da CEG</h3>
+                            <p class="text-[11px] text-slate-500">Altere os prazos e informe os valores do frete inter e taxa aduaneira.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="feeModalOpen = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <form action="{% url 'update_ceg_fees' ceg.slug %}" method="POST" class="space-y-4 text-xs">
+                    {% csrf_token %}
+
+                    <!-- Item -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                        <label class="block font-bold text-slate-700">1. Prazo para Pagamento do Item</label>
+                        <input type="datetime-local" name="prazo_pagamento_item"
+                               value="{{ ceg.prazo_pagamento_item|date:'Y-m-d\TH:i' }}"
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-slate-800">
+                        <span class="text-[10px] text-slate-400">Data limite para os participantes pagarem o valor do item.</span>
+                    </div>
+
+                    <!-- Frete Inter -->
+                    <div class="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2">
+                        <label class="block font-bold text-blue-950">2. Frete Internacional</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Valor (R$)</span>
+                                <input type="number" step="0.01" min="0" name="frete_inter"
+                                       value="{{ ceg.frete_inter|default_if_none:'' }}"
+                                       placeholder="Ex: 35.00"
+                                       class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Prazo de Pagamento</span>
+                                <input type="datetime-local" name="prazo_pagamento_frete_inter"
+                                       value="{{ ceg.prazo_pagamento_frete_inter|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg font-semibold text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Taxa Aduaneira -->
+                    <div class="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-2">
+                        <label class="block font-bold text-emerald-950">3. Taxa Aduaneira / Alfândega</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Valor (R$)</span>
+                                <input type="number" step="0.01" min="0" name="taxa_aduaneira"
+                                       value="{{ ceg.taxa_aduaneira|default_if_none:'' }}"
+                                       placeholder="Ex: 25.00"
+                                       class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Prazo de Pagamento</span>
+                                <input type="datetime-local" name="prazo_pagamento_taxa_aduaneira"
+                                       value="{{ ceg.prazo_pagamento_taxa_aduaneira|date:'Y-m-d\TH:i' }}"
+                                       class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg font-semibold text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caixa / Remessa Internacional -->
+                    <div class="p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block font-bold text-indigo-950">4. Caixa / Remessa Internacional</label>
+                            {% if ceg.caixa %}
+                                <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}" target="_blank"
+                                   class="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 hover:underline">
+                                    Ver Remessa ↗
+                                </a>
+                            {% endif %}
+                        </div>
+                        <select name="caixa_id" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg font-semibold text-slate-800">
+                            <option value="" {% if not ceg.caixa %}selected{% endif %}>-- Nenhuma (Sem Caixa / Desvincular) --</option>
+                            {% for c in all_caixas %}
+                                <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                    {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
+                                    {{ c.nome }} ({{ c.get_status_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <span class="text-[10px] text-slate-500 block">
+                            Ao alterar a caixa, o status de envio da CEG é sincronizado automaticamente com o da remessa selecionada.
+                        </span>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                        <button type="button" @click="feeModalOpen = false"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition">
+                            ✔ Salvar Taxas & Prazos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Gerenciamento de Slot (Editar Preço & Trocar/Remover Claim) -->
+        <div x-show="manageSlotModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeManageSlotModal()">
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+                 @click.away="closeManageSlotModal()">
+                
+                <!-- Cabeçalho do Modal -->
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg shadow-xs">
+                            ⚙️
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Gerenciar Slot • Set #<span x-text="managedSlot ? managedSlot.setNumber : ''"></span>
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold" x-text="managedSlot ? (managedSlot.member ? managedSlot.member + ' — ' : '') + managedSlot.name : ''"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeManageSlotModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Formulário de Gerenciamento -->
+                <form @submit.prevent="submitManageSlot()" class="space-y-4 text-xs">
+                    
+                    <!-- 1. Edição do Tipo do Item & Identificação -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <span>🏷️</span> Tipo e Identificação do Item
+                            </label>
+                            <span class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                Definição na CEG
+                            </span>
+                        </div>
+
+                        <!-- Seletor Unificado do Tipo do Item (Pool compartilhada com Caixas) -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-[11px] font-bold text-slate-700">Tipo do Item:</label>
+                                <button type="button" @click="openNewTipoInline('manage')"
+                                        class="text-[10px] text-purple-600 font-bold hover:text-purple-800 flex items-center gap-1 cursor-pointer">
+                                    <span>➕</span> Novo Tipo
+                                </button>
+                            </div>
+                            <select x-model="manageTipoItemId" required
+                                    class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                <template x-for="tip in tipoItemList" :key="tip.id">
+                                    <option :value="tip.id" x-text="tip.nome" :selected="String(tip.id) === String(manageTipoItemId)"></option>
+                                </template>
+                            </select>
+                            <div class="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                                <span>Pool compartilhada com o rateio das Caixas e Remessas.</span>
+                                <button type="button" @click="applyTipoPrefixToName()"
+                                        class="text-purple-600 font-semibold hover:underline cursor-pointer">
+                                    ✨ Ajustar prefixo no nome
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Nome do Item & Integrante -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Nome do Item:</label>
+                                <input type="text" x-model="manageName" required
+                                       placeholder="Ex: Photocard Sakura 1"
+                                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Integrante (Opcional):</label>
+                                <input type="text" x-model="manageMember"
+                                       placeholder="Ex: Sakura 1"
+                                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Edição do Valor do Item -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>💰</span> Preço do Item neste Slot (R$)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 font-bold text-slate-400">R$</span>
+                            <input type="number" step="0.01" min="0" required
+                                   x-model="managePrice"
+                                   placeholder="0.00"
+                                   class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-black text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                        </div>
+                        <label class="flex items-start gap-2 pt-1 cursor-pointer select-none">
+                            <input type="checkbox" x-model="manageApplyAllSets"
+                                   class="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                            <span class="text-[11px] text-slate-600 leading-snug">
+                                Replicar este novo valor para <strong>todos os Sets</strong> deste photocard na CEG.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- 3. Gerenciamento de Reserva (Claim) -->
+                    <div class="p-3.5 bg-purple-50/40 rounded-xl border border-purple-200/80 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-black text-purple-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <span>👤</span> Gerenciar Reserva (Claim)
+                            </span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded"
+                                  :class="managedSlot && managedSlot.claimedById ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'"
+                                  x-text="managedSlot && managedSlot.claimedById ? (managedSlot.isItemPaid ? '✔ Confirmado / Pago' : '🔒 Reservado') : '○ Disponível'">
+                            </span>
+                        </div>
+
+                        <!-- Caso o Slot esteja Reservado atualmente -->
+                        <template x-if="managedSlot && managedSlot.claimedById">
+                            <div class="space-y-3">
+                                <!-- Info do Participante Atual -->
+                                <div class="p-2.5 bg-white rounded-lg border border-purple-100 flex items-center justify-between">
+                                    <div class="truncate">
+                                        <div class="font-bold text-slate-900" x-text="managedSlot.claimedByName"></div>
+                                        <div class="text-[10px] text-pink-600 font-mono" x-text="managedSlot.claimedByHandle || 'Sem rede social'"></div>
+                                    </div>
+                                    <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">
+                                        Atual
+                                    </span>
+                                </div>
+
+                                <!-- Ação de Remover Reserva -->
+                                <div class="p-2.5 rounded-lg border transition"
+                                     :class="manageRemoveClaim ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'">
+                                    <label class="flex items-start gap-2 cursor-pointer select-none">
+                                        <input type="checkbox" x-model="manageRemoveClaim"
+                                               class="mt-0.5 rounded border-red-300 text-red-600 focus:ring-red-500">
+                                        <div>
+                                            <span class="font-bold text-red-700 block text-xs">
+                                                🗑️ Remover reserva (Liberar slot como Disponível)
+                                            </span>
+                                            <span class="text-[10px] text-slate-500 block leading-tight">
+                                                Exclui a reserva do participante atual e disponibiliza o slot imediatamente para quem quiser reservar.
+                                            </span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Ação de Trocar Participante (se não for remover) -->
+                                <div x-show="!manageRemoveClaim" class="space-y-1.5 pt-1">
+                                    <label class="block font-bold text-slate-700 text-[11px]">
+                                        🔄 Trocar por outro participante cadastrado:
+                                    </label>
+                                    <select x-model="manageParticipantId"
+                                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                        <option value="">-- Manter participante atual --</option>
+                                        <template x-for="p in allParticipants" :key="p.id">
+                                            <option :value="p.id"
+                                                    x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                                            </option>
+                                        </template>
+                                    </select>
+                                    <span class="text-[10px] text-slate-400">Transfere a reserva deste slot para o participante selecionado.</span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Caso o Slot esteja Disponível no momento -->
+                        <template x-if="managedSlot && !managedSlot.claimedById">
+                            <div class="space-y-2">
+                                <p class="text-[11px] text-slate-500">
+                                    Este slot está <strong>livre</strong>. Você pode atribuí-lo diretamente a um participante cadastrado:
+                                </p>
+                                <select x-model="manageParticipantId"
+                                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="">-- Deixar Disponível (Nenhum) --</option>
+                                    <template x-for="p in allParticipants" :key="p.id">
+                                        <option :value="p.id"
+                                                x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                                        </option>
+                                    </template>
+                                </select>
+                                <div class="pt-1">
+                                    <button type="button" @click="promoteWaitingOnSlot(managedSlot.id)"
+                                            class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span>⚡</span> Alocar 1º Colocado da Fila de Espera
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- 4. Zona de Exclusão e Remoção do Item / Slot -->
+                    <div class="p-3.5 bg-rose-50/60 rounded-xl border border-rose-200 space-y-2">
+                        <label class="block font-black text-rose-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span>🗑️</span> Exclusão e Remoção
+                        </label>
+                        <p class="text-[11px] text-slate-600 leading-tight">
+                            Exclua este item da CEG ou remova apenas a vaga deste Set caso não vá utilizá-lo.
+                        </p>
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            <button type="button" @click="deleteManagedItemDefinition()" :disabled="manageLoading"
+                                    class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                <span>🗑️</span> Excluir Item da CEG Inteira
+                            </button>
+                            {% if sets|length > 1 %}
+                                <button type="button" @click="deleteManagedSingleSlot()" :disabled="manageLoading"
+                                        class="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 font-bold text-xs rounded-lg border border-rose-300 transition shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                    Remover apenas este Slot do Set #<span x-text="managedSlot ? managedSlot.setNumber : ''"></span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação do Rodapé -->
+                    <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                        <button type="button" @click="closeManageSlotModal()" :disabled="manageLoading"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="manageLoading"
+                                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                            <span x-show="manageLoading" class="animate-spin">⌛</span>
+                            <span>💾 Salvar Alterações</span>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal de Alteração de Tipo em Massa -->
+        <div x-show="bulkTypeModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeBulkTypeModal()">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+                 @click.away="closeBulkTypeModal()">
+                
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-lg shadow-xs">
+                            🏷️
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Alterar Tipo em Massa
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold" x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkTypeModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitBulkType()" class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block font-bold text-slate-700">Novo Tipo de Item para os Selecionados:</label>
+                                <button type="button" @click="openNewTipoInline('bulk')" class="text-[10px] text-pink-600 font-bold hover:underline flex items-center gap-1 cursor-pointer">
+                                    <span>➕</span> Novo Tipo
+                                </button>
+                            </div>
+                            <select x-model="bulkNewTipoItemId" required
+                                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <template x-for="tip in tipoItemList" :key="tip.id">
+                                    <option :value="tip.id" x-text="tip.nome" :selected="String(tip.id) === String(bulkNewTipoItemId)"></option>
+                                </template>
+                            </select>
+                            <p class="text-[10px] text-slate-500 mt-1">
+                                Pool compartilhada com as Caixas e Itens da CEG.
+                            </p>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="bulkUpdatePrefix"
+                                       class="mt-0.5 rounded border-slate-300 text-pink-600 focus:ring-pink-500">
+                                <span class="text-[11px] text-slate-700 font-semibold leading-tight">
+                                    Atualizar automaticamente o prefixo do nome dos itens com o novo tipo (ex: trocar 'Photocard Sakura' por 'POB Sakura' ou 'Álbum Sakura').
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="closeBulkTypeModal()"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="bulkLoading"
+                                class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                            <span x-show="bulkLoading" class="animate-spin">⏳</span>
+                            <span>Aplicar aos Selecionados</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Alteração de Preço em Massa -->
+        <div x-show="bulkPriceModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeBulkPriceModal()">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-100"
+                 @click.away="closeBulkPriceModal()">
+                
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg shadow-xs">
+                            💰
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Alterar Preço em Massa
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold" x-text="selectedSlotIds.length + ' vaga(s) selecionada(s)'"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkPriceModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitBulkPrice()" class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">Novo Preço Unitário (R$):</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 font-bold text-slate-400">R$</span>
+                                <input type="number" step="0.01" min="0" required
+                                       x-model="bulkNewPrice"
+                                       placeholder="0.00"
+                                       class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-black text-sm text-slate-900 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="bulkApplyAllSets"
+                                       class="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                <span class="text-[11px] text-slate-700 font-semibold leading-tight">
+                                    Aplicar este novo preço a todos os Sets dos itens selecionados nesta CEG.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="closeBulkPriceModal()"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="bulkLoading"
+                                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                            <span x-show="bulkLoading" class="animate-spin">⏳</span>
+                            <span>Aplicar Novo Preço</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal de Confirmação para Excluir Set e Notificar Participantes -->
+        <div x-show="deleteSetModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="closeDeleteSetModal()">
+
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-100 max-h-[90vh] flex flex-col"
+                 @click.away="closeDeleteSetModal()">
+
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3 flex-shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shadow-2xs">
+                            🗑️
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">
+                                Excluir Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span>
+                            </h3>
+                            <p class="text-xs text-slate-500 truncate max-w-[280px]">{{ ceg.title }}</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeDeleteSetModal()"
+                            class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="space-y-3.5 text-xs text-slate-600 overflow-y-auto pr-1">
+                    <p>
+                        Tem certeza que deseja excluir o <strong>Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> desta CEG?
+                    </p>
+
+                    <!-- Lista de Participantes Afetados se houver reservas -->
+                    <template x-if="setToDelete && setToDelete.claimedSlots && setToDelete.claimedSlots.length > 0">
+                        <div class="space-y-2">
+                            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-amber-900">
+                                <div class="font-bold flex items-center justify-between text-xs text-amber-900">
+                                    <span class="flex items-center gap-1.5">
+                                        <span>⚠️</span> Reservas ativas no set (<span x-text="setToDelete.claimedSlots.length"></span>)
+                                    </span>
+                                    <span class="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded font-black">
+                                        Serão Canceladas
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-amber-800 leading-relaxed">
+                                    Os seguintes participantes estão com itens neste set que não fechou:
+                                </p>
+
+                                <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                    <template x-for="slot in setToDelete.claimedSlots" :key="slot.id">
+                                        <div class="bg-white p-2 rounded-lg border border-amber-200 flex items-center justify-between gap-2 text-xs">
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-900 truncate">
+                                                    <span x-text="slot.participantName"></span>
+                                                    <template x-if="slot.socialHandle">
+                                                        <span class="text-[10px] font-normal text-slate-400" x-text="' (' + slot.socialHandle + ')'"></span>
+                                                    </template>
+                                                </div>
+                                                <div class="text-[10px] text-slate-500 flex items-center gap-1">
+                                                    <span class="font-medium text-purple-700 truncate" x-text="slot.name"></span>
+                                                    <span>•</span>
+                                                    <span x-text="'R$ ' + slot.price"></span>
+                                                    <template x-if="slot.isPaid">
+                                                        <span class="text-emerald-700 bg-emerald-100 font-bold px-1 rounded text-[9px]">Pago ✔</span>
+                                                    </template>
+                                                    <template x-if="!slot.isPaid">
+                                                        <span class="text-slate-500 bg-slate-100 font-semibold px-1 rounded text-[9px]">Pendente</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <template x-if="slot.whatsapp">
+                                                    <a :href="'https://wa.me/' + slot.whatsapp + '?text=' + encodeURIComponent('Olá, ' + slot.participantName + '! Informamos que o Set #' + setToDelete.setNumber + ' da compra em grupo \'{{ ceg.title|escapejs }}\' precisou ser cancelado por não atingir o fechamento. Seu item reservado era: ' + slot.name + ' (' + (slot.isPaid ? 'Pago' : 'Pendente') + ').')"
+                                                       target="_blank"
+                                                       class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                                       title="Conversar com este participante no WhatsApp">
+                                                        <span>📱</span> WhatsApp
+                                                    </a>
+                                                </template>
+                                                <button type="button" @click="copyCancelMessage(slot)"
+                                                        class="p-1 hover:bg-slate-100 text-slate-600 rounded border border-slate-200 text-[10px] cursor-pointer transition shadow-2xs"
+                                                        title="Copiar mensagem para este participante">
+                                                    📋
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Opção de Notificação Automática -->
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800">
+                                    <input type="checkbox" name="notify_participants_check" value="true"
+                                           x-model="notifyParticipants"
+                                           class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500 cursor-pointer">
+                                    <span>Enviar notificação automática via WhatsApp</span>
+                                </label>
+                                <p class="text-[10px] text-slate-500 pl-6">
+                                    O sistema disparará mensagem via WhatsApp Gateway para cada participante com seus respectivos itens cancelados e orientações de estorno/crédito.
+                                </p>
+
+                                <div x-show="notifyParticipants" class="pl-6 pt-1 space-y-1">
+                                    <label class="block text-[11px] font-bold text-slate-700">
+                                        Recado adicional do organizador (opcional):
+                                    </label>
+                                    <textarea x-model="customCancelMessage" rows="2"
+                                              placeholder="Ex: Não atingimos o mínimo a tempo. Quem já efetuou o pagamento receberá o estorno via Pix ainda hoje!"
+                                              class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Mensagem se não houver reservas -->
+                    <template x-if="setToDelete && (!setToDelete.claimedSlots || setToDelete.claimedSlots.length === 0)">
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-[11px] leading-relaxed">
+                            ℹ️ Este set não possui nenhuma reserva ativa. Todos os seus slots vagos serão removidos com segurança sem afetar nenhum participante.
+                        </div>
+                    </template>
+
+                    <div x-show="copySuccess" x-cloak
+                         class="p-2 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg text-center">
+                        ✓ Mensagem de aviso copiada para a área de transferência!
+                    </div>
+                </div>
+
+                <form :action="'/sets/' + (setToDelete ? setToDelete.id : '') + '/delete/'" method="POST"
+                      @submit="deleteSetLoading = true" class="flex-shrink-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="notify_participants" :value="notifyParticipants ? 'true' : 'false'">
+                    <input type="hidden" name="custom_message" :value="customCancelMessage">
+
+                    <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                        <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="deleteSetLoading"
+                                class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                            <span x-show="deleteSetLoading" class="animate-spin">⌛</span>
+                            <span>Sim, Excluir Set</span>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal de Logs de Concorrência e Fila de Espera (Staff) -->
+        <div x-show="logsModalOpen" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
+             @keydown.escape.window="closeLogsModal()">
+
+            <div class="bg-slate-900 border border-slate-700/80 text-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 transform transition-all max-h-[92vh] flex flex-col"
+                 @click.away="closeLogsModal()">
+
+                <!-- Modal Header -->
+                <div class="flex justify-between items-start border-b border-slate-800 pb-3 flex-shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl shadow-2xs">
+                            ⚡
+                        </span>
+                        <div>
+                            <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                                <span>Logs de Concorrência & Fila de Espera</span>
+                                <span class="text-xs px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-mono">Segundo Zero</span>
+                            </h3>
+                            <p class="text-xs text-slate-400 truncate max-w-sm sm:max-w-md">{{ ceg.title }}</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeLogsModal()"
+                            class="text-slate-400 hover:text-white text-2xl font-bold cursor-pointer transition">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Tabs Switcher -->
+                <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="logsTab = 'logs'"
+                                class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                                :class="logsTab === 'logs' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                            <span>📋</span> Logs de Tentativas & Disputas
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                                  :class="logsTab === 'logs' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
+                                  x-text="disputeLogs.length"></span>
+                        </button>
+                        <button type="button" @click="logsTab = 'waiting'"
+                                class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                                :class="logsTab === 'waiting' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                            <span>⏳</span> Fila de Espera por Item
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                                  :class="logsTab === 'waiting' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
+                                  x-text="waitingList.length"></span>
+                        </button>
+                    </div>
+                    <button type="button" @click="openLogsModal()"
+                            class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                            title="Recarregar logs">
+                        <span :class="logsLoading ? 'animate-spin' : ''">🔄</span> Atualizar
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="logsLoading" class="py-12 text-center text-slate-400 space-y-2">
+                    <div class="inline-block animate-spin text-2xl text-amber-400">⚡</div>
+                    <div class="text-xs font-semibold">Carregando logs de concorrência e fila de espera...</div>
+                </div>
+
+                <!-- Tab 1: Logs de Concorrência -->
+                <div x-show="!logsLoading && logsTab === 'logs'" class="overflow-y-auto space-y-2 pr-1 max-h-[60vh]">
+                    <template x-if="disputeLogs.length === 0">
+                        <div class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                            Nenhuma tentativa de claim registrada nesta CEG até o momento.
+                        </div>
+                    </template>
+
+                    <template x-if="disputeLogs.length > 0">
+                        <div class="space-y-2">
+                            <template x-for="log in disputeLogs" :key="log.id">
+                                <div class="p-3 bg-slate-800/70 border border-slate-700/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:border-slate-600 transition">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-black px-2 py-0.5 rounded text-[10px]"
+                                                  :class="{
+                                                      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': log.result === 'SUCCESS',
+                                                      'bg-blue-500/20 text-blue-300 border border-blue-500/30': log.result === 'AUTO_FALLBACK',
+                                                      'bg-amber-500/20 text-amber-300 border border-amber-500/30': log.result === 'WAITING_LIST',
+                                                      'bg-rose-500/20 text-rose-300 border border-rose-500/30': log.result === 'LOST_RACE',
+                                                      'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30': log.result === 'STANDBY_BLOCKED',
+                                                      'bg-slate-700 text-slate-300': log.result === 'ERROR'
+                                                  }"
+                                                  x-text="log.result_display"></span>
+                                            <span class="font-bold text-white text-xs" x-text="log.item_name + ' (Set #' + log.set_number + ')'"></span>
+                                            <span class="text-[10px] text-amber-400 font-black" x-text="'#' + log.attempt_number + 'º lugar'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-slate-300 text-[11px]">
+                                            <span class="font-semibold text-white" x-text="log.participant_name"></span>
+                                            <span class="text-pink-300 font-mono" x-show="log.social_handle" x-text="log.social_handle"></span>
+                                            <span class="text-slate-400 font-mono text-[10px]" x-text="'+' + log.phone"></span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-400 leading-snug" x-text="log.details"></div>
+                                    </div>
+                                    <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
+                                        <div x-text="log.created_at"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Tab 2: Fila de Espera por Item -->
+                <div x-show="!logsLoading && logsTab === 'waiting'" class="overflow-y-auto space-y-2 pr-1 max-h-[60vh]">
+                    <template x-if="waitingList.length === 0">
+                        <div class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                            Nenhum participante na fila de espera no momento. Todos os slots disponíveis supriram a demanda!
+                        </div>
+                    </template>
+
+                    <template x-if="waitingList.length > 0">
+                        <div class="space-y-2">
+                            <template x-for="w in waitingList" :key="w.id">
+                                <div class="p-3 bg-slate-800/70 border border-slate-700/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:border-slate-600 transition">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-black px-2 py-0.5 rounded text-[10px]"
+                                                  :class="w.status === 'WAITING' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : (w.status === 'PROMOTED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700 text-slate-400')"
+                                                  x-text="w.status_display"></span>
+                                            <span class="font-bold text-white text-xs" x-text="w.item_name"></span>
+                                            <span class="text-amber-400 font-black text-xs" x-text="'#' + w.position + 'º da Fila'"></span>
+                                            <span x-show="w.allocated_slot" class="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded" x-text="'Alocado em ' + w.allocated_slot"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-slate-300 text-[11px]">
+                                            <span class="font-semibold text-white" x-text="w.participant_name"></span>
+                                            <span class="text-pink-300 font-mono" x-show="w.social_handle" x-text="w.social_handle"></span>
+                                            <span class="text-slate-400 font-mono text-[10px]" x-text="'+' + w.phone"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
+                                        <div>Entrou em: <span x-text="w.created_at"></span></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-3 border-t border-slate-800 flex justify-end flex-shrink-0">
+                    <button type="button" @click="closeLogsModal()"
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs transition cursor-pointer">
+                        Fechar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Modal Inline para Criar Novo Tipo de Item (Pool Compartilhada) -->
+        <div x-show="showNewTipoModal" x-cloak
+             class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+             @keydown.escape.window="showNewTipoModal = false">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-100 transform transition-all"
+                 @click.away="showNewTipoModal = false">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <h4 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                        <span>🏷️</span> Novo Tipo de Item
+                    </h4>
+                    <button type="button" @click="showNewTipoModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+                </div>
+                <form @submit.prevent="submitInlineNewTipo()" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nome do Tipo de Item *</label>
+                        <input type="text" x-model="newTipoNome" required placeholder="Ex: Mini Poster, Keyring, Labubu"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Descrição (opcional)</label>
+                        <input type="text" x-model="newTipoDesc" placeholder="Breve detalhe sobre esta categoria de item"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <p class="text-[10px] text-slate-500 leading-tight">
+                        💡 Este tipo fará parte da pool compartilhada e ficará disponível imediatamente para todas as CEGs, Caixas e Remessas do sistema.
+                    </p>
+                    <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" @click="showNewTipoModal = false"
+                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="newTipoLoading"
+                                class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                            <span x-show="newTipoLoading" class="animate-spin">⏳</span>
+                            <span>Criar Tipo</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

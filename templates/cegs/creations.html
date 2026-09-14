@@ -1,0 +1,2313 @@
+{% extends 'base.html' %}
+
+{% block title %}Hub de Criações — Painel do Organizador{% endblock %}
+
+{% block content %}
+<div x-data="creationsHub()" class="space-y-8">
+
+    <!-- Header do Hub de Criações -->
+    <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-purple-950 to-pink-900 text-white p-6 sm:p-8 rounded-2xl shadow-xl border border-white/10">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <div class="flex items-center gap-2">
+                    <span class="bg-pink-500/20 text-pink-300 border border-pink-400/30 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                        👑 Painel do Organizador
+                    </span>
+                    <span class="text-xs text-slate-300">Área de Criações & Cadastros</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+                    Hub de Criações
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300">
+                    Clique em qualquer um dos retângulos abaixo para abrir o pop-up correspondente e realizar novos cadastros.
+                </p>
+            </div>
+
+            <!-- Contadores Rápidos de Inventário -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-pink-300">{{ total_groups }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Grupos</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-purple-300">{{ total_eras }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Eras</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-emerald-300">{{ open_cegs }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">CEGs Abertas</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-amber-300">{{ total_cegs }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Total CEGs</span>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
+                    <span class="block text-xl font-black text-rose-300">{{ total_itens_individuais }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-300">Itens Mercari</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- BARRA DE FILTRO DE CATEGORIAS (GERAL, APENAS CEGS, APENAS MERCARI) -->
+    <!-- ========================================================================= -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+                <span>🎯</span> Categoria:
+            </span>
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl">
+                <button type="button" @click="setCategory('all')"
+                        :class="currentCategory === 'all' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                        class="px-3.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                    <span>🌐</span>
+                    <span>Geral (CEGs + Mercari)</span>
+                </button>
+                <button type="button" @click="setCategory('ceg')"
+                        :class="currentCategory === 'ceg' ? 'bg-white text-pink-700 shadow-xs font-black' : 'text-slate-600 hover:text-pink-700 font-bold'"
+                        class="px-3.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                    <span>✨</span>
+                    <span>Apenas CEGs</span>
+                </button>
+                <button type="button" @click="setCategory('mercari')"
+                        :class="currentCategory === 'mercari' ? 'bg-white text-rose-700 shadow-xs font-black' : 'text-slate-600 hover:text-rose-700 font-bold'"
+                        class="px-3.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                    <span>🇯🇵</span>
+                    <span>Apenas Caixa Mercari</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Botões de Ação Rápida -->
+        <div class="flex items-center gap-2">
+            <button type="button" @click="openModal('item_individual')"
+                    x-show="currentCategory === 'all' || currentCategory === 'mercari'"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                <span>🇯🇵</span>
+                <span>+ Novo Item Mercari</span>
+            </button>
+            <button type="button" @click="openModal('ceg')"
+                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                <span>✨</span>
+                <span>+ Nova CEG</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- GRADE DE RETÂNGULOS (CARDS DE AÇÃO QUE ABREM POP-UPS) -->
+    <!-- ========================================================================= -->
+    <div>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                Selecione o que deseja cadastrar
+            </h2>
+            <span class="text-xs font-medium text-slate-400" x-show="currentCategory !== 'all'">
+                Exibindo ações para: <b class="text-slate-700" x-text="currentCategory === 'ceg' ? 'Apenas CEGs' : 'Apenas Mercari'"></b>
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            <!-- Card Destaque: Cadastrar Item Individual (Mercari) -->
+            <button type="button" @click="openModal('item_individual')"
+                    x-show="currentCategory === 'all' || currentCategory === 'mercari'"
+                    :class="currentCategory === 'mercari' ? 'border-rose-400 bg-rose-50/40 ring-2 ring-rose-300' : 'border-slate-200 bg-white hover:bg-rose-50/40 hover:border-rose-400'"
+                    class="group text-left p-6 rounded-2xl border-2 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer relative overflow-hidden">
+                <div class="absolute top-3 right-3 bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                    Mercari / JP
+                </div>
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 group-hover:bg-rose-200 text-rose-700 flex items-center justify-center text-2xl mb-4 transition">
+                        🇯🇵
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                        Item Avulso (Mercari)
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-rose-700 transition">
+                        Cadastrar Item Individual
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Adicione link do pedido, proof via Ctrl+V / arquivo / link, comprador com busca rápida, caixa mercari e frete/taxa.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-rose-700">
+                    <span>Cadastrar Item</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Card: Nova Caixa / Remessa -->
+            <a href="{% url 'caixa_create' %}"
+               x-show="currentCategory === 'all' || currentCategory === 'mercari'"
+               class="group text-left bg-white hover:bg-blue-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 group-hover:bg-blue-200 text-blue-700 flex items-center justify-center text-2xl mb-4 transition">
+                        ✈️
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                        Logística / Remessa
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-blue-700 transition">
+                        Criar Nova Caixa
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Abra uma nova caixa (KR ou JP Mercari) para agrupar CEGs e itens avulsos com rastreio unificado.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-700">
+                    <span>Abrir Caixa</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </a>
+
+            <!-- Retângulo 1: Cadastrar Grupo Novo -->
+            <button type="button" @click="openModal('group')"
+                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                    class="group text-left bg-white hover:bg-purple-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 group-hover:bg-purple-200 text-purple-700 flex items-center justify-center text-2xl mb-4 transition">
+                        🎤
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                        Artistas & Solistas
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-purple-700 transition">
+                        Cadastrar Grupo Novo
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Adicione grupos como TWICE, Stray Kids, aespa, LE SSERAFIM ou solistas com foto e descrição.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-600">
+                    <span>Abrir Formulário</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Retângulo 2: Cadastrar Era Nova -->
+            <button type="button" @click="openModal('era')"
+                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                    class="group text-left bg-white hover:bg-indigo-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 group-hover:bg-indigo-200 text-indigo-700 flex items-center justify-center text-2xl mb-4 transition">
+                        💿
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                        Comeback / Álbum
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-indigo-700 transition">
+                        Cadastrar Era Nova
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Vincule um novo álbum ou lançamento ao grupo para habilitar a criação de novas CEGs.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600">
+                    <span>Abrir Formulário</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Retângulo 3: Cadastrar CEG Nova (Destaque Principal) -->
+            <button type="button" @click="openModal('ceg')"
+                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                    class="group text-left bg-gradient-to-br from-pink-50 via-white to-purple-50 hover:from-pink-100/50 p-6 rounded-2xl border-2 border-pink-300 hover:border-pink-500 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer relative overflow-hidden">
+                <div class="absolute top-3 right-3 bg-pink-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                    Principal
+                </div>
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-pink-100 group-hover:bg-pink-200 text-pink-700 flex items-center justify-center text-2xl mb-4 transition">
+                        ✨
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-pink-600 bg-pink-100/60 px-2 py-0.5 rounded">
+                        Compra em Grupo
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-pink-700 transition">
+                        Cadastrar CEG Nova
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Configure título, era, regras, chave Pix, cronômetro de abertura, lista de photocards, valores e pré-reservas.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-pink-100 flex items-center justify-between text-xs font-bold text-pink-700">
+                    <span>Configurar CEG Completa</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+            <!-- Retângulo 4: Adicionar Novo Set -->
+            <button type="button" @click="openModal('set')"
+                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                    class="group text-left bg-white hover:bg-amber-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 group-hover:bg-amber-200 text-amber-700 flex items-center justify-center text-2xl mb-4 transition">
+                        📦
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                        Expansão de Slots
+                    </span>
+                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-amber-700 transition">
+                        Adicionar Novo Set
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Abra o Set #2, #3 para uma CEG que está lotando, com geração instantânea dos slots de cada photocard.
+                    </p>
+                </div>
+                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
+                    <span>Adicionar Set</span>
+                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+                </div>
+            </button>
+
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TABELA DE RESUMO DE INVENTÁRIO CADASTRADO -->
+    <!-- ========================================================================= -->
+    <!-- ========================================================================= -->
+    <!-- TABELA DE RESUMO DE INVENTÁRIO CADASTRADO: CEGS -->
+    <!-- ========================================================================= -->
+    <div x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+         class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <div>
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span>📋</span> CEGs Cadastradas no Sistema
+                </h3>
+                <p class="text-xs text-slate-500">Acesse qualquer CEG pública ou gerencie suas configurações no Django Admin.</p>
+            </div>
+            <a href="/admin/cegs/ceg/" target="_blank" class="text-xs font-bold text-pink-600 hover:underline">
+                Painel Django Admin ↗
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold">
+                        <th class="py-2.5 px-3">CEG / Grupo</th>
+                        <th class="py-2.5 px-3">Caixa / Remessa</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Sets</th>
+                        <th class="py-2.5 px-3">Itens Cadastrados</th>
+                        <th class="py-2.5 px-3">Abertura / Countdown</th>
+                        <th class="py-2.5 px-3 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for c in cegs %}
+                        <tr class="hover:bg-slate-50/70 transition">
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-slate-900">{{ c.title }}</div>
+                                <div class="text-[10px] text-pink-600 font-semibold">{{ c.era.group.name }} • {{ c.era.name }}</div>
+                            </td>
+                            <td class="py-3 px-3">
+                                {% if c.caixa %}
+                                    <a href="{% url 'caixa_detail' slug=c.caixa.slug %}"
+                                       class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg border border-blue-200 transition text-[11px]">
+                                        <span>{% if c.caixa.origem == 'KR' %}🇰🇷{% elif c.caixa.origem == 'JP' %}🇯🇵{% elif c.caixa.origem == 'CN' %}🇨🇳{% elif c.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                                        <span>{{ c.caixa.nome }}</span>
+                                    </a>
+                                    <div class="text-[10px] text-slate-500 font-medium mt-0.5">
+                                        {{ c.get_shipping_status_display }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-slate-400 text-[11px] italic">Sem caixa vinculada</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3">
+                                {% if c.status == 'OPEN' %}
+                                    <span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px]">Aberta</span>
+                                {% elif c.status == 'SCHEDULED' %}
+                                    <span class="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full text-[10px]">Standby</span>
+                                {% else %}
+                                    <span class="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full text-[10px]">{{ c.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3 font-semibold text-slate-700">
+                                {{ c.sets.count }} set(s)
+                            </td>
+                            <td class="py-3 px-3 font-semibold text-slate-700">
+                                {{ c.item_definitions.count }} itens
+                            </td>
+                            <td class="py-3 px-3 text-slate-500">
+                                {{ c.opens_at|date:"d/m/Y H:i"|default:"-" }}
+                            </td>
+                            <td class="py-3 px-3 text-right space-x-2">
+                                <a href="{% url 'ceg_detail' slug=c.slug %}"
+                                   class="inline-block px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg transition">
+                                    Ver CEG ↗
+                                </a>
+                                <a href="/admin/cegs/ceg/{{ c.id }}/change/" target="_blank"
+                                   class="inline-block px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg transition">
+                                    Editar
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="py-6 text-center text-slate-400">
+                                Nenhuma CEG cadastrada ainda. Clique no retângulo "Cadastrar CEG Nova" para criar a primeira!
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TABELA DE RESUMO DE INVENTÁRIO CADASTRADO: ITENS INDIVIDUAIS (MERCARI) -->
+    <!-- ========================================================================= -->
+    <div x-show="currentCategory === 'all' || currentCategory === 'mercari'"
+         class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span>🇯🇵</span> Itens Individuais (Caixa Mercari)
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800"
+                          x-text="filteredItensIndividuais.length + ' item(ns)'">
+                    </span>
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Compras individuais atreladas a caixas mercari, com link de pedido, proof de compra e comprador.
+                </p>
+            </div>
+
+            <!-- Filtros de Busca, Caixa e Status para Itens Mercari -->
+            <div class="flex flex-wrap items-center gap-2">
+                <select x-model="itemCaixaFilter"
+                        class="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3 py-1.5 text-slate-700 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                    <option value="">📦 Todas as Caixas</option>
+                    <option value="none">⚠️ Apenas Sem Caixa</option>
+                    {% for cx in caixas_mercari %}
+                        <option value="{{ cx.id }}">🇯🇵 {{ cx.nome }} ({{ cx.get_status_display }})</option>
+                    {% endfor %}
+                </select>
+
+                <select x-model="itemStatusFilter"
+                        class="bg-slate-50 border border-slate-200 text-xs font-bold rounded-xl px-3 py-1.5 text-slate-700 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                    <option value="">Todos os Status</option>
+                    {% for val, label in item_individual_statuses %}
+                        <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <div class="relative w-44 sm:w-56">
+                    <input type="text" x-model="itemSearch" placeholder="Buscar item, comprador..."
+                           class="w-full bg-slate-50 border border-slate-200 text-xs font-medium rounded-xl pl-7 pr-3 py-1.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                    <span class="absolute left-2.5 top-1.5 text-xs text-slate-400">🔍</span>
+                </div>
+
+                <button type="button" @click="openModal('item_individual')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                    <span>+ Novo Item</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold">
+                        <th class="py-2.5 px-3">Foto / Proof</th>
+                        <th class="py-2.5 px-3">Item & Pedido</th>
+                        <th class="py-2.5 px-3">Caixa Mercari</th>
+                        <th class="py-2.5 px-3">Comprador</th>
+                        <th class="py-2.5 px-3 text-center">Qtd</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Frete Inter</th>
+                        <th class="py-2.5 px-3">Taxa Aduaneira</th>
+                        <th class="py-2.5 px-3 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="item in filteredItensIndividuais" :key="item.id">
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <!-- Foto / Proof -->
+                            <td class="py-3 px-3">
+                                <div class="relative group w-12 h-12">
+                                    <img :src="item.image_url || 'https://placehold.co/80x80/fce7f3/be185d?text=Item'"
+                                         :alt="item.nome"
+                                         @click="openZoom(item.image_url)"
+                                         class="w-12 h-12 object-cover rounded-xl border border-slate-200 shadow-2xs cursor-pointer group-hover:opacity-80 transition">
+                                    <div @click="openZoom(item.image_url)"
+                                         x-show="item.image_url"
+                                         class="absolute inset-0 bg-black/40 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition text-[10px] font-bold">
+                                         🔍 Ver
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Nome & Link do Pedido -->
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-slate-900" x-text="item.nome"></div>
+                                <div class="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                    <template x-if="item.tipo_item_nome">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200"
+                                              x-text="item.tipo_item_nome"></span>
+                                    </template>
+                                    <template x-if="item.link_pedido">
+                                        <a :href="item.link_pedido" target="_blank"
+                                           class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-800 hover:underline">
+                                            <span>Link do Pedido ↗</span>
+                                        </a>
+                                    </template>
+                                    <template x-if="item.preco_produto">
+                                        <span class="text-[10px] text-slate-400 font-semibold" x-text="'Preço: R$ ' + item.preco_produto"></span>
+                                    </template>
+                                </div>
+                            </td>
+
+                            <!-- Caixa Mercari -->
+                            <td class="py-3 px-3">
+                                <template x-if="item.caixa_id">
+                                    <a :href="'/caixas/' + (item.caixa_slug || '') + '/'" target="_blank"
+                                       class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 text-[11px] transition"
+                                       title="Ver detalhes da Caixa Mercari">
+                                        <span>🇯🇵</span>
+                                        <span x-text="item.caixa_nome"></span>
+                                        <span class="text-[9px] text-rose-400">↗</span>
+                                    </a>
+                                </template>
+                                <template x-if="!item.caixa_id">
+                                    <div class="space-y-0.5">
+                                        <span class="inline-block text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                            ⚠️ Sem Caixa
+                                        </span>
+                                        <button type="button" @click="openEditItem(item)"
+                                                class="block text-[10px] text-rose-600 font-bold hover:underline cursor-pointer">
+                                            + Atrelar a Caixa
+                                        </button>
+                                    </div>
+                                </template>
+                            </td>
+
+                            <!-- Comprador -->
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-slate-900" x-text="item.comprador_nome"></div>
+                                <div class="flex flex-col text-[10px] text-slate-500">
+                                    <span x-show="item.comprador_social" class="text-pink-600 font-semibold" x-text="item.comprador_social"></span>
+                                    <a :href="'https://wa.me/' + item.comprador_whatsapp" target="_blank"
+                                       class="text-emerald-600 hover:underline flex items-center gap-1 font-medium">
+                                        <span>💬</span> <span x-text="item.comprador_whatsapp"></span>
+                                    </a>
+                                </div>
+                            </td>
+
+                            <!-- Quantidade -->
+                            <td class="py-3 px-3 text-center font-bold text-slate-700" x-text="item.quantidade"></td>
+
+                            <!-- Status do Item -->
+                            <td class="py-3 px-3">
+                                <span :class="getStatusBadgeClass(item.status)"
+                                      class="inline-block text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider"
+                                      x-text="item.status_display">
+                                </span>
+                            </td>
+
+                            <!-- Frete Internacional -->
+                            <td class="py-3 px-3">
+                                <template x-if="item.frete_inter">
+                                    <div class="space-y-1">
+                                        <span class="font-bold text-slate-900 block" x-text="'R$ ' + item.frete_inter"></span>
+                                        <template x-if="item.prazo_frete_inter">
+                                            <span class="text-[10px] text-slate-500 block" x-text="'Prazo: ' + new Date(item.prazo_frete_inter).toLocaleDateString('pt-BR')"></span>
+                                        </template>
+                                        <button type="button" @click="togglePayment(item.id, 'frete')"
+                                                :class="item.frete_inter_pago ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'"
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer flex items-center gap-1">
+                                            <span x-text="item.frete_inter_pago ? '✓ Frete Pago' : '⏳ Falta Frete'"></span>
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="!item.frete_inter">
+                                    <span class="text-slate-400 italic text-[11px]">-</span>
+                                </template>
+                            </td>
+
+                            <!-- Taxa Aduaneira -->
+                            <td class="py-3 px-3">
+                                <template x-if="item.taxa_aduaneira">
+                                    <div class="space-y-1">
+                                        <span class="font-bold text-slate-900 block" x-text="'R$ ' + item.taxa_aduaneira"></span>
+                                        <template x-if="item.prazo_taxa_aduaneira">
+                                            <span class="text-[10px] text-slate-500 block" x-text="'Prazo: ' + new Date(item.prazo_taxa_aduaneira).toLocaleDateString('pt-BR')"></span>
+                                        </template>
+                                        <button type="button" @click="togglePayment(item.id, 'taxa')"
+                                                :class="item.taxa_aduaneira_paga ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-amber-100 text-amber-900 hover:bg-amber-200'"
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer flex items-center gap-1">
+                                            <span x-text="item.taxa_aduaneira_paga ? '✓ Taxa Paga' : '⏳ Falta Taxa'"></span>
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="!item.taxa_aduaneira">
+                                    <span class="text-slate-400 italic text-[11px]">-</span>
+                                </template>
+                            </td>
+
+                            <!-- Ações -->
+                            <td class="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
+                                <button type="button" @click="openEditItem(item)"
+                                        class="inline-block px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition cursor-pointer">
+                                    Editar
+                                </button>
+                                <form :action="'/itens-individuais/' + item.id + '/delete/'" method="POST" class="inline"
+                                      onsubmit="return confirm('Tem certeza que deseja excluir este item individual?')">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="inline-block px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-lg transition cursor-pointer"
+                                            title="Excluir Item">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="filteredItensIndividuais.length === 0">
+                        <td colspan="9" class="py-8 text-center text-slate-400">
+                            Nenhum item individual encontrado. Clique em "+ Novo Item Mercari" para cadastrar o primeiro!
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: CADASTRAR GRUPO NOVO (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'group'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-purple-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🎤</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Grupo Novo</h3>
+                        <p class="text-[11px] text-slate-500">Adicione grupos ou solistas de K-pop ao sistema.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_group' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Grupo / Solista *</label>
+                    <input type="text" name="name" required
+                           placeholder="Ex: LE SSERAFIM, Stray Kids, IU, aespa"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">URL da Imagem / Logo (opcional)</label>
+                    <input type="url" name="image_url"
+                           placeholder="https://exemplo.com/logo-grupo.png"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Informações (opcional)</label>
+                    <textarea name="description" rows="3"
+                              placeholder="Ex: Girl group da Source Music / HYBE composto por 5 integrantes."
+                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ✔ Salvar Grupo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: CADASTRAR ERA NOVA (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'era'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">💿</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Era Nova</h3>
+                        <p class="text-[11px] text-slate-500">Vincule o comeback (álbum/single) ao grupo.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_era' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Grupo / Solista *</label>
+                    <select name="group_id" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <option value="">-- Selecione o Grupo --</option>
+                        {% for g in groups %}
+                            <option value="{{ g.id }}">{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Era / Comeback *</label>
+                    <input type="text" name="name" required
+                           placeholder="Ex: CRAZY, With YOU-th, Armageddon, ATE"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
+                        <input type="date" name="release_date"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">URL do Banner Promocional</label>
+                        <input type="url" name="banner_url"
+                               placeholder="https://exemplo.com/banner-era.jpg"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Notas do Comeback (opcional)</label>
+                    <textarea name="description" rows="2"
+                              placeholder="Ex: 4º Mini Álbum com versões Compact e Weverse."
+                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ✔ Salvar Era
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: CADASTRAR CEG NOVA (POP-UP COMPLETO) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'ceg'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-pink-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">✨</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Nova CEG Completa</h3>
+                        <p class="text-[11px] text-slate-500">Defina todos os campos da compra em grupo, photocards, valores e pré-reservas.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_ceg' %}" method="POST" class="p-6 space-y-6 overflow-y-auto">
+                {% csrf_token %}
+                <input type="hidden" name="items_json" :value="JSON.stringify(items)">
+
+                <!-- Seção 1: Era & Grupo -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="text-xs font-black text-pink-700 uppercase tracking-wider block">
+                        1. Era e Título da Compra em Grupo
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Filtrar por Grupo</label>
+                            <select x-model="selectedGroupId"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <option value="">-- Todos os Grupos --</option>
+                                <template x-for="g in groups" :key="g.id">
+                                    <option :value="g.id" x-text="g.name"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Era / Comeback *</label>
+                            <select name="era_id" required x-model="selectedEraId"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <option value="">-- Selecione a Era correspondente --</option>
+                                {% for e in eras %}
+                                    <option value="{{ e.id }}"
+                                            x-show="!selectedGroupId || selectedGroupId == '{{ e.group.id }}'">
+                                        {{ e.group.name }} — {{ e.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Título da CEG *</label>
+                        <input type="text" name="title" required
+                               placeholder="Ex: CEG TWICE With YOU-th — Digipack & POB Soundwave Split"
+                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">URL do Banner da CEG (opcional)</label>
+                        <input type="url" name="banner_url"
+                               placeholder="https://exemplo.com/banner.jpg"
+                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500">
+                    </div>
+                </div>
+
+                <!-- Seção 2: Datas, Horário de Abertura & Status -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="text-xs font-black text-pink-700 uppercase tracking-wider block">
+                        2. Horário de Abertura (Standby / Countdown) & Status
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Status Inicial</label>
+                            <select name="status"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <option value="OPEN" selected>Aberta para Reservas (Imediato)</option>
+                                <option value="SCHEDULED">Agendada (Standby / Countdown)</option>
+                                <option value="DRAFT">Rascunho</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Hora de Abertura (Standby)</label>
+                            <input type="datetime-local" name="opens_at"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            <span class="text-[10px] text-pink-600 font-semibold">Exibe cronômetro regressivo até abrir!</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Hora de Encerramento (opcional)</label>
+                            <input type="datetime-local" name="closes_at"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 3: Vincular a uma Caixa / Remessa Internacional -->
+                <div class="p-4 bg-blue-50/70 rounded-xl border-2 border-blue-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>📦</span> 3. Caixa / Remessa Internacional (Opcional)
+                        </span>
+                        <a href="{% url 'caixa_create' %}" target="_blank"
+                           class="text-[11px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 hover:underline">
+                            <span>➕</span> Cadastrar Nova Caixa ↗
+                        </a>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">
+                        Atrele esta CEG a uma remessa internacional existente (Coreia do Sul, Japão/Mercari, etc.). Ao atualizar o status da caixa, o envio desta CEG será atualizado automaticamente em cascata.
+                    </p>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a Caixa Existente</label>
+                        <select name="caixa_id"
+                                class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 shadow-2xs">
+                            <option value="">-- Nenhuma (Deixar sem caixa / vincular posteriormente) --</option>
+                            {% for c in caixas %}
+                                <option value="{{ c.id }}">
+                                    {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
+                                    {{ c.nome }} — {{ c.get_status_display }}{% if c.codigo_rastreio %} (Rastreio: {{ c.codigo_rastreio }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Seção 4: Prazos e Taxas (Frete Internacional e Taxa Aduaneira) -->
+                <div class="p-4 bg-purple-50/50 rounded-xl border border-purple-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-purple-900 uppercase tracking-wider block">
+                            4. Prazos e Taxas (Item, Frete Inter e Taxa Aduaneira)
+                        </span>
+                        <span class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded">
+                            Opcional / Atualizável a qualquer momento
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        Defina os prazos e taxas agora ou deixe vazio para preencher depois quando a encomenda for postada/taxada.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Prazo Pagamento do Item</label>
+                            <input type="datetime-local" name="prazo_pagamento_item"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            <span class="text-[10px] text-slate-400">Data limite para pagar o valor do item.</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Frete Internacional (R$)</label>
+                            <input type="number" step="0.01" min="0" name="frete_inter" placeholder="Ex: 35.00 (ou vazio)"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            <span class="text-[10px] text-slate-400">Começa nulo e atualiza depois.</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Prazo Pagamento Frete Inter</label>
+                            <input type="datetime-local" name="prazo_pagamento_frete_inter"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            <span class="text-[10px] text-slate-400">Data limite para o frete internacional.</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-100">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Taxa Aduaneira (R$)</label>
+                            <input type="number" step="0.01" min="0" name="taxa_aduaneira" placeholder="Ex: 25.00 (ou vazio)"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            <span class="text-[10px] text-slate-400">Começa nulo e atualiza depois.</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Prazo Pagamento Taxa Aduaneira</label>
+                            <input type="datetime-local" name="prazo_pagamento_taxa_aduaneira"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            <span class="text-[10px] text-slate-400">Data limite para a taxa aduaneira.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção 4: Chave Pix & Regras -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span class="text-xs font-black text-pink-700 uppercase tracking-wider block">
+                        4. Chave Pix do Organizador & Regras de Frete
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Chave Pix *</label>
+                            <input type="text" name="pix_key"
+                                   placeholder="Ex: email@pix.com ou telefone"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-pink-700 focus:ring-2 focus:ring-pink-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Instruções para Pagamento</label>
+                            <input type="text" name="pix_instructions"
+                                   placeholder="Ex: Enviar comprovante no WhatsApp com seu @ em até 2h"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-pink-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Regras e Informações da CEG</label>
+                        <textarea name="description" rows="2"
+                                  placeholder="Regras de frete (nacional/internacional), prazos de envio e avisos..."
+                                  class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-pink-500"></textarea>
+                    </div>
+                </div>
+
+                <!-- Seção 4: Construtor Dinâmico de Photocards, Valores & Pré-Reservas -->
+                <div class="p-4 bg-pink-50/50 rounded-xl border-2 border-pink-200 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-pink-100 pb-2">
+                        <div>
+                            <span class="text-xs font-black text-pink-900 uppercase tracking-wider block">
+                                4. Definição de Itens, Valores e Pré-Reservas
+                            </span>
+                            <span class="text-[11px] text-slate-500">
+                                Defina os photocards/itens da CEG e pré-reserve slots para participantes cadastrados se desejar.
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 self-start sm:self-auto">
+                            <button type="button" @click="showNewTipoModal = true"
+                                    class="px-2.5 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer">
+                                <span>🏷️</span> + Novo Tipo
+                            </button>
+                            <button type="button" @click="addItem()"
+                                    class="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer">
+                                <span>➕</span> Adicionar Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Atalho em Lote por Nomes de Integrantes -->
+                    <div class="p-3 bg-white border border-pink-200 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
+                                <span>⚡</span> Gerar Photocards em Lote por Nomes
+                            </span>
+                            <span class="text-[10px] text-pink-700 bg-pink-100 px-2 py-0.5 rounded font-bold">Atalho Ágil</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                            <div class="sm:col-span-7">
+                                <input type="text" x-model="batchMembersText"
+                                       placeholder="Nomes separados por vírgula: Nayeon, Jeongyeon, Momo, Sana, Jihyo..."
+                                       @keydown.enter.prevent="addMembersBatch()"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800">
+                            </div>
+                            <div class="sm:col-span-3 flex gap-1">
+                                <input type="number" step="0.01" x-model="batchDefaultPrice"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900">
+                                <button type="button" @click="applyBatchPrice()"
+                                        class="px-2 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] rounded-lg cursor-pointer">
+                                    Aplicar
+                                </button>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="button" @click="addMembersBatch()"
+                                        class="w-full py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg cursor-pointer">
+                                    ➕ Gerar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Dinâmica de Itens -->
+                    <div class="space-y-2.5">
+                        <template x-for="(item, index) in items" :key="index">
+                            <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2 shadow-xs">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                    <span class="w-6 h-6 rounded-md bg-pink-100 text-pink-700 font-bold text-xs flex items-center justify-center shrink-0"
+                                          x-text="index + 1"></span>
+
+                                    <!-- Nome do Photocard -->
+                                    <div class="flex-1 w-full sm:w-auto">
+                                        <input type="text" x-model="item.name" required
+                                               placeholder="Nome do Item (Ex: Photocard POB Nayeon)"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900">
+                                    </div>
+
+                                    <!-- Integrante -->
+                                    <div class="w-full sm:w-32">
+                                        <input type="text" x-model="item.member_name"
+                                               placeholder="Integrante"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+                                    </div>
+
+                                    <!-- Tipo -->
+                                    <div class="w-full sm:w-32">
+                                        <select x-model="item.tipo_item_id"
+                                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-700">
+                                            <template x-for="t in tiposItem" :key="t.id">
+                                                <option :value="t.id" x-text="t.nome" :selected="t.id == item.tipo_item_id"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <!-- Preço -->
+                                    <div class="w-full sm:w-28 relative">
+                                        <span class="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">R$</span>
+                                        <input type="number" step="0.01" x-model="item.default_price" required
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900">
+                                    </div>
+
+                                    <!-- Botão Excluir -->
+                                    <button type="button" @click="removeItem(index)" title="Remover item"
+                                            class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 cursor-pointer">
+                                        🗑️
+                                    </button>
+                                </div>
+
+                                <!-- Linha de Pré-Reserva para Participante Cadastrado -->
+                                <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <span class="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                                            <span>🔒</span> Pré-reservar para:
+                                        </span>
+                                        <select x-model="item.participant_id"
+                                                :class="item.participant_id ? 'border-amber-400 bg-amber-50 text-amber-900 font-bold' : 'border-slate-200 bg-slate-50 text-slate-700'"
+                                                class="border rounded-lg px-2.5 py-1 text-xs focus:ring-2 focus:ring-pink-500">
+                                            <option value="">-- Aberto para Claim Geral (Sem Pré-Reserva) --</option>
+                                            <template x-for="p in participants" :key="p.id">
+                                                <option :value="p.id"
+                                                        x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp">
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div x-show="item.participant_id" class="text-[11px] text-amber-700 font-bold flex items-center gap-1">
+                                        <span>●</span> Slot #1 começará garantido para este participante
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Totalizadores -->
+                    <div class="p-3 bg-white border border-pink-200 rounded-xl flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span>Total de Itens: <strong class="text-pink-600" x-text="items.length"></strong></span>
+                        <span>Faturamento 1 Set: <strong class="text-emerald-700" x-text="'R$ ' + calculateSetTotal()"></strong></span>
+                    </div>
+                </div>
+
+                <!-- Seção 5: Sets Iniciais & Ação de Criação -->
+                <div class="p-4 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h4 class="text-sm font-black">Geração Automática de Sets</h4>
+                        <p class="text-[11px] text-pink-100">Quantos Sets completos deseja instanciar imediatamente?</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <select name="initial_sets_count" x-model="initialSetsCount"
+                                class="bg-white text-slate-900 font-black rounded-lg px-3 py-1.5 text-xs">
+                            <option value="1">1 Set (Set #1)</option>
+                            <option value="2">2 Sets (Set #1 e #2)</option>
+                            <option value="3">3 Sets</option>
+                            <option value="4">4 Sets</option>
+                            <option value="5">5 Sets</option>
+                        </select>
+
+                        <button type="submit"
+                                class="px-6 py-2.5 bg-white text-pink-700 hover:bg-pink-50 font-black text-xs rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer">
+                            <span>🚀</span> Publicar CEG
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: ADICIONAR NOVO SET (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'set'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📦</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Adicionar Novo Set</h3>
+                        <p class="text-[11px] text-slate-500">Expanda os slots de uma CEG existente.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'create_set' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a CEG *</label>
+                    <select name="ceg_id" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                        <option value="">-- Escolha uma CEG --</option>
+                        {% for c in cegs %}
+                            <option value="{{ c.id }}">
+                                {{ c.title }} ({{ c.era.group.name }}) — {{ c.sets.count }} set(s) atuais
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Número do Set</label>
+                        <input type="number" name="set_number" min="1"
+                               placeholder="Auto-incrementar"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                        <span class="text-[10px] text-slate-400">Em branco calcula o próximo set automaticamente.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Anotações do Set</label>
+                        <input type="text" name="notes"
+                               placeholder="Ex: Set 2 - Pedido Adicional"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+                    <input type="checkbox" name="is_active" id="modal_set_active" checked
+                           class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 border-slate-300">
+                    <label for="modal_set_active" class="text-xs font-bold text-amber-900 cursor-pointer">
+                        Ativar este Set para novas reservas imediatamente
+                    </label>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ⚡ Criar Set & Gerar Slots
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 5: CADASTRAR ITEM INDIVIDUAL (MERCARI) (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'item_individual'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto"
+             @click.away="closeModal()">
+            <!-- Header fixo -->
+            <div class="flex-shrink-0 p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-rose-50 to-pink-50">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl shadow-xs flex-shrink-0">
+                        🇯🇵
+                    </span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Cadastrar Item Individual (Mercari)</h3>
+                        <p class="text-[11px] text-slate-500">Cadastre o produto comprado, proof via Ctrl+V/arquivo/link, comprador e frete/taxa.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1.5 rounded-lg hover:bg-white/60 transition cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Formulário com flex-1 min-h-0 para permitir rolagem interna suave -->
+            <form action="{% url 'create_item_individual' %}" method="POST" enctype="multipart/form-data" class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                {% csrf_token %}
+                <input type="hidden" name="foto_base64" :value="itemImageBase64">
+                <input type="hidden" name="next_url" value="/creations/?category=mercari">
+
+                <!-- Corpo Rolável com Layout Retangular em 2 Colunas (lg:grid-cols-12) -->
+                <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                        
+                        <!-- Coluna Esquerda: Dados do Pedido, Comprador e Observações (lg:col-span-7) -->
+                        <div class="lg:col-span-7 space-y-4">
+                            <!-- Nome / Descrição do Item -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Descrição do Item *</label>
+                                <input type="text" name="nome" required
+                                       placeholder="Ex: Photocard Chaewon Mercari JP POB Luckydraw"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                            </div>
+
+                            <!-- Tipo de Item (Dinâmico) -->
+                            <div class="p-3 bg-violet-50/50 border border-violet-200 rounded-xl space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-violet-950 flex items-center gap-1.5">
+                                        <span>🏷️</span> Tipo de Item *
+                                    </label>
+                                    <button type="button" @click="showNewTipoModal = true"
+                                            class="text-[11px] font-bold text-violet-700 hover:text-violet-900 bg-white hover:bg-violet-100 border border-violet-300 px-2 py-0.5 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-2xs">
+                                        <span>➕</span> Cadastrar Novo Tipo
+                                    </button>
+                                </div>
+                                <select name="tipo_item_id" x-model="itemTipoId" required
+                                        class="w-full bg-white border border-violet-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-violet-500 transition">
+                                    <template x-for="t in tiposItem" :key="t.id">
+                                        <option :value="t.id" x-text="t.nome"></option>
+                                    </template>
+                                </select>
+                                <p class="text-[10px] text-slate-500">
+                                    Usado no rateio inteligente da Caixa Mercari para cálculo proporcional de frete e taxa.
+                                </p>
+                            </div>
+
+                            <!-- Link do Pedido, Quantidade e Preço do Produto -->
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                                <div class="sm:col-span-6">
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Link do Pedido (Mercari/Buyee)</label>
+                                    <input type="url" name="link_pedido"
+                                           placeholder="https://jp.mercari.com/item/..."
+                                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                </div>
+
+                                <div class="sm:col-span-3">
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade *</label>
+                                    <input type="number" name="quantidade" value="1" min="1" required
+                                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                </div>
+
+                                <div class="sm:col-span-3">
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Preço (R$)</label>
+                                    <input type="text" name="preco_produto" placeholder="Ex: 85,00"
+                                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                </div>
+                            </div>
+
+                            <!-- Comprador do Item (Seleção Estilo Claim + Sugestões Interativas) -->
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative">
+                                <input type="hidden" name="participant_id" :value="selectedParticipantId">
+
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                                        <span>👤</span> Comprador do Item *
+                                    </label>
+                                    <div class="flex items-center gap-2">
+                                        <template x-if="buyerFound || buyerName || buyerPhone">
+                                            <button type="button" @click="resetToNewParticipant()"
+                                                    class="text-[10px] font-bold text-rose-700 hover:text-rose-900 bg-rose-100/80 hover:bg-rose-200 border border-rose-300 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-2xs">
+                                                <span>✕</span> Limpar / Trocar Comprador
+                                            </button>
+                                        </template>
+                                        <template x-if="buyerFound">
+                                            <span class="text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                <span>✓</span> Cliente Selecionado
+                                            </span>
+                                        </template>
+                                        <template x-if="!buyerFound && (buyerPhone.length >= 8 || buyerName.length >= 2)">
+                                            <span class="text-[10px] font-bold text-sky-800 bg-sky-100 border border-sky-300 px-2 py-0.5 rounded-full">
+                                                ✨ Novo Cliente
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Bloco do Organizador (Admin): Escolher por Nome ou WhatsApp -->
+                                <div class="p-3 bg-amber-50 border-2 border-amber-300 rounded-xl space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[11px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                                            <span>👑</span> Modo Organizador (Admin)
+                                        </span>
+                                        <button type="button" @click="resetToNewParticipant()"
+                                                class="text-[10px] font-bold text-amber-900 hover:text-amber-950 bg-amber-200 hover:bg-amber-300 px-2 py-0.5 rounded transition cursor-pointer">
+                                            🔄 Limpar / Novo Cliente
+                                        </button>
+                                    </div>
+                                    <p class="text-[11px] text-amber-800 leading-snug">
+                                        Selecione um participante cadastrado por <strong>Nome</strong> ou <strong>WhatsApp</strong> para autopreencher ou edite livremente os campos abaixo:
+                                    </p>
+                                    <select x-model="selectedParticipantId" @change="onSelectExistingParticipant($event.target.value)"
+                                            class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer">
+                                        <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                                        <template x-for="p in participants" :key="p.id">
+                                            <option :value="p.id"
+                                                    x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                                            </option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <!-- Campos de Nome, WhatsApp e Social com Autocomplete Instantâneo -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <!-- Nome Completo -->
+                                    <div class="relative" @click.outside="showNameSuggestions = false">
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                                            <span>Nome Completo *</span>
+                                            <button type="button" x-show="buyerName" @click="buyerName = ''; selectedParticipantId = ''; buyerFound = false;"
+                                                    class="text-[10px] text-slate-400 hover:text-rose-600 cursor-pointer">
+                                                ✕ Limpar
+                                            </button>
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" name="comprador_nome" x-model="buyerName" required
+                                                   @focus="showNameSuggestions = true"
+                                                   @input="onNameInput()"
+                                                   placeholder="Ex: Beatriz Silva"
+                                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 transition">
+                                            <button type="button" x-show="buyerName"
+                                                    @click="buyerName = ''; selectedParticipantId = ''; buyerFound = false;"
+                                                    class="absolute right-2 top-2 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        <!-- Sugestões de Clientes Existentes ao Clicar / Digitar Nome -->
+                                        <div x-show="showNameSuggestions && filteredParticipantsByName.length > 0"
+                                             x-cloak
+                                             class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-48 overflow-y-auto divide-y divide-slate-100">
+                                            <div class="p-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Clientes Cadastrados:
+                                            </div>
+                                            <template x-for="p in filteredParticipantsByName" :key="p.id">
+                                                <button type="button" @click="selectParticipant(p)"
+                                                        class="w-full text-left px-3 py-2 text-xs hover:bg-rose-50 flex items-center justify-between transition cursor-pointer">
+                                                    <div>
+                                                        <div class="font-bold text-slate-900" x-text="p.name"></div>
+                                                        <div class="text-[10px] text-slate-500" x-text="(p.username ? '@' + p.username + ' • ' : '') + p.whatsapp"></div>
+                                                    </div>
+                                                    <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">
+                                                        Usar
+                                                    </span>
+                                                </button>
+                                            </template>
+                                            <div class="p-1.5 bg-slate-50 text-center">
+                                                <button type="button" @click="showNameSuggestions = false"
+                                                        class="text-[10px] font-bold text-slate-600 hover:text-slate-900">
+                                                    ✕ Fechar sugestões (digitar novo)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- WhatsApp -->
+                                    <div class="relative" @click.outside="showPhoneSuggestions = false">
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                                            <span>WhatsApp (com DDD) *</span>
+                                            <button type="button" x-show="buyerPhone" @click="buyerPhone = ''; selectedParticipantId = ''; buyerFound = false;"
+                                                    class="text-[10px] text-slate-400 hover:text-rose-600 cursor-pointer">
+                                                ✕ Limpar
+                                            </button>
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" name="whatsapp" x-model="buyerPhone" required
+                                                   @focus="showPhoneSuggestions = true"
+                                                   @input="onPhoneInput()"
+                                                   placeholder="Ex: 11999999999"
+                                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 transition">
+                                            <button type="button" x-show="buyerPhone"
+                                                    @click="buyerPhone = ''; selectedParticipantId = ''; buyerFound = false;"
+                                                    class="absolute right-2 top-2 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        <!-- Sugestões de Clientes Existentes ao Clicar / Digitar WhatsApp -->
+                                        <div x-show="showPhoneSuggestions && filteredParticipantsByPhone.length > 0"
+                                             x-cloak
+                                             class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-48 overflow-y-auto divide-y divide-slate-100">
+                                            <div class="p-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Clientes Encontrados:
+                                            </div>
+                                            <template x-for="p in filteredParticipantsByPhone" :key="p.id">
+                                                <button type="button" @click="selectParticipant(p)"
+                                                        class="w-full text-left px-3 py-2 text-xs hover:bg-rose-50 flex items-center justify-between transition cursor-pointer">
+                                                    <div>
+                                                        <div class="font-bold text-slate-900" x-text="p.name"></div>
+                                                        <div class="text-[10px] text-emerald-700 font-mono font-bold" x-text="p.whatsapp"></div>
+                                                    </div>
+                                                    <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">
+                                                        Usar
+                                                    </span>
+                                                </button>
+                                            </template>
+                                            <div class="p-1.5 bg-slate-50 text-center">
+                                                <button type="button" @click="showPhoneSuggestions = false"
+                                                        class="text-[10px] font-bold text-slate-600 hover:text-slate-900">
+                                                    ✕ Fechar sugestões (digitar novo)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Username / @Social -->
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                                            <span>Username / @Social <span class="font-normal text-slate-400">(opcional)</span></span>
+                                            <button type="button" x-show="buyerUsername" @click="buyerUsername = ''; buyerSocial = '';"
+                                                    class="text-[10px] text-slate-400 hover:text-rose-600 cursor-pointer">
+                                                ✕ Limpar
+                                            </button>
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" name="comprador_username" x-model="buyerUsername"
+                                                   placeholder="@usuario ou arroba"
+                                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pr-7 text-xs text-slate-900 focus:ring-2 focus:ring-rose-500 transition">
+                                            <button type="button" x-show="buyerUsername"
+                                                    @click="buyerUsername = ''; buyerSocial = '';"
+                                                    class="absolute right-2 top-2 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">
+                                                ✕
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Feedback do Vínculo -->
+                                <template x-if="buyerFound">
+                                    <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
+                                        <span class="text-emerald-900 font-bold flex items-center gap-1.5">
+                                            <span>✅</span> Cliente Vinculado: <strong x-text="buyerName"></strong> (<span x-text="buyerPhone"></span>)
+                                        </span>
+                                        <button type="button" @click="resetToNewParticipant()"
+                                                class="text-rose-600 hover:underline font-bold text-[11px] cursor-pointer">
+                                            ✕ Desvincular / Novo
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="!buyerFound && (buyerPhone.length >= 8 || buyerName.length >= 2)">
+                                    <div class="p-2 bg-sky-50 border border-sky-200 rounded-xl text-[11px] text-sky-900 flex items-center gap-1.5">
+                                        <span>✨</span>
+                                        <span>Novo participante será cadastrado com os dados acima.</span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Observações Internas -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Observações Internas (Opcional)</label>
+                                <textarea name="observacoes" rows="2"
+                                          placeholder="Notas sobre o item, condição, embalagem..."
+                                          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 focus:bg-white transition"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Coluna Direita: Caixa Mercari, Status e Foto/Proof (lg:col-span-5) -->
+                        <div class="lg:col-span-5 space-y-4">
+                            <!-- Conexão com Caixa Mercari -->
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                                <div>
+                                    <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                                        <span>📦</span> Caixa Mercari (Remessa)
+                                    </label>
+                                    <p class="text-[10px] text-slate-500">
+                                        Vincule este pedido a uma caixa Mercari já existente para consolidação e envio.
+                                    </p>
+                                </div>
+
+                                <select name="caixa_id" x-model="selectedCaixaId"
+                                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 shadow-2xs transition">
+                                    <option value="">-- Sem Caixa (Item Avulso / Definir depois) --</option>
+                                    {% if caixas_mercari %}
+                                        <optgroup label="🇯🇵 Caixas Mercari Existentes (Japão)">
+                                            {% for cx in caixas_mercari %}
+                                                <option value="{{ cx.id }}">
+                                                    🇯🇵 {{ cx.nome }} ({{ cx.get_status_display }})
+                                                </option>
+                                            {% endfor %}
+                                        </optgroup>
+                                    {% endif %}
+                                    <optgroup label="📦 Outras Caixas / Remessas">
+                                        {% for cx in caixas %}
+                                            {% if cx.origem != 'JP' %}
+                                                <option value="{{ cx.id }}">
+                                                    {% if cx.origem == 'KR' %}🇰🇷{% else %}📦{% endif %}
+                                                    {{ cx.nome }} ({{ cx.get_status_display }})
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+
+                                <!-- Card Dinâmico de Remessa Mercari Conectada -->
+                                <template x-if="selectedCaixaInfo">
+                                    <div class="p-3 bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-200 rounded-xl space-y-1">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-1.5 text-xs font-black text-rose-950">
+                                                <span>🇯🇵</span>
+                                                <span x-text="selectedCaixaInfo.nome"></span>
+                                            </div>
+                                            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-200 text-rose-900"
+                                                  x-text="selectedCaixaInfo.status_display"></span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-600 leading-snug">
+                                            Remessa consolidada no Japão. O item avançará automaticamente pelo fluxo internacional junto com esta caixa.
+                                        </p>
+                                    </div>
+                                </template>
+
+                                <template x-if="!selectedCaixaInfo">
+                                    <div class="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[11px] text-amber-900 flex items-center gap-2">
+                                        <span>💡</span>
+                                        <span>Item avulso (sem caixa). Você poderá atrelá-lo a uma Caixa Mercari posteriormente.</span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Status Inicial do Item -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Status Inicial do Item *</label>
+                                <select name="status"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                    {% for val, label in item_individual_statuses %}
+                                        <option value="{{ val }}" {% if val == 'COMPRADO' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Foto / Comprovante de Compra (Proof) -->
+                            <div class="p-4 bg-rose-50/50 border border-rose-200 rounded-2xl space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                                        <span>📸</span> Foto / Proof de Compra
+                                    </label>
+                                    <span class="text-[10px] font-bold text-rose-600">
+                                        Ctrl+V ativo • Arquivo • Link
+                                    </span>
+                                </div>
+
+                                <!-- Área de Dropzone / Paste -->
+                                <div class="border-2 border-dashed border-rose-300 rounded-2xl p-3 text-center bg-white hover:bg-rose-50/30 transition relative">
+                                    <div x-show="itemImagePreview" class="space-y-2">
+                                        <img :src="itemImagePreview" class="max-h-40 mx-auto rounded-xl object-contain shadow-md border border-slate-200">
+                                        <div class="flex items-center justify-center gap-2 pt-1">
+                                            <span class="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                ✅ Foto Capturada!
+                                            </span>
+                                            <button type="button" @click="clearImage()"
+                                                    class="text-xs text-rose-600 font-bold hover:underline px-2 py-0.5 cursor-pointer">
+                                                Remover
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div x-show="!itemImagePreview" class="space-y-1.5 py-2">
+                                        <div class="text-2xl">📋</div>
+                                        <p class="text-xs font-bold text-slate-800">
+                                            Dê <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-rose-700 font-black">Ctrl + V</kbd> nesta tela
+                                        </p>
+                                        <p class="text-[10px] text-slate-500">
+                                            Ou selecione do computador:
+                                        </p>
+                                        <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
+                                               class="text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-rose-100 file:text-rose-800 hover:file:bg-rose-200 cursor-pointer">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Ou cole o link direto da imagem:</label>
+                                    <input type="url" name="foto_url" x-model="itemImageUrl" @input="handleUrlChange()"
+                                           placeholder="https://exemplo.com/foto-proof.jpg"
+                                           class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 transition">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Footer Fixo: Botões de Ação Sempre Visíveis -->
+                <div class="flex-shrink-0 p-4 sm:px-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-md shadow-rose-500/25 transition cursor-pointer flex items-center gap-1.5">
+                        <span>💾</span> Cadastrar Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 6: EDITAR ITEM INDIVIDUAL (POP-UP RETANGULAR WIDE) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'edit_item_individual'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto"
+             @click.away="closeModal()">
+            <!-- Header fixo -->
+            <div class="flex-shrink-0 p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">✏️</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Editar Item Individual</h3>
+                        <p class="text-[11px] text-slate-500" x-text="editingItem.nome"></p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1.5 rounded-lg hover:bg-white transition cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Form com flex-1 min-h-0 e footer fixo -->
+            <form :action="'/itens-individuais/' + editingItem.id + '/update/'" method="POST" enctype="multipart/form-data"
+                  class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                {% csrf_token %}
+                <input type="hidden" name="foto_base64" :value="itemImageBase64">
+                <input type="hidden" name="next_url" value="/creations/?category=mercari">
+
+                <!-- Corpo Rolável em 2 Colunas -->
+                <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                        
+                        <!-- Coluna Esquerda: Dados do Item (lg:col-span-7) -->
+                        <div class="lg:col-span-7 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Item *</label>
+                                <input type="text" name="nome" :value="editingItem.nome" required
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-xs font-bold text-slate-700">Tipo de Item</label>
+                                        <button type="button" @click="showNewTipoModal = true"
+                                                class="text-[10px] font-bold text-purple-600 hover:text-purple-800 hover:underline flex items-center gap-0.5 cursor-pointer">
+                                            <span>+ Novo</span>
+                                        </button>
+                                    </div>
+                                    <select name="tipo_item_id"
+                                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                        <option value="">-- Sem Tipo --</option>
+                                        <template x-for="t in tiposItem" :key="t.id">
+                                            <option :value="t.id" x-text="t.nome" :selected="editingItem.tipo_item_id == t.id"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Caixa Mercari</label>
+                                    <select name="caixa_id"
+                                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                        <option value="">-- Sem Caixa --</option>
+                                        {% for cx in caixas %}
+                                            <option value="{{ cx.id }}" :selected="editingItem.caixa_id == {{ cx.id }}">
+                                                {% if cx.origem == 'JP' %}🇯🇵{% elif cx.origem == 'KR' %}🇰🇷{% else %}📦{% endif %}
+                                                {{ cx.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Status do Item</label>
+                                    <select name="status"
+                                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                        {% for val, label in item_individual_statuses %}
+                                            <option value="{{ val }}" :selected="editingItem.status == '{{ val }}'">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Link do Pedido</label>
+                                    <input type="url" name="link_pedido" :value="editingItem.link_pedido"
+                                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
+                                    <input type="number" name="quantidade" :value="editingItem.quantidade" min="1"
+                                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Preço do Produto (R$)</label>
+                                <input type="text" name="preco_produto" :value="editingItem.preco_produto" placeholder="Ex: 85,00"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Observações Internas (Opcional)</label>
+                                <textarea name="observacoes" rows="2" :value="editingItem.observacoes"
+                                          placeholder="Notas sobre o item, condição, embalagem..."
+                                          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 focus:bg-white transition"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Coluna Direita: Foto e Pagamentos (lg:col-span-5) -->
+                        <div class="lg:col-span-5 space-y-4">
+                            <!-- Pagamentos -->
+                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                                <h4 class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                                    <span>💰</span> Pagamentos
+                                </h4>
+                                <div class="grid grid-cols-1 gap-3">
+                                    <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-xs font-bold text-slate-800">✈️ Frete Inter (R$)</label>
+                                            <label class="text-[11px] font-bold text-emerald-700 flex items-center gap-1 cursor-pointer">
+                                                <input type="checkbox" name="frete_inter_pago" :checked="editingItem.frete_inter_pago" class="rounded text-emerald-600">
+                                                <span>Pago</span>
+                                            </label>
+                                        </div>
+                                        <input type="text" name="frete_inter" :value="editingItem.frete_inter"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 transition">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Prazo Frete Inter</label>
+                                            <input type="datetime-local" name="prazo_frete_inter" :value="editingItem.prazo_frete_inter"
+                                                   class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 focus:ring-2 focus:ring-rose-500 transition">
+                                        </div>
+                                    </div>
+
+                                    <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-xs font-bold text-slate-800">🏛️ Taxa Aduaneira (R$)</label>
+                                            <label class="text-[11px] font-bold text-emerald-700 flex items-center gap-1 cursor-pointer">
+                                                <input type="checkbox" name="taxa_aduaneira_paga" :checked="editingItem.taxa_aduaneira_paga" class="rounded text-emerald-600">
+                                                <span>Paga</span>
+                                            </label>
+                                        </div>
+                                        <input type="text" name="taxa_aduaneira" :value="editingItem.taxa_aduaneira"
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500 transition">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Prazo Taxa</label>
+                                            <input type="datetime-local" name="prazo_taxa_aduaneira" :value="editingItem.prazo_taxa_aduaneira"
+                                                   class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 focus:ring-2 focus:ring-rose-500 transition">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Atualizar Foto se desejar -->
+                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                                <label class="text-xs font-bold text-slate-800 block">Atualizar Foto / Proof (Opcional)</label>
+                                <div x-show="itemImagePreview || editingItem.image_url" class="flex items-center gap-3">
+                                    <img :src="itemImagePreview || editingItem.image_url" class="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-xs">
+                                    <button type="button" @click="clearImage()" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Remover</button>
+                                </div>
+                                <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
+                                       class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer">
+                                <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()" placeholder="Ou cole URL da foto"
+                                       class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 transition">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Footer Fixo -->
+                <div class="flex-shrink-0 p-4 sm:px-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 7: VISUALIZAR FOTO / PROOF EM TAMANHO REAL (ZOOM) -->
+    <!-- ========================================================================= -->
+    <div x-show="zoomImageUrl" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+         @keydown.escape.window="closeZoom()">
+        <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center"
+             @click.away="closeZoom()">
+            <button type="button" @click="closeZoom()"
+                    class="absolute -top-10 right-0 text-white hover:text-rose-300 font-black text-2xl cursor-pointer">
+                ✕ Fechar
+            </button>
+            <img :src="zoomImageUrl" class="max-h-[85vh] max-w-full rounded-2xl shadow-2xl object-contain border border-white/20">
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL: CADASTRAR NOVO TIPO DE ITEM (AJAX DINÂMICO) -->
+    <!-- ========================================================================= -->
+    <div x-show="showNewTipoModal" x-cloak
+         class="fixed inset-0 z-60 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+         @keydown.escape.window="showNewTipoModal = false">
+        <div @click.outside="showNewTipoModal = false"
+             class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span>🏷️</span> Novo Tipo de Item
+                </h3>
+                <button type="button" @click="showNewTipoModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Cadastre um novo tipo de item (ex: <strong>Labubu</strong>, <strong>Poster</strong>, <strong>Pouch</strong>, <strong>Lightstick</strong>). Ele ficará imediatamente disponível para caixas, CEGs e pedidos.
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Tipo *</label>
+                    <input type="text" x-model="newTipoNome" placeholder="Ex: Labubu"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-violet-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição (Opcional)</label>
+                    <input type="text" x-model="newTipoDesc" placeholder="Ex: Boneco colecionável de vinil"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-700 focus:ring-2 focus:ring-violet-500 focus:bg-white transition">
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" @click="showNewTipoModal = false"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+                    Cancelar
+                </button>
+                <button type="button" @click="submitNewTipo()" :disabled="newTipoSubmitting || !newTipoNome.trim()"
+                        class="px-5 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                    <span x-show="newTipoSubmitting" class="animate-spin">🌀</span>
+                    <span>Cadastrar Tipo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script Alpine.js com Componente Isolado (Evita qualquer erro de parsing de HTML) -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('creationsHub', () => ({
+        activeModal: null, // 'group', 'era', 'ceg', 'set', 'item_individual', 'edit_item_individual'
+        currentCategory: '{{ category_filter|default:"all" }}', // 'all', 'ceg', 'mercari'
+        groups: {{ groups_json|safe }},
+        participants: {{ participants_json|safe }},
+        caixas: {{ caixas_json|safe }},
+        itensIndividuais: {{ itens_individuais_json|safe }},
+        tiposItem: {{ tipos_item_json|safe }},
+        itemSearch: '',
+        itemStatusFilter: '',
+        itemCaixaFilter: '',
+        zoomImageUrl: null,
+        selectedGroupId: '',
+        selectedEraId: '',
+        batchMembersText: '',
+        batchDefaultPrice: '45.00',
+        initialSetsCount: 1,
+
+        // Estado do Item Individual (criação / edição)
+        itemImagePreview: '',
+        itemImageBase64: '',
+        itemImageUrl: '',
+        itemTipoId: '',
+        showNewTipoModal: false,
+        newTipoNome: '',
+        newTipoDesc: '',
+        newTipoSubmitting: false,
+        selectedCaixaId: '{{ preselected_caixa_id|default:"" }}',
+        selectedParticipantId: '',
+        buyerPhone: '',
+        buyerName: '',
+        buyerUsername: '',
+        buyerSocial: '',
+        buyerFound: false,
+        buyerSearching: false,
+        showNameSuggestions: false,
+        showPhoneSuggestions: false,
+        editingItem: {},
+
+        items: [
+            { name: 'Photocard POB 1', member_name: 'Integrante 1', item_type: 'PHOTOCARD', tipo_item_id: '', default_price: '45.00', image_url: '', participant_id: '' },
+            { name: 'Photocard POB 2', member_name: 'Integrante 2', item_type: 'PHOTOCARD', tipo_item_id: '', default_price: '45.00', image_url: '', participant_id: '' },
+            { name: 'Álbum Selado (Sem POB)', member_name: '', item_type: 'ALBUM', tipo_item_id: '', default_price: '120.00', image_url: '', participant_id: '' }
+        ],
+
+        init() {
+            // Garante seleção padrão de tipo
+            if (this.tiposItem && this.tiposItem.length > 0) {
+                if (!this.itemTipoId) {
+                    this.itemTipoId = this.tiposItem[0].id;
+                }
+                const defaultPhotocard = this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0];
+                const defaultAlbum = this.tiposItem.find(t => t.nome.toLowerCase().includes('álbum') || t.nome.toLowerCase().includes('album')) || defaultPhotocard;
+                if (defaultPhotocard && this.items[0]) this.items[0].tipo_item_id = defaultPhotocard.id;
+                if (defaultPhotocard && this.items[1]) this.items[1].tipo_item_id = defaultPhotocard.id;
+                if (defaultAlbum && this.items[2]) this.items[2].tipo_item_id = defaultAlbum.id;
+            }
+            // Escuta global de paste para Ctrl+C / Ctrl+V em imagem
+            window.addEventListener('paste', (e) => {
+                if (this.activeModal !== 'item_individual' && this.activeModal !== 'edit_item_individual') return;
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let i = 0; i < items.length; i++) {
+                    const it = items[i];
+                    if (it.kind === 'file' && it.type.indexOf('image') !== -1) {
+                        const blob = it.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.itemImagePreview = event.target.result;
+                            this.itemImageBase64 = event.target.result;
+                        };
+                        reader.readAsDataURL(blob);
+                        e.preventDefault();
+                        break;
+                    }
+                }
+            });
+
+            // Se requisitado via URL (ex: a partir do detalhe da caixa), abre automaticamente o modal
+            if ('{{ auto_open_modal }}' === 'item_individual') {
+                this.setCategory('mercari');
+                this.openModal('item_individual');
+            }
+        },
+
+        get selectedCaixaInfo() {
+            if (!this.selectedCaixaId) return null;
+            return this.caixas.find(c => String(c.id) === String(this.selectedCaixaId)) || null;
+        },
+
+        onSelectExistingParticipant(pId) {
+            this.selectedParticipantId = pId || '';
+            if (!pId) {
+                this.resetToNewParticipant();
+                return;
+            }
+            const p = this.participants.find(item => String(item.id) === String(pId));
+            if (p) {
+                this.buyerName = p.name || '';
+                this.buyerPhone = p.whatsapp || '';
+                this.buyerUsername = p.username || '';
+                this.buyerSocial = p.social_handle || '';
+                this.buyerFound = true;
+                this.showNameSuggestions = false;
+                this.showPhoneSuggestions = false;
+            }
+        },
+
+        selectParticipant(p) {
+            if (!p) return;
+            this.selectedParticipantId = p.id;
+            this.buyerName = p.name || '';
+            this.buyerPhone = p.whatsapp || '';
+            this.buyerUsername = p.username || '';
+            this.buyerSocial = p.social_handle || '';
+            this.buyerFound = true;
+            this.showNameSuggestions = false;
+            this.showPhoneSuggestions = false;
+        },
+
+        resetToNewParticipant() {
+            this.selectedParticipantId = '';
+            this.buyerName = '';
+            this.buyerPhone = '';
+            this.buyerUsername = '';
+            this.buyerSocial = '';
+            this.buyerFound = false;
+            this.showNameSuggestions = false;
+            this.showPhoneSuggestions = false;
+        },
+
+        get filteredParticipantsByName() {
+            const term = (this.buyerName || '').toLowerCase().trim();
+            if (!term) {
+                return this.participants.slice(0, 5);
+            }
+            return this.participants.filter(p => {
+                const n = (p.name || '').toLowerCase();
+                const u = (p.username || '').toLowerCase();
+                const s = (p.social_handle || '').toLowerCase();
+                return n.includes(term) || u.includes(term) || s.includes(term);
+            }).slice(0, 6);
+        },
+
+        get filteredParticipantsByPhone() {
+            const term = (this.buyerPhone || '').replace(/\D/g, '');
+            if (!term) {
+                return this.participants.slice(0, 5);
+            }
+            return this.participants.filter(p => {
+                const ph = (p.whatsapp || '').replace(/\D/g, '');
+                const n = (p.name || '').toLowerCase();
+                return ph.includes(term) || n.includes(this.buyerPhone.toLowerCase());
+            }).slice(0, 6);
+        },
+
+        setCategory(cat) {
+            this.currentCategory = cat;
+            const url = new URL(window.location);
+            url.searchParams.set('category', cat);
+            window.history.replaceState({}, '', url);
+        },
+
+        openModal(name) {
+            this.activeModal = name;
+            if (name === 'item_individual') {
+                this.itemImagePreview = '';
+                this.itemImageBase64 = '';
+                this.itemImageUrl = '';
+                this.buyerPhone = '';
+                this.buyerName = '';
+                this.buyerUsername = '';
+                this.buyerSocial = '';
+                this.buyerFound = false;
+                this.selectedParticipantId = '';
+                this.showNameSuggestions = false;
+                this.showPhoneSuggestions = false;
+                if ('{{ preselected_caixa_id }}') {
+                    this.selectedCaixaId = '{{ preselected_caixa_id }}';
+                }
+            }
+        },
+        closeModal() {
+            this.activeModal = null;
+        },
+
+        openZoom(url) {
+            if (url) {
+                this.zoomImageUrl = url;
+            }
+        },
+        closeZoom() {
+            this.zoomImageUrl = null;
+        },
+
+        handleFileChange(event) {
+            const file = event.target.files[0];
+            if (file && file.type.indexOf('image') !== -1) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.itemImagePreview = e.target.result;
+                    this.itemImageBase64 = ''; // O form já enviará via multipart
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        handleUrlChange() {
+            if (this.itemImageUrl && this.itemImageUrl.startsWith('http')) {
+                this.itemImagePreview = this.itemImageUrl;
+            }
+        },
+
+        clearImage() {
+            this.itemImagePreview = '';
+            this.itemImageBase64 = '';
+            this.itemImageUrl = '';
+            const fileInputs = document.querySelectorAll('input[name="foto_arquivo"]');
+            fileInputs.forEach(i => i.value = '');
+        },
+
+        lookupTimeout: null,
+
+        onNameInput() {
+            this.showNameSuggestions = true;
+            // Se o usuário está alterando o nome manualmente, libera o vínculo estrito
+            this.selectedParticipantId = '';
+            this.buyerFound = false;
+        },
+
+        onPhoneInput() {
+            this.showPhoneSuggestions = true;
+            this.selectedParticipantId = '';
+            if (this.lookupTimeout) clearTimeout(this.lookupTimeout);
+            const digits = (this.buyerPhone || '').replace(/\D/g, '');
+            if (digits.length < 8) {
+                this.buyerFound = false;
+                return;
+            }
+            this.lookupTimeout = setTimeout(() => {
+                this.lookupBuyer();
+            }, 350);
+        },
+
+        async lookupBuyer() {
+            const digits = (this.buyerPhone || '').replace(/\D/g, '');
+            if (digits.length < 8) {
+                this.buyerFound = false;
+                return;
+            }
+            this.buyerSearching = true;
+            try {
+                const res = await fetch(`/api/participants/lookup/?phone=${encodeURIComponent(this.buyerPhone.trim())}`);
+                const data = await res.json();
+                if (data.found) {
+                    this.buyerFound = true;
+                    this.selectedParticipantId = data.id || '';
+                    // Não sobrescreve o nome se o usuário já estiver digitando um nome próprio
+                    if (!this.buyerName || this.buyerName.startsWith('Comprador ') || this.buyerName.startsWith('Participante ')) {
+                        this.buyerName = data.name || '';
+                    }
+                    if (!this.buyerUsername) {
+                        this.buyerUsername = data.username || '';
+                    }
+                    if (!this.buyerSocial) {
+                        this.buyerSocial = data.social_handle || '';
+                    }
+                } else {
+                    this.buyerFound = false;
+                }
+            } catch (err) {
+                console.error('Erro ao buscar participante:', err);
+            } finally {
+                this.buyerSearching = false;
+            }
+        },
+
+        openEditItem(item) {
+            this.editingItem = Object.assign({}, item);
+            this.itemImagePreview = item.image_url || '';
+            this.itemImageBase64 = '';
+            this.itemImageUrl = '';
+            this.openModal('edit_item_individual');
+        },
+
+        async togglePayment(itemId, feeType) {
+            const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrf = csrfEl ? csrfEl.value : '';
+            const formData = new FormData();
+            formData.append('fee_type', feeType);
+
+            try {
+                const res = await fetch(`/itens-individuais/${itemId}/toggle-payment/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const it = this.itensIndividuais.find(i => i.id === itemId);
+                    if (it) {
+                        if (feeType === 'frete') {
+                            it.frete_inter_pago = data.frete_inter_pago;
+                        } else if (feeType === 'taxa') {
+                            it.taxa_aduaneira_paga = data.taxa_aduaneira_paga;
+                        }
+                    }
+                } else {
+                    alert(data.message || 'Erro ao alterar status de pagamento.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao conectar com o servidor.');
+            }
+        },
+
+        get filteredItensIndividuais() {
+            return this.itensIndividuais.filter(item => {
+                if (this.itemStatusFilter && item.status !== this.itemStatusFilter) {
+                    return false;
+                }
+                if (this.itemCaixaFilter) {
+                    if (this.itemCaixaFilter === 'none') {
+                        if (item.caixa_id) return false;
+                    } else if (String(item.caixa_id) !== String(this.itemCaixaFilter)) {
+                        return false;
+                    }
+                }
+                if (this.itemSearch) {
+                    const q = this.itemSearch.toLowerCase();
+                    const nomeMatch = (item.nome || '').toLowerCase().includes(q);
+                    const compMatch = (item.comprador_nome || '').toLowerCase().includes(q);
+                    const userMatch = (item.comprador_username || '').toLowerCase().includes(q);
+                    const whatsMatch = (item.comprador_whatsapp || '').toLowerCase().includes(q);
+                    const caixaMatch = (item.caixa_nome || '').toLowerCase().includes(q);
+                    if (!nomeMatch && !compMatch && !userMatch && !whatsMatch && !caixaMatch) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        },
+
+        getStatusBadgeClass(status) {
+            switch (status) {
+                case 'COMPRADO': return 'bg-blue-100 text-blue-800 border border-blue-200';
+                case 'WAREHOUSE': return 'bg-purple-100 text-purple-800 border border-purple-200';
+                case 'EM_CONSOLIDACAO': return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+                case 'ENVIADO': return 'bg-sky-100 text-sky-800 border border-sky-200';
+                case 'NO_BRASIL': return 'bg-amber-100 text-amber-900 border border-amber-200';
+                case 'NA_GOM': return 'bg-pink-100 text-pink-800 border border-pink-200';
+                case 'FINALIZADO': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                default: return 'bg-slate-100 text-slate-700';
+            }
+        },
+
+        addItem() {
+            const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
+                ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
+                : null;
+            this.items.push({
+                name: 'Novo Item ' + (this.items.length + 1),
+                member_name: '',
+                item_type: 'PHOTOCARD',
+                tipo_item_id: defaultPhotocard ? defaultPhotocard.id : '',
+                default_price: this.batchDefaultPrice || '45.00',
+                image_url: '',
+                participant_id: ''
+            });
+        },
+        removeItem(index) {
+            if (this.items.length > 1) {
+                this.items.splice(index, 1);
+            }
+        },
+        applyBatchPrice() {
+            if (!this.batchDefaultPrice) return;
+            this.items.forEach(i => {
+                if (i.item_type !== 'ALBUM') {
+                    i.default_price = this.batchDefaultPrice;
+                }
+            });
+        },
+        addMembersBatch() {
+            if (!this.batchMembersText.trim()) return;
+            const names = this.batchMembersText.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+            if (!names.length) return;
+
+            if (this.items.length === 3 && this.items[0].name.includes('Photocard POB 1')) {
+                this.items = [];
+            }
+
+            const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
+                ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
+                : null;
+            const defaultTipoId = defaultPhotocard ? defaultPhotocard.id : '';
+
+            names.forEach((name) => {
+                this.items.push({
+                    name: 'Photocard POB ' + name,
+                    member_name: name,
+                    item_type: 'PHOTOCARD',
+                    tipo_item_id: defaultTipoId,
+                    default_price: this.batchDefaultPrice || '45.00',
+                    image_url: '',
+                    participant_id: ''
+                });
+            });
+            this.batchMembersText = '';
+        },
+        async submitNewTipo() {
+            const nome = (this.newTipoNome || '').trim();
+            if (!nome) return;
+            this.newTipoSubmitting = true;
+            try {
+                const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+                const csrf = csrfEl ? csrfEl.value : '';
+                const formData = new FormData();
+                formData.append('nome', nome);
+                formData.append('descricao', this.newTipoDesc || '');
+
+                const res = await fetch('/tipos-item/criar/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (!this.tiposItem.some(t => t.id === data.tipo.id)) {
+                        this.tiposItem.push(data.tipo);
+                    }
+                    this.itemTipoId = data.tipo.id;
+                    if (this.editingItem) {
+                        this.editingItem.tipo_item_id = data.tipo.id;
+                    }
+                    this.newTipoNome = '';
+                    this.newTipoDesc = '';
+                    this.showNewTipoModal = false;
+                } else {
+                    alert(data.message || 'Erro ao cadastrar tipo.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao conectar com o servidor.');
+            } finally {
+                this.newTipoSubmitting = false;
+            }
+        },
+        calculateSetTotal() {
+            return this.items.reduce((acc, item) => {
+                const val = parseFloat(String(item.default_price).replace(',', '.')) || 0;
+                return acc + val;
+            }, 0).toFixed(2);
+        }
+    }));
+});
+</script>
+{% endblock %}
