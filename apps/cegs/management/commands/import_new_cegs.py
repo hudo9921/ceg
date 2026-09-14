@@ -21,6 +21,7 @@ from apps.cegs.models import (
     Caixa,
     CaixaItemRate,
     ItemIndividual,
+    PacoteNacional,
 )
 from apps.participants.models import Participant, Claim, ParticipantNotification
 
@@ -87,6 +88,7 @@ class Command(BaseCommand):
             CEGItemDefinition.objects.all().delete()
             CaixaItemRate.objects.all().delete()
             ItemIndividual.objects.all().delete()
+            PacoteNacional.objects.all().delete()
             CEG.objects.all().delete()
             Caixa.objects.all().delete()
             ParticipantNotification.objects.all().delete()
