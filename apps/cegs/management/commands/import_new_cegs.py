@@ -51,6 +51,12 @@ class Command(BaseCommand):
             default=False,
             help='Se fornecido, também apaga todos os participantes cadastrados.'
         )
+        parser.add_argument(
+            '--only-if-empty',
+            action='store_true',
+            default=False,
+            help='Importa apenas se o banco de dados ainda não tiver nenhuma CEG cadastrada.'
+        )
 
     def parse_prazo(self, raw_prazo, now, tz):
         """Converte strings no formato 'DD/MM' para datetime com ano 2026."""
@@ -67,12 +73,17 @@ class Command(BaseCommand):
         mmn_path = options['mmn_file']
         pf_path = options['pf_file']
         clear_participants = options['clear_participants']
+        only_if_empty = options.get('only_if_empty', False)
+
+        if only_if_empty and CEG.objects.exists():
+            self.stdout.write(self.style.SUCCESS("[OK] CEGs ja cadastradas no banco de dados. Pulando importacao automatica."))
+            return
 
         if not os.path.exists(mmn_path):
-            self.stderr.write(self.style.ERROR(f"Arquivo não encontrado: {mmn_path}"))
+            self.stdout.write(self.style.WARNING(f"[AVISO] Planilha nao encontrada: {mmn_path}. Pulando importacao."))
             return
         if not os.path.exists(pf_path):
-            self.stderr.write(self.style.ERROR(f"Arquivo não encontrado: {pf_path}"))
+            self.stdout.write(self.style.WARNING(f"[AVISO] Planilha nao encontrada: {pf_path}. Pulando importacao."))
             return
 
         self.stdout.write(self.style.MIGRATE_HEADING("=== IMPORTAÇÃO DE NOVAS PLANILHAS DE CEGS (LIMPAS) ==="))
@@ -356,10 +367,10 @@ class Command(BaseCommand):
 
         self.stdout.write("\n" + "=" * 60)
         self.stdout.write(self.style.SUCCESS(
-            f"IMPORTAÇÃO CONCLUÍDA COM SUCESSO!\n"
-            f"• Total de CEGs Cadastradas: {c1 + c2} ({c1} MMN + {c2} Pureflow)\n"
-            f"• Total de Sets: {s1 + s2}\n"
-            f"• Total de Vagas/Slots Disponíveis: {v1 + v2}\n"
-            f"• Todas as vagas estão livres para claims ou alocação em massa!"
+            f"IMPORTACAO CONCLUIDA COM SUCESSO!\n"
+            f"- Total de CEGs Cadastradas: {c1 + c2} ({c1} MMN + {c2} Pureflow)\n"
+            f"- Total de Sets: {s1 + s2}\n"
+            f"- Total de Vagas/Slots Disponiveis: {v1 + v2}\n"
+            f"- Todas as vagas estao livres para claims ou alocacao em massa!"
         ))
         self.stdout.write("=" * 60)

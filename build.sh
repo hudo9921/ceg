@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Script de Build do Render.com para CEGManager
 set -o errexit
+export PYTHONUNBUFFERED=1
+export PYTHONIOENCODING=utf-8
 
 echo "📦 Instalando dependências..."
 pip install --upgrade pip
@@ -16,6 +18,6 @@ echo "👤 Inicializando superusuário (se configurado em ADMIN_PASSWORD)..."
 python manage.py initadmin
 
 echo "📋 Verificando CEGs iniciais no banco de dados..."
-python manage.py shell -c "from apps.cegs.models import CEG; import subprocess, sys; subprocess.run([sys.executable, 'manage.py', 'import_new_cegs']) if not CEG.objects.exists() else print('✅ CEGs já cadastradas no banco.')"
+python manage.py import_new_cegs --only-if-empty
 
 echo "✅ Build concluído com sucesso!"

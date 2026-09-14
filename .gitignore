@@ -4,8 +4,10 @@ __pycache__/
 *$py.class
 db.sqlite3
 db.sqlite3-journal
+planilhas/*
+!planilhas/CEGs_Lessera_Made_My_Night_Reestruturada.xlsx
+!planilhas/CEGs_Lessera_Pureflow_Reestruturada.xlsx
 *.backup*
-planilhas/
 media/
 staticfiles/
 .env
