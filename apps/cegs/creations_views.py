@@ -13,6 +13,7 @@ from django.views import View
 from apps.groups.models import KpopGroup, Era
 from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, ItemIndividual, TipoItem
 from apps.cegs.services import ClaimService
+from apps.cegs.image_utils import process_image_upload
 from apps.participants.models import Participant, Claim
 
 logger = logging.getLogger(__name__)
@@ -188,21 +189,30 @@ class CreationsHubView(StaffRequiredMixin, View):
 
 
 class CreateGroupView(StaffRequiredMixin, View):
-    """Cadastra um novo Grupo ou Solista de K-pop."""
+    """Cadastra um novo Grupo ou Solista de K-pop com upload de logo/imagem."""
 
     def post(self, request):
         name = request.POST.get('name', '').strip()
         image_url = request.POST.get('image_url', '').strip()
+        image_file = request.FILES.get('image_file')
+        image_base64 = request.POST.get('image_base64', '').strip()
         description = request.POST.get('description', '').strip()
 
         if not name:
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
 
+        final_image_url = process_image_upload(
+            file_obj=image_file,
+            base64_str=image_base64,
+            folder='groups/logos',
+            fallback_url=image_url
+        )
+
         try:
             group = KpopGroup.objects.create(
                 name=name,
-                image_url=image_url,
+                image_url=final_image_url,
                 description=description
             )
             messages.success(request, f"🎤 Grupo/Solista '{group.name}' cadastrado com sucesso! Agora você pode criar uma Era para ele.")
@@ -214,13 +224,15 @@ class CreateGroupView(StaffRequiredMixin, View):
 
 
 class CreateEraView(StaffRequiredMixin, View):
-    """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo."""
+    """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo com upload de banner."""
 
     def post(self, request):
         group_id = request.POST.get('group_id')
         name = request.POST.get('name', '').strip()
         release_date = request.POST.get('release_date') or None
         banner_url = request.POST.get('banner_url', '').strip()
+        banner_file = request.FILES.get('banner_file')
+        banner_base64 = request.POST.get('banner_base64', '').strip()
         description = request.POST.get('description', '').strip()
 
         if not group_id or not name:
@@ -229,12 +241,19 @@ class CreateEraView(StaffRequiredMixin, View):
 
         group = get_object_or_404(KpopGroup, id=group_id)
 
+        final_banner_url = process_image_upload(
+            file_obj=banner_file,
+            base64_str=banner_base64,
+            folder='eras/banners',
+            fallback_url=banner_url
+        )
+
         try:
             era = Era.objects.create(
                 group=group,
                 name=name,
                 release_date=release_date,
-                banner_url=banner_url,
+                banner_url=final_banner_url,
                 description=description
             )
             messages.success(request, f"💿 Era '{era.name}' ({group.name}) criada com sucesso! Você já pode abrir uma CEG para esta Era.")
@@ -248,6 +267,7 @@ class CreateEraView(StaffRequiredMixin, View):
 class CreateCEGView(StaffRequiredMixin, View):
     """
     Cadastra uma nova CEG completa com:
+    - Upload direto de Banner / Foto da CEG (arquivo, base64 ou URL)
     - Informações gerais (datas, status, chave pix, regras, prazos, taxas)
     - Construtor dinâmico de itens/photocards com valores
     - Geração automática do Set #1 e de seus slots físicos
@@ -268,7 +288,16 @@ class CreateCEGView(StaffRequiredMixin, View):
         pix_key = request.POST.get('pix_key', '').strip()
         pix_instructions = request.POST.get('pix_instructions', '').strip()
         banner_url = request.POST.get('banner_url', '').strip()
+        banner_file = request.FILES.get('banner_file')
+        banner_base64 = request.POST.get('banner_base64', '').strip()
         description = request.POST.get('description', '').strip()
+
+        final_banner_url = process_image_upload(
+            file_obj=banner_file,
+            base64_str=banner_base64,
+            folder='cegs/banners',
+            fallback_url=banner_url
+        )
 
         initial_sets_count = int(request.POST.get('initial_sets_count', 1) or 1)
         initial_sets_count = max(1, min(initial_sets_count, 10))
@@ -318,18 +347,19 @@ class CreateCEGView(StaffRequiredMixin, View):
             item_tipos = request.POST.getlist('item_tipo_id[]')
 
             for idx, i_name in enumerate(item_names):
-                if i_name.strip():
-                    items_payload.append({
-                        'name': i_name.strip(),
-                        'member_name': item_members[idx].strip() if idx < len(item_members) else '',
-                        'item_type': item_types[idx].strip() if idx < len(item_types) else CEGItemDefinition.ItemType.PHOTOCARD,
-                        'tipo_item_id': item_tipos[idx].strip() if idx < len(item_tipos) else '',
-                        'default_price': item_prices[idx].strip() if idx < len(item_prices) else '45.00',
-                        'image_url': item_images[idx].strip() if idx < len(item_images) else '',
-                        'order_index': idx + 1,
-                    })
+                if not i_name.strip():
+                    continue
+                items_payload.append({
+                    'name': i_name.strip(),
+                    'member_name': item_members[idx].strip() if idx < len(item_members) else '',
+                    'item_type': item_types[idx] if idx < len(item_types) else CEGItemDefinition.ItemType.PHOTOCARD,
+                    'tipo_item_id': item_tipos[idx] if idx < len(item_tipos) else None,
+                    'default_price': item_prices[idx] if idx < len(item_prices) else '0.00',
+                    'image_url': item_images[idx] if idx < len(item_images) else '',
+                    'order_index': idx + 1
+                })
 
-        # Atrela caixa existente se especificada
+        # Processa vínculo com Caixa internacional se informada
         caixa = None
         shipping_status = Caixa.Status.EM_CONSOLIDACAO
         if caixa_id:
@@ -358,7 +388,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                     prazo_pagamento_taxa_aduaneira=prazo_pagamento_taxa_aduaneira,
                     pix_key=pix_key,
                     pix_instructions=pix_instructions,
-                    banner_url=banner_url,
+                    banner_url=final_banner_url,
                     description=description
                 )
 

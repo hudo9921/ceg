@@ -1216,7 +1216,7 @@
             </div>
 
             <!-- Form de Edição -->
-            <form :action="'/itens-individuais/' + editingItem.id + '/update/'" method="POST" enctype="multipart/form-data"
+            <form id="edit_item_status_form" :action="'/itens-individuais/' + editingItem.id + '/update/'" method="POST" enctype="multipart/form-data"
                   class="flex-1 min-h-0 flex flex-col overflow-hidden">
                 {% csrf_token %}
                 <input type="hidden" name="next_url" :value="window.location.href">
@@ -1349,17 +1349,53 @@
                                 </div>
                             </div>
 
-                            <!-- Atualizar Foto se desejar -->
-                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                                <label class="text-xs font-bold text-slate-800 block">Atualizar Foto / Proof (Opcional)</label>
-                                <div x-show="itemImagePreview || editingItem.image_url" class="flex items-center gap-3">
-                                    <img :src="itemImagePreview || editingItem.image_url" class="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-xs">
-                                    <button type="button" @click="clearImage()" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Remover</button>
+                            <!-- Atualizar Foto / Proof com Dropzone e Ctrl+V -->
+                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-bold text-slate-800">📸 Foto / Proof do Item</label>
+                                    <span class="text-[10px] text-slate-500 font-medium">Ctrl+V, Arquivo ou URL</span>
                                 </div>
-                                <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
-                                       class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer">
-                                <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()" placeholder="Ou cole URL da foto"
-                                       class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 transition">
+
+                                <!-- Dropzone & Preview -->
+                                <div class="relative border-2 border-dashed rounded-xl p-3 text-center transition-all bg-white"
+                                     :class="itemDragOver ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-300' : 'border-slate-300 hover:border-slate-400'"
+                                     @dragover.prevent="itemDragOver = true"
+                                     @dragleave.prevent="itemDragOver = false"
+                                     @drop.prevent="itemDragOver = false; handleFileChange($event)">
+
+                                    <template x-if="itemImagePreview || editingItem.image_url">
+                                        <div class="flex items-center justify-center gap-3">
+                                            <img :src="itemImagePreview || editingItem.image_url" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm">
+                                            <div class="text-left space-y-1">
+                                                <span class="text-[11px] font-bold text-emerald-600 block flex items-center gap-1">
+                                                    <span>✓</span> Imagem definida
+                                                </span>
+                                                <button type="button" @click="clearImage()" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">
+                                                    Remover / Trocar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="!itemImagePreview && !editingItem.image_url" class="space-y-1 py-1">
+                                        <div class="text-xl">📋</div>
+                                        <p class="text-xs font-bold text-slate-800">
+                                            Dê <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-amber-700 font-black">Ctrl + V</kbd> nesta tela
+                                        </p>
+                                        <p class="text-[10px] text-slate-500">
+                                            Ou arraste e solte / clique para selecionar:
+                                        </p>
+                                        <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
+                                               class="text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Ou cole o link direto da imagem:</label>
+                                    <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
+                                           placeholder="https://exemplo.com/foto-proof.jpg"
+                                           class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 transition">
+                                </div>
                             </div>
                         </div>
 
@@ -1438,6 +1474,7 @@ function cegStatusApp() {
             return (text || '').toLowerCase().includes(q);
         },
         zoomPhoto: null,
+        itemDragOver: false,
         editItemModalOpen: false,
         editingItem: {},
         itemImagePreview: '',
@@ -1452,6 +1489,24 @@ function cegStatusApp() {
         get availableEras() {
             if (!this.selectedGroup) return this.filterOptions.eras;
             return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+        },
+        init() {
+            window.addEventListener('paste', (e) => {
+                if (!this.editItemModalOpen) return;
+                const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                if (!items) return;
+                let imageFile = null;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        imageFile = items[i].getAsFile();
+                        break;
+                    }
+                }
+                if (imageFile) {
+                    e.preventDefault();
+                    this.handleFileChange({ target: { files: [imageFile] } });
+                }
+            });
         },
         openEditItem(itemId) {
             const item = this.mercariItems.find(i => i.id === itemId);
@@ -1470,14 +1525,22 @@ function cegStatusApp() {
             this.itemImageUrl = '';
         },
         handleFileChange(event) {
-            const file = event.target.files[0];
+            const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+            const file = files && files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.itemImagePreview = e.target.result;
                     this.itemImageBase64 = e.target.result;
+                    this.itemImageUrl = '';
                 };
                 reader.readAsDataURL(file);
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fileInput = document.querySelector('#edit_item_status_form input[name="foto_arquivo"]');
+                    if (fileInput) fileInput.files = dt.files;
+                } catch(err) {}
             }
         },
         handleUrlChange() {
@@ -1493,6 +1556,8 @@ function cegStatusApp() {
             if (this.editingItem) {
                 this.editingItem.image_url = '';
             }
+            const fileInput = document.querySelector('#edit_item_status_form input[name="foto_arquivo"]');
+            if (fileInput) fileInput.value = '';
         },
         async submitNewTipo() {
             if (!this.newTipoNome.trim()) {

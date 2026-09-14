@@ -17,6 +17,7 @@ from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptL
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
 from .creations_views import StaffRequiredMixin
+from .image_utils import process_image_upload
 
 logger = logging.getLogger(__name__)
 
@@ -556,21 +557,21 @@ class UpdateCEGView(StaffRequiredMixin, View):
         ceg.pix_instructions = pix_instructions
         ceg.description = description
 
-        # Upload de Imagem / Foto de Banner
-        if 'banner_file' in request.FILES:
-            banner_file = request.FILES['banner_file']
-            if banner_file:
-                import os, time
-                from django.core.files.storage import default_storage
-                ext = os.path.splitext(banner_file.name)[1].lower()
-                if ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
-                    safe_name = f"cegs/banners/ceg_{ceg.id}_{int(time.time())}{ext}"
-                    saved_path = default_storage.save(safe_name, banner_file)
-                    ceg.banner_url = default_storage.url(saved_path)
-                else:
-                    messages.warning(request, "Formato de arquivo não suportado. Use JPG, PNG ou WEBP.")
-        elif remove_banner:
+        # Upload de Imagem / Foto de Banner (Arquivo, Ctrl+V Base64 ou URL)
+        banner_file = request.FILES.get('banner_file')
+        banner_base64 = request.POST.get('banner_base64', '').strip()
+
+        if remove_banner:
             ceg.banner_url = ''
+        elif banner_file or banner_base64:
+            new_banner = process_image_upload(
+                file_obj=banner_file,
+                base64_str=banner_base64,
+                folder='cegs/banners',
+                fallback_url=banner_url
+            )
+            if new_banner:
+                ceg.banner_url = new_banner
         elif 'banner_url' in request.POST:
             ceg.banner_url = banner_url
 

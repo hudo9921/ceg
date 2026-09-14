@@ -651,7 +651,7 @@
                 </button>
             </div>
 
-            <form action="{% url 'create_group' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+            <form action="{% url 'create_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
                 {% csrf_token %}
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Grupo / Solista *</label>
@@ -661,10 +661,40 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">URL da Imagem / Logo (opcional)</label>
-                    <input type="url" name="image_url"
-                           placeholder="https://exemplo.com/logo-grupo.png"
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Foto / Logo do Grupo</label>
+
+                    <!-- Preview -->
+                    <div x-show="groupImagePreview" class="relative rounded-xl overflow-hidden border border-purple-200 h-36 bg-slate-900 flex items-center justify-center group mb-2">
+                        <img :src="groupImagePreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                        <img :src="groupImagePreview" alt="Logo Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
+                        <button type="button" @click="clearGroupImage()"
+                                class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                            ✕ Remover
+                        </button>
+                    </div>
+
+                    <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                    <div @dragover.prevent="groupDragOver = true"
+                         @dragleave.prevent="groupDragOver = false"
+                         @drop.prevent="groupDragOver = false; if ($event.dataTransfer.files[0]) handleGroupImageFile($event.dataTransfer.files[0])"
+                         @click="$refs.groupFileInput.click()"
+                         :class="groupDragOver ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-300' : 'border-slate-200 bg-slate-50 hover:bg-purple-50/50 hover:border-purple-300'"
+                         class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                        <span class="text-xl">📁</span>
+                        <p class="text-xs font-bold text-slate-800">
+                            Clique para escolher do PC ou dê <kbd class="px-1.5 py-0.5 bg-purple-100 text-purple-800 border border-purple-200 rounded font-black text-[10px]">Ctrl + V</kbd>
+                        </p>
+                        <p class="text-[10px] text-slate-400">Arraste um arquivo de imagem para cá</p>
+                    </div>
+
+                    <input type="file" x-ref="groupFileInput" name="image_file" accept="image/*" class="hidden"
+                           @change="if ($event.target.files[0]) handleGroupImageFile($event.target.files[0])">
+                    <input type="hidden" name="image_base64" :value="groupImageBase64">
+
+                    <input type="url" name="image_url" x-model="groupImageUrl"
+                           @input="groupImagePreview = $event.target.value; groupImageBase64 = ''"
+                           placeholder="Ou cole a URL direta da imagem (https://...)"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
                 </div>
 
                 <div>
@@ -709,7 +739,7 @@
                 </button>
             </div>
 
-            <form action="{% url 'create_era' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+            <form id="create_era_form" action="{% url 'create_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
                 {% csrf_token %}
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Grupo / Solista *</label>
@@ -729,19 +759,47 @@
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
-                        <input type="date" name="release_date"
-                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
+                    <input type="date" name="release_date"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Banner Promocional da Era</label>
+
+                    <!-- Preview -->
+                    <div x-show="eraBannerPreview" class="relative rounded-xl overflow-hidden border border-indigo-200 h-36 bg-slate-900 flex items-center justify-center group mb-2">
+                        <img :src="eraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                        <img :src="eraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
+                        <button type="button" @click="clearEraBanner()"
+                                class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                            ✕ Remover
+                        </button>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">URL do Banner Promocional</label>
-                        <input type="url" name="banner_url"
-                               placeholder="https://exemplo.com/banner-era.jpg"
-                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                    <div @dragover.prevent="eraDragOver = true"
+                         @dragleave.prevent="eraDragOver = false"
+                         @drop.prevent="eraDragOver = false; if ($event.dataTransfer.files[0]) handleEraBannerFile($event.dataTransfer.files[0])"
+                         @click="$refs.eraFileInput.click()"
+                         :class="eraDragOver ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-300' : 'border-slate-200 bg-slate-50 hover:bg-indigo-50/50 hover:border-indigo-300'"
+                         class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                        <span class="text-xl">📁</span>
+                        <p class="text-xs font-bold text-slate-800">
+                            Clique para escolher do PC ou dê <kbd class="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded font-black text-[10px]">Ctrl + V</kbd>
+                        </p>
+                        <p class="text-[10px] text-slate-400">Arraste o banner para cá</p>
                     </div>
+
+                    <input type="file" x-ref="eraFileInput" name="banner_file" accept="image/*" class="hidden"
+                           @change="if ($event.target.files[0]) handleEraBannerFile($event.target.files[0])">
+                    <input type="hidden" name="banner_base64" :value="eraBannerBase64">
+
+                    <input type="url" name="banner_url" x-model="eraBannerUrl"
+                           @input="eraBannerPreview = $event.target.value; eraBannerBase64 = ''"
+                           placeholder="Ou cole a URL direta do banner (https://...)"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                 </div>
 
                 <div>
@@ -786,7 +844,7 @@
                 </button>
             </div>
 
-            <form action="{% url 'create_ceg' %}" method="POST" class="p-6 space-y-6 overflow-y-auto">
+            <form id="create_ceg_form" action="{% url 'create_ceg' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-6 overflow-y-auto">
                 {% csrf_token %}
                 <input type="hidden" name="items_json" :value="JSON.stringify(items)">
 
@@ -830,10 +888,40 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">URL do Banner da CEG (opcional)</label>
-                        <input type="url" name="banner_url"
-                               placeholder="https://exemplo.com/banner.jpg"
-                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Banner / Foto de Capa da CEG</label>
+
+                        <!-- Preview Adaptativo Sem Cortes -->
+                        <div x-show="cegBannerPreview" class="relative rounded-xl overflow-hidden border border-pink-200 h-44 bg-slate-950 flex items-center justify-center group mb-2">
+                            <img :src="cegBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                            <img :src="cegBannerPreview" alt="Banner CEG Preview" class="relative z-10 max-h-44 w-auto max-w-full object-contain mx-auto">
+                            <button type="button" @click="clearCegBanner()"
+                                    class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                ✕ Remover
+                            </button>
+                        </div>
+
+                        <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                        <div @dragover.prevent="cegDragOver = true"
+                             @dragleave.prevent="cegDragOver = false"
+                             @drop.prevent="cegDragOver = false; if ($event.dataTransfer.files[0]) handleCegBannerFile($event.dataTransfer.files[0])"
+                             @click="$refs.cegFileInput.click()"
+                             :class="cegDragOver ? 'border-pink-500 bg-pink-50 ring-2 ring-pink-300' : 'border-slate-200 bg-white hover:bg-pink-50/40 hover:border-pink-300'"
+                             class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                            <span class="text-xl">📁</span>
+                            <p class="text-xs font-bold text-slate-800">
+                                Clique para escolher do PC ou dê <kbd class="px-1.5 py-0.5 bg-pink-100 text-pink-800 border border-pink-200 rounded font-black text-[10px]">Ctrl + V</kbd>
+                            </p>
+                            <p class="text-[10px] text-slate-400">Arraste a capa da CEG para cá</p>
+                        </div>
+
+                        <input type="file" x-ref="cegFileInput" name="banner_file" accept="image/*" class="hidden"
+                               @change="if ($event.target.files[0]) handleCegBannerFile($event.target.files[0])">
+                        <input type="hidden" name="banner_base64" :value="cegBannerBase64">
+
+                        <input type="url" name="banner_url" x-model="cegBannerUrl"
+                               @input="cegBannerPreview = $event.target.value; cegBannerBase64 = ''"
+                               placeholder="Ou cole a URL direta do banner (https://...)"
+                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500 transition">
                     </div>
                 </div>
 
@@ -1807,17 +1895,53 @@
                                 </div>
                             </div>
 
-                            <!-- Atualizar Foto se desejar -->
-                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                                <label class="text-xs font-bold text-slate-800 block">Atualizar Foto / Proof (Opcional)</label>
-                                <div x-show="itemImagePreview || editingItem.image_url" class="flex items-center gap-3">
-                                    <img :src="itemImagePreview || editingItem.image_url" class="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-xs">
-                                    <button type="button" @click="clearImage()" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">Remover</button>
+                            <!-- Atualizar Foto / Proof com Dropzone e Ctrl+V -->
+                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-bold text-slate-800">📸 Foto / Proof do Item</label>
+                                    <span class="text-[10px] text-slate-500 font-medium">Ctrl+V, Arquivo ou URL</span>
                                 </div>
-                                <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
-                                       class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer">
-                                <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()" placeholder="Ou cole URL da foto"
-                                       class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 transition">
+
+                                <!-- Dropzone & Preview -->
+                                <div class="relative border-2 border-dashed rounded-xl p-3 text-center transition-all bg-white"
+                                     :class="itemDragOver ? 'border-rose-500 bg-rose-50/40 ring-2 ring-rose-300' : 'border-slate-300 hover:border-slate-400'"
+                                     @dragover.prevent="itemDragOver = true"
+                                     @dragleave.prevent="itemDragOver = false"
+                                     @drop.prevent="itemDragOver = false; handleFileChange($event)">
+
+                                    <template x-if="itemImagePreview || editingItem.image_url">
+                                        <div class="flex items-center justify-center gap-3">
+                                            <img :src="itemImagePreview || editingItem.image_url" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm">
+                                            <div class="text-left space-y-1">
+                                                <span class="text-[11px] font-bold text-emerald-600 block flex items-center gap-1">
+                                                    <span>✓</span> Imagem definida
+                                                </span>
+                                                <button type="button" @click="clearImage()" class="text-xs text-rose-600 font-bold hover:underline cursor-pointer">
+                                                    Remover / Trocar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="!itemImagePreview && !editingItem.image_url" class="space-y-1 py-1">
+                                        <div class="text-xl">📋</div>
+                                        <p class="text-xs font-bold text-slate-800">
+                                            Dê <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-rose-700 font-black">Ctrl + V</kbd> nesta tela
+                                        </p>
+                                        <p class="text-[10px] text-slate-500">
+                                            Ou arraste e solte / clique para selecionar:
+                                        </p>
+                                        <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
+                                               class="text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-rose-100 file:text-rose-800 hover:file:bg-rose-200 cursor-pointer">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Ou cole o link direto da imagem:</label>
+                                    <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
+                                           placeholder="https://exemplo.com/foto-proof.jpg"
+                                           class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 transition">
+                                </div>
                             </div>
                         </div>
 
@@ -1937,6 +2061,24 @@ document.addEventListener('alpine:init', () => {
         batchDefaultPrice: '45.00',
         initialSetsCount: 1,
 
+        // Estado do Grupo (criação com foto/logo)
+        groupImagePreview: '',
+        groupImageBase64: '',
+        groupImageUrl: '',
+        groupDragOver: false,
+
+        // Estado da Era (criação com banner)
+        eraBannerPreview: '',
+        eraBannerBase64: '',
+        eraBannerUrl: '',
+        eraDragOver: false,
+
+        // Estado da CEG (criação com banner)
+        cegBannerPreview: '',
+        cegBannerBase64: '',
+        cegBannerUrl: '',
+        cegDragOver: false,
+
         // Estado do Item Individual (criação / edição)
         itemImagePreview: '',
         itemImageBase64: '',
@@ -1976,23 +2118,45 @@ document.addEventListener('alpine:init', () => {
                 if (defaultPhotocard && this.items[1]) this.items[1].tipo_item_id = defaultPhotocard.id;
                 if (defaultAlbum && this.items[2]) this.items[2].tipo_item_id = defaultAlbum.id;
             }
-            // Escuta global de paste para Ctrl+C / Ctrl+V em imagem
+
+            // Escuta global de paste para colar imagem via Ctrl+C / Ctrl+V em qualquer modal ativo
             window.addEventListener('paste', (e) => {
-                if (this.activeModal !== 'item_individual' && this.activeModal !== 'edit_item_individual') return;
-                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+                if (!items) return;
+
+                let imageFile = null;
                 for (let i = 0; i < items.length; i++) {
                     const it = items[i];
                     if (it.kind === 'file' && it.type.indexOf('image') !== -1) {
-                        const blob = it.getAsFile();
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            this.itemImagePreview = event.target.result;
-                            this.itemImageBase64 = event.target.result;
-                        };
-                        reader.readAsDataURL(blob);
-                        e.preventDefault();
+                        imageFile = it.getAsFile();
                         break;
                     }
+                }
+                if (!imageFile) return;
+
+                if (this.activeModal === 'group') {
+                    this.handleGroupImageFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'era') {
+                    this.handleEraBannerFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'ceg') {
+                    this.handleCegBannerFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'item_individual' || this.activeModal === 'edit_item_individual') {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        this.itemImagePreview = event.target.result;
+                        this.itemImageBase64 = event.target.result;
+                    };
+                    reader.readAsDataURL(imageFile);
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(imageFile);
+                        const fileInputs = document.querySelectorAll('input[name="foto_arquivo"]');
+                        fileInputs.forEach(fi => fi.files = dt.files);
+                    } catch(err) {}
+                    e.preventDefault();
                 }
             });
 
@@ -2102,6 +2266,84 @@ document.addEventListener('alpine:init', () => {
         },
         closeModal() {
             this.activeModal = null;
+            this.groupImagePreview = '';
+            this.groupImageBase64 = '';
+            this.groupImageUrl = '';
+            this.eraBannerPreview = '';
+            this.eraBannerBase64 = '';
+            this.eraBannerUrl = '';
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+        },
+
+        handleGroupImageFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.groupImagePreview = e.target.result;
+                this.groupImageBase64 = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('input[name="image_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearGroupImage() {
+            this.groupImagePreview = '';
+            this.groupImageBase64 = '';
+            this.groupImageUrl = '';
+            const fileInput = document.querySelector('input[name="image_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        handleEraBannerFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.eraBannerPreview = e.target.result;
+                this.eraBannerBase64 = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearEraBanner() {
+            this.eraBannerPreview = '';
+            this.eraBannerBase64 = '';
+            this.eraBannerUrl = '';
+            const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        handleCegBannerFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.cegBannerPreview = e.target.result;
+                this.cegBannerBase64 = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('#create_ceg_form input[name="banner_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearCegBanner() {
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            const fileInput = document.querySelector('#create_ceg_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
         },
 
         openZoom(url) {
@@ -2114,14 +2356,21 @@ document.addEventListener('alpine:init', () => {
         },
 
         handleFileChange(event) {
-            const file = event.target.files[0];
+            const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+            const file = files && files[0];
             if (file && file.type.indexOf('image') !== -1) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.itemImagePreview = e.target.result;
-                    this.itemImageBase64 = ''; // O form já enviará via multipart
+                    this.itemImageBase64 = e.target.result;
                 };
                 reader.readAsDataURL(file);
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fileInputs = document.querySelectorAll('input[name="foto_arquivo"]');
+                    fileInputs.forEach(i => i.files = dt.files);
+                } catch(e) {}
             }
         },
 
