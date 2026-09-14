@@ -106,12 +106,23 @@ class HomeView(View):
         open_eras = sorted(open_eras_dict.values(), key=lambda e: (e['group_name'], e['name']))
         open_members = sorted(open_members_set, key=lambda m: m.lower())
 
+        # 5. Agrupa a pool de tipos de item (das caixas / TipoItem) presentes nas CEGs abertas
+        all_tipos_pool = list(TipoItem.objects.all().order_by('nome'))
+        count_mistas = sum(1 for c in active_cegs if getattr(c, 'is_mista', False))
+        pool_tipos_item = []
+        for t in all_tipos_pool:
+            t.count_apenas = sum(1 for c in active_cegs if getattr(c, 'exclusive_tipo_id', None) == t.id)
+            t.count_contem = sum(1 for c in active_cegs if t.id in getattr(c, 'tipo_ids_list', []))
+            pool_tipos_item.append(t)
+
         return render(request, 'home.html', {
             'active_cegs': active_cegs,
             'full_cegs': full_cegs,
             'open_groups': open_groups,
             'open_eras': open_eras,
             'open_members': open_members,
+            'pool_tipos_item': pool_tipos_item,
+            'count_mistas': count_mistas,
             'scheduled_cegs': scheduled_cegs,
             'closed_cegs': closed_cegs,
             'now': now,

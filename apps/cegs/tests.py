@@ -1710,21 +1710,71 @@ class CEGAvailabilityAndSortingTests(TestCase):
         response = client.get('/')
         self.assertEqual(response.status_code, 200)
 
-        # Verifica presenca das opcoes de ordenacao
+        # Verifica presenca das 5 opcoes de ordenacao solicitadas
         self.assertContains(response, 'x-model="sortBy"')
         self.assertContains(response, 'value="recentes"')
         self.assertContains(response, 'value="preco_asc"')
         self.assertContains(response, 'value="preco_desc"')
         self.assertContains(response, 'value="vagas_desc"')
         self.assertContains(response, 'value="vagas_asc"')
-        self.assertContains(response, 'value="complitude_desc"')
-        self.assertContains(response, 'value="complitude_asc"')
+
+        # Verifica que as opcoes de completude foram removidas
+        self.assertNotContains(response, 'value="complitude_desc"')
+        self.assertNotContains(response, 'value="complitude_asc"')
+
+        # Verifica presenca do filtro de tipos de itens
+        self.assertContains(response, 'x-model="selectedTipo"')
+        self.assertContains(response, 'value="mista"')
 
         # Verifica atributos no card HTML
         self.assertContains(response, 'data-price="20.00"')
         self.assertContains(response, 'data-price="90.00"')
         self.assertContains(response, 'data-vagas="2"')
         self.assertContains(response, 'data-vagas="1"')
+        self.assertContains(response, 'data-is-mista=')
+
+    def test_ceg_item_types_classification_pure_and_mixed(self):
+        from apps.cegs.models import TipoItem
+        from apps.cegs.services import enrich_cegs_with_availability
+
+        tipo_pc, _ = TipoItem.objects.get_or_create(nome='Photocard')
+        tipo_album, _ = TipoItem.objects.get_or_create(nome='Álbum')
+
+        # Atualiza itens da CEG A para Photocard exclusivo
+        self.item_a1.tipo_item = tipo_pc
+        self.item_a1.save()
+        self.item_a2.tipo_item = tipo_pc
+        self.item_a2.save()
+
+        # Atualiza itens da CEG B para ser MISTA (Item B1 = Photocard, Item B2 = Álbum)
+        self.item_b1.tipo_item = tipo_pc
+        self.item_b1.save()
+        self.item_b2.tipo_item = tipo_album
+        self.item_b2.save()
+
+        cegs = [self.ceg_a, self.ceg_b]
+        enrich_cegs_with_availability(cegs)
+
+        # CEG A: Apenas Photocard
+        self.assertFalse(self.ceg_a.is_mista)
+        self.assertEqual(self.ceg_a.exclusive_tipo_id, tipo_pc.id)
+        self.assertEqual(self.ceg_a.primary_tipo_name, 'Photocard')
+        self.assertIn(str(tipo_pc.id), self.ceg_a.tipo_ids_str)
+
+        # CEG B: Mista (Photocard + Álbum)
+        self.assertTrue(self.ceg_b.is_mista)
+        self.assertIsNone(self.ceg_b.exclusive_tipo_id)
+        self.assertEqual(self.ceg_b.primary_tipo_name, 'Mista')
+        self.assertIn(str(tipo_pc.id), self.ceg_b.tipo_ids_str)
+        self.assertIn(str(tipo_album.id), self.ceg_b.tipo_ids_str)
+
+        # Valida renderização na Home
+        client = Client()
+        res = client.get('/')
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Mista')
+        self.assertContains(res, 'Photocard')
+
 
 
 

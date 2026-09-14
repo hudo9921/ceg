@@ -35,7 +35,20 @@
                  selectedGroup: '',
                  selectedEra: '',
                  selectedMember: '',
+                 selectedTipo: '',
                  sortBy: 'recentes',
+                 checkTipo(isMista, exclusiveTipo, tipoIds) {
+                     if (!this.selectedTipo) return true;
+                     if (this.selectedTipo === 'mista') return isMista === 'True';
+                     if (this.selectedTipo.startsWith('apenas_')) {
+                         return this.selectedTipo === 'apenas_' + exclusiveTipo;
+                     }
+                     if (this.selectedTipo.startsWith('contem_')) {
+                         const targetId = this.selectedTipo.replace('contem_', '');
+                         return (' ' + tipoIds + ' ').indexOf(' ' + targetId + ' ') !== -1;
+                     }
+                     return true;
+                 },
                  sortCards() {
                      const container = this.$refs.cegsContainer;
                      if (!container) return;
@@ -49,10 +62,6 @@
                              return parseInt(b.dataset.vagas || 0) - parseInt(a.dataset.vagas || 0);
                          } else if (this.sortBy === 'vagas_asc') {
                              return parseInt(a.dataset.vagas || 0) - parseInt(b.dataset.vagas || 0);
-                         } else if (this.sortBy === 'complitude_desc') {
-                             return parseInt(b.dataset.progress || 0) - parseInt(a.dataset.progress || 0);
-                         } else if (this.sortBy === 'complitude_asc') {
-                             return parseInt(a.dataset.progress || 0) - parseInt(b.dataset.progress || 0);
                          } else {
                              return parseInt(a.dataset.index || 0) - parseInt(b.dataset.index || 0);
                          }
@@ -69,11 +78,11 @@
             <p class="text-sm text-slate-500">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
         </div>
 
-        <!-- Barra de Filtros Conforme Wireframe: Grupo | Era | Membro | Ordenar (Full Width acima das CEGs) -->
+        <!-- Barra de Filtros Conforme Wireframe: Grupo | Era | Membro | Tipo de Item | Ordenar (Full Width acima das CEGs) -->
         {% if active_cegs %}
             <div class="w-full bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 flex-1">
                         <!-- Filtro por Grupo -->
                         <div class="space-y-1">
                             <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -120,7 +129,33 @@
                             </select>
                         </div>
 
-                        <!-- Ordenador por Preço / Vagas / Completude -->
+                        <!-- Filtro por Tipo de Item (Pool das Caixas: Photocard, Álbum, Mistas, etc.) -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                🏷️ Tipo de Item:
+                            </label>
+                            <select x-model="selectedTipo"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                <option value="">Todos os Tipos ({{ active_cegs|length }})</option>
+                                <option value="mista">🔀 CEGs Mistas ({{ count_mistas }})</option>
+                                <optgroup label="Apenas Este Tipo (Exclusivo)">
+                                    {% for tipo in pool_tipos_item %}
+                                        {% if tipo.count_apenas > 0 %}
+                                            <option value="apenas_{{ tipo.id }}">Apenas {{ tipo.nome }} ({{ tipo.count_apenas }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </optgroup>
+                                <optgroup label="Qualquer CEG que Contenha">
+                                    {% for tipo in pool_tipos_item %}
+                                        {% if tipo.count_contem > 0 %}
+                                            <option value="contem_{{ tipo.id }}">Contém {{ tipo.nome }} ({{ tipo.count_contem }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Ordenador por Preço / Vagas -->
                         <div class="space-y-1">
                             <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 ↕️ Ordenar por:
@@ -129,22 +164,20 @@
                                     @change="sortCards()"
                                     class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
                                 <option value="recentes">⚡ Mais Recentes</option>
-                                <option value="preco_asc">💰 Menor Preço (Acessíveis)</option>
+                                <option value="preco_asc">💰 Menor Preço</option>
                                 <option value="preco_desc">💎 Maior Preço</option>
-                                <option value="vagas_desc">📦 Mais Vagas Sobrando</option>
-                                <option value="vagas_asc">🔥 Poucas Vagas (Quase Esgotando)</option>
-                                <option value="complitude_desc">📈 Mais Completa (% Maior)</option>
-                                <option value="complitude_asc">📉 Menos Completa (% Menor)</option>
+                                <option value="vagas_desc">📦 Mais Vagas Restantes</option>
+                                <option value="vagas_asc">🔥 Menos Vagas Restantes</option>
                             </select>
                         </div>
                     </div>
 
                     <!-- Botão Limpar Filtros -->
-                    <div x-show="selectedGroup || selectedEra || selectedMember || sortBy !== 'recentes'"
+                    <div x-show="selectedGroup || selectedEra || selectedMember || selectedTipo || sortBy !== 'recentes'"
                          x-transition
                          class="flex items-end justify-end pt-1 sm:pt-0">
                         <button type="button"
-                                @click="selectedGroup = ''; selectedEra = ''; selectedMember = ''; sortBy = 'recentes'; sortCards()"
+                                @click="selectedGroup = ''; selectedEra = ''; selectedMember = ''; selectedTipo = ''; sortBy = 'recentes'; sortCards()"
                                 class="px-3.5 py-2.5 text-xs font-bold text-pink-700 hover:text-pink-900 bg-pink-50 hover:bg-pink-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-pink-200">
                             <span>✕</span>
                             <span>Limpar Filtros</span>
@@ -160,13 +193,17 @@
                 {% for ceg in active_cegs %}
                     <div x-show="(!selectedGroup || selectedGroup == '{{ ceg.era.group.id }}') &&
                                  (!selectedEra || selectedEra == '{{ ceg.era.id }}') &&
-                                 (!selectedMember || '{{ ceg.available_members_str }}'.indexOf(selectedMember.toLowerCase()) !== -1)"
+                                 (!selectedMember || '{{ ceg.available_members_str }}'.indexOf(selectedMember.toLowerCase()) !== -1) &&
+                                 checkTipo('{{ ceg.is_mista }}', '{{ ceg.exclusive_tipo_id|default:'' }}', '{{ ceg.tipo_ids_str }}')"
                          x-transition
                          x-data="{ showAvailable: false }"
                          data-index="{{ forloop.counter0 }}"
                          data-price="{{ ceg.min_price_str }}"
                          data-vagas="{{ ceg.available_slots_count }}"
                          data-progress="{{ ceg.progress_percentage }}"
+                         data-is-mista="{% if ceg.is_mista %}true{% else %}false{% endif %}"
+                         data-exclusive-tipo="{{ ceg.exclusive_tipo_id|default:'' }}"
+                         data-tipos="{{ ceg.tipo_ids_str }}"
                          class="ceg-card bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-pink-200 transition-all duration-200 overflow-hidden">
                         
                         <!-- Linha Principal do Retângulo -->
@@ -191,7 +228,7 @@
 
                                 <!-- Detalhes: Grupo, Era, Nome da CEG e Preenchimento -->
                                 <div class="min-w-0 flex-1 space-y-1.5">
-                                    <!-- Badges: Grupo e Era -->
+                                    <!-- Badges: Grupo, Era e Tipo de Item -->
                                     <div class="flex flex-wrap items-center gap-1.5">
                                         <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold bg-pink-50 text-pink-700 border border-pink-200 uppercase tracking-wide">
                                             {{ ceg.era.group.name }}
@@ -199,6 +236,17 @@
                                         <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wide">
                                             {{ ceg.era.name }}
                                         </span>
+                                        {% if ceg.is_mista %}
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wide flex items-center gap-1" title="{{ ceg.tipo_names_str }}">
+                                                <span>🔀</span>
+                                                <span>Mista</span>
+                                            </span>
+                                        {% elif ceg.primary_tipo_name %}
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200 uppercase tracking-wide flex items-center gap-1">
+                                                <span>📦</span>
+                                                <span>{{ ceg.primary_tipo_name }}</span>
+                                            </span>
+                                        {% endif %}
                                     </div>
 
                                     <!-- Nome da CEG -->

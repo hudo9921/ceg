@@ -624,7 +624,7 @@ def enrich_cegs_with_availability(cegs_list):
         ItemSlot.objects.filter(
             set__ceg_id__in=ceg_ids,
             set__is_active=True
-        ).select_related('item_definition', 'set')
+        ).select_related('item_definition__tipo_item', 'set')
         .order_by('set__set_number', 'item_definition__order_index', 'item_definition__name')
     )
 
@@ -657,6 +657,39 @@ def enrich_cegs_with_availability(cegs_list):
         ceg.max_price_float = float(ceg.max_price)
         ceg.min_price_str = str(ceg.min_price)
         ceg.max_price_str = str(ceg.max_price)
+
+        # Classificação por Tipo de Item (pool compartilhada TipoItem das Caixas)
+        tipos_set = set()
+        tipo_ids_set = set()
+        tipo_names_set = set()
+
+        for s in ceg_slots:
+            item_def = s.item_definition
+            t = item_def.tipo_item
+            if t:
+                tipos_set.add(t)
+                tipo_ids_set.add(t.id)
+                tipo_names_set.add(t.nome)
+            else:
+                label = item_def.get_item_type_display() if hasattr(item_def, 'get_item_type_display') else str(item_def.item_type)
+                tipo_names_set.add(label)
+
+        is_mista = (len(tipo_names_set) > 1) or (len(tipos_set) > 1)
+        ceg.is_mista = is_mista
+        ceg.tipo_ids_list = list(tipo_ids_set)
+        ceg.tipo_ids_str = " ".join(str(tid) for tid in sorted(tipo_ids_set))
+        ceg.tipo_names_str = ", ".join(sorted(tipo_names_set))
+
+        if not is_mista and len(tipos_set) == 1:
+            only_t = list(tipos_set)[0]
+            ceg.exclusive_tipo_id = only_t.id
+            ceg.primary_tipo_name = only_t.nome
+        elif not is_mista and len(tipo_names_set) == 1:
+            ceg.exclusive_tipo_id = None
+            ceg.primary_tipo_name = list(tipo_names_set)[0]
+        else:
+            ceg.exclusive_tipo_id = None
+            ceg.primary_tipo_name = "Mista" if is_mista else ""
 
         # Mapeamento para desambiguação de nomes se houver o mesmo member_name em múltiplos itens da CEG
         member_item_defs = defaultdict(set)
