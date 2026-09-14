@@ -42,6 +42,11 @@ else:
         'https://*.onrender.com',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
+        'http://150.136.166.17',
+        'https://150.136.166.17',
+        'http://150.136.166.17:8000',
+        'http://*.sslip.io',
+        'https://*.sslip.io',
     ]
 
 # Application definition

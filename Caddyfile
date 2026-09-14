@@ -1,0 +1,7 @@
+150.136.166.17.sslip.io {
+    reverse_proxy ceg-web:8000
+}
+
+:80 {
+    reverse_proxy ceg-web:8000
+}

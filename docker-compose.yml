@@ -1,0 +1,42 @@
+services:
+  ceg-web:
+    build: .
+    container_name: valcegs-web
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+
+  evolution-api:
+    image: atendai/evolution-api:v2.2.3
+    container_name: valcegs-evolution
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: valcegs-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - ceg-web
+      - evolution-api
+
+volumes:
+  evolution_instances:
+  evolution_store:
+  caddy_data:
+  caddy_config:
