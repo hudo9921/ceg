@@ -38,6 +38,8 @@
          formSocial: '{{ logged_participant.social_handle|default:''|escapejs }}',
          // Modal State
          modalOpen: false,
+         claimLoading: false,
+         claimResult: null,
          feeModalOpen: false,
          editCegModalOpen: false,
          manageSlotModalOpen: false,
@@ -185,6 +187,8 @@
          closeClaimModal() {
              this.modalOpen = false;
              this.selectedSlot = null;
+             this.claimLoading = false;
+             this.claimResult = null;
          },
          openManageSlotModal(slot) {
              this.managedSlot = slot;
@@ -538,6 +542,41 @@
                  this.formUsername = p.username || '';
                  this.formWhatsapp = p.whatsapp || '';
                  this.formSocial = p.social_handle || '';
+             }
+         },
+         async submitClaimForm() {
+             if (this.claimLoading || !this.selectedSlot) return;
+             this.claimLoading = true;
+             this.claimResult = null;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('name', this.formName || '');
+                 formData.append('username', this.formUsername || '');
+                 formData.append('whatsapp', this.formWhatsapp || '');
+                 formData.append('social_handle', this.formSocial || '');
+                 const notesEl = document.getElementById('claimNotesField');
+                 formData.append('notes', notesEl ? notesEl.value : '');
+                 const res = await fetch('/slots/' + this.selectedSlot.id + '/claim/', {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     this.claimResult = { ok: true, message: data.message, pixKey: data.pix_key || null, isWaiting: data.is_waiting_list || false };
+                 } else if (data.requires_auth) {
+                     window.location.href = data.redirect_url || '/me/login/';
+                 } else {
+                     this.claimResult = { ok: false, message: data.message || 'Erro ao processar reserva.' };
+                 }
+             } catch(e) {
+                 this.claimResult = { ok: false, message: 'Erro de conexão: ' + e };
+             } finally {
+                 this.claimLoading = false;
              }
          },
          copyPix(key) {
@@ -1478,7 +1517,7 @@
                 {% endif %}
 
                 <!-- Formulário com Grid Retangular de 2 Colunas -->
-                <form id="claimSlotForm" :action="'/slots/' + (selectedSlot ? selectedSlot.id : 0) + '/claim/'" method="POST" class="space-y-3.5">
+                <form id="claimSlotForm" @submit.prevent="submitClaimForm()" class="space-y-3.5">
                     {% csrf_token %}
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1525,23 +1564,57 @@
                         <!-- Linha Inteira: Observações -->
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-bold text-slate-700 mb-1">Observações (opcional)</label>
-                            <textarea name="notes" rows="2"
+                            <textarea id="claimNotesField" name="notes" rows="2"
                                       placeholder="Alguma observação especial para o organizador?"
                                       class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition"></textarea>
                         </div>
                     </div>
                 </form>
+
+                <!-- Painel de Resultado (sucesso ou erro) -->
+                <div x-show="claimResult" x-cloak class="mt-2">
+                    <template x-if="claimResult && claimResult.ok">
+                        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-emerald-600 text-lg">🎉</span>
+                                <span class="font-black text-emerald-900 text-sm">Reserva Confirmada!</span>
+                            </div>
+                            <p class="text-xs text-emerald-800 leading-snug" x-text="claimResult.message"></p>
+                            <template x-if="claimResult.pixKey">
+                                <div class="mt-2 p-2 bg-white border border-emerald-200 rounded-xl">
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">Chave Pix para pagamento:</span>
+                                    <div class="font-mono text-sm font-black text-slate-900 break-all" x-text="claimResult.pixKey"></div>
+                                    <button type="button" @click="copyPix(claimResult.pixKey)" class="mt-1 text-[10px] text-pink-700 hover:underline font-bold cursor-pointer">📋 Copiar Pix</button>
+                                </div>
+                            </template>
+                            <button type="button" @click="window.location.reload()" class="w-full mt-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition cursor-pointer">
+                                Ver minha reserva →
+                            </button>
+                        </div>
+                    </template>
+                    <template x-if="claimResult && !claimResult.ok">
+                        <div class="p-4 bg-red-50 border border-red-200 rounded-2xl">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-red-500 text-lg">⚠️</span>
+                                <span class="font-black text-red-900 text-sm">Erro na Reserva</span>
+                            </div>
+                            <p class="text-xs text-red-800" x-text="claimResult.message"></p>
+                        </div>
+                    </template>
+                </div>
             </div>
 
-            <!-- Footer Fixo com Botões bem distribuídos -->
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0">
-                <button type="button" @click="closeClaimModal()"
-                        class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+            <!-- Footer Fixo com Botões bem distribuidos -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3 flex-shrink-0">
+                <button type="button" @click="closeClaimModal()" :disabled="claimLoading"
+                        class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50">
                     Cancelar
                 </button>
-                <button type="submit" form="claimSlotForm"
-                        class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span>✔</span> Confirmar Reserva Única
+                <button type="button" @click="submitClaimForm()" :disabled="claimLoading || (claimResult && claimResult.ok)"
+                        class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60">
+                    <span x-show="claimLoading" class="animate-spin inline-block">⌛</span>
+                    <span x-show="!claimLoading">✔</span>
+                    <span x-text="claimLoading ? 'Processando...' : 'Confirmar Reserva Única'"></span>
                 </button>
             </div>
         </div>
