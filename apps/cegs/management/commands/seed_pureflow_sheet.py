@@ -161,7 +161,7 @@ class Command(BaseCommand):
                         'pix_instructions': 'Chave Pix (E-mail). Por favor anexar comprovante no WhatsApp.',
                         'status': CEG.Status.OPEN,
                         'opens_at': prazo_dt - timedelta(days=14),
-                        'closes_at': prazo_dt,
+                        'closes_at': None,
                         'prazo_pagamento_item': prazo_dt,
                         'frete_inter': valor_inter,
                         'prazo_pagamento_frete_inter': prazo_inter_dt,

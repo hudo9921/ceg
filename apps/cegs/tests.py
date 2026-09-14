@@ -1776,6 +1776,71 @@ class CEGAvailabilityAndSortingTests(TestCase):
         self.assertContains(res, 'Photocard')
 
 
+class CEGAvailableSlotsKeepOpenTests(TestCase):
+    def setUp(self):
+        self.group = KpopGroup.objects.create(name='LE SSERAFIM', slug='le-sserafim')
+        self.era = Era.objects.create(group=self.group, name='Pureflow', slug='pureflow')
+        self.past_closes_at = timezone.now() - timedelta(days=5)
+
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='Pureflow Open with Available Slots',
+            slug='pureflow-open-avail',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(days=20),
+            closes_at=self.past_closes_at,
+            pix_key='pix@test.com'
+        )
+        self.item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Chaewon',
+            default_price=35.00
+        )
+        self.cset = CEGSet.objects.create(ceg=self.ceg, set_number=1, is_active=True)
+        self.cset.generate_slots()
+        self.slot = self.cset.slots.first()
+
+    def test_is_open_for_claims_true_when_available_slots_exist_despite_past_closes_at(self):
+        """Verifica que closes_at no passado não bloqueia claims se houver itens sobrando."""
+        self.assertTrue(self.ceg.is_open_for_claims)
+
+    def test_home_view_does_not_close_ceg_with_available_slots(self):
+        """Verifica que a HomeView mantém aberta CEG com vagas mesmo com closes_at expirado."""
+        client = Client()
+        res = client.get('/')
+        self.assertEqual(res.status_code, 200)
+        self.ceg.refresh_from_db()
+        self.assertEqual(self.ceg.status, CEG.Status.OPEN)
+        self.assertContains(res, 'Pureflow Open with Available Slots')
+
+    def test_claim_slot_succeeds_on_available_slot_despite_past_closes_at(self):
+        """Verifica que o participante consegue dar claim no slot disponível."""
+        claim = ClaimService.claim_slot(
+            slot_id=self.slot.id,
+            name='Test User',
+            phone='5511999887766'
+        )
+        self.assertIsNotNone(claim)
+        self.slot.refresh_from_db()
+        self.assertEqual(self.slot.status, ItemSlot.Status.RESERVED)
+
+    def test_closes_when_all_slots_taken_and_closes_at_in_past(self):
+        """Verifica que fecha quando todos os slots foram preenchidos e closes_at passou."""
+        # Reserva o único slot
+        ClaimService.claim_slot(
+            slot_id=self.slot.id,
+            name='Test User',
+            phone='5511999887766'
+        )
+        # Agora não há vagas disponíveis
+        self.assertFalse(self.ceg.is_open_for_claims)
+        client = Client()
+        client.get('/')
+        self.ceg.refresh_from_db()
+        self.assertEqual(self.ceg.status, CEG.Status.CLOSED)
+
+
+
 
 
 

@@ -542,7 +542,13 @@ class CEG(models.Model):
             return False
         if self.status in (self.Status.OPEN, self.Status.SCHEDULED):
             if self.closes_at and timezone.now() > self.closes_at:
-                return False
+                has_available = ItemSlot.objects.filter(
+                    set__ceg=self,
+                    set__is_active=True,
+                    status=ItemSlot.Status.AVAILABLE
+                ).exists()
+                if not has_available:
+                    return False
             return True
         return False
 

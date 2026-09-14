@@ -32,11 +32,22 @@ class HomeView(View):
             opens_at__lte=now
         ).update(status=CEG.Status.OPEN)
 
-        # CEGs abertas que passaram do encerramento passam para CLOSED
-        CEG.objects.filter(
-            status=CEG.Status.OPEN,
-            closes_at__lte=now
-        ).update(status=CEG.Status.CLOSED)
+        # CEGs abertas que passaram do encerramento SÓ passam para CLOSED se NÃO houverem mais vagas disponíveis
+        expired_open_cegs = list(
+            CEG.objects.filter(
+                status=CEG.Status.OPEN,
+                closes_at__lte=now
+            )
+        )
+        for c in expired_open_cegs:
+            has_available_slots = ItemSlot.objects.filter(
+                set__ceg=c,
+                set__is_active=True,
+                status=ItemSlot.Status.AVAILABLE
+            ).exists()
+            if not has_available_slots:
+                c.status = CEG.Status.CLOSED
+                c.save(update_fields=['status'])
 
         # 2. Busca CEGs abertas
         raw_open_cegs = list(
