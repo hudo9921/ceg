@@ -13,6 +13,8 @@
          allParticipants: JSON.parse('{{ all_participants_json|default:'[]'|escapejs }}'),
          itemTypeChoices: JSON.parse('{{ item_type_choices_json|default:'[]'|escapejs }}'),
          tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
+         claimLogsBySlot: JSON.parse('{{ claim_logs_by_slot_json|default:'{}'|escapejs }}'),
+         expandedSlotLogs: {},
          selectedSlotIds: [],
          selectedItemDefIds: [],
          bulkTypeModalOpen: false,
@@ -1404,7 +1406,54 @@
                                     </div>
                                 </div>
                             {% endif %}
+
+                            {% if user.is_staff %}
+                            <!-- Histórico de Claim deste Slot (staff only) -->
+                            <template x-if="claimLogsBySlot[{{ slot.id }}] && claimLogsBySlot[{{ slot.id }}].length > 0">
+                                <div class="mt-2 -mx-4 -mb-0 px-3 pb-2 border-t border-slate-100 bg-slate-50/80 rounded-b-xl">
+                                    <button type="button"
+                                            @click="expandedSlotLogs[{{ slot.id }}] = !expandedSlotLogs[{{ slot.id }}]"
+                                            class="w-full flex items-center justify-between py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">
+                                        <span class="flex items-center gap-1">
+                                            <span>📋</span>
+                                            <span x-text="'Histórico (' + claimLogsBySlot[{{ slot.id }}].length + ' tentativa' + (claimLogsBySlot[{{ slot.id }}].length > 1 ? 's)' : ')')"></span>
+                                        </span>
+                                        <span x-text="expandedSlotLogs[{{ slot.id }}] ? '▲' : '▼'" class="text-[9px]"></span>
+                                    </button>
+                                    <div x-show="expandedSlotLogs[{{ slot.id }}]" x-cloak class="space-y-1 max-h-36 overflow-y-auto pr-0.5 pb-1">
+                                        <template x-for="log in claimLogsBySlot[{{ slot.id }}]" :key="log.id">
+                                            <div class="flex items-start justify-between gap-1.5 text-[10px] px-1.5 py-1 rounded"
+                                                 :class="{
+                                                     'bg-emerald-50 border border-emerald-100': log.result === 'SUCCESS',
+                                                     'bg-blue-50 border border-blue-100': log.result === 'AUTO_FALLBACK',
+                                                     'bg-amber-50 border border-amber-100': log.result === 'WAITING_LIST',
+                                                     'bg-rose-50 border border-rose-100': log.result === 'LOST_RACE',
+                                                     'bg-slate-100 border border-slate-200': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                                                 }">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-1">
+                                                        <span class="font-black text-[9px] px-1 py-0.5 rounded"
+                                                              :class="{
+                                                                  'bg-emerald-200 text-emerald-800': log.result === 'SUCCESS',
+                                                                  'bg-blue-200 text-blue-800': log.result === 'AUTO_FALLBACK',
+                                                                  'bg-amber-200 text-amber-800': log.result === 'WAITING_LIST',
+                                                                  'bg-rose-200 text-rose-800': log.result === 'LOST_RACE',
+                                                                  'bg-slate-200 text-slate-600': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                                                              }"
+                                                              x-text="log.result_display"></span>
+                                                        <span class="font-bold text-slate-800 truncate" x-text="'#' + log.attempt_number + ' ' + log.participant_name"></span>
+                                                    </div>
+                                                    <div class="text-slate-500 truncate" x-show="log.social_handle" x-text="log.social_handle"></div>
+                                                </div>
+                                                <div class="text-slate-400 font-mono shrink-0 text-[9px] text-right" x-text="log.created_at"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                            {% endif %}
                         </div>
+
                     {% empty %}
                         <div class="col-span-full py-8 text-center text-slate-400 text-sm">
                             Nenhum slot gerado para este Set ainda.
@@ -2541,7 +2590,13 @@
                                   :class="logsTab === 'waiting' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
                                   x-text="waitingList.length"></span>
                         </button>
+                        <button type="button" @click="logsTab = 'byitem'"
+                                class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                                :class="logsTab === 'byitem' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                            <span>🗂️</span> Por Set &amp; Item
+                        </button>
                     </div>
+
                     <button type="button" @click="openLogsModal()"
                             class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
                             title="Recarregar logs">
@@ -2627,6 +2682,62 @@
                                     </div>
                                     <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
                                         <div>Entrou em: <span x-text="w.created_at"></span></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Tab 3: Por Set & Item -->
+                <div x-show="!logsLoading && logsTab === 'byitem'" class="overflow-y-auto space-y-3 pr-1 max-h-[60vh]">
+                    <template x-if="disputeLogs.length === 0">
+                        <div class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                            Nenhuma tentativa de claim registrada nesta CEG até o momento.
+                        </div>
+                    </template>
+                    <template x-if="disputeLogs.length > 0">
+                        <div class="space-y-3">
+                            <!-- Group by set_number then item_name -->
+                            <template x-for="setNum in [...new Set(disputeLogs.map(l => l.set_number))].sort((a,b) => a-b)" :key="setNum">
+                                <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+                                    <div class="px-3 py-2 bg-slate-700/50 flex items-center gap-2">
+                                        <span class="text-[10px] font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30"
+                                              x-text="'Set #' + setNum"></span>
+                                        <span class="text-[10px] text-slate-400 font-semibold"
+                                              x-text="disputeLogs.filter(l => l.set_number === setNum).length + ' tentativa(s)'"></span>
+                                    </div>
+                                    <div class="p-2 space-y-2">
+                                        <template x-for="itemName in [...new Set(disputeLogs.filter(l => l.set_number === setNum).map(l => l.item_name))]" :key="itemName">
+                                            <div class="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700/40">
+                                                <div class="px-2.5 py-1.5 flex items-center justify-between border-b border-slate-700/40">
+                                                    <span class="text-xs font-black text-white" x-text="itemName"></span>
+                                                    <span class="text-[10px] text-slate-400 font-semibold"
+                                                          x-text="disputeLogs.filter(l => l.set_number === setNum && l.item_name === itemName).length + ' tentativa(s)'"></span>
+                                                </div>
+                                                <div class="divide-y divide-slate-800/60">
+                                                    <template x-for="log in disputeLogs.filter(l => l.set_number === setNum && l.item_name === itemName).sort((a,b) => a.attempt_number - b.attempt_number)" :key="log.id">
+                                                        <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 text-[10px]">
+                                                            <div class="flex items-center gap-1.5 min-w-0">
+                                                                <span class="text-[9px] font-black text-slate-400 w-4 text-right shrink-0" x-text="'#' + log.attempt_number"></span>
+                                                                <span class="font-black px-1.5 py-0.5 rounded text-[9px] shrink-0"
+                                                                      :class="{
+                                                                          'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': log.result === 'SUCCESS',
+                                                                          'bg-blue-500/20 text-blue-300 border border-blue-500/30': log.result === 'AUTO_FALLBACK',
+                                                                          'bg-amber-500/20 text-amber-300 border border-amber-500/30': log.result === 'WAITING_LIST',
+                                                                          'bg-rose-500/20 text-rose-300 border border-rose-500/30': log.result === 'LOST_RACE',
+                                                                          'bg-slate-600 text-slate-300': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                                                                      }"
+                                                                      x-text="log.result_display"></span>
+                                                                <span class="font-semibold text-white truncate" x-text="log.participant_name"></span>
+                                                                <span class="text-pink-300 font-mono truncate" x-show="log.social_handle" x-text="log.social_handle"></span>
+                                                            </div>
+                                                            <span class="text-slate-500 font-mono shrink-0 text-[9px]" x-text="log.created_at"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                             </template>

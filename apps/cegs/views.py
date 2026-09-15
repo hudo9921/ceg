@@ -181,15 +181,31 @@ class CEGDetailView(View):
             status_choices = CEG.Status.choices
             tipo_item_list = list(TipoItem.objects.all().order_by('nome').values('id', 'nome', 'descricao'))
 
-        # Carrega participante logado via sessão (para pré-preencher o formulário de reserva)
-        logged_participant = None
-        participant_id = request.session.get('participant_id')
-        if participant_id and not (request.user.is_authenticated and request.user.is_staff):
-            from apps.participants.models import Participant
-            try:
-                logged_participant = Participant.objects.get(id=participant_id)
-            except Participant.DoesNotExist:
-                request.session.pop('participant_id', None)
+            # Logs de claim por slot para exibição inline no template
+            from apps.cegs.models import ClaimAttemptLog
+            claim_logs_qs = ClaimAttemptLog.objects.filter(
+                slot__set__ceg=ceg
+            ).select_related('slot__item_definition', 'slot__set').order_by('slot_id', 'attempt_number')
+            claim_logs_by_slot = {}
+            for cl in claim_logs_qs:
+                sid = cl.slot_id
+                if sid not in claim_logs_by_slot:
+                    claim_logs_by_slot[sid] = []
+                claim_logs_by_slot[sid].append({
+                    'id': cl.id,
+                    'attempt_number': cl.attempt_number,
+                    'participant_name': cl.participant_name,
+                    'phone': cl.phone,
+                    'social_handle': cl.social_handle or '',
+                    'result': cl.result,
+                    'result_display': cl.get_result_display(),
+                    'details': cl.details or '',
+                    'created_at': cl.created_at.strftime('%d/%m %H:%M:%S'),
+                })
+        else:
+            claim_logs_by_slot = {}
+
+        claim_logs_by_slot_json = json.dumps(claim_logs_by_slot)
 
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
@@ -207,7 +223,9 @@ class CEGDetailView(View):
             'item_type_choices': item_type_choices,
             'item_type_choices_json': json.dumps(item_type_choices),
             'logged_participant': logged_participant,
+            'claim_logs_by_slot_json': claim_logs_by_slot_json,
         })
+
 
 
 class ClaimSlotView(View):
