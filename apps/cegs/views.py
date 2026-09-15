@@ -1136,6 +1136,23 @@ class CEGLogsAndWaitingListView(View):
             'total_waiting': len([w for w in waiting_data if w['status'] == 'WAITING']),
         })
 
+class DeleteCEGView(StaffRequiredMixin, View):
+    """
+    Permite ao organizador (staff) excluir permanentemente uma CEG inteira,
+    incluindo todos os seus sets, slots, claims e fila de espera.
+    Requer confirmação digitando o título da CEG para evitar exclusão acidental.
+    """
+    def post(self, request, slug):
+        ceg = get_object_or_404(CEG, slug=slug)
 
+        confirm_title = request.POST.get('confirm_title', '').strip()
+        if confirm_title != ceg.title:
+            messages.error(request, f'Confirmação incorreta. Digite o título exato: "{ceg.title}"')
+            return redirect('ceg_detail', slug=slug)
 
+        ceg_title = ceg.title
+        with transaction.atomic():
+            ceg.delete()
 
+        messages.success(request, f'CEG "{ceg_title}" foi excluída permanentemente.')
+        return redirect('home')

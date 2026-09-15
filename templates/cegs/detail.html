@@ -42,6 +42,8 @@
          claimResult: null,
          feeModalOpen: false,
          editCegModalOpen: false,
+         deleteCegModalOpen: false,
+         deleteCegConfirmText: '',
          manageSlotModalOpen: false,
          deleteSetModalOpen: false,
          editPhotoPreview: '{{ ceg.banner_url|default:''|escapejs }}',
@@ -812,6 +814,11 @@
                         <button type="button" @click="editCegModalOpen = true"
                                 class="self-start sm:self-auto px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                             <span>⚙️</span> Editar CEG & Foto
+                        </button>
+                        <button type="button" @click="deleteCegModalOpen = true"
+                                class="self-start sm:self-auto px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer"
+                                title="Excluir esta CEG permanentemente">
+                            <span>🗑️</span> Excluir CEG
                         </button>
                     </div>
                 {% endif %}
@@ -2660,5 +2667,77 @@
         </div>
     {% endif %}
 
+
 </div>
+
+{% if user.is_staff %}
+<!-- ===================== MODAL: EXCLUIR CEG ===================== -->
+<div x-show="deleteCegModalOpen" x-cloak
+     @keydown.escape.window="deleteCegModalOpen = false; deleteCegConfirmText = ''"
+     class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div @click.outside="deleteCegModalOpen = false; deleteCegConfirmText = ''"
+         class="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-red-200 overflow-hidden">
+
+        <!-- Header -->
+        <div class="bg-red-600 px-6 py-4 flex items-center gap-3">
+            <span class="text-2xl">🗑️</span>
+            <div>
+                <h3 class="text-white font-black text-base">Excluir CEG Permanentemente</h3>
+                <p class="text-red-100 text-xs mt-0.5">Esta ação não pode ser desfeita</p>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-4">
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
+                <p class="text-red-800 text-sm font-bold">⚠️ Você está prestes a excluir:</p>
+                <p class="text-red-700 text-sm font-black">{{ ceg.title }}</p>
+                <ul class="text-red-700 text-xs space-y-1 mt-2">
+                    <li>• Todos os Sets e Slots desta CEG</li>
+                    <li>• Todas as reservas (claims) existentes</li>
+                    <li>• Toda a fila de espera</li>
+                    <li>• Todos os logs de reserva</li>
+                </ul>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-sm font-bold text-slate-700">
+                    Para confirmar, digite o título exato da CEG:
+                </label>
+                <p class="text-xs text-slate-500 font-mono bg-slate-100 px-3 py-1.5 rounded-lg select-all">{{ ceg.title }}</p>
+                <input type="text"
+                       x-model="deleteCegConfirmText"
+                       placeholder="Digite o título aqui..."
+                       class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                       :class="deleteCegConfirmText && deleteCegConfirmText !== '{{ ceg.title|escapejs }}' ? 'border-red-400 bg-red-50' : ''">
+                <p class="text-xs text-red-500 font-semibold"
+                   x-show="deleteCegConfirmText && deleteCegConfirmText !== '{{ ceg.title|escapejs }}'">
+                    Título não confere. Digite exatamente como aparece acima.
+                </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-2">
+                <button type="button"
+                        @click="deleteCegModalOpen = false; deleteCegConfirmText = ''"
+                        class="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition">
+                    Cancelar
+                </button>
+                <form method="post" action="{% url 'delete_ceg' slug=ceg.slug %}" class="flex-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirm_title" :value="deleteCegConfirmText">
+                    <button type="submit"
+                            :disabled="deleteCegConfirmText !== '{{ ceg.title|escapejs }}'"
+                            class="w-full px-4 py-2.5 bg-red-600 text-white text-sm font-black rounded-lg transition
+                                   disabled:opacity-40 disabled:cursor-not-allowed
+                                   enabled:hover:bg-red-700 enabled:active:scale-95">
+                        🗑️ Excluir Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
