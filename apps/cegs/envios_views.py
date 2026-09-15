@@ -155,7 +155,7 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
                         'caixa_nome': caixa.nome if caixa else 'Sem Caixa Atrelada',
                         'caixa_origem': caixa.origem if caixa else '',
                         'caixa_status': caixa.get_status_display() if caixa else '',
-                        'image_url': slot.item_definition.image_url or '',
+                        'image_url': slot.item_definition.image_url or ceg.banner_url or '',
                         'preco': float(slot.price),
                         'is_item_paid': is_item_paid,
                         'frete_inter_valor': frete_inter_val,
