@@ -361,6 +361,162 @@ class ClaimSlotView(View):
             return redirect('ceg_detail', slug=ceg.slug)
 
 
+class BulkClaimView(View):
+    """
+    Endpoint para participantes darem claim em múltiplos slots de uma CEG de uma vez.
+    Recebe JSON: {slot_ids: [...], name, whatsapp, social_handle}
+    Retorna: {results: [{slot_id, item_name, set_number, success, is_waiting_list, position, message}, ...]}
+    """
+    def post(self, request, slug):
+        ceg = get_object_or_404(CEG, slug=slug)
+        logged_id = request.session.get('participant_id')
+        is_staff = request.user.is_authenticated and request.user.is_staff
+
+        if not logged_id and not is_staff:
+            return JsonResponse({
+                'success': False,
+                'requires_auth': True,
+                'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
+                'message': 'Por favor, autentique com seu WhatsApp para realizar reservas.'
+            }, status=401)
+
+        try:
+            body = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'Requisição inválida.'}, status=400)
+
+        slot_ids = body.get('slot_ids', [])
+        name = body.get('name', '').strip()
+        whatsapp = body.get('whatsapp', '').strip()
+        social_handle = body.get('social_handle', '').strip()
+        username = body.get('username', '').strip()
+        notes = body.get('notes', '').strip()
+
+        if not slot_ids:
+            return JsonResponse({'success': False, 'message': 'Nenhum slot selecionado.'}, status=400)
+
+        # Preenche com dados da sessão se for participante logado
+        if logged_id:
+            from apps.participants.models import Participant
+            try:
+                p = Participant.objects.get(id=logged_id)
+                if not whatsapp:
+                    whatsapp = p.whatsapp
+                if not name:
+                    name = p.name
+                if not username:
+                    username = p.username
+                if not social_handle:
+                    social_handle = p.social_handle
+            except Participant.DoesNotExist:
+                request.session.pop('participant_id', None)
+                return JsonResponse({
+                    'success': False,
+                    'requires_auth': True,
+                    'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
+                    'message': 'Sessão expirada. Por favor, autentique novamente.'
+                }, status=401)
+
+        results = []
+        participant_saved = False
+
+        for slot_id in slot_ids:
+            try:
+                slot = ItemSlot.objects.select_related('set__ceg', 'item_definition').get(
+                    id=slot_id, set__ceg=ceg
+                )
+            except ItemSlot.DoesNotExist:
+                results.append({
+                    'slot_id': slot_id,
+                    'item_name': '?',
+                    'set_number': '?',
+                    'success': False,
+                    'is_waiting_list': False,
+                    'message': 'Slot não encontrado nesta CEG.',
+                    'result': 'ERROR',
+                })
+                continue
+
+            item_name = slot.item_definition.name
+            set_number = slot.set.set_number
+
+            try:
+                claim = ClaimService.claim_slot(
+                    slot_id=slot.id,
+                    name=name,
+                    phone=whatsapp,
+                    social_handle=social_handle,
+                    notes=notes,
+                    username=username,
+                    bypass_status_check=is_staff,
+                )
+                # Salva participant_id na sessão apenas uma vez
+                if not is_staff and not participant_saved:
+                    request.session['participant_id'] = claim.participant.id
+                    participant_saved = True
+
+                results.append({
+                    'slot_id': slot_id,
+                    'item_name': item_name,
+                    'set_number': set_number,
+                    'success': True,
+                    'is_waiting_list': False,
+                    'message': f"🎉 Reservado com sucesso!",
+                    'result': 'SUCCESS',
+                    'total_price': str(claim.total_price),
+                    'pix_key': ceg.pix_key,
+                })
+
+            except AddedToWaitingListError as e:
+                results.append({
+                    'slot_id': slot_id,
+                    'item_name': item_name,
+                    'set_number': set_number,
+                    'success': False,
+                    'is_waiting_list': True,
+                    'position': e.position,
+                    'message': str(e),
+                    'result': 'WAITING_LIST',
+                })
+
+            except CEGError as e:
+                results.append({
+                    'slot_id': slot_id,
+                    'item_name': item_name,
+                    'set_number': set_number,
+                    'success': False,
+                    'is_waiting_list': False,
+                    'message': str(e),
+                    'result': 'FAILED',
+                })
+
+            except Exception as e:
+                results.append({
+                    'slot_id': slot_id,
+                    'item_name': item_name,
+                    'set_number': set_number,
+                    'success': False,
+                    'is_waiting_list': False,
+                    'message': f"Erro inesperado: {e}",
+                    'result': 'ERROR',
+                })
+
+        successes = sum(1 for r in results if r['success'])
+        waiting = sum(1 for r in results if r.get('is_waiting_list'))
+        return JsonResponse({
+            'success': True,
+            'results': results,
+            'summary': {
+                'total': len(results),
+                'succeeded': successes,
+                'waiting_list': waiting,
+                'failed': len(results) - successes - waiting,
+                'pix_key': ceg.pix_key,
+            }
+        })
+
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ToggleSlotPaymentView(View):
     """

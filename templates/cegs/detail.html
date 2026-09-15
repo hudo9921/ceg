@@ -15,6 +15,80 @@
          tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
          claimLogsBySlot: JSON.parse('{{ claim_logs_by_slot_json|default:'{}'|escapejs }}'),
          expandedSlotLogs: {},
+         // --- Participant Multi-Select Claim ---
+         participantSelectedSlots: [],   // [{id, name, setNumber, price, frete, taxa}, ...]
+         bulkClaimModalOpen: false,
+         bulkClaimLoading: false,
+         bulkClaimResults: null,
+         bulkClaimSummary: null,
+         toggleParticipantSlot(slot) {
+             const idx = this.participantSelectedSlots.findIndex(s => s.id === slot.id);
+             if (idx === -1) {
+                 this.participantSelectedSlots.push(slot);
+             } else {
+                 this.participantSelectedSlots.splice(idx, 1);
+             }
+         },
+         isParticipantSlotSelected(slotId) {
+             return this.participantSelectedSlots.some(s => s.id === slotId);
+         },
+         clearParticipantSelection() {
+             this.participantSelectedSlots = [];
+         },
+         openBulkClaimModal() {
+             if (this.participantSelectedSlots.length === 0) return;
+             this.bulkClaimResults = null;
+             this.bulkClaimSummary = null;
+             this.bulkClaimModalOpen = true;
+         },
+         async submitBulkClaim() {
+             if (this.bulkClaimLoading) return;
+             this.bulkClaimLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-claim/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                     },
+                     body: JSON.stringify({
+                         slot_ids: this.participantSelectedSlots.map(s => s.id),
+                         name: this.formName,
+                         whatsapp: this.formWhatsapp,
+                         social_handle: this.formSocial,
+                         username: this.formUsername,
+                     })
+                 });
+                 if (res.status === 401) {
+                     const data = await res.json();
+                     if (data.requires_auth) {
+                         window.location.href = data.redirect_url;
+                         return;
+                     }
+                 }
+                 const data = await res.json();
+                 if (data.success) {
+                     this.bulkClaimResults = data.results;
+                     this.bulkClaimSummary = data.summary;
+                     // Remove from selection the ones that succeeded
+                     const successIds = new Set(data.results.filter(r => r.success).map(r => r.slot_id));
+                     this.participantSelectedSlots = this.participantSelectedSlots.filter(s => !successIds.has(s.id));
+                 } else {
+                     alert(data.message || 'Erro ao processar reserva.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkClaimLoading = false;
+             }
+         },
+         closeBulkClaimModal() {
+             this.bulkClaimModalOpen = false;
+             this.bulkClaimResults = null;
+             this.bulkClaimSummary = null;
+         },
+         // --- End Multi-Select Claim ---
          selectedSlotIds: [],
          selectedItemDefIds: [],
          bulkTypeModalOpen: false,
@@ -1115,11 +1189,24 @@
                                  }
                              }"
                              :class="{
-                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE',
+                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE' && (!isParticipantSlotSelected({{ slot.id }}) || isAdmin),
+                                 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/60 shadow-md scale-[1.01]': status === 'AVAILABLE' && isParticipantSlotSelected({{ slot.id }}) && !isAdmin,
                                  'border-amber-300 bg-amber-50/50 shadow-2xs': status === 'RESERVED',
                                  'border-blue-300 bg-blue-50/40 shadow-2xs': status === 'PAID',
-                                 'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED'
-                             }">
+                                 'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED',
+                                 {% if not user.is_staff %}'cursor-pointer': status === 'AVAILABLE',{% endif %}
+                             }"
+                             {% if not user.is_staff %}
+                             @click="status === 'AVAILABLE' && !isStandby ? toggleParticipantSlot({
+                                 id: {{ slot.id }},
+                                 name: '{{ slot.item_definition.name|escapejs }}',
+                                 member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                 setNumber: {{ set.set_number }},
+                                 price: '{{ slot.price|floatformat:2 }}',
+                                 frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
+                                 taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
+                             }) : null"
+                             {% endif %}>
 
                             <!-- Top Tag / Member / Item Type -->
                             <div class="flex justify-between items-start">
@@ -1322,24 +1409,22 @@
                                             </button>
                                         </template>
                                         <template x-if="!isStandby">
-                                            {% if logged_participant or user.is_staff %}
-                                                <button type="button"
-                                                        @click="openClaimModal({
-                                                            id: {{ slot.id }},
-                                                            name: '{{ slot.item_definition.name|escapejs }}',
-                                                            member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                                            setNumber: {{ set.set_number }},
-                                                            price: '{{ slot.price|floatformat:2 }}',
-                                                            frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% elif slot.frete_inter is not None and not ceg.caixa %}{{ slot.frete_inter|floatformat:2 }}{% endif %}',
-                                                            taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% elif slot.taxa_aduaneira is not None and not ceg.caixa %}{{ slot.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                                                        })"
-                                                        class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer">
-                                                    <span>⚡</span> Reservar (Claim)
-                                                </button>
+                                            {% if logged_participant %}
+                                                <!-- Participante logado: indicador de seleção -->
+                                                <div class="w-full py-2 rounded-lg text-xs font-black text-center transition flex items-center justify-center gap-1.5 pointer-events-none select-none"
+                                                     :class="isParticipantSlotSelected({{ slot.id }})
+                                                         ? 'bg-pink-600 text-white'
+                                                         : 'bg-slate-100 text-slate-500 border border-dashed border-slate-300'">
+                                                    <span x-text="isParticipantSlotSelected({{ slot.id }}) ? '✔' : '○'"></span>
+                                                    <span x-text="isParticipantSlotSelected({{ slot.id }}) ? 'Selecionado' : 'Clique para selecionar'"></span>
+                                                </div>
+                                            {% elif user.is_staff %}
+                                                <!-- Staff: nada aqui, usa o ✏️ -->
                                             {% else %}
+                                                <!-- Visitante não logado: link para login -->
                                                 <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
                                                    class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-sm flex items-center justify-center gap-1 cursor-pointer text-center">
-                                                    <span>⚡</span> Reservar (Claim)
+                                                    <span>⚡</span> Entrar para Reservar
                                                 </a>
                                             {% endif %}
                                         </template>
@@ -2542,6 +2627,199 @@
 
             </div>
         </div>
+
+        {% if not user.is_staff %}
+        <!-- ===== BARRA FLUTUANTE DE CLAIM (Participantes) ===== -->
+        <div x-show="participantSelectedSlots.length > 0"
+             x-cloak
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-y-full opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="translate-y-0 opacity-100"
+             x-transition:leave-end="translate-y-full opacity-0"
+             class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-pink-500/40 shadow-2xl px-4 py-3 sm:px-6">
+            <div class="max-w-5xl mx-auto flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                <!-- Itens selecionados (lista resumida) -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-black text-pink-300 shrink-0"
+                              x-text="participantSelectedSlots.length + ' item' + (participantSelectedSlots.length > 1 ? 's' : '') + ' selecionado' + (participantSelectedSlots.length > 1 ? 's' : '')"></span>
+                        <div class="flex items-center gap-1 flex-wrap">
+                            <template x-for="s in participantSelectedSlots" :key="s.id">
+                                <span class="text-[10px] font-bold text-white bg-pink-600/70 px-2 py-0.5 rounded-full border border-pink-500/50 flex items-center gap-1">
+                                    <span x-text="'Set #' + s.setNumber + ' · ' + s.name"></span>
+                                    <button type="button"
+                                            @click.stop="toggleParticipantSlot(s)"
+                                            class="text-pink-200 hover:text-white ml-0.5 font-black text-xs cursor-pointer">✕</button>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <!-- Botões -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button"
+                            @click="clearParticipantSelection()"
+                            class="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer">
+                        Limpar
+                    </button>
+                    <button type="button"
+                            @click="openBulkClaimModal()"
+                            class="px-5 py-2.5 bg-pink-600 hover:bg-pink-500 text-white text-sm font-black rounded-xl transition shadow-lg flex items-center gap-2 cursor-pointer">
+                        <span>⚡</span>
+                        <span x-text="'Dar Claim em ' + participantSelectedSlots.length + ' item' + (participantSelectedSlots.length > 1 ? 's' : '')"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== MODAL DE CONFIRMAÇÃO DE BULK CLAIM ===== -->
+        <div x-show="bulkClaimModalOpen" x-cloak
+             class="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+             @keydown.escape.window="closeBulkClaimModal()">
+            <div class="bg-white w-full sm:max-w-lg sm:rounded-2xl shadow-2xl overflow-hidden"
+                 @click.away="closeBulkClaimModal()">
+
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-pink-600 to-rose-500 px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">⚡</span>
+                        <div>
+                            <h3 class="text-base font-black text-white">Confirmar Reserva</h3>
+                            <p class="text-xs text-pink-100"
+                               x-text="participantSelectedSlots.length + ' item' + (participantSelectedSlots.length > 1 ? 's' : '') + ' selecionado' + (participantSelectedSlots.length > 1 ? 's' : '')"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkClaimModal()"
+                            class="text-white/70 hover:text-white text-2xl font-bold cursor-pointer">✕</button>
+                </div>
+
+                <template x-if="!bulkClaimResults">
+                    <div class="p-5 space-y-4">
+                        <!-- Lista de itens selecionados -->
+                        <div class="bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-100 max-h-44 overflow-y-auto">
+                            <template x-for="s in participantSelectedSlots" :key="s.id">
+                                <div class="flex items-center justify-between px-3 py-2 text-xs">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="text-[10px] font-black text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded border border-pink-100 shrink-0"
+                                              x-text="'Set #' + s.setNumber"></span>
+                                        <span class="font-bold text-slate-800 truncate" x-text="s.name"></span>
+                                        <span class="text-slate-500 font-semibold shrink-0" x-text="'R$ ' + s.price"></span>
+                                    </div>
+                                    <button type="button" @click="toggleParticipantSlot(s)"
+                                            class="text-slate-400 hover:text-rose-500 text-sm font-bold shrink-0 ml-2 cursor-pointer">✕</button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Dados do participante -->
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-black text-slate-700 uppercase tracking-wide">Seus Dados</h4>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Nome *</label>
+                                    <input type="text" x-model="formName" required
+                                           placeholder="Seu nome"
+                                           class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 block mb-0.5">WhatsApp *</label>
+                                    <input type="text" x-model="formWhatsapp" required
+                                           placeholder="55 11 99999-9999"
+                                           class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Handle (Instagram/etc)</label>
+                                    <input type="text" x-model="formSocial"
+                                           placeholder="@seuperfil"
+                                           class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 block mb-0.5">Username</label>
+                                    <input type="text" x-model="formUsername"
+                                           placeholder="seunome"
+                                           class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info -->
+                        <p class="text-[10px] text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                            ⚡ Cada item será disputado em tempo real. Em caso de alta concorrência, você pode entrar na fila de espera. O resultado será mostrado item a item.
+                        </p>
+
+                        <!-- Botão confirmar -->
+                        <button type="button"
+                                @click="submitBulkClaim()"
+                                :disabled="bulkClaimLoading || !formName || !formWhatsapp"
+                                class="w-full py-3 bg-pink-600 hover:bg-pink-500 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg">
+                            <span :class="bulkClaimLoading ? 'animate-spin' : ''" x-text="bulkClaimLoading ? '⚡' : '⚡'"></span>
+                            <span x-text="bulkClaimLoading ? 'Processando...' : 'Confirmar Reserva'"></span>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- ===== RESULTADOS ===== -->
+                <template x-if="bulkClaimResults">
+                    <div class="p-5 space-y-4">
+                        <!-- Resumo -->
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                                <div class="text-xl font-black text-emerald-600" x-text="bulkClaimSummary.succeeded"></div>
+                                <div class="text-[10px] font-bold text-emerald-700">✅ Reservado</div>
+                            </div>
+                            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                <div class="text-xl font-black text-amber-600" x-text="bulkClaimSummary.waiting_list"></div>
+                                <div class="text-[10px] font-bold text-amber-700">⏳ Fila de Espera</div>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3">
+                                <div class="text-xl font-black text-rose-600" x-text="bulkClaimSummary.failed"></div>
+                                <div class="text-[10px] font-bold text-rose-700">❌ Não conseguiu</div>
+                            </div>
+                        </div>
+
+                        <!-- Detalhes por item -->
+                        <div class="space-y-2 max-h-52 overflow-y-auto">
+                            <template x-for="r in bulkClaimResults" :key="r.slot_id">
+                                <div class="flex items-start gap-3 p-3 rounded-xl border text-xs"
+                                     :class="{
+                                         'bg-emerald-50 border-emerald-200': r.success,
+                                         'bg-amber-50 border-amber-200': r.is_waiting_list && !r.success,
+                                         'bg-rose-50 border-rose-200': !r.success && !r.is_waiting_list,
+                                     }">
+                                    <span class="text-base shrink-0"
+                                          x-text="r.success ? '✅' : (r.is_waiting_list ? '⏳' : '❌')"></span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-black text-slate-800" x-text="r.item_name + ' (Set #' + r.set_number + ')'"></div>
+                                        <div class="text-slate-600 mt-0.5" x-text="r.message"></div>
+                                        <div x-show="r.is_waiting_list && r.position"
+                                             class="text-[10px] font-bold text-amber-700 mt-1"
+                                             x-text="'Posição na fila: #' + r.position"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Chave Pix se houver sucesso -->
+                        <template x-if="bulkClaimSummary.succeeded > 0 && bulkClaimSummary.pix_key">
+                            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs">
+                                <div class="font-black text-blue-800 mb-1">💙 Efetue o Pagamento Pix</div>
+                                <div class="font-mono text-blue-700 break-all" x-text="bulkClaimSummary.pix_key"></div>
+                            </div>
+                        </template>
+
+                        <button type="button"
+                                @click="closeBulkClaimModal(); $nextTick(() => window.location.reload())"
+                                class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-black rounded-xl transition cursor-pointer">
+                            Fechar e Atualizar Página
+                        </button>
+                    </div>
+                </template>
+
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Modal de Logs de Concorrência e Fila de Espera (Staff) -->
         <div x-show="logsModalOpen" x-cloak
