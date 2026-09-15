@@ -8,6 +8,7 @@ from .views import (
     UpdateCEGView,
     ManageSlotView,
     DeleteSetView,
+    DeleteCEGView,
     CEGLogsAndWaitingListView,
     BulkManageCEGItemsView,
 )
@@ -63,6 +64,7 @@ urlpatterns = [
     path('ceg/<slug:slug>/update-fees/', UpdateCEGFeesView.as_view(), name='update_ceg_fees'),
     path('ceg/<slug:slug>/logs-espera/', CEGLogsAndWaitingListView.as_view(), name='ceg_logs_espera'),
     path('ceg/<slug:slug>/bulk-manage-items/', BulkManageCEGItemsView.as_view(), name='bulk_manage_ceg_items'),
+    path('ceg/<slug:slug>/delete/', DeleteCEGView.as_view(), name='delete_ceg'),
     path('ceg/<slug:slug>/alocar-massa/', CEGBulkAllocatorView.as_view(), name='ceg_bulk_allocator'),
     path('ceg/<slug:slug>/alocar-massa/api/', CEGBulkAllocatorAPIView.as_view(), name='ceg_bulk_allocator_api'),
     path('slots/<int:slot_id>/claim/', ClaimSlotView.as_view(), name='claim_slot'),
