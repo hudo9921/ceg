@@ -2452,24 +2452,44 @@
                     </div>
                 </div>
 
-                <form :action="'/sets/' + (setToDelete ? setToDelete.id : '') + '/delete/'" method="POST"
-                      @submit="deleteSetLoading = true" class="flex-shrink-0">
-                    {% csrf_token %}
-                    <input type="hidden" name="notify_participants" :value="notifyParticipants ? 'true' : 'false'">
-                    <input type="hidden" name="custom_message" :value="customCancelMessage">
-
-                    <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
-                        <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
-                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs">
-                            Cancelar
-                        </button>
-                        <button type="submit" :disabled="deleteSetLoading"
-                                class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
-                            <span x-show="deleteSetLoading" class="animate-spin">⌛</span>
-                            <span>Sim, Excluir Set</span>
-                        </button>
-                    </div>
-                </form>
+                <div class="pt-2 flex justify-end gap-2 border-t border-slate-100 flex-shrink-0">
+                    <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs">
+                        Cancelar
+                    </button>
+                    <button type="button" :disabled="deleteSetLoading"
+                            @click="
+                                if (!setToDelete) return;
+                                deleteSetLoading = true;
+                                const form = new FormData();
+                                form.append('notify_participants', notifyParticipants ? 'true' : 'false');
+                                form.append('custom_message', customCancelMessage || '');
+                                form.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                                fetch('/sets/' + setToDelete.id + '/delete/', {
+                                    method: 'POST',
+                                    body: form,
+                                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        closeDeleteSetModal();
+                                        window.location.reload();
+                                    } else {
+                                        alert('Erro: ' + (data.message || 'Falha ao excluir.'));
+                                        deleteSetLoading = false;
+                                    }
+                                })
+                                .catch(e => {
+                                    alert('Erro de conexão: ' + e);
+                                    deleteSetLoading = false;
+                                });
+                            "
+                            class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                        <span x-show="deleteSetLoading" class="animate-spin">⌛</span>
+                        <span>Sim, Excluir Set</span>
+                    </button>
+                </div>
 
             </div>
         </div>
