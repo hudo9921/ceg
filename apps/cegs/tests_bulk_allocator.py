@@ -2,6 +2,7 @@ import json
 from decimal import Decimal
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.cegs.models import CEG, CEGSet, CEGItemDefinition, ItemSlot
@@ -96,6 +97,29 @@ class BulkJoinerAllocatorTestCase(TestCase):
         slot_s1_data = row_seoyeon['slots'][self.set1.id]
         self.assertEqual(slot_s1_data['claimed_by']['name'], 'Bia Silva')
         self.assertTrue(slot_s1_data['is_item_paid'])
+
+    def test_allocator_filters_cegs_by_search_group_and_era(self):
+        other_group = KpopGroup.objects.create(name='NewJeans', slug='newjeans')
+        other_era = Era.objects.create(group=other_group, name='Get Up', slug='get-up')
+        other_ceg = CEG.objects.create(
+            era=other_era,
+            title='NewJeans Get Up Allocator Test',
+            slug='newjeans-get-up-allocator-test',
+            status=CEG.Status.OPEN
+        )
+        url = reverse('bulk_joiner_allocator_global')
+
+        response = self.client.get(url, {'q': 'NewJeans Get Up'})
+        self.assertContains(response, other_ceg.title)
+        self.assertNotContains(response, self.ceg.title)
+
+        response = self.client.get(url, {'group_id': other_group.id})
+        self.assertContains(response, other_ceg.title)
+        self.assertNotContains(response, self.ceg.title)
+
+        response = self.client.get(url, {'era_id': other_era.id})
+        self.assertContains(response, other_ceg.title)
+        self.assertNotContains(response, self.ceg.title)
 
     def test_parse_allocation_text_explicit_set(self):
         """Valida parser com set explícito, telefone e status pago."""

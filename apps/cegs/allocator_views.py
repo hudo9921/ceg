@@ -3,8 +3,10 @@ from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db.models import Q
 
 from apps.cegs.models import CEG
+from apps.groups.models import KpopGroup, Era
 from apps.participants.models import Participant
 from .services_allocator import BulkJoinerAllocatorService
 
@@ -21,7 +23,24 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
     ou de forma geral (/cegs/alocar-joiners/), selecionando a CEG desejada.
     """
     def get(self, request, slug=None):
-        cegs_qs = CEG.objects.all().order_by('-created_at')
+        search_query = request.GET.get('q', '').strip()
+        group_id = request.GET.get('group_id', '').strip()
+        era_id = request.GET.get('era_id', '').strip()
+
+        cegs_qs = CEG.objects.select_related('era__group').all().order_by('-created_at')
+        if search_query:
+            cegs_qs = cegs_qs.filter(
+                Q(title__icontains=search_query) |
+                Q(era__name__icontains=search_query) |
+                Q(era__group__name__icontains=search_query)
+            )
+        if group_id.isdigit():
+            cegs_qs = cegs_qs.filter(era__group_id=int(group_id))
+        if era_id.isdigit():
+            cegs_qs = cegs_qs.filter(era_id=int(era_id))
+
+        groups = KpopGroup.objects.all().order_by('name')
+        eras = Era.objects.select_related('group').all().order_by('group__name', 'name')
         ceg = None
 
         if slug:
@@ -42,6 +61,11 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
                 'matrix_data': None,
                 'matrix_json': '{}',
                 'participants_json': '[]',
+                'groups': groups,
+                'eras': eras,
+                'search_query': search_query,
+                'selected_group_id': group_id,
+                'selected_era_id': era_id,
             })
 
         matrix_data = BulkJoinerAllocatorService.get_ceg_matrix(ceg)
@@ -68,6 +92,8 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
                 'status_display': c.get_status_display(),
                 'sets_count': c.sets.count(),
                 'items_count': c.item_definitions.count(),
+                'group_name': c.era.group.name,
+                'era_name': c.era.name,
             }
             for c in cegs_qs
         ]
@@ -78,6 +104,11 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
             'matrix_data': matrix_data,
             'matrix_json': json.dumps(matrix_data),
             'participants_json': json.dumps(participants_data),
+            'groups': groups,
+            'eras': eras,
+            'search_query': search_query,
+            'selected_group_id': group_id,
+            'selected_era_id': era_id,
         })
 
 
