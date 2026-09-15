@@ -45,6 +45,7 @@
                 },
                 clear() {
                     this.slots = [];
+                    window.dispatchEvent(new CustomEvent('claim-selection-cleared'));
                 }
             });
         });

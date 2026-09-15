@@ -1234,7 +1234,7 @@
                                  'border-blue-300 bg-blue-50/40 shadow-2xs': status === 'PAID',
                                  'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED',
                                  {% if not user.is_staff %}'cursor-pointer': status === 'AVAILABLE',{% endif %}
-                                }">
+                                }" @claim-selection-cleared.window="isSelected = false">
 
                         <!-- Top Tag / Member / Item Type -->
                         <div class="flex justify-between items-start">
