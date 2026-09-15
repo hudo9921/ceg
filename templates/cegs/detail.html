@@ -88,6 +88,16 @@
              this.bulkClaimResults = null;
              this.bulkClaimSummary = null;
          },
+         // Listen for slot-toggle events from nested card scopes
+         handleSlotToggle(event) {
+             const slot = event.detail;
+             const idx = this.participantSelectedSlots.findIndex(s => s.id === slot.id);
+             if (idx === -1) {
+                 this.participantSelectedSlots.push(slot);
+             } else {
+                 this.participantSelectedSlots.splice(idx, 1);
+             }
+         },
          // --- End Multi-Select Claim ---
          selectedSlotIds: [],
          selectedItemDefIds: [],
@@ -698,6 +708,16 @@
                  }
              }, 1000);
          }
+         // Escuta eventos de seleção de slot dos cards filhos (cross-scope via window events)
+         window.addEventListener('slot-toggle', (e) => {
+             const slot = e.detail;
+             const idx = participantSelectedSlots.findIndex(s => s.id === slot.id);
+             if (idx === -1) {
+                 participantSelectedSlots.push(slot);
+             } else {
+                 participantSelectedSlots.splice(idx, 1);
+             }
+         });
      ">
 
     <!-- Top Breadcrumb -->
@@ -1155,6 +1175,7 @@
                              x-data="{
                                  slotId: {{ slot.id }},
                                  status: '{{ slot.status }}',
+                                 isSelected: false,
                                  isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
                                  isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
                                  isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
@@ -1189,15 +1210,16 @@
                                  }
                              }"
                              :class="{
-                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE' && (!isParticipantSlotSelected({{ slot.id }}) || isAdmin),
-                                 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/60 shadow-md scale-[1.01]': status === 'AVAILABLE' && isParticipantSlotSelected({{ slot.id }}) && !isAdmin,
+                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE' && !isSelected,
+                                 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/60 shadow-md scale-[1.01]': status === 'AVAILABLE' && isSelected,
                                  'border-amber-300 bg-amber-50/50 shadow-2xs': status === 'RESERVED',
                                  'border-blue-300 bg-blue-50/40 shadow-2xs': status === 'PAID',
                                  'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED',
                                  {% if not user.is_staff %}'cursor-pointer': status === 'AVAILABLE',{% endif %}
                              }"
+                             @slot-toggle.window="if ($event.detail.id === slotId) isSelected = !isSelected"
                              {% if not user.is_staff %}
-                             @click="status === 'AVAILABLE' && !isStandby ? toggleParticipantSlot({
+                             @click="if (status === 'AVAILABLE' && !isStandby) $dispatch('slot-toggle', {
                                  id: {{ slot.id }},
                                  name: '{{ slot.item_definition.name|escapejs }}',
                                  member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
@@ -1205,7 +1227,7 @@
                                  price: '{{ slot.price|floatformat:2 }}',
                                  frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
                                  taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                             }) : null"
+                             })"
                              {% endif %}>
 
                             <!-- Top Tag / Member / Item Type -->
@@ -1412,11 +1434,11 @@
                                             {% if logged_participant %}
                                                 <!-- Participante logado: indicador de seleção -->
                                                 <div class="w-full py-2 rounded-lg text-xs font-black text-center transition flex items-center justify-center gap-1.5 pointer-events-none select-none"
-                                                     :class="isParticipantSlotSelected({{ slot.id }})
+                                                     :class="isSelected
                                                          ? 'bg-pink-600 text-white'
                                                          : 'bg-slate-100 text-slate-500 border border-dashed border-slate-300'">
-                                                    <span x-text="isParticipantSlotSelected({{ slot.id }}) ? '✔' : '○'"></span>
-                                                    <span x-text="isParticipantSlotSelected({{ slot.id }}) ? 'Selecionado' : 'Clique para selecionar'"></span>
+                                                    <span x-text="isSelected ? '✔' : '○'"></span>
+                                                    <span x-text="isSelected ? 'Selecionado' : 'Clique para selecionar'"></span>
                                                 </div>
                                             {% elif user.is_staff %}
                                                 <!-- Staff: nada aqui, usa o ✏️ -->
