@@ -605,8 +605,15 @@ function salesReportApp() {
                 }
             });
         },
+        updateChartTheme() {
+            if (typeof Chart === 'undefined') return;
+            const isDark = document.documentElement.classList.contains('dark');
+            Chart.defaults.color = isDark ? '#94A3B8' : '#64748B';
+            Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+        },
         initCharts() {
             const startRendering = () => {
+                this.updateChartTheme();
                 this.renderMonthlyChart();
                 this.renderVolumeChart();
                 this.renderDonutChart();
@@ -622,6 +629,10 @@ function salesReportApp() {
                     console.error('Chart.js não pôde ser carregado a tempo.');
                 }
             };
+
+            window.addEventListener('theme-changed', () => {
+                startRendering();
+            });
 
             ensureChartLoaded();
         },
