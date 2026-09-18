@@ -1386,11 +1386,11 @@
                             {% if slot.claimed_by %}
                             <!-- Bloco quando RESERVADO (Item ainda pendente de pagamento) -->
                             <div x-show="status === 'RESERVED'"
-                                class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                class="text-center py-1.5 px-2 bg-amber-100/80 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-500/40 rounded-lg text-amber-900 dark:text-amber-300 text-xs font-semibold">
                                 <span class="font-bold flex items-center justify-center gap-1">
                                     <span>🔒</span> Reservado
                                 </span>
-                                <div class="text-[10px] text-amber-700 truncate font-mono">
+                                <div class="text-[10px] text-amber-700 dark:text-amber-200 truncate font-mono font-bold">
                                     {% if slot.claimed_by.social_handle %}
                                     {{ slot.claimed_by.social_handle }}
                                     {% else %}
@@ -1411,7 +1411,7 @@
                                     claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}' ,
                                     claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}' ,
                                     isItemPaid: isItemPaid })"
-                                    class="mt-1 text-[10px] font-bold text-amber-900 hover:text-purple-700 underline flex items-center justify-center gap-1 w-full cursor-pointer">
+                                    class="mt-1 text-[10px] font-bold text-amber-900 dark:text-amber-300 hover:text-purple-700 dark:hover:text-amber-100 underline flex items-center justify-center gap-1 w-full cursor-pointer">
                                     <span>🔄</span> Trocar ou Remover Claim
                                 </button>
                                 {% endif %}
@@ -1419,11 +1419,11 @@
 
                             <!-- Bloco quando PAGO (Item confirmado / pago) -->
                             <div x-show="status === 'PAID'"
-                                class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                class="text-center py-1.5 px-2 bg-blue-100/80 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-500/40 rounded-lg text-blue-900 dark:text-blue-300 text-xs font-semibold">
                                 <span class="font-bold flex items-center justify-center gap-1">
                                     <span>✔</span> Confirmado / Pago
                                 </span>
-                                <div class="text-[10px] text-blue-700 truncate font-mono">
+                                <div class="text-[10px] text-blue-700 dark:text-blue-200 truncate font-mono font-bold">
                                     {% if slot.claimed_by.social_handle %}
                                     {{ slot.claimed_by.social_handle }}
                                     {% else %}
@@ -1445,7 +1445,7 @@
                                     claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}' ,
                                     claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}' ,
                                     isItemPaid: isItemPaid })"
-                                    class="mt-1 text-[10px] font-bold text-blue-900 hover:text-purple-700 underline flex items-center justify-center gap-1 w-full cursor-pointer">
+                                    class="mt-1 text-[10px] font-bold text-blue-900 dark:text-blue-300 hover:text-purple-700 dark:hover:text-blue-100 underline flex items-center justify-center gap-1 w-full cursor-pointer">
                                     <span>🔄</span> Trocar ou Remover Claim
                                 </button>
                                 {% endif %}
@@ -1494,13 +1494,13 @@
 
                             <!-- Caso o slot passe para PAID ou RESERVED mesmo sem claimed_by previamente renderizado -->
                             <div x-show="status === 'PAID'"
-                                class="text-center py-1.5 px-2 bg-blue-100/80 border border-blue-200 rounded-lg text-blue-900 text-xs font-semibold">
+                                class="text-center py-1.5 px-2 bg-blue-100/80 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-500/40 rounded-lg text-blue-900 dark:text-blue-300 text-xs font-semibold">
                                 <span class="font-bold flex items-center justify-center gap-1">
                                     <span>✔</span> Confirmado / Pago
                                 </span>
                             </div>
                             <div x-show="status === 'RESERVED'"
-                                class="text-center py-1.5 px-2 bg-amber-100/80 border border-amber-200 rounded-lg text-amber-900 text-xs font-semibold">
+                                class="text-center py-1.5 px-2 bg-amber-100/80 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-500/40 rounded-lg text-amber-900 dark:text-amber-300 text-xs font-semibold">
                                 <span class="font-bold flex items-center justify-center gap-1">
                                     <span>🔒</span> Reservado
                                 </span>
