@@ -533,6 +533,60 @@ class CEG(models.Model):
         """Título amigável para exibição em cards onde a tag do grupo já está presente."""
         return self.clean_title()
 
+    @property
+    def theme_color(self) -> str:
+        """
+        Retorna a cor temática com a seguinte cascata de prioridades:
+        1. Cor da Era vinculada (color_hex ou extração do banner_url)
+        2. Cor do Grupo vinculado (color_hex ou extração da image_url)
+        3. Cor extraída do banner da própria CEG (se houver)
+        """
+        try:
+            # 1. Era vinculada
+            era = getattr(self, 'era', None)
+            if era:
+                if getattr(era, 'color_hex', None) and era.color_hex.strip():
+                    return era.color_hex.strip()
+                if getattr(era, 'banner_url', None) and era.banner_url.strip():
+                    try:
+                        from apps.groups.color_utils import extract_dominant_color
+                        extracted = extract_dominant_color(era.banner_url)
+                        if extracted:
+                            era.color_hex = extracted
+                            era.save(update_fields=['color_hex'])
+                            return extracted
+                    except Exception:
+                        pass
+
+            # 2. Grupo vinculado (via era ou direto)
+            group = getattr(era, 'group', None) if era else getattr(self, 'group', None)
+            if group:
+                if getattr(group, 'color_hex', None) and group.color_hex.strip():
+                    return group.color_hex.strip()
+                if getattr(group, 'image_url', None) and group.image_url.strip():
+                    try:
+                        from apps.groups.color_utils import extract_dominant_color
+                        extracted = extract_dominant_color(group.image_url)
+                        if extracted:
+                            group.color_hex = extracted
+                            group.save(update_fields=['color_hex'])
+                            return extracted
+                    except Exception:
+                        pass
+
+            # 3. Imagem da própria CEG
+            if getattr(self, 'banner_url', None) and self.banner_url.strip():
+                try:
+                    from apps.groups.color_utils import extract_dominant_color
+                    extracted = extract_dominant_color(self.banner_url)
+                    if extracted:
+                        return extracted
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return ""
+
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)
@@ -962,6 +1016,29 @@ class PacoteNacional(models.Model):
     )
     data_envio = models.DateTimeField('Data do Envio', null=True, blank=True)
     data_entrega = models.DateTimeField('Data da Entrega', null=True, blank=True)
+    entregue_por = models.CharField(
+        'Confirmado recebimento por',
+        max_length=20,
+        default='ADMIN',
+        choices=[('ADMIN', 'Administrador'), ('JOINER', 'Joiner / Participante')],
+        blank=True
+    )
+    feedback_rating = models.PositiveSmallIntegerField(
+        'Avaliação (1 a 5 estrelas)',
+        null=True,
+        blank=True,
+        help_text='Nota de 1 a 5 dada pelo participante'
+    )
+    feedback_texto = models.TextField(
+        'Feedback / Depoimento do Joiner',
+        blank=True,
+        help_text='Comentário ou depoimento do joiner após o recebimento'
+    )
+    feedback_data = models.DateTimeField(
+        'Data do Feedback',
+        null=True,
+        blank=True
+    )
     observacoes = models.TextField('Anotações do Organizador / Endereço', blank=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
     updated_at = models.DateTimeField('Atualizado em', auto_now=True)
@@ -991,7 +1068,7 @@ class PacoteNacional(models.Model):
     def total_itens(self) -> int:
         return self.slots.count() + self.itens_individuais.count()
 
-    def marcar_como_enviado(self, codigo_rastreio: str = '', transportadora: str = ''):
+    def marcar_como_enviado(self, codigo_rastreio: str = '', transportadora: str = '', actor=None):
         """Marca o pacote como enviado, registra data_envio e envia notificação ao participante."""
         from apps.participants.models import ParticipantNotification
         self.status = self.Status.ENVIADO
@@ -1011,6 +1088,89 @@ class PacoteNacional(models.Model):
             message=f"Olá, {self.participant.display_name}! Seu pacote com {total} item(ns) foi despachado via {self.transportadora}.{rastreio_txt} Acompanhe pelo seu painel!",
             notification_type=ParticipantNotification.NotificationType.ENVIO_NACIONAL
         )
+
+        # Audit Log
+        try:
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.PACKAGE_SENT,
+                actor=actor,
+                actor_name=actor.get_full_name() or actor.username if actor else 'Sistema / Admin',
+                participant=self.participant,
+                participant_name=self.participant.name,
+                participant_phone=self.participant.whatsapp,
+                pacote_nacional=self,
+                action_label=f"Pacote {self.identificador} despachado via {self.transportadora}",
+                field_name='status',
+                old_value='EM_PREPARACAO',
+                new_value='ENVIADO',
+                metadata={
+                    'pacote_id': self.id,
+                    'codigo_rastreio': self.codigo_rastreio,
+                    'transportadora': self.transportadora,
+                    'total_itens': total,
+                }
+            )
+        except Exception:
+            pass
+
+    def marcar_como_entregue(self, by='ADMIN', rating=None, feedback='', actor=None):
+        """Marca o pacote como entregue, salva feedback e gera log de auditoria."""
+        from apps.participants.models import ParticipantNotification
+        self.status = self.Status.ENTREGUE
+        if not self.data_entrega:
+            self.data_entrega = timezone.now()
+        self.entregue_por = by
+        fields_to_update = ['status', 'data_entrega', 'entregue_por', 'updated_at']
+
+        if rating:
+            try:
+                self.feedback_rating = max(1, min(5, int(rating)))
+                fields_to_update.append('feedback_rating')
+            except (ValueError, TypeError):
+                pass
+
+        if feedback:
+            self.feedback_texto = feedback.strip()
+            self.feedback_data = timezone.now()
+            fields_to_update.extend(['feedback_texto', 'feedback_data'])
+        elif rating and not self.feedback_data:
+            self.feedback_data = timezone.now()
+            fields_to_update.append('feedback_data')
+
+        self.save(update_fields=list(set(fields_to_update)))
+
+        if by == 'ADMIN':
+            ParticipantNotification.objects.create(
+                participant=self.participant,
+                title=f"🎉 Seu pacote ({self.identificador}) foi marcado como entregue!",
+                message=f"Seu pacote com {self.total_itens} item(ns) foi concluído. Não se esqueça de deixar seu feedback e avaliação no seu painel!",
+                notification_type=ParticipantNotification.NotificationType.ENVIO_NACIONAL
+            )
+
+        # Audit Log
+        try:
+            actor_display = actor.get_full_name() or actor.username if actor else (self.participant.display_name if by == 'JOINER' else 'Sistema / Admin')
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.PACKAGE_DELIVERED,
+                actor=actor,
+                actor_name=actor_display,
+                participant=self.participant,
+                participant_name=self.participant.name,
+                participant_phone=self.participant.whatsapp,
+                pacote_nacional=self,
+                action_label=f"Pacote {self.identificador} marcado como entregue ({'pelo Joiner com feedback' if by == 'JOINER' else 'pelo Administrador'})",
+                field_name='status',
+                old_value='ENVIADO',
+                new_value='ENTREGUE',
+                metadata={
+                    'pacote_id': self.id,
+                    'entregue_por': by,
+                    'rating': self.feedback_rating,
+                    'feedback': self.feedback_texto,
+                }
+            )
+        except Exception:
+            pass
 
 
 class ItemSlot(models.Model):
@@ -1114,7 +1274,7 @@ class ItemSlot(models.Model):
             else:
                 self.status = self.Status.AVAILABLE
 
-    def toggle_payment(self, field_name: str, value=None) -> bool:
+    def toggle_payment(self, field_name: str, value=None, actor=None) -> bool:
         """Alterna ou define o status de um dos campos de pagamento do item/slot."""
         field_map = {
             'item': 'is_item_paid',
@@ -1142,6 +1302,20 @@ class ItemSlot(models.Model):
             update_fields.append('status')
 
         self.save(update_fields=update_fields)
+
+        # Registra auditoria da alteração de pagamento
+        try:
+            from apps.cegs.audit_service import AuditService
+            AuditService.log_payment_change(
+                slot=self,
+                field_name=attr,
+                old_value=current_val,
+                new_value=new_val,
+                actor=actor,
+            )
+        except Exception:
+            pass
+
         return new_val
 
     class Meta:
@@ -1350,3 +1524,88 @@ class ItemIndividual(models.Model):
         if self.tipo_item:
             return self.tipo_item.nome
         return "Item"
+
+
+class AuditLog(models.Model):
+    class EventType(models.TextChoices):
+        ACCOUNT_CREATED = 'ACCOUNT_CREATED', 'Cadastro de Participante'
+        CLAIM_ATTEMPT = 'CLAIM_ATTEMPT', 'Tentativa de Claim'
+        CLAIM_SUCCESS = 'CLAIM_SUCCESS', 'Claim Vencedor (Garantido)'
+        CLAIM_CANCELLED = 'CLAIM_CANCELLED', 'Claim Cancelado / Liberado'
+        PAYMENT_ITEM = 'PAYMENT_ITEM', 'Pagamento do Item'
+        PAYMENT_FRETE_INTER = 'PAYMENT_FRETE_INTER', 'Pagamento de Frete Internacional'
+        PAYMENT_TAXA = 'PAYMENT_TAXA', 'Pagamento de Taxa Aduaneira'
+        PAYMENT_FRETE_NACIONAL = 'PAYMENT_FRETE_NACIONAL', 'Pagamento de Frete Nacional'
+        PACKAGE_SENT = 'PACKAGE_SENT', 'Pacote Despachado / Enviado'
+        PACKAGE_DELIVERED = 'PACKAGE_DELIVERED', 'Pacote Entregue / Feedback Registrado'
+        SLOT_ASSIGNED = 'SLOT_ASSIGNED', 'Slot Vinculado Manualmente'
+        SLOT_RELEASED = 'SLOT_RELEASED', 'Slot Desvinculado Manualmente'
+        OTHER = 'OTHER', 'Outra Operação'
+
+    event_type = models.CharField('Tipo de Evento', max_length=40, choices=EventType.choices, db_index=True)
+    actor = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='Usuário Responsável'
+    )
+    actor_name = models.CharField('Nome do Operador', max_length=150, blank=True)
+    participant = models.ForeignKey(
+        'participants.Participant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='Participante'
+    )
+    participant_name = models.CharField('Nome do Participante', max_length=150, blank=True, db_index=True)
+    participant_phone = models.CharField('WhatsApp do Participante', max_length=30, blank=True, db_index=True)
+    ceg = models.ForeignKey(
+        'cegs.CEG',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='CEG'
+    )
+    slot = models.ForeignKey(
+        'cegs.ItemSlot',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='Slot do Item'
+    )
+    item_individual = models.ForeignKey(
+        'cegs.ItemIndividual',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='Item Individual (Mercari)'
+    )
+    pacote_nacional = models.ForeignKey(
+        'cegs.PacoteNacional',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='Pacote Nacional'
+    )
+    action_label = models.CharField('Ação / Descrição', max_length=255)
+    field_name = models.CharField('Campo Alterado', max_length=100, blank=True)
+    old_value = models.CharField('Valor Anterior', max_length=255, blank=True)
+    new_value = models.CharField('Novo Valor', max_length=255, blank=True)
+    metadata = models.JSONField('Metadados Adicionais', default=dict, blank=True)
+    created_at = models.DateTimeField('Data e Hora', auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Log de Auditoria'
+        verbose_name_plural = 'Logs de Auditoria'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.get_event_type_display()}] {self.action_label} ({self.created_at.strftime('%d/%m/%Y %H:%M')})"
+

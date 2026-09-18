@@ -13,7 +13,7 @@ from django.views import View
 from apps.groups.models import KpopGroup, Era
 from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, ItemIndividual, TipoItem
 from apps.cegs.services import ClaimService
-from apps.cegs.image_utils import process_image_upload
+from .image_utils import process_image_upload
 from apps.participants.models import Participant, Claim
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class CreationsHubView(StaffRequiredMixin, View):
         caixas = Caixa.objects.all().order_by('-created_at')
         itens_individuais = ItemIndividual.objects.select_related('caixa', 'comprador').order_by('-created_at')
 
-        # Dicionário de grupos e eras para seleção em cascata no Alpine.js
+        # Dicionário de grupos e eras para seleção em cascata e edição no Alpine.js
         groups_data = []
         for g in groups:
             groups_data.append({
@@ -60,8 +60,20 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'name': g.name,
                 'slug': g.slug,
                 'image_url': g.image_url,
+                'color_hex': g.color_hex or '',
+                'description': g.description or '',
                 'eras': [
-                    {'id': e.id, 'name': e.name, 'slug': e.slug}
+                    {
+                        'id': e.id,
+                        'name': e.name,
+                        'slug': e.slug,
+                        'release_date': e.release_date.strftime('%Y-%m-%d') if e.release_date else '',
+                        'banner_url': e.banner_url,
+                        'color_hex': e.color_hex or '',
+                        'description': e.description or '',
+                        'group_id': g.id,
+                        'group_name': g.name,
+                    }
                     for e in g.eras.all()
                 ]
             })
@@ -82,9 +94,9 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'caixa_slug': c.caixa.slug if c.caixa else None,
                 'caixa_origem': c.caixa.origem if c.caixa else None,
                 'shipping_status_display': c.get_shipping_status_display(),
-                'sets_count': len(c.sets.all()),
-                'active_sets_count': sum(1 for s in c.sets.all() if s.is_active),
-                'items_count': len(c.item_definitions.all()),
+                'sets_count': c.sets.count(),
+                'active_sets_count': c.sets.filter(is_active=True).count(),
+                'items_count': c.item_definitions.count(),
                 'opens_at': c.opens_at.strftime('%d/%m/%Y %H:%M') if c.opens_at else None,
                 'prazo_pagamento_item': c.prazo_pagamento_item.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_item else None,
                 'frete_inter': str(c.frete_inter) if c.frete_inter is not None else None,
@@ -189,30 +201,43 @@ class CreationsHubView(StaffRequiredMixin, View):
 
 
 class CreateGroupView(StaffRequiredMixin, View):
-    """Cadastra um novo Grupo ou Solista de K-pop com upload de logo/imagem."""
+    """Cadastra um novo Grupo ou Solista de K-pop."""
 
     def post(self, request):
         name = request.POST.get('name', '').strip()
-        image_url = request.POST.get('image_url', '').strip()
+        description = request.POST.get('description', '').strip()
         image_file = request.FILES.get('image_file')
         image_base64 = request.POST.get('image_base64', '').strip()
-        description = request.POST.get('description', '').strip()
+        image_url_input = request.POST.get('image_url', '').strip()
+
+        color_hex = request.POST.get('color_hex', '').strip()
 
         if not name:
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
 
-        final_image_url = process_image_upload(
+        image_url = process_image_upload(
             file_obj=image_file,
             base64_str=image_base64,
-            folder='groups/logos',
-            fallback_url=image_url
+            folder='groups',
+            fallback_url=image_url_input
         )
+
+        if color_hex:
+            if not color_hex.startswith('#') and len(color_hex) in (3, 6):
+                color_hex = f"#{color_hex}"
+        elif image_url:
+            try:
+                from apps.groups.color_utils import extract_dominant_color
+                color_hex = extract_dominant_color(image_url) or ''
+            except Exception:
+                color_hex = ''
 
         try:
             group = KpopGroup.objects.create(
                 name=name,
-                image_url=final_image_url,
+                image_url=image_url,
+                color_hex=color_hex,
                 description=description
             )
             messages.success(request, f"🎤 Grupo/Solista '{group.name}' cadastrado com sucesso! Agora você pode criar uma Era para ele.")
@@ -223,16 +248,75 @@ class CreateGroupView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=group')
 
 
+class UpdateGroupView(StaffRequiredMixin, View):
+    """Atualiza as informações de um Grupo ou Solista existente."""
+
+    def post(self, request):
+        group_id = request.POST.get('group_id')
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        image_file = request.FILES.get('image_file')
+        image_base64 = request.POST.get('image_base64', '').strip()
+        image_url_input = request.POST.get('image_url', '').strip()
+
+        color_hex = request.POST.get('color_hex', '').strip()
+
+        if not group_id:
+            messages.error(request, "Selecione um grupo para atualizar.")
+            return redirect('/creations/?tab=group')
+
+        group = get_object_or_404(KpopGroup, id=group_id)
+
+        if not name:
+            messages.error(request, "O nome do grupo é obrigatório.")
+            return redirect('/creations/?tab=group')
+
+        image_url = process_image_upload(
+            file_obj=image_file,
+            base64_str=image_base64,
+            folder='groups',
+            fallback_url=image_url_input or group.image_url
+        )
+
+        if color_hex:
+            if not color_hex.startswith('#') and len(color_hex) in (3, 6):
+                color_hex = f"#{color_hex}"
+            group.color_hex = color_hex
+        elif image_url:
+            # Modo Auto: extrai ou re-extrai a cor da imagem do grupo
+            try:
+                from apps.groups.color_utils import extract_dominant_color
+                group.color_hex = extract_dominant_color(image_url) or ''
+            except Exception as e:
+                logger.error(f"Erro ao extrair cor do grupo: {e}")
+                group.color_hex = ''
+        else:
+            group.color_hex = ''
+
+        try:
+            group.name = name
+            group.description = description
+            group.image_url = image_url
+            group.save()
+            messages.success(request, f"🎤 Grupo '{group.name}' atualizado com sucesso!")
+            return redirect('/creations/?tab=group')
+        except Exception as e:
+            logger.error(f"Erro ao atualizar grupo: {e}")
+            messages.error(request, f"Erro ao atualizar grupo: {e}")
+            return redirect('/creations/?tab=group')
+
+
 class CreateEraView(StaffRequiredMixin, View):
-    """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo com upload de banner."""
+    """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo."""
 
     def post(self, request):
         group_id = request.POST.get('group_id')
         name = request.POST.get('name', '').strip()
         release_date = request.POST.get('release_date') or None
-        banner_url = request.POST.get('banner_url', '').strip()
         banner_file = request.FILES.get('banner_file')
         banner_base64 = request.POST.get('banner_base64', '').strip()
+        banner_url_input = request.POST.get('banner_url', '').strip()
+        color_hex = request.POST.get('color_hex', '').strip()
         description = request.POST.get('description', '').strip()
 
         if not group_id or not name:
@@ -241,22 +325,44 @@ class CreateEraView(StaffRequiredMixin, View):
 
         group = get_object_or_404(KpopGroup, id=group_id)
 
-        final_banner_url = process_image_upload(
+        banner_url = process_image_upload(
             file_obj=banner_file,
             base64_str=banner_base64,
-            folder='eras/banners',
-            fallback_url=banner_url
+            folder='eras',
+            fallback_url=banner_url_input
         )
+
+        if color_hex:
+            if not color_hex.startswith('#') and len(color_hex) in (3, 6):
+                color_hex = f"#{color_hex}"
+        elif banner_url:
+            try:
+                from apps.groups.color_utils import extract_dominant_color
+                color_hex = extract_dominant_color(banner_url) or ''
+            except Exception:
+                color_hex = ''
+        elif group and (getattr(group, 'color_hex', None) or getattr(group, 'image_url', None)):
+            if getattr(group, 'color_hex', None):
+                color_hex = group.color_hex
+            elif getattr(group, 'image_url', None):
+                try:
+                    from apps.groups.color_utils import extract_dominant_color
+                    color_hex = extract_dominant_color(group.image_url) or ''
+                except Exception:
+                    color_hex = ''
+        else:
+            color_hex = ''
 
         try:
             era = Era.objects.create(
                 group=group,
                 name=name,
                 release_date=release_date,
-                banner_url=final_banner_url,
+                banner_url=banner_url,
+                color_hex=color_hex,
                 description=description
             )
-            messages.success(request, f"💿 Era '{era.name}' ({group.name}) criada com sucesso! Você já pode abrir uma CEG para esta Era.")
+            messages.success(request, f"CD Era '{era.name}' ({group.name}) criada com sucesso! Você já pode abrir uma CEG para esta Era.")
             return redirect('/creations/?tab=ceg')
         except Exception as e:
             logger.error(f"Erro ao criar era: {e}")
@@ -264,10 +370,83 @@ class CreateEraView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=era')
 
 
+class UpdateEraView(StaffRequiredMixin, View):
+    """Atualiza as informações de uma Era / Comeback existente."""
+
+    def post(self, request):
+        era_id = request.POST.get('era_id')
+        group_id = request.POST.get('group_id')
+        name = request.POST.get('name', '').strip()
+        release_date = request.POST.get('release_date') or None
+        banner_file = request.FILES.get('banner_file')
+        banner_base64 = request.POST.get('banner_base64', '').strip()
+        banner_url_input = request.POST.get('banner_url', '').strip()
+        color_hex = request.POST.get('color_hex', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if not era_id:
+            messages.error(request, "Selecione uma Era para atualizar.")
+            return redirect('/creations/?tab=era')
+
+        era = get_object_or_404(Era, id=era_id)
+
+        if not group_id or not name:
+            messages.error(request, "Selecione o Grupo e preencha o Nome da Era.")
+            return redirect('/creations/?tab=era')
+
+        group = get_object_or_404(KpopGroup, id=group_id)
+
+        banner_url = process_image_upload(
+            file_obj=banner_file,
+            base64_str=banner_base64,
+            folder='eras',
+            fallback_url=banner_url_input or era.banner_url
+        )
+
+        if color_hex:
+            if not color_hex.startswith('#') and len(color_hex) in (3, 6):
+                color_hex = f"#{color_hex}"
+            era.color_hex = color_hex
+        elif banner_url:
+            # Modo Auto: extrai ou re-extrai a cor predominante do banner
+            try:
+                from apps.groups.color_utils import extract_dominant_color
+                extracted = extract_dominant_color(banner_url)
+                era.color_hex = extracted or ''
+            except Exception as e:
+                logger.error(f"Erro ao extrair cor da era: {e}")
+                era.color_hex = ''
+        elif group and (getattr(group, 'color_hex', None) or getattr(group, 'image_url', None)):
+            # Se a Era não possui banner próprio, herda a cor do Grupo
+            if getattr(group, 'color_hex', None):
+                era.color_hex = group.color_hex
+            elif getattr(group, 'image_url', None):
+                try:
+                    from apps.groups.color_utils import extract_dominant_color
+                    era.color_hex = extract_dominant_color(group.image_url) or ''
+                except Exception:
+                    era.color_hex = ''
+        else:
+            era.color_hex = ''
+
+        try:
+            era.group = group
+            era.name = name
+            era.release_date = release_date
+            era.banner_url = banner_url
+            era.description = description
+            era.save()
+            messages.success(request, f"CD Era '{era.name}' ({group.name}) atualizada com sucesso!")
+            return redirect('/creations/?tab=era')
+        except Exception as e:
+            logger.error(f"Erro ao atualizar era: {e}")
+            messages.error(request, f"Erro ao atualizar era: {e}")
+            return redirect('/creations/?tab=era')
+
+
 class CreateCEGView(StaffRequiredMixin, View):
     """
     Cadastra uma nova CEG completa com:
-    - Upload direto de Banner / Foto da CEG (arquivo, base64 ou URL)
     - Informações gerais (datas, status, chave pix, regras, prazos, taxas)
     - Construtor dinâmico de itens/photocards com valores
     - Geração automática do Set #1 e de seus slots físicos
@@ -288,16 +467,7 @@ class CreateCEGView(StaffRequiredMixin, View):
         pix_key = request.POST.get('pix_key', '').strip()
         pix_instructions = request.POST.get('pix_instructions', '').strip()
         banner_url = request.POST.get('banner_url', '').strip()
-        banner_file = request.FILES.get('banner_file')
-        banner_base64 = request.POST.get('banner_base64', '').strip()
         description = request.POST.get('description', '').strip()
-
-        final_banner_url = process_image_upload(
-            file_obj=banner_file,
-            base64_str=banner_base64,
-            folder='cegs/banners',
-            fallback_url=banner_url
-        )
 
         initial_sets_count = int(request.POST.get('initial_sets_count', 1) or 1)
         initial_sets_count = max(1, min(initial_sets_count, 10))
@@ -347,19 +517,18 @@ class CreateCEGView(StaffRequiredMixin, View):
             item_tipos = request.POST.getlist('item_tipo_id[]')
 
             for idx, i_name in enumerate(item_names):
-                if not i_name.strip():
-                    continue
-                items_payload.append({
-                    'name': i_name.strip(),
-                    'member_name': item_members[idx].strip() if idx < len(item_members) else '',
-                    'item_type': item_types[idx] if idx < len(item_types) else CEGItemDefinition.ItemType.PHOTOCARD,
-                    'tipo_item_id': item_tipos[idx] if idx < len(item_tipos) else None,
-                    'default_price': item_prices[idx] if idx < len(item_prices) else '0.00',
-                    'image_url': item_images[idx] if idx < len(item_images) else '',
-                    'order_index': idx + 1
-                })
+                if i_name.strip():
+                    items_payload.append({
+                        'name': i_name.strip(),
+                        'member_name': item_members[idx].strip() if idx < len(item_members) else '',
+                        'item_type': item_types[idx].strip() if idx < len(item_types) else CEGItemDefinition.ItemType.PHOTOCARD,
+                        'tipo_item_id': item_tipos[idx].strip() if idx < len(item_tipos) else '',
+                        'default_price': item_prices[idx].strip() if idx < len(item_prices) else '45.00',
+                        'image_url': item_images[idx].strip() if idx < len(item_images) else '',
+                        'order_index': idx + 1,
+                    })
 
-        # Processa vínculo com Caixa internacional se informada
+        # Atrela caixa existente se especificada
         caixa = None
         shipping_status = Caixa.Status.EM_CONSOLIDACAO
         if caixa_id:
@@ -388,7 +557,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                     prazo_pagamento_taxa_aduaneira=prazo_pagamento_taxa_aduaneira,
                     pix_key=pix_key,
                     pix_instructions=pix_instructions,
-                    banner_url=final_banner_url,
+                    banner_url=banner_url,
                     description=description
                 )
 

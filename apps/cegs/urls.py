@@ -16,7 +16,9 @@ from .views import (
 from .creations_views import (
     CreationsHubView,
     CreateGroupView,
+    UpdateGroupView,
     CreateEraView,
+    UpdateEraView,
     CreateCEGView,
     CreateSetView,
     AddItemToCEGView,
@@ -43,9 +45,11 @@ from .itens_individuais_views import (
     ParticipantLookupAPIView,
 )
 from .envios_views import (
-    EnviosNacionaisView,
+    ConsultaJoinerView,
+    EnviosNacionaisDashboardView,
     EmpacotarItensView,
     MarcarPacoteEnviadoView,
+    MarcarPacoteEntregueAdminView,
     AtualizarPacoteView,
     DesempacotarItemView,
     ExcluirPacoteView,
@@ -55,6 +59,7 @@ from .allocator_views import (
     CEGBulkAllocatorView,
     CEGBulkAllocatorAPIView,
 )
+from .audit_views import AuditDashboardView
 from apps.participants.views import BulkParticipantCreateView
 
 urlpatterns = [
@@ -76,16 +81,21 @@ urlpatterns = [
     path('creations/', CreationsHubView.as_view(), name='creations_hub'),
     path('creations/participantes/em-massa/', BulkParticipantCreateView.as_view(), name='creations_bulk_participant'),
     path('creations/group/create/', CreateGroupView.as_view(), name='create_group'),
+    path('creations/group/update/', UpdateGroupView.as_view(), name='update_group'),
     path('creations/era/create/', CreateEraView.as_view(), name='create_era'),
+    path('creations/era/update/', UpdateEraView.as_view(), name='update_era'),
     path('creations/ceg/create/', CreateCEGView.as_view(), name='create_ceg'),
     path('creations/set/create/', CreateSetView.as_view(), name='create_set'),
     path('creations/item/create/', AddItemToCEGView.as_view(), name='add_item_to_ceg'),
 
-    # Consulta Joiner (Gestão de Envios Nacionais por Joiner / Empacotamento & Rastreio)
-    path('consulta-joiner/', EnviosNacionaisView.as_view(), name='consulta_joiner'),
-    path('envios/', EnviosNacionaisView.as_view(), name='envios_nacionais'),
+    # 1. Consulta Joiner (Visão 360º de itens, pagamentos e envios de cada participante)
+    path('consulta-joiner/', ConsultaJoinerView.as_view(), name='consulta_joiner'),
+
+    # 2. Envios Nacionais & Pacotes (Dashboard Global com todos os envios, filtros e feedbacks)
+    path('envios/', EnviosNacionaisDashboardView.as_view(), name='envios_nacionais'),
     path('envios/empacotar/', EmpacotarItensView.as_view(), name='empacotar_itens'),
     path('envios/pacote/<int:pacote_id>/marcar-enviado/', MarcarPacoteEnviadoView.as_view(), name='marcar_pacote_enviado'),
+    path('envios/pacote/<int:pacote_id>/marcar-entregue/', MarcarPacoteEntregueAdminView.as_view(), name='marcar_pacote_entregue'),
     path('envios/pacote/<int:pacote_id>/atualizar/', AtualizarPacoteView.as_view(), name='atualizar_pacote'),
     path('envios/desempacotar/', DesempacotarItemView.as_view(), name='desempacotar_item'),
     path('envios/pacote/<int:pacote_id>/excluir/', ExcluirPacoteView.as_view(), name='excluir_pacote'),
@@ -110,4 +120,8 @@ urlpatterns = [
     path('caixas/<slug:slug>/lancar-taxas/', CaixaDistributeRatesView.as_view(), name='caixa_distribute_rates'),
     path('tipos-item/criar/', TipoItemCreateView.as_view(), name='tipo_item_create'),
     path('tipos-item/<int:pk>/deletar/', TipoItemDeleteView.as_view(), name='tipo_item_delete'),
+
+    # Auditoria e Logs de Atividades
+    path('auditoria/', AuditDashboardView.as_view(), name='auditoria_logs'),
+    path('logs/', AuditDashboardView.as_view(), name='auditoria_logs_alias'),
 ]

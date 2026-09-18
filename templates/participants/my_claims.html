@@ -258,6 +258,32 @@
                             </div>
                         </div>
 
+                        <!-- Avaliação & Feedback do Joiner -->
+                        {% if pacote.feedback_rating %}
+                            <div class="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200/90 space-y-1 text-xs">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-amber-900 flex items-center gap-1">
+                                        <span>⭐</span>
+                                        <span>Sua Avaliação:</span>
+                                    </span>
+                                    <span class="text-amber-600 font-black tracking-widest text-xs">
+                                        {% for i in "12345"|make_list %}
+                                            {% if forloop.counter <= pacote.feedback_rating %}★{% else %}☆{% endif %}
+                                        {% endfor %}
+                                        <span class="text-[10px] text-amber-800 ml-0.5">({{ pacote.feedback_rating }}/5)</span>
+                                    </span>
+                                </div>
+                                {% if pacote.feedback_texto %}
+                                    <p class="text-slate-700 italic text-[11px] bg-white/80 p-1.5 rounded-lg border border-amber-100 leading-snug">
+                                        "{{ pacote.feedback_texto }}"
+                                    </p>
+                                {% endif %}
+                                {% if pacote.feedback_data %}
+                                    <span class="text-[9px] text-slate-400 block text-right">Enviado em {{ pacote.feedback_data|date:"d/m/Y H:i" }}</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
                         <!-- Rodapé do Card do Pacote -->
                         <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
                             <span>Modalidade: <strong>{{ pacote.transportadora }}</strong></span>
@@ -265,8 +291,96 @@
                                 <span>Frete: <strong>R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</strong></span>
                             {% endif %}
                         </div>
+
+                        <!-- Botões de Ação do Participante -->
+                        {% if pacote.status == 'ENVIADO' %}
+                            <button type="button"
+                                    @click="openConfirmDeliveryModal('{{ pacote.id }}', '{{ pacote.identificador }}')"
+                                    class="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                <span>✅</span>
+                                <span>Confirmar Recebimento & Avaliar</span>
+                            </button>
+                        {% elif pacote.status == 'ENTREGUE' and not pacote.feedback_rating %}
+                            <button type="button"
+                                    @click="openConfirmDeliveryModal('{{ pacote.id }}', '{{ pacote.identificador }}')"
+                                    class="w-full px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer">
+                                <span>⭐</span>
+                                <span>Deixar Depoimento & Avaliação</span>
+                            </button>
+                        {% endif %}
                     </div>
                 {% endfor %}
+            </div>
+        </div>
+
+        <!-- MODAL: CONFIRMAR ENTREGA & DEIXAR FEEDBACK -->
+        <div x-show="deliveryModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="deliveryModalOpen = false"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200" @click.stop>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🎉</span>
+                            <div>
+                                <h3 class="text-base font-black text-slate-900">Confirmar Recebimento</h3>
+                                <p class="text-[11px] text-slate-400">Pacote <span class="font-bold text-slate-700" x-text="deliveryPacoteIdentificador"></span></p>
+                            </div>
+                        </div>
+                        <button type="button" @click="deliveryModalOpen = false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+                    </div>
+
+                    <form :action="'/me/pacotes/' + deliveryPacoteId + '/confirmar-entrega/'" method="post" class="space-y-4">
+                        {% csrf_token %}
+
+                        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start gap-2">
+                            <span class="text-base mt-0.5">📦</span>
+                            <div>
+                                <strong>Seus photocards chegaram?</strong>
+                                <p class="text-[11px] text-emerald-700 mt-0.5">
+                                    Ao confirmar o recebimento, o status do pacote é alterado para <strong>Entregue</strong> e o organizador é notificado.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Avaliação por Estrelas -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 block">Sua Avaliação (1 a 5 estrelas)</label>
+                            <div class="flex items-center gap-2">
+                                <template x-for="star in [1, 2, 3, 4, 5]" :key="star">
+                                    <button type="button" @click="deliveryRating = star"
+                                            class="text-2xl transition transform hover:scale-125 focus:outline-none cursor-pointer"
+                                            :class="star <= deliveryRating ? 'text-amber-400' : 'text-slate-300'">
+                                        ★
+                                    </button>
+                                </template>
+                                <span class="ml-2 text-xs font-bold text-amber-800" x-text="deliveryRating + ' de 5 estrelas'"></span>
+                                <input type="hidden" name="rating" :value="deliveryRating">
+                            </div>
+                        </div>
+
+                        <!-- Campo de Depoimento / Feedback -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-700 block">
+                                Depoimento / Comentário <span class="text-slate-400 font-normal">(Opcional)</span>
+                            </label>
+                            <textarea name="feedback" rows="3"
+                                      placeholder="Conte como os itens chegaram (embalagem, brindes, estado dos cards)..."
+                                      class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-2">
+                            <button type="button" @click="deliveryModalOpen = false"
+                                    class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition cursor-pointer">
+                                Voltar
+                            </button>
+                            <button type="submit"
+                                    class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5 cursor-pointer">
+                                <span>✅</span>
+                                <span>Confirmar Entrega</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     {% endif %}
@@ -1324,6 +1438,16 @@ function myClaimsApp() {
             } catch (err) {
                 console.error('Erro ao marcar todas notificações:', err);
             }
+        },
+        deliveryModalOpen: false,
+        deliveryPacoteId: '',
+        deliveryPacoteIdentificador: '',
+        deliveryRating: 5,
+        openConfirmDeliveryModal(id, identificador) {
+            this.deliveryPacoteId = id;
+            this.deliveryPacoteIdentificador = identificador;
+            this.deliveryRating = 5;
+            this.deliveryModalOpen = true;
         }
     };
 }

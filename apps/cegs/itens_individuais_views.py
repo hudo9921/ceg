@@ -423,6 +423,19 @@ class ToggleItemPaymentView(StaffRequiredMixin, View):
             new_val = item.frete_inter_pago
             item.save(update_fields=['frete_inter_pago'])
 
+        # Registra auditoria da alteração de pagamento
+        try:
+            from apps.cegs.audit_service import AuditService
+            AuditService.log_payment_change(
+                item_individual=item,
+                field_name=tipo,
+                old_value=not new_val,
+                new_value=new_val,
+                actor=request.user,
+            )
+        except Exception:
+            pass
+
         if is_ajax:
             return JsonResponse({
                 'success': True,

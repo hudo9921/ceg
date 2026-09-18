@@ -134,9 +134,9 @@ class EnviosNacionaisTests(TestCase):
         self.assertContains(resp, 'Consulta Joiner')
 
     def test_view_participant_items_and_filters(self):
-        """Ao selecionar um participante, exibe seus slots e itens Mercari com métricas financeiras."""
+        """Ao selecionar um participante na Consulta Joiner, exibe seus slots e itens Mercari com métricas financeiras."""
         self.client.login(username='admin_staff', password='password123')
-        resp = self.client.get(f"{reverse('envios_nacionais')}?participant_id={self.participant.id}")
+        resp = self.client.get(f"{reverse('consulta_joiner')}?participant_id={self.participant.id}")
 
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Maria Silva')
@@ -376,3 +376,95 @@ class EnviosNacionaisTests(TestCase):
         self.assertTrue(data['is_item_paid'])
         self.item_mercari.refresh_from_db()
         self.assertTrue(self.item_mercari.produto_pago)
+
+    def test_envios_nacionais_global_dashboard(self):
+        """Testa o painel geral de envios nacionais (sem selecionar participante) e filtros."""
+        self.client.login(username='admin_staff', password='password123')
+
+        pacote1 = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-GLOBAL-01',
+            status=PacoteNacional.Status.EM_PREPARACAO
+        )
+        pacote2 = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-GLOBAL-02',
+            status=PacoteNacional.Status.ENVIADO,
+            codigo_rastreio='NL999888777BR'
+        )
+        pacote3 = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-GLOBAL-03',
+            status=PacoteNacional.Status.ENTREGUE,
+            feedback_rating=5,
+            feedback_texto='Melhor embalagem de todas!'
+        )
+
+        resp = self.client.get(reverse('envios_nacionais'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'PAC-GLOBAL-01')
+        self.assertContains(resp, 'PAC-GLOBAL-02')
+        self.assertContains(resp, 'PAC-GLOBAL-03')
+        self.assertEqual(resp.context['stats']['total_pacotes'], 3)
+        self.assertEqual(resp.context['stats']['em_preparacao_count'], 1)
+        self.assertEqual(resp.context['stats']['enviados_count'], 1)
+        self.assertEqual(resp.context['stats']['entregues_count'], 1)
+        self.assertEqual(resp.context['stats']['com_feedback_count'], 1)
+        self.assertEqual(resp.context['stats']['media_feedback'], 5.0)
+
+        # Filtro por feedback
+        resp_feedback = self.client.get(f"{reverse('envios_nacionais')}?feedback=com_feedback")
+        self.assertEqual(resp_feedback.status_code, 200)
+        self.assertContains(resp_feedback, 'PAC-GLOBAL-03')
+        self.assertNotContains(resp_feedback, 'PAC-GLOBAL-01')
+
+    def test_marcar_pacote_entregue_admin(self):
+        """Testa o operador staff marcando o pacote como entregue."""
+        self.client.login(username='admin_staff', password='password123')
+
+        pacote = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-ENTREGA-ADMIN',
+            status=PacoteNacional.Status.ENVIADO
+        )
+
+        resp = self.client.post(reverse('marcar_pacote_entregue', args=[pacote.id]))
+        self.assertEqual(resp.status_code, 302)
+
+        pacote.refresh_from_db()
+        self.assertEqual(pacote.status, PacoteNacional.Status.ENTREGUE)
+        self.assertEqual(pacote.entregue_por, 'ADMIN')
+        self.assertIsNotNone(pacote.data_entrega)
+
+    def test_confirmar_entrega_joiner_com_feedback(self):
+        """Testa o joiner confirmando a entrega do pacote e enviando nota e depoimento."""
+        pacote = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-FEEDBACK-TEST',
+            status=PacoteNacional.Status.ENVIADO,
+            codigo_rastreio='BR000111222BR'
+        )
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        resp = self.client.post(reverse('confirmar_entrega_pacote', args=[pacote.id]), {
+            'rating': '5',
+            'feedback': 'Chegou super rápido e os cards vieram com toploader! Amei muito! ❤️'
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertRedirects(resp, reverse('my_claims'))
+
+        pacote.refresh_from_db()
+        self.assertEqual(pacote.status, PacoteNacional.Status.ENTREGUE)
+        self.assertEqual(pacote.entregue_por, 'JOINER')
+        self.assertEqual(pacote.feedback_rating, 5)
+        self.assertEqual(pacote.feedback_texto, 'Chegou super rápido e os cards vieram com toploader! Amei muito! ❤️')
+        self.assertIsNotNone(pacote.feedback_data)
+
+        # Verifica na página de meus claims
+        resp_claims = self.client.get(reverse('my_claims'))
+        self.assertContains(resp_claims, 'Sua Avaliação:')
+        self.assertContains(resp_claims, 'Chegou super rápido e os cards vieram com toploader!')
+

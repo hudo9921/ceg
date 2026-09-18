@@ -1,5 +1,5 @@
 import json
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import AccessMixin
@@ -503,4 +503,38 @@ class LogoutView(View):
         request.session.pop('participant_id', None)
         messages.info(request, "Você encerrou sua sessão com sucesso.")
         return redirect('home')
+
+
+class ConfirmarEntregaPacoteView(View):
+    """
+    Permite que o participante autenticado marque seu pacote como entregue
+    e envie uma nota (1 a 5 estrelas) e feedback/comentário.
+    """
+    def post(self, request, pacote_id):
+        participant_id = request.session.get('participant_id')
+        if not participant_id:
+            messages.error(request, "Você precisa estar conectado com seu WhatsApp para confirmar a entrega.")
+            return redirect('login_otp')
+
+        participant = get_object_or_404(Participant, id=participant_id)
+        from apps.cegs.models import PacoteNacional
+        pacote = get_object_or_404(PacoteNacional, id=pacote_id, participant=participant)
+
+        rating_str = request.POST.get('rating', '').strip()
+        feedback_texto = request.POST.get('feedback', '').strip()
+
+        rating = None
+        if rating_str:
+            try:
+                rating = int(rating_str)
+            except ValueError:
+                pass
+
+        pacote.marcar_como_entregue(by='JOINER', rating=rating, feedback=feedback_texto)
+
+        messages.success(
+            request,
+            f"🎉 Entrega do pacote {pacote.identificador} confirmada com sucesso! Muito obrigado pela sua avaliação e feedback!"
+        )
+        return redirect('my_claims')
 

@@ -1,1091 +1,531 @@
 {% extends 'base.html' %}
 
-{% block title %}Consulta Joiner — Itens, Pagamentos & Envios | K-pop CEG Manager{% endblock %}
+{% block title %}Envios Nacionais & Gestão de Pacotes | K-pop CEG Manager{% endblock %}
 
 {% block content %}
-<div class="space-y-8" x-data="enviosNacionaisApp()">
+<div class="space-y-8" x-data="enviosDashboardApp()">
     <div style="display: none;">{% csrf_token %}</div>
-
-    <!-- Toast Flutuante de Feedback em Tempo Real -->
-    <div x-show="toastMessage" x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-         x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-         class="fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 text-xs font-bold max-w-sm pointer-events-none">
-        <span class="text-base text-emerald-400">✨</span>
-        <span x-text="toastMessage"></span>
-    </div>
 
     <!-- Cabeçalho Principal -->
     <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div class="space-y-1">
             <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Auditoria de Joiners & Operacional</span>
+                <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Logística & Despacho Nacional</span>
                 <span class="px-2 py-0.5 bg-pink-100 text-pink-700 font-black text-[10px] rounded-full uppercase tracking-wider">Staff / Admin</span>
             </div>
             <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                <span>🔍</span>
-                <span>Consulta Joiner</span>
+                <span>🚚</span>
+                <span>Envios Nacionais & Gestão de Pacotes</span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-500">
-                Consulte todos os itens/cards do participante, acesse diretamente a CEG, alterne pagamentos de item, inter e taxa com 1 clique e organize envios físicos.
+                Acompanhe todos os pacotes físicos montados, despachos com código de rastreamento, entregas confirmadas e avaliações dos clientes.
             </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
+            <a href="{% url 'consulta_joiner' %}" class="px-4 py-2 bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                <span>🔍</span>
+                <span>Consulta Joiner 360º</span>
+            </a>
             <a href="{% url 'caixas_dashboard' %}" class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                 <span>✈️</span>
                 <span>Caixas & Remessas (KR/JP)</span>
             </a>
-            <a href="{% url 'cegs_status' %}" class="px-4 py-2 bg-pink-50 text-pink-700 border border-pink-200/80 hover:bg-pink-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                <span>📦</span>
-                <span>Status das CEGs</span>
-            </a>
         </div>
     </div>
 
-    <!-- SELETOR E BUSCA DE JOINER -->
-    <div class="bg-gradient-to-r from-pink-50 via-white to-purple-50 rounded-2xl border border-pink-200/80 p-5 sm:p-6 shadow-sm space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-pink-600 text-white flex items-center justify-center text-sm font-bold shadow-2xs">
-                    👤
-                </div>
-                <div>
-                    <h2 class="text-sm sm:text-base font-black text-slate-900">Selecione o Joiner (Participante)</h2>
-                    <p class="text-xs text-slate-500">Busque por nome, apelido, WhatsApp ou @ do Twitter/Instagram</p>
-                </div>
-            </div>
+    <!-- CARDS DE MÉTRICAS GLOBAIS DE LOGÍSTICA -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Total de Pacotes -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total de Pacotes</div>
+            <div class="text-2xl font-black text-slate-900">{{ stats.total_pacotes }}</div>
+            <div class="text-[11px] text-slate-500">Todos os envios gerados</div>
+        </div>
 
-            {% if selected_participant %}
+        <!-- Em Preparação -->
+        <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Em Preparação</div>
+            <div class="text-2xl font-black text-amber-900">{{ stats.em_preparacao_count }}</div>
+            <div class="text-[11px] text-amber-700">Aguardando despacho</div>
+        </div>
+
+        <!-- Enviados em Trânsito -->
+        <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Enviados / Trânsito</div>
+            <div class="text-2xl font-black text-blue-900">{{ stats.enviados_count }}</div>
+            <div class="text-[11px] text-blue-700">Com código de rastreio</div>
+        </div>
+
+        <!-- Entregues -->
+        <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Entregues</div>
+            <div class="text-2xl font-black text-emerald-900">{{ stats.entregues_count }}</div>
+            <div class="text-[11px] text-emerald-700">Concluídos com sucesso</div>
+        </div>
+
+        <!-- Feedbacks Recebidos -->
+        <div class="bg-purple-50/70 p-4 rounded-2xl border border-purple-200 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-purple-800 uppercase tracking-wider">Avaliações</div>
+            <div class="text-2xl font-black text-purple-900">{{ stats.com_feedback_count }}</div>
+            <div class="text-[11px] text-purple-700">Feedbacks enviados</div>
+        </div>
+
+        <!-- Média de Avaliação -->
+        <div class="bg-pink-50/70 p-4 rounded-2xl border border-pink-200 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Satisfação Média</div>
+            <div class="text-2xl font-black text-pink-900 flex items-center gap-1">
+                {% if stats.media_feedback %}
+                    <span>⭐</span>
+                    <span>{{ stats.media_feedback }}</span>
+                    <span class="text-xs text-pink-600 font-bold">/5</span>
+                {% else %}
+                    <span class="text-slate-400 text-lg font-bold">N/A</span>
+                {% endif %}
+            </div>
+            <div class="text-[11px] text-pink-700">Média das notas de joiners</div>
+        </div>
+    </div>
+
+    <!-- BARRA DE FILTROS & BUSCA DE ENVIOS -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <form method="get" action="{% url 'envios_nacionais' %}" class="space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-500">Visualizando:</span>
-                    <span class="px-3 py-1 bg-white border border-pink-300 rounded-lg text-xs font-black text-pink-700 shadow-2xs">
-                        {{ selected_participant.display_name }}
+                    <span class="text-base font-bold text-slate-800">Filtrar Envios Nacionais</span>
+                    <span class="px-2.5 py-0.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-full">
+                        {{ pacotes|length }} pacote(s) encontrado(s)
                     </span>
-                    <a href="{% url 'consulta_joiner' %}" class="text-xs text-slate-400 hover:text-red-600 underline font-medium">
-                        Limpar seleção
-                    </a>
                 </div>
-            {% endif %}
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            <!-- Dropdown / Select Direto -->
-            <div class="md:col-span-8">
-                <form method="get" action="{% url 'consulta_joiner' %}" id="form-select-participant">
-                    <div class="relative">
-                        <select name="participant_id" id="select-participant" onchange="this.form.submit()"
-                                class="w-full bg-white border border-slate-300 rounded-xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-pink-500 focus:border-pink-500 cursor-pointer">
-                            <option value="">-- Escolha um participante com itens pendentes de envio --</option>
-                            {% for p in participants_with_counts %}
-                                <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
-                                    {{ p.name }}{% if p.username %} [{{ p.username }}]{% endif %}{% if p.social_handle %} ({{ p.social_handle }}){% endif %} — {{ p.unpacked_slots|add:p.unpacked_mercari }} item(ns) livres para empacotar / {{ p.total_slots|add:p.total_mercari }} total
-                                </option>
-                            {% endfor %}
-                            <optgroup label="Todos os Participantes Cadastrados">
-                                {% for p in all_participants %}
-                                    <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
-                                        {{ p.name }} ({{ p.formatted_phone }})
-                                    </option>
-                                {% endfor %}
-                            </optgroup>
-                        </select>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Dica Rápida -->
-            <div class="md:col-span-4 text-xs text-slate-500 bg-white/70 p-3 rounded-xl border border-slate-200">
-                💡 <strong class="text-slate-700">Dica:</strong> Clique nos botões de <span class="font-bold text-slate-700">Item, Inter e Taxa</span> de cada card para alternar rapidamente entre Pago e Pendente.
-            </div>
-        </div>
-
-        <!-- Chips de Acesso Rápido a Joiners com Mais Itens Livres -->
-        {% if participants_with_counts %}
-            <div class="pt-2 border-t border-pink-100/60 flex flex-wrap items-center gap-2">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mr-1">Joiners em destaque:</span>
-                {% for p in participants_with_counts|slice:":8" %}
-                    <a href="{% url 'consulta_joiner' %}?participant_id={{ p.id }}"
-                       class="px-2.5 py-1 rounded-lg text-xs font-semibold transition border shadow-2xs flex items-center gap-1.5
-                              {% if selected_participant and selected_participant.id == p.id %}bg-pink-600 text-white border-pink-600{% else %}bg-white text-slate-700 border-slate-200 hover:border-pink-300 hover:text-pink-600{% endif %}">
-                        <span>{{ p.display_name }}</span>
-                        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black {% if selected_participant and selected_participant.id == p.id %}bg-pink-700 text-white{% else %}bg-pink-100 text-pink-700{% endif %}">
-                            {{ p.unpacked_slots|add:p.unpacked_mercari }}
-                        </span>
+                {% if status_filter or participant_filter or feedback_filter or search_query %}
+                    <a href="{% url 'envios_nacionais' %}" class="text-xs text-pink-600 hover:text-pink-700 font-bold underline underline-offset-2">
+                        Limpar todos os filtros
                     </a>
-                {% endfor %}
+                {% endif %}
             </div>
-        {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-end">
+                <!-- Busca Textual -->
+                <div class="md:col-span-4 space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Busca Rápida</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="Rastreio, PAC-XXXX, nome ou @..."
+                               class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                </div>
+
+                <!-- Filtro de Status -->
+                <div class="md:col-span-3 space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Status do Pacote</label>
+                    <select name="status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:bg-white">
+                        <option value="">Todos os Status</option>
+                        <option value="EM_PREPARACAO" {% if status_filter == 'EM_PREPARACAO' %}selected{% endif %}>📦 Em Preparação / Embalando</option>
+                        <option value="ENVIADO" {% if status_filter == 'ENVIADO' %}selected{% endif %}>🚀 Enviado Nacionalmente</option>
+                        <option value="ENTREGUE" {% if status_filter == 'ENTREGUE' %}selected{% endif %}>🎉 Entregue</option>
+                    </select>
+                </div>
+
+                <!-- Filtro de Participante (Joiner) -->
+                <div class="md:col-span-3 space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Destinatário (Joiner)</label>
+                    <select name="participant_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:bg-white">
+                        <option value="">Todos os Joiners</option>
+                        {% for p in all_participants %}
+                            <option value="{{ p.id }}" {% if participant_filter == p.id|stringformat:"s" %}selected{% endif %}>
+                                {{ p.name }}{% if p.username %} [{{ p.username }}]{% endif %}{% if p.social_handle %} ({{ p.social_handle }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro de Feedback -->
+                <div class="md:col-span-2 space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Avaliações</label>
+                    <select name="feedback" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:bg-white">
+                        <option value="">Todos</option>
+                        <option value="com_feedback" {% if feedback_filter == 'com_feedback' %}selected{% endif %}>⭐ Com Avaliação</option>
+                        <option value="sem_feedback" {% if feedback_filter == 'sem_feedback' %}selected{% endif %}>Sem Avaliação</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-1">
+                <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                    <span>🔍</span>
+                    <span>Aplicar Filtros</span>
+                </button>
+            </div>
+        </form>
     </div>
 
-    {% if not selected_participant %}
-        <!-- Estado Inicial: Nenhum Participante Selecionado -->
+    <!-- LISTAGEM GERAL DE PACOTES NACIONAIS -->
+    {% if not pacotes %}
         <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm space-y-4">
-            <div class="w-16 h-16 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center text-3xl mx-auto">
+            <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center text-3xl mx-auto">
                 📦
             </div>
-            <div class="max-w-md mx-auto space-y-1">
-                <h3 class="text-lg font-black text-slate-800">Selecione um Participante para Iniciar</h3>
-                <p class="text-xs sm:text-sm text-slate-500">
-                    Escolha um joiner no menu acima para auditar pagamentos, filtrar cards por era/grupo/caixa, alterar status de pagamento e montar os pacotes de envio físico.
+            <div class="max-w-md mx-auto space-y-2">
+                <h3 class="text-base font-black text-slate-800">Nenhum pacote encontrado com os filtros atuais</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Você pode limpar os filtros ou acessar a <strong class="text-slate-700">Consulta Joiner</strong> para empacotar novos itens de participantes que já chegaram.
                 </p>
+                <div class="pt-2">
+                    <a href="{% url 'consulta_joiner' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                        <span>🔍</span>
+                        <span>Ir para Consulta Joiner & Empacotar</span>
+                    </a>
+                </div>
             </div>
         </div>
     {% else %}
-
-        <!-- DETALHES DO JOINER SELECIONADO & MÉTRICAS -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-slate-100">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Joiner Ativo</span>
-                        <template x-if="statsData.unpacked_count > 0">
-                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold text-[10px] rounded-full"
-                                  x-text="statsData.unpacked_count + ' item(ns) para empacotar'">
-                                {{ stats.unpacked_count }} item(ns) para empacotar
-                            </span>
-                        </template>
-                        <template x-if="statsData.unpacked_count === 0">
-                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full">
-                                Todos os itens já empacotados
-                            </span>
-                        </template>
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>{{ selected_participant.name }}</span>
-                        {% if selected_participant.username %}
-                            <span class="text-sm font-semibold text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-200">
-                                @{{ selected_participant.username }}
-                            </span>
-                        {% endif %}
-                    </h2>
-                    <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
-                        <span>📱 WhatsApp: <strong class="text-slate-800">{{ selected_participant.formatted_phone }}</strong></span>
-                        <span>•</span>
-                        {% if selected_participant.social_handle %}
-                            <span>@ Social: <strong class="text-pink-600">{{ selected_participant.social_handle }}</strong></span>
-                            <span>•</span>
-                        {% endif %}
-                        <span>Cadastrado em: {{ selected_participant.created_at|date:"d/m/Y" }}</span>
-                    </div>
-                    {% if selected_participant.notes %}
-                        <div class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 mt-2">
-                            📍 <strong>Anotações / Endereço:</strong> {{ selected_participant.notes }}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <a href="https://wa.me/{{ selected_participant.whatsapp }}" target="_blank"
-                       class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                        <span>💬</span>
-                        <span>WhatsApp</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- CARDS DE RESUMO FINANCEIRO E EMPACOTAMENTO (REATIVOS) -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                <!-- Total Itens -->
-                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div class="text-[11px] font-bold text-slate-400 uppercase">Total Geral</div>
-                    <div class="text-xl font-black text-slate-900" x-text="statsData.total_items">{{ stats.total_items }}</div>
-                    <div class="text-[10px] text-slate-500">Cards & Mercari</div>
-                </div>
-
-                <!-- Não Empacotados -->
-                <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-1">
-                    <div class="text-[11px] font-bold text-amber-800 uppercase">Livres p/ Envio</div>
-                    <div class="text-xl font-black text-amber-900" x-text="statsData.unpacked_count">{{ stats.unpacked_count }}</div>
-                    <div class="text-[10px] text-amber-700">Aguardando pacote</div>
-                </div>
-
-                <!-- Em Preparação -->
-                <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-1">
-                    <div class="text-[11px] font-bold text-blue-800 uppercase">Em Preparação</div>
-                    <div class="text-xl font-black text-blue-900" x-text="statsData.packed_count">{{ stats.packed_count }}</div>
-                    <div class="text-[10px] text-blue-700">Embalando / Pacote</div>
-                </div>
-
-                <!-- Já Enviados Nacionalmente -->
-                <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 space-y-1">
-                    <div class="text-[11px] font-bold text-emerald-800 uppercase">Já Despachados</div>
-                    <div class="text-xl font-black text-emerald-900" x-text="statsData.enviados_count">{{ stats.enviados_count }}</div>
-                    <div class="text-[10px] text-emerald-700">Com rastreio</div>
-                </div>
-
-                <!-- Frete Inter Pendente -->
-                <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-1">
-                    <div class="text-[11px] font-bold text-purple-800 uppercase">Inter Pendente</div>
-                    <div class="text-xl font-black text-purple-900" x-text="statsData.inter_unpaid_count">{{ stats.inter_unpaid_count }}</div>
-                    <div class="text-[10px] text-purple-700">A pagar frete inter</div>
-                </div>
-
-                <!-- Taxa Pendente -->
-                <div class="bg-rose-50/70 p-3.5 rounded-xl border border-rose-200 space-y-1">
-                    <div class="text-[11px] font-bold text-rose-800 uppercase">Taxa Pendente</div>
-                    <div class="text-xl font-black text-rose-900" x-text="statsData.taxa_unpaid_count">{{ stats.taxa_unpaid_count }}</div>
-                    <div class="text-[10px] text-rose-700">A pagar taxa aduana</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SEÇÃO DE PACOTES NACIONAIS JÁ EXISTENTES DO JOINER -->
-        {% if pacotes %}
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-base font-bold">
-                            📦
-                        </div>
-                        <div>
-                            <h3 class="text-base font-black text-slate-900">Pacotes Nacionais Deste Joiner</h3>
-                            <p class="text-xs text-slate-500">Acompanhe os envios criados, adicione código de rastreamento e marque como enviado</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for pacote in pacotes %}
-                        <div class="border rounded-2xl p-4 shadow-2xs space-y-3 flex flex-col justify-between transition hover:shadow-sm
-                                    {% if pacote.status == 'ENVIADO' %}border-emerald-200 bg-emerald-50/20{% elif pacote.status == 'ENTREGUE' %}border-slate-200 bg-slate-50/40{% else %}border-blue-200 bg-blue-50/20{% endif %}">
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                                        <span>📦</span>
-                                        <span>{{ pacote.identificador }}</span>
-                                    </span>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider
-                                                 {% if pacote.status == 'ENVIADO' %}bg-emerald-100 text-emerald-800{% elif pacote.status == 'ENTREGUE' %}bg-slate-200 text-slate-700{% else %}bg-amber-100 text-amber-800{% endif %}">
-                                        {{ pacote.get_status_display }}
-                                    </span>
-                                </div>
-
-                                <div class="text-xs text-slate-600 space-y-1 bg-white/80 p-2.5 rounded-xl border border-slate-200/80">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-slate-500">Transportadora:</span>
-                                        <strong class="text-slate-800">{{ pacote.transportadora }}</strong>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-slate-500">Frete Nacional:</span>
-                                        <span>
-                                            {% if pacote.valor_frete_nacional %}
-                                                <strong>R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</strong>
-                                                {% if pacote.is_frete_pago %}
-                                                    <span class="text-emerald-600 font-bold ml-1">✅ Pago</span>
-                                                {% else %}
-                                                    <span class="text-amber-600 font-bold ml-1">⚠️ A Pagar</span>
-                                                {% endif %}
-                                            {% else %}
-                                                <span class="text-slate-400">Não informado</span>
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    {% if pacote.codigo_rastreio %}
-                                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                                            <span class="text-slate-500">Rastreio:</span>
-                                            <a href="{{ pacote.tracking_url }}" target="_blank"
-                                               class="text-blue-600 hover:text-blue-800 font-black tracking-wider text-xs underline flex items-center gap-1">
-                                                <span>{{ pacote.codigo_rastreio }}</span>
-                                                <span class="text-[10px]">↗</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                    {% if pacote.data_envio %}
-                                        <div class="flex items-center justify-between text-[11px] text-slate-500">
-                                            <span>Postado em:</span>
-                                            <span>{{ pacote.data_envio|date:"d/m/Y H:i" }}</span>
-                                        </div>
-                                    {% endif %}
-                                </div>
-
-                                <!-- Resumo dos itens dentro do pacote -->
-                                <div class="space-y-1">
-                                    <div class="text-[11px] font-bold text-slate-400 uppercase flex items-center justify-between">
-                                        <span>Itens no Pacote:</span>
-                                        <span class="text-slate-700 font-black">{{ pacote.total_itens }} item(ns)</span>
-                                    </div>
-                                    <div class="max-h-28 overflow-y-auto space-y-1 pr-1 text-xs">
-                                        {% for slot in pacote.slots.all %}
-                                            <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-100 text-[11px]">
-                                                <span class="truncate max-w-[170px]" title="{{ slot.item_definition.name }}">
-                                                    🎴 {{ slot.item_definition.name }} ({{ slot.set.ceg.title|truncatechars:18 }})
-                                                </span>
-                                                {% if pacote.status == 'EM_PREPARACAO' %}
-                                                    <form method="post" action="{% url 'desempacotar_item' %}" onsubmit="return confirm('Remover este item do pacote?')">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="item_uid" value="slot_{{ slot.id }}">
-                                                        <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
-                                                        <button type="submit" class="text-slate-300 hover:text-red-500 text-xs px-1" title="Remover do pacote">✕</button>
-                                                    </form>
-                                                {% else %}
-                                                    <span class="text-emerald-600 text-[10px] font-bold" title="Item já enviado">✓ Enviado</span>
-                                                {% endif %}
-                                            </div>
-                                        {% endfor %}
-                                        {% for item in pacote.itens_individuais.all %}
-                                            <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-100 text-[11px]">
-                                                <span class="truncate max-w-[170px]" title="{{ item.nome }}">
-                                                    🛍️ {{ item.nome }}
-                                                </span>
-                                                {% if pacote.status == 'EM_PREPARACAO' %}
-                                                    <form method="post" action="{% url 'desempacotar_item' %}" onsubmit="return confirm('Remover este item do pacote?')">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="item_uid" value="mercari_{{ item.id }}">
-                                                        <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
-                                                        <button type="submit" class="text-slate-300 hover:text-red-500 text-xs px-1" title="Remover do pacote">✕</button>
-                                                    </form>
-                                                {% else %}
-                                                    <span class="text-emerald-600 text-[10px] font-bold" title="Item já enviado">✓ Enviado</span>
-                                                {% endif %}
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Botões de Ação do Pacote -->
-                            <div class="pt-2 border-t border-slate-200/80 flex flex-wrap items-center gap-2">
-                                {% if pacote.status == 'EM_PREPARACAO' %}
-                                    <button type="button" @click="openDispatchModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora }}', '{{ pacote.codigo_rastreio }}')"
-                                            class="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                                        <span>🚀</span>
-                                        <span>Marcar como Enviado Nacionalmente</span>
-                                    </button>
-                                {% endif %}
-
-                                <button type="button" @click="openEditPacoteModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora }}', '{{ pacote.codigo_rastreio }}', '{{ pacote.valor_frete_nacional|default:'' }}', {{ pacote.is_frete_pago|yesno:'true,false' }}, '{{ pacote.status }}', '{{ pacote.observacoes|escapejs }}')"
-                                        class="flex-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition text-center">
-                                    ✏️ Editar
-                                </button>
-
-                                {% if pacote.status == 'EM_PREPARACAO' %}
-                                    <form method="post" action="{% url 'excluir_pacote' pacote.id %}" onsubmit="return confirm('Excluir este pacote? Os itens voltarão para a fila de não empacotados.')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="px-2.5 py-1.5 text-slate-400 hover:text-red-600 rounded-xl text-xs font-bold transition" title="Excluir pacote">
-                                            🗑️
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
-
-        <!-- BARRA DE FILTROS DINÂMICOS DOS ITENS -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-base font-bold text-slate-800">Filtrar Itens do Joiner</span>
-                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-full"
-                          x-text="filteredItems.length + ' de ' + items.length + ' item(ns)'"></span>
-                </div>
-
-                <button type="button" @click="resetFilters()"
-                        class="text-xs text-pink-600 hover:text-pink-700 font-bold underline underline-offset-2">
-                    Limpar todos os filtros
-                </button>
-            </div>
-
-            <!-- Grade de Filtros -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <!-- Filtro por Grupo -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase">Grupo</label>
-                    <select x-model="filterGrupo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700">
-                        <option value="ALL">Todos os Grupos</option>
-                        {% for g in groups_list %}
-                            <option value="{{ g.id }}">{{ g.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Filtro por Era -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase">Era</label>
-                    <select x-model="filterEra" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700">
-                        <option value="ALL">Todas as Eras</option>
-                        {% for e in eras_list %}
-                            <option value="{{ e.id }}">{{ e.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Filtro por Caixa -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase">Caixa / Remessa</label>
-                    <select x-model="filterCaixa" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700">
-                        <option value="ALL">Todas as Caixas</option>
-                        {% for c in caixas_list %}
-                            <option value="{{ c.id }}">{{ c.nome }} ({{ c.origem }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Filtro Pagamento do Item -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase">Item Quitado?</label>
-                    <select x-model="filterItemPaid" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700">
-                        <option value="ALL">Todos</option>
-                        <option value="PAID">✅ Item Pago</option>
-                        <option value="UNPAID">⏳ Item Pendente</option>
-                    </select>
-                </div>
-
-                <!-- Filtro Frete Internacional -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase">Frete Inter</label>
-                    <select x-model="filterInterPaid" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700">
-                        <option value="ALL">Todos</option>
-                        <option value="PAID">✈️ Frete Inter Pago</option>
-                        <option value="UNPAID">⚠️ Frete Inter Pendente</option>
-                    </select>
-                </div>
-
-                <!-- Filtro Taxa Aduaneira -->
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase">Taxa Aduaneira</label>
-                    <select x-model="filterTaxaPaid" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700">
-                        <option value="ALL">Todas</option>
-                        <option value="PAID">🏛️ Taxa Paga</option>
-                        <option value="UNPAID">⚠️ Taxa Pendente</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Filtros Rápidos de Empacotamento / Abas -->
-            <div class="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100">
-                <div class="flex flex-wrap items-center gap-1.5">
-                    <button type="button" @click="filterPacote = 'ALL'"
-                            class="px-3 py-1 rounded-lg text-xs font-bold transition"
-                            :class="filterPacote === 'ALL' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                        Todos os Itens
-                    </button>
-                    <button type="button" @click="filterPacote = 'UNPACKED'"
-                            class="px-3 py-1 rounded-lg text-xs font-bold transition"
-                            :class="filterPacote === 'UNPACKED' ? 'bg-amber-600 text-white shadow-2xs' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'">
-                        Livres p/ Empacotar (Não associados)
-                    </button>
-                    <button type="button" @click="filterPacote = 'PACKED'"
-                            class="px-3 py-1 rounded-lg text-xs font-bold transition"
-                            :class="filterPacote === 'PACKED' ? 'bg-blue-600 text-white shadow-2xs' : 'bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100'">
-                        Embalando / Em Pacote
-                    </button>
-                    <button type="button" @click="filterPacote = 'ENVIADO'"
-                            class="px-3 py-1 rounded-lg text-xs font-bold transition"
-                            :class="filterPacote === 'ENVIADO' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'">
-                        Enviados Nacionalmente
-                    </button>
-                </div>
-
-                <!-- Busca por texto -->
-                <div class="relative w-full sm:w-64">
-                    <input type="text" x-model="searchQuery" placeholder="Buscar por card, integrante..."
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-pink-500">
-                    <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- BARRA FLUTUANTE DE EMPACOTAMENTO QUANDO HÁ ITENS SELECIONADOS -->
-        <div x-show="selectedUids.length > 0"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 translate-y-4"
-             x-transition:enter-end="opacity-100 translate-y-0"
-             class="sticky top-4 z-40 bg-slate-900 text-white rounded-2xl p-4 shadow-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <span class="w-8 h-8 rounded-xl bg-pink-500 text-white flex items-center justify-center font-black text-sm">
-                    📦
-                </span>
-                <div>
-                    <span class="text-sm font-black" x-text="selectedUids.length + ' item(ns) selecionado(s)'"></span>
-                    <p class="text-xs text-slate-300">Prontos para serem agrupados em um pacote nacional de envio.</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button type="button" @click="clearSelection()"
-                        class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition">
-                    Desmarcar
-                </button>
-                <button type="button" @click="openPackagingModal()"
-                        class="flex-1 sm:flex-none px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
-                    <span>📦</span>
-                    <span>Empacotar Selecionados</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- TABELA / LISTA DE ITENS DO JOINER -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <input type="checkbox" id="check-all-visible" @change="toggleSelectAll($event.target.checked)"
-                           :checked="allVisibleSelected"
-                           class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
-                    <label for="check-all-visible" class="text-xs font-black text-slate-800 cursor-pointer select-none">
-                        Selecionar Todos os Visíveis (<span x-text="eligibleVisibleItems.length"></span> livres p/ empacotar)
-                    </label>
-                </div>
-                <div class="text-xs text-slate-400">
-                    💡 Clique nos botões <strong class="text-slate-600">Item, Inter e Taxa</strong> para alternar pagamento
-                </div>
-            </div>
-
-            <template x-if="filteredItems.length === 0">
-                <div class="p-12 text-center text-slate-400 space-y-2">
-                    <div class="text-3xl">🔎</div>
-                    <div class="text-sm font-bold text-slate-600">Nenhum item encontrado com os filtros selecionados.</div>
-                    <p class="text-xs text-slate-400">Tente redefinir os filtros ou mudar a categoria.</p>
-                </div>
-            </template>
-
-            <div class="divide-y divide-slate-100">
-                <template x-for="item in filteredItems" :key="item.uid">
-                    <div class="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition hover:bg-slate-50/80"
-                         :class="selectedUids.includes(item.uid) ? 'bg-pink-50/40' : (item.pacote_status === 'ENVIADO' ? 'bg-emerald-50/10' : '')">
-
-                        <!-- Checkbox & Informações do Item -->
-                        <div class="flex items-start sm:items-center space-x-3.5 flex-1">
-                            <!-- Se já foi enviado ou entregue: badge fixo, bloqueado para seleção -->
-                            <template x-if="item.pacote_status === 'ENVIADO' || item.pacote_status === 'ENTREGUE'">
-                                <div class="mt-1 sm:mt-0 w-5 h-5 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black border border-emerald-300 shadow-2xs select-none"
-                                     title="Item já enviado nacionalmente (não pode ser empacotado novamente)">
-                                    ✓
-                                </div>
-                            </template>
-
-                            <!-- Se não foi enviado: checkbox ativo para empacotamento -->
-                            <template x-if="item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE'">
-                                <input type="checkbox" :value="item.uid"
-                                       @change="toggleItemSelection(item.uid)"
-                                       :checked="selectedUids.includes(item.uid)"
-                                       class="mt-1 sm:mt-0 rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
-                            </template>
-
-                            <!-- Thumbnail / Foto com link para a CEG ou anúncio original -->
-                            <div class="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200 shadow-sm relative"
-                                 :class="item.image_url ? 'bg-slate-900' : 'bg-slate-100'">
-                                <template x-if="item.type === 'slot'">
-                                    <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
-                                       class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
-                                       :title="'Abrir CEG: ' + item.ceg_titulo">
-                                        <template x-if="item.image_url">
-                                            <img :src="item.image_url" :alt="item.nome"
-                                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
-                                        </template>
-                                        <template x-if="!item.image_url">
-                                            <span class="text-2xl opacity-40">🎴</span>
-                                        </template>
-                                    </a>
-                                </template>
-                                <template x-if="item.type === 'mercari'">
-                                    <div class="w-full h-full flex items-center justify-center">
-                                        <template x-if="item.link_pedido">
-                                            <a :href="item.link_pedido" target="_blank"
-                                               class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
-                                               title="Abrir anúncio Mercari">
-                                                <template x-if="item.image_url">
-                                                    <img :src="item.image_url" :alt="item.nome"
-                                                         class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
-                                                </template>
-                                                <template x-if="!item.image_url">
-                                                    <span class="text-2xl opacity-40">🛍️</span>
-                                                </template>
-                                            </a>
-                                        </template>
-                                        <template x-if="!item.link_pedido">
-                                            <div class="w-full h-full flex items-center justify-center">
-                                                <template x-if="item.image_url">
-                                                    <img :src="item.image_url" :alt="item.nome"
-                                                         class="w-full h-full object-contain">
-                                                </template>
-                                                <template x-if="!item.image_url">
-                                                    <span class="text-2xl opacity-40">🛍️</span>
-                                                </template>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <!-- Textos & Detalhes com Links Diretos -->
-                            <div class="space-y-0.5">
-                                <div class="flex flex-wrap items-center gap-1.5">
-                                    <span class="px-2 py-0.2 bg-slate-100 text-slate-700 text-[10px] font-black rounded-md uppercase"
-                                          x-text="item.tipo_item"></span>
-                                    <span class="text-xs font-bold text-pink-600" x-text="item.group_name"></span>
-                                    <template x-if="item.era_name">
-                                        <span class="text-xs text-slate-400" x-text="'• ' + item.era_name"></span>
-                                    </template>
-                                </div>
-
-                                <!-- Nome do Item com Link Clicável -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for pacote in pacotes %}
+                <div class="border rounded-2xl p-5 shadow-2xs space-y-4 flex flex-col justify-between transition hover:shadow-md bg-white
+                            {% if pacote.status == 'ENVIADO' %}border-blue-200 hover:border-blue-300{% elif pacote.status == 'ENTREGUE' %}border-emerald-200 hover:border-emerald-300{% else %}border-amber-200 hover:border-amber-300{% endif %}">
+                    <div class="space-y-3">
+                        <!-- Topo do Card: Identificador e Badge de Status -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl flex items-center justify-center text-base font-bold shadow-2xs
+                                             {% if pacote.status == 'ENVIADO' %}bg-blue-100 text-blue-700{% elif pacote.status == 'ENTREGUE' %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+                                    📦
+                                </span>
                                 <div>
-                                    <template x-if="item.type === 'slot'">
-                                        <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
-                                           class="text-sm font-black text-slate-900 hover:text-pink-600 transition inline-flex items-center gap-1.5 group"
-                                           :title="'Acessar CEG: ' + item.ceg_titulo">
-                                            <span x-text="item.nome"></span>
-                                            <span class="text-slate-400 group-hover:text-pink-600 text-xs transition">↗</span>
-                                        </a>
-                                    </template>
-                                    <template x-if="item.type === 'mercari'">
-                                        <div>
-                                            <template x-if="item.link_pedido">
-                                                <a :href="item.link_pedido" target="_blank"
-                                                   class="text-sm font-black text-slate-900 hover:text-pink-600 transition inline-flex items-center gap-1.5 group"
-                                                   title="Acessar anúncio do produto original">
-                                                    <span x-text="item.nome"></span>
-                                                    <span class="text-slate-400 group-hover:text-pink-600 text-xs transition">↗</span>
-                                                </a>
-                                            </template>
-                                            <template x-if="!item.link_pedido">
-                                                <span class="text-sm font-black text-slate-900" x-text="item.nome"></span>
-                                            </template>
-                                        </div>
-                                    </template>
+                                    <span class="text-sm font-black text-slate-900 tracking-tight block">{{ pacote.identificador }}</span>
+                                    <span class="text-[10px] text-slate-400">Criado em {{ pacote.created_at|date:"d/m/Y" }}</span>
                                 </div>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
+                                         {% if pacote.status == 'ENVIADO' %}bg-blue-100 text-blue-800 border border-blue-200{% elif pacote.status == 'ENTREGUE' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
+                                {{ pacote.get_status_display }}
+                            </span>
+                        </div>
 
-                                <!-- Subtítulo: CEG & Caixa com Links -->
-                                <div class="text-xs text-slate-500 flex flex-wrap items-center gap-2">
-                                    <template x-if="item.type === 'slot'">
-                                        <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
-                                           class="font-medium text-slate-600 hover:text-pink-600 hover:underline inline-flex items-center gap-1"
-                                           :title="'Abrir CEG: ' + item.ceg_titulo">
-                                            <span x-text="item.ceg_titulo"></span>
-                                            <span class="text-[10px] text-slate-400">↗</span>
-                                        </a>
-                                    </template>
-                                    <template x-if="item.type === 'mercari'">
-                                        <span class="font-medium text-slate-600" x-text="item.ceg_titulo"></span>
-                                    </template>
+                        <!-- Card de Identificação do Joiner -->
+                        <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/80 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Destinatário</span>
+                                <a href="{% url 'consulta_joiner' %}?participant_id={{ pacote.participant_id }}"
+                                   class="text-[11px] font-bold text-pink-600 hover:text-pink-700 hover:underline flex items-center gap-1">
+                                    <span>Ver Joiner</span>
+                                    <span>↗</span>
+                                </a>
+                            </div>
+                            <div class="font-black text-slate-900 text-xs sm:text-sm">
+                                {{ pacote.participant.name }}
+                                {% if pacote.participant.username %}
+                                    <span class="text-xs font-semibold text-slate-500">(@{{ pacote.participant.username }})</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-500">
+                                <span>📱 {{ pacote.participant.formatted_phone }}</span>
+                                {% if pacote.participant.social_handle %}
                                     <span>•</span>
-                                    <template x-if="item.caixa_id">
-                                        <a :href="'/caixas/' + item.caixa_id + '/'" target="_blank"
-                                           class="text-slate-600 hover:text-pink-600 hover:underline"
-                                           :title="'Ver detalhes da caixa ' + item.caixa_nome"
-                                           x-text="'Caixa: ' + item.caixa_nome"></a>
-                                    </template>
-                                    <template x-if="!item.caixa_id">
-                                        <span class="text-slate-500" x-text="'Caixa: ' + item.caixa_nome"></span>
-                                    </template>
+                                    <span class="text-pink-600 font-medium">{{ pacote.participant.social_handle }}</span>
+                                {% endif %}
+                            </div>
+                            {% if pacote.participant.notes %}
+                                <p class="text-[11px] text-slate-600 pt-1 border-t border-slate-200/60 leading-tight">
+                                    📍 <strong>Endereço / Notas:</strong> {{ pacote.participant.notes }}
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Detalhes de Despacho & Rastreamento -->
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 space-y-2 text-xs text-slate-600">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500">Transportadora:</span>
+                                <strong class="text-slate-800">{{ pacote.transportadora }}</strong>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500">Frete Nacional:</span>
+                                <span>
+                                    {% if pacote.valor_frete_nacional %}
+                                        <strong>R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</strong>
+                                        {% if pacote.is_frete_pago %}
+                                            <span class="text-emerald-600 font-bold ml-1">✅ Pago</span>
+                                        {% else %}
+                                            <span class="text-amber-600 font-bold ml-1">⚠️ A Pagar</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-slate-400">Não informado</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            {% if pacote.codigo_rastreio %}
+                                <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                                    <span class="text-slate-500 font-medium">Código de Rastreio:</span>
+                                    <a href="{{ pacote.tracking_url }}" target="_blank"
+                                       class="text-blue-600 hover:text-blue-800 font-black tracking-wider text-xs underline flex items-center gap-1"
+                                       title="Rastrear nos Correios">
+                                        <span>{{ pacote.codigo_rastreio }}</span>
+                                        <span class="text-[10px]">↗</span>
+                                    </a>
                                 </div>
+                            {% endif %}
+
+                            {% if pacote.data_envio %}
+                                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                    <span>Data de Postagem:</span>
+                                    <span>{{ pacote.data_envio|date:"d/m/Y H:i" }}</span>
+                                </div>
+                            {% endif %}
+                            {% if pacote.data_entrega %}
+                                <div class="flex items-center justify-between text-[11px] text-emerald-700 font-medium">
+                                    <span>Data de Entrega:</span>
+                                    <span>{{ pacote.data_entrega|date:"d/m/Y H:i" }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Itens Dentro do Pacote -->
+                        <div class="space-y-1.5">
+                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center justify-between">
+                                <span>Itens no Pacote:</span>
+                                <span class="text-slate-700 font-black">{{ pacote.total_itens }} item(ns)</span>
+                            </div>
+                            <div class="max-h-24 overflow-y-auto space-y-1 pr-1 text-xs">
+                                {% for slot in pacote.slots.all %}
+                                    <div class="flex items-center justify-between bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 text-[11px]">
+                                        <span class="truncate max-w-[200px]" title="{{ slot.item_definition.name }}">
+                                            🎴 {{ slot.item_definition.name }} ({{ slot.set.ceg.title|truncatechars:16 }})
+                                        </span>
+                                        <span class="text-slate-400 font-mono text-[10px]">CEG</span>
+                                    </div>
+                                {% endfor %}
+                                {% for item in pacote.itens_individuais.all %}
+                                    <div class="flex items-center justify-between bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 text-[11px]">
+                                        <span class="truncate max-w-[200px]" title="{{ item.nome }}">
+                                            🛍️ {{ item.nome }}
+                                        </span>
+                                        <span class="text-slate-400 font-mono text-[10px]">Mercari</span>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Status Financeiros Interativos: Item, Inter, Taxa (Clicáveis) -->
-                        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-                            <!-- Botão Interativo: Pagamento do Item -->
-                            <button type="button"
-                                    @click.stop="togglePayment(item, 'item')"
-                                    :disabled="isToggling(item.uid, 'item')"
-                                    class="group relative text-center px-3 py-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition transform active:scale-95 hover:shadow-2xs focus:outline-none"
-                                    :class="item.is_item_paid 
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400' 
-                                        : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 hover:border-amber-400'"
-                                    title="Clique para alternar status do Item entre Pago e Pendente">
-                                <span class="block text-[9px] uppercase tracking-wider text-slate-400 group-hover:text-slate-600">Item ✎</span>
-                                <span class="inline-flex items-center gap-1">
-                                    <span x-show="isToggling(item.uid, 'item')" class="animate-spin text-[10px]" x-cloak>⏳</span>
-                                    <span x-text="item.is_item_paid ? '✅ Pago' : '⏳ Pendente'"></span>
-                                </span>
-                            </button>
-
-                            <!-- Botão Interativo: Frete Internacional -->
-                            <button type="button"
-                                    @click.stop="togglePayment(item, 'inter')"
-                                    :disabled="isToggling(item.uid, 'inter')"
-                                    class="group relative text-center px-3 py-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition transform active:scale-95 hover:shadow-2xs focus:outline-none"
-                                    :class="item.is_frete_inter_paid 
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400' 
-                                        : (item.frete_inter_valor > 0 ? 'bg-purple-50 text-purple-800 border-purple-300 hover:bg-purple-100 hover:border-purple-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100')"
-                                    title="Clique para alternar status do Frete Inter entre Pago e Pendente">
-                                <span class="block text-[9px] uppercase tracking-wider text-slate-400 group-hover:text-slate-600">Inter ✎</span>
-                                <span class="inline-flex items-center gap-1">
-                                    <span x-show="isToggling(item.uid, 'inter')" class="animate-spin text-[10px]" x-cloak>⏳</span>
-                                    <span x-text="item.is_frete_inter_paid ? '✈️ Pago' : (item.frete_inter_valor > 0 ? 'R$ ' + item.frete_inter_valor.toFixed(2) : 'A definir')"></span>
-                                </span>
-                            </button>
-
-                            <!-- Botão Interativo: Taxa Aduaneira -->
-                            <button type="button"
-                                    @click.stop="togglePayment(item, 'taxa')"
-                                    :disabled="isToggling(item.uid, 'taxa')"
-                                    class="group relative text-center px-3 py-1.5 rounded-xl border text-[11px] font-bold cursor-pointer transition transform active:scale-95 hover:shadow-2xs focus:outline-none"
-                                    :class="item.is_taxa_aduaneira_paid 
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400' 
-                                        : (item.taxa_aduaneira_valor > 0 ? 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100 hover:border-rose-400' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100')"
-                                    title="Clique para alternar status da Taxa Aduaneira entre Paga e Pendente">
-                                <span class="block text-[9px] uppercase tracking-wider text-slate-400 group-hover:text-slate-600">Taxa ✎</span>
-                                <span class="inline-flex items-center gap-1">
-                                    <span x-show="isToggling(item.uid, 'taxa')" class="animate-spin text-[10px]" x-cloak>⏳</span>
-                                    <span x-text="item.is_taxa_aduaneira_paid ? '🏛️ Paga' : (item.taxa_aduaneira_valor > 0 ? 'R$ ' + item.taxa_aduaneira_valor.toFixed(2) : 'A definir')"></span>
-                                </span>
-                            </button>
-
-                            <!-- Status do Pacote -->
-                            <div class="min-w-[140px] text-right">
-                                <!-- Pacote Já Enviado Nacionalmente / Entregue -->
-                                <template x-if="item.pacote_status === 'ENVIADO' || item.pacote_status === 'ENTREGUE'">
-                                    <div class="space-y-1">
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs"
-                                              title="Item já despachado nacionalmente">
-                                            <span>🚚</span>
-                                            <span x-text="item.pacote_status === 'ENTREGUE' ? 'Entregue' : 'Enviado'"></span>
-                                            <span class="text-[10px] font-mono opacity-80" x-text="'(' + item.pacote_identificador + ')'"></span>
-                                        </span>
-                                        <template x-if="item.pacote_rastreio">
-                                            <div>
-                                                <a :href="'https://rastreamento.correios.com.br/app/index.php?codigo=' + item.pacote_rastreio" target="_blank"
-                                                   class="text-[11px] font-mono font-black text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-0.5"
-                                                   title="Rastrear envio nacional">
-                                                    <span x-text="item.pacote_rastreio"></span>
-                                                    <span class="text-[9px]">↗</span>
-                                                </a>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                <!-- Pacote Em Preparação (Não Enviado ainda) -->
-                                <template x-if="item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE' && item.pacote_identificador">
-                                    <div class="space-y-0.5">
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                                            <span>📦</span>
-                                            <span x-text="item.pacote_identificador"></span>
-                                        </span>
-                                        <template x-if="item.pacote_rastreio">
-                                            <div class="text-[10px] font-bold text-blue-600 font-mono" x-text="item.pacote_rastreio"></div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                <!-- Sem Pacote / Livre -->
-                                <template x-if="!item.pacote_identificador">
-                                    <span class="inline-block px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold">
-                                        ⚪ Livre / Sem Pacote
+                        <!-- AVALIAÇÃO & FEEDBACK DO CLIENTE -->
+                        {% if pacote.feedback_rating %}
+                            <div class="p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 space-y-1.5 text-xs shadow-2xs">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-black text-amber-900 flex items-center gap-1.5">
+                                        <span>⭐</span>
+                                        <span>Avaliação do Joiner:</span>
                                     </span>
-                                </template>
+                                    <span class="text-amber-600 font-black tracking-widest text-sm">
+                                        {% for i in "12345"|make_list %}
+                                            {% if forloop.counter <= pacote.feedback_rating %}★{% else %}☆{% endif %}
+                                        {% endfor %}
+                                        <span class="text-xs text-amber-800 font-bold ml-0.5">({{ pacote.feedback_rating }}/5)</span>
+                                    </span>
+                                </div>
+                                {% if pacote.feedback_texto %}
+                                    <p class="text-slate-800 italic text-xs bg-white/80 p-2.5 rounded-lg border border-amber-200/70 leading-relaxed">
+                                        "{{ pacote.feedback_texto }}"
+                                    </p>
+                                {% endif %}
+                                {% if pacote.feedback_data %}
+                                    <div class="text-[10px] text-slate-400 text-right">
+                                        Enviado em {{ pacote.feedback_data|date:"d/m/Y H:i" }}
+                                    </div>
+                                {% endif %}
                             </div>
-                        </div>
-
+                        {% elif pacote.status == 'ENTREGUE' %}
+                            <div class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+                                <span class="flex items-center gap-1 font-medium">
+                                    <span>🎉</span>
+                                    <span>Entregue ({{ pacote.get_entregue_por_display|default:'Admin' }})</span>
+                                </span>
+                                <span class="text-amber-600 font-semibold text-[11px]">Aguardando feedback</span>
+                            </div>
+                        {% endif %}
                     </div>
-                </template>
-            </div>
-        </div>
 
+                    <!-- BOTÕES DE AÇÃO DO PACOTE -->
+                    <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                        {% if pacote.status == 'EM_PREPARACAO' %}
+                            <button type="button"
+                                    @click="openDispatchModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora }}', '{{ pacote.codigo_rastreio }}')"
+                                    class="w-full px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                                <span>🚀</span>
+                                <span>Despachar / Marcar como Enviado</span>
+                            </button>
+                        {% elif pacote.status == 'ENVIADO' %}
+                            <form method="post" action="{% url 'marcar_pacote_entregue' pacote.id %}" class="w-full"
+                                  onsubmit="return confirm('Marcar o pacote {{ pacote.identificador }} como ENTREGUE ao destinatário?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/envios/">
+                                <button type="submit"
+                                        class="w-full px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                                    <span>🎉</span>
+                                    <span>Marcar como Entregue</span>
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <button type="button"
+                                @click="openEditPacoteModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora }}', '{{ pacote.codigo_rastreio }}', '{{ pacote.valor_frete_nacional|default:'' }}', {{ pacote.is_frete_pago|yesno:'true,false' }}, '{{ pacote.status }}', '{{ pacote.observacoes|escapejs }}')"
+                                class="flex-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition text-center cursor-pointer">
+                            ✏️ Editar
+                        </button>
+
+                        <a href="{% url 'consulta_joiner' %}?participant_id={{ pacote.participant_id }}"
+                           class="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-xl text-xs font-bold transition text-center"
+                           title="Ver todos os itens e pagamentos deste joiner">
+                            👤 Joiner
+                        </a>
+
+                        {% if pacote.status == 'EM_PREPARACAO' %}
+                            <form method="post" action="{% url 'excluir_pacote' pacote.id %}" onsubmit="return confirm('Excluir este pacote? Os itens voltarão para a fila de não empacotados.')">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/envios/">
+                                <button type="submit" class="px-2.5 py-1.5 text-slate-400 hover:text-red-600 rounded-xl text-xs font-bold transition cursor-pointer" title="Excluir pacote">
+                                    🗑️
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-    <!-- MODAL 1: EMPACOTAMENTO DOS ITENS SELECIONADOS -->
-    <div x-show="packagingModalOpen" x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-6"
-             @click.away="packagingModalOpen = false">
-
-            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-lg font-bold">
-                        📦
+    <!-- MODAL 1: DESPACHO / MARCAR COMO ENVIADO -->
+    <div x-show="dispatchModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="dispatchModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200" @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🚀</span>
+                        <h3 class="text-base font-black text-slate-900">Despachar Pacote</h3>
                     </div>
-                    <div>
-                        <h3 class="text-base font-black text-slate-900">Empacotar Itens Selecionados</h3>
-                        <p class="text-xs text-slate-500">Agrupar <strong class="text-pink-600" x-text="selectedUids.length"></strong> item(ns) em envio nacional</p>
-                    </div>
+                    <button type="button" @click="dispatchModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
                 </div>
-                <button type="button" @click="packagingModalOpen = false" class="text-slate-400 hover:text-slate-600 text-xl font-bold">
-                    ✕
-                </button>
-            </div>
 
-            <form method="post" action="{% url 'empacotar_itens' %}" class="space-y-4">
-                {% csrf_token %}
-                <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
-                <input type="hidden" name="selected_uids" :value="selectedUids.join(',')">
+                <form :action="'/envios/pacote/' + dispatchPacoteId + '/marcar-enviado/'" method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="/envios/">
 
-                <!-- Escolha: Novo Pacote vs Pacote Existente -->
-                {% if pacotes %}
-                    <div class="space-y-2">
-                        <label class="text-xs font-bold text-slate-700">Destino do Empacotamento:</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="border rounded-xl p-3 cursor-pointer transition flex items-center gap-2"
-                                   :class="packagingAction === 'novo_pacote' ? 'bg-pink-50 border-pink-400 text-pink-700 font-bold' : 'border-slate-200 text-slate-600'">
-                                <input type="radio" name="action_type" value="novo_pacote" x-model="packagingAction" class="text-pink-600 focus:ring-pink-500">
-                                <span class="text-xs">Criar Novo Pacote</span>
-                            </label>
-                            <label class="border rounded-xl p-3 cursor-pointer transition flex items-center gap-2"
-                                   :class="packagingAction === 'adicionar_existente' ? 'bg-pink-50 border-pink-400 text-pink-700 font-bold' : 'border-slate-200 text-slate-600'">
-                                <input type="radio" name="action_type" value="adicionar_existente" x-model="packagingAction" class="text-pink-600 focus:ring-pink-500">
-                                <span class="text-xs">Pacote Existente</span>
-                            </label>
-                        </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                        <span class="text-slate-500">Pacote selecionado:</span>
+                        <strong class="text-slate-900 ml-1" x-text="dispatchPacoteIdentificador"></strong>
                     </div>
 
-                    <!-- Se escolher Adicionar a Pacote Existente -->
-                    <div x-show="packagingAction === 'adicionar_existente'" class="space-y-1">
-                        <label class="text-xs font-bold text-slate-700">Selecione o Pacote Existente:</label>
-                        <select name="pacote_id" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
-                            {% for p in pacotes %}
-                                {% if p.status == 'EM_PREPARACAO' %}
-                                    <option value="{{ p.id }}">{{ p.identificador }} ({{ p.transportadora }}) — {{ p.total_itens }} itens atuais</option>
-                                {% endif %}
-                            {% endfor %}
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Código de Rastreio <span class="text-red-500">*</span></label>
+                        <input type="text" name="codigo_rastreio" x-model="dispatchCodigoRastreio" required
+                               placeholder="Ex: NL123456789BR ou QD123456789BR"
+                               class="w-full uppercase font-mono px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-pink-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Transportadora / Modalidade</label>
+                        <input type="text" name="transportadora" x-model="dispatchTransportadora"
+                               placeholder="Ex: Correios Mini Envios, PAC, Sedex, Jadlog"
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-pink-500">
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" @click="dispatchModalOpen = false"
+                                class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                            <span>🚀</span>
+                            <span>Confirmar Despacho</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EDITAR PACOTE -->
+    <div x-show="editPacoteModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="editPacoteModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200" @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">✏️</span>
+                        <h3 class="text-base font-black text-slate-900">Editar Pacote</h3>
+                    </div>
+                    <button type="button" @click="editPacoteModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                </div>
+
+                <form :action="'/envios/pacote/' + editPacoteId + '/atualizar/'" method="post" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="/envios/">
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                        <span class="text-slate-500">Pacote:</span>
+                        <strong class="text-slate-900 ml-1" x-text="editPacoteIdentificador"></strong>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Status</label>
+                        <select name="status" x-model="editPacoteStatus" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
+                            <option value="EM_PREPARACAO">📦 Em Preparação / Embalando</option>
+                            <option value="ENVIADO">🚀 Enviado Nacionalmente</option>
+                            <option value="ENTREGUE">🎉 Entregue</option>
                         </select>
                     </div>
-                {% else %}
-                    <input type="hidden" name="action_type" value="novo_pacote">
-                {% endif %}
 
-                <!-- Campos de Criação de Novo Pacote -->
-                <div x-show="packagingAction === 'novo_pacote'" class="space-y-3.5">
                     <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-700">Identificador do Pacote (Opcional):</label>
-                        <input type="text" name="identificador" placeholder="Ex: PAC-2026-0001 (Automático se vazio)"
-                               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-pink-500">
+                        <label class="text-xs font-bold text-slate-700">Código de Rastreio</label>
+                        <input type="text" name="codigo_rastreio" x-model="editPacoteCodigoRastreio" placeholder="Ex: NL123456789BR"
+                               class="w-full uppercase font-mono px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-700">Modalidade / Envio:</label>
-                            <input type="text" name="transportadora" list="transportadoras-list" placeholder="Mini Envios, PAC, Sedex..." value="Correios Mini Envios"
-                                   class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-pink-500">
-                            <datalist id="transportadoras-list">
-                                <option value="Correios Mini Envios">
-                                <option value="Carta Registrada">
-                                <option value="Correios PAC">
-                                <option value="Correios Sedex">
-                                <option value="Jadlog">
-                                <option value="Entrega em Mãos">
-                            </datalist>
-                        </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700">Transportadora</label>
+                        <input type="text" name="transportadora" x-model="editPacoteTransportadora" placeholder="Ex: Correios"
+                               class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900">
+                    </div>
 
+                    <div class="grid grid-cols-2 gap-3 items-center">
                         <div class="space-y-1">
-                            <label class="text-xs font-bold text-slate-700">Valor Frete Nacional (R$):</label>
-                            <input type="text" name="valor_frete_nacional" placeholder="Ex: 18,50"
-                                   class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-pink-500">
+                            <label class="text-xs font-bold text-slate-700">Valor Frete (R$)</label>
+                            <input type="text" name="valor_frete_nacional" x-model="editPacoteValorFrete" placeholder="0,00"
+                                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900">
+                        </div>
+                        <div class="pt-5 flex items-center">
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                                <input type="checkbox" name="is_frete_pago" x-model="editPacoteIsFretePago" class="w-4 h-4 text-emerald-600 rounded">
+                                <span>Frete Pago?</span>
+                            </label>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="is_frete_pago" id="check-frete-pago" class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
-                        <label for="check-frete-pago" class="text-xs font-bold text-slate-700 cursor-pointer select-none">
-                            O comprador já realizou o pagamento do frete nacional
-                        </label>
-                    </div>
-
                     <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-700">Código de Rastreamento (se já tiver em mãos):</label>
-                        <input type="text" name="codigo_rastreio" placeholder="Ex: NL123456789BR"
-                               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono uppercase text-slate-800 focus:bg-white focus:ring-2 focus:ring-pink-500">
+                        <label class="text-xs font-bold text-slate-700">Anotações / Endereço</label>
+                        <textarea name="observacoes" x-model="editPacoteObservacoes" rows="2"
+                                  class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800"></textarea>
                     </div>
 
-                    <div class="p-3 bg-pink-50/60 rounded-xl border border-pink-100 flex items-center gap-2">
-                        <input type="checkbox" name="marcar_enviado" value="1" id="check-marcar-enviado" class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
-                        <label for="check-marcar-enviado" class="text-xs font-bold text-pink-900 cursor-pointer select-none">
-                            Marcar como ENVIADO NACIONALMENTE agora (já despachei o card físico)
-                        </label>
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" @click="editPacoteModalOpen = false" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold shadow">Salvar Alterações</button>
                     </div>
-
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-700">Anotações Internas / Observações:</label>
-                        <textarea name="observacoes" rows="2" placeholder="Notas sobre endereço, brindes inclusos, etc."
-                                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-pink-500"></textarea>
-                    </div>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                    <button type="button" @click="packagingModalOpen = false"
-                            class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5">
-                        <span>📦</span>
-                        <span>Confirmar Empacotamento</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 2: MARCAR COMO ENVIADO NACIONALMENTE (DESPACHO) -->
-    <div x-show="dispatchModalOpen" x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5"
-             @click.away="dispatchModalOpen = false">
-
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-base font-bold">
-                        🚀
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-black text-slate-900">Confirmar Envio Nacional</h3>
-                        <p class="text-xs text-slate-500" x-text="'Pacote: ' + dispatchPacoteIdentificador"></p>
-                    </div>
-                </div>
-                <button type="button" @click="dispatchModalOpen = false" class="text-slate-400 hover:text-slate-600 text-xl font-bold">
-                    ✕
-                </button>
+                </form>
             </div>
-
-            <form method="post" :action="'/envios/pacote/' + dispatchPacoteId + '/marcar-enviado/'" class="space-y-4">
-                {% csrf_token %}
-                <div class="text-xs text-slate-600 leading-relaxed bg-emerald-50/70 p-3 rounded-xl border border-emerald-200">
-                    Ao confirmar, o status deste pacote passará para <strong>Enviado Nacionalmente</strong> e uma notificação com o código de rastreamento será disponibilizada no painel do participante.
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-700">Código de Rastreamento (Correios / Transportadora):</label>
-                    <input type="text" name="codigo_rastreio" x-model="dispatchCodigoRastreio" required placeholder="Ex: NL123456789BR"
-                           class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-700">Transportadora:</label>
-                    <input type="text" name="transportadora" x-model="dispatchTransportadora" placeholder="Correios Mini Envios"
-                           class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500">
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                    <button type="button" @click="dispatchModalOpen = false"
-                            class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition">
-                        Voltar
-                    </button>
-                    <button type="submit"
-                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5">
-                        <span>🚀</span>
-                        <span>Despachar & Notificar Joiner</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 3: EDITAR PACOTE EXISTENTE -->
-    <div x-show="editPacoteModalOpen" x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-5"
-             @click.away="editPacoteModalOpen = false">
-
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold">
-                        ✏️
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-black text-slate-900">Editar Pacote</h3>
-                        <p class="text-xs text-slate-500" x-text="editPacoteIdentificador"></p>
-                    </div>
-                </div>
-                <button type="button" @click="editPacoteModalOpen = false" class="text-slate-400 hover:text-slate-600 text-xl font-bold">
-                    ✕
-                </button>
-            </div>
-
-            <form method="post" :action="'/envios/pacote/' + editPacoteId + '/atualizar/'" class="space-y-3.5">
-                {% csrf_token %}
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-700">Status do Pacote:</label>
-                    <select name="status" x-model="editPacoteStatus" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800">
-                        <option value="EM_PREPARACAO">Em Preparação / Embalando</option>
-                        <option value="ENVIADO">Enviado Nacionalmente</option>
-                        <option value="ENTREGUE">Entregue</option>
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-700">Transportadora:</label>
-                        <input type="text" name="transportadora" x-model="editPacoteTransportadora"
-                               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-700">Frete Nacional (R$):</label>
-                        <input type="text" name="valor_frete_nacional" x-model="editPacoteValorFrete"
-                               class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800">
-                    </div>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-700">Código de Rastreio:</label>
-                    <input type="text" name="codigo_rastreio" x-model="editPacoteCodigoRastreio"
-                           class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono uppercase text-slate-900">
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" name="is_frete_pago" value="1" id="edit-check-frete-pago" x-model="editPacoteIsFretePago"
-                           class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
-                    <label for="edit-check-frete-pago" class="text-xs font-bold text-slate-700 cursor-pointer select-none">
-                        Frete nacional quitado pelo comprador
-                    </label>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-700">Observações / Notas:</label>
-                    <textarea name="observacoes" x-model="editPacoteObservacoes" rows="2"
-                              class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800"></textarea>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                    <button type="button" @click="editPacoteModalOpen = false"
-                            class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold shadow transition">
-                        Salvar Alterações
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
 </div>
 
-<!-- Serialização de dados dos itens para Alpine.js -->
-<script id="items-data-json" type="application/json">
-    {{ items_data_json|safe }}
-</script>
-
 <script>
-function enviosNacionaisApp() {
-    let rawItems = [];
-    try {
-        const el = document.getElementById('items-data-json');
-        if (el && el.textContent) {
-            rawItems = JSON.parse(el.textContent);
-        }
-    } catch (e) {
-        console.error('Erro ao ler items_data_json:', e);
-    }
-
+function enviosDashboardApp() {
     return {
-        items: rawItems,
-        filterGrupo: 'ALL',
-        filterEra: 'ALL',
-        filterCaixa: 'ALL',
-        filterItemPaid: 'ALL',
-        filterInterPaid: 'ALL',
-        filterTaxaPaid: 'ALL',
-        filterPacote: 'ALL',
-        searchQuery: '',
-
-        selectedUids: [],
-        packagingModalOpen: false,
-        packagingAction: 'novo_pacote',
-
         dispatchModalOpen: false,
         dispatchPacoteId: '',
         dispatchPacoteIdentificador: '',
-        dispatchTransportadora: '',
+        dispatchTransportadora: 'Correios',
         dispatchCodigoRastreio: '',
 
         editPacoteModalOpen: false,
@@ -1098,242 +538,10 @@ function enviosNacionaisApp() {
         editPacoteStatus: 'EM_PREPARACAO',
         editPacoteObservacoes: '',
 
-        get filteredItems() {
-            return this.items.filter(item => {
-                // Filtro Grupo
-                if (this.filterGrupo !== 'ALL' && String(item.group_id) !== String(this.filterGrupo)) {
-                    return false;
-                }
-                // Filtro Era
-                if (this.filterEra !== 'ALL' && String(item.era_id) !== String(this.filterEra)) {
-                    return false;
-                }
-                // Filtro Caixa
-                if (this.filterCaixa !== 'ALL' && String(item.caixa_id) !== String(this.filterCaixa)) {
-                    return false;
-                }
-                // Filtro Item Pago
-                if (this.filterItemPaid === 'PAID' && !item.is_item_paid) return false;
-                if (this.filterItemPaid === 'UNPAID' && item.is_item_paid) return false;
-
-                // Filtro Frete Inter
-                if (this.filterInterPaid === 'PAID' && !item.is_frete_inter_paid) return false;
-                if (this.filterInterPaid === 'UNPAID' && item.is_frete_inter_paid) return false;
-
-                // Filtro Taxa Aduaneira
-                if (this.filterTaxaPaid === 'PAID' && !item.is_taxa_aduaneira_paid) return false;
-                if (this.filterTaxaPaid === 'UNPAID' && item.is_taxa_aduaneira_paid) return false;
-
-                // Filtro Status de Pacote
-                if (this.filterPacote === 'UNPACKED' && item.pacote_identificador) return false;
-                if (this.filterPacote === 'PACKED' && (!item.pacote_identificador || item.pacote_status === 'ENVIADO')) return false;
-                if (this.filterPacote === 'ENVIADO' && item.pacote_status !== 'ENVIADO') return false;
-
-                // Busca textual
-                if (this.searchQuery.trim()) {
-                    const q = this.searchQuery.toLowerCase();
-                    const match = (item.nome && item.nome.toLowerCase().includes(q)) ||
-                                  (item.integrante && item.integrante.toLowerCase().includes(q)) ||
-                                  (item.ceg_titulo && item.ceg_titulo.toLowerCase().includes(q)) ||
-                                  (item.caixa_nome && item.caixa_nome.toLowerCase().includes(q));
-                    if (!match) return false;
-                }
-
-                return true;
-            });
-        },
-
-        togglingKeys: [],
-
-        isToggling(uid, field) {
-            return this.togglingKeys.includes(uid + '_' + field);
-        },
-
-        toastMessage: '',
-        toastTimer: null,
-
-        statsData: {
-            total_items: {{ stats.total_items|default:0 }},
-            unpacked_count: {{ stats.unpacked_count|default:0 }},
-            packed_count: {{ stats.packed_count|default:0 }},
-            enviados_count: {{ stats.enviados_count|default:0 }},
-            item_paid_count: {{ stats.item_paid_count|default:0 }},
-            item_unpaid_count: {{ stats.item_unpaid_count|default:0 }},
-            inter_unpaid_count: {{ stats.inter_unpaid_count|default:0 }},
-            taxa_unpaid_count: {{ stats.taxa_unpaid_count|default:0 }},
-        },
-
-        showToast(msg) {
-            this.toastMessage = msg;
-            if (this.toastTimer) clearTimeout(this.toastTimer);
-            this.toastTimer = setTimeout(() => {
-                this.toastMessage = '';
-            }, 3500);
-        },
-
-        recalcStats() {
-            let itemPaid = 0, itemUnpaid = 0, interUnpaid = 0, taxaUnpaid = 0;
-            this.items.forEach(it => {
-                if (it.is_item_paid) {
-                    itemPaid++;
-                } else {
-                    itemUnpaid++;
-                }
-                if (it.frete_inter_valor > 0 && !it.is_frete_inter_paid) {
-                    interUnpaid++;
-                }
-                if (it.taxa_aduaneira_valor > 0 && !it.is_taxa_aduaneira_paid) {
-                    taxaUnpaid++;
-                }
-            });
-            this.statsData.item_paid_count = itemPaid;
-            this.statsData.item_unpaid_count = itemUnpaid;
-            this.statsData.inter_unpaid_count = interUnpaid;
-            this.statsData.taxa_unpaid_count = taxaUnpaid;
-        },
-
-        async togglePayment(item, field) {
-            const key = item.uid + '_' + field;
-            if (this.isToggling(item.uid, field)) return;
-            this.togglingKeys.push(key);
-
-            const getCookie = (name) => {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            };
-
-            const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
-            const csrf = getCookie('csrftoken') || (csrfEl ? csrfEl.value : '');
-
-            const url = item.type === 'slot'
-                ? '/slots/' + item.id + '/toggle-payment/'
-                : '/itens-individuais/' + item.id + '/toggle-payment/';
-
-            const bodyData = item.type === 'slot'
-                ? { field: field }
-                : { tipo: field, field: field };
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrf,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify(bodyData),
-                });
-
-                if (!res.ok) {
-                    let errMsg = 'Status ' + res.status;
-                    try {
-                        const errData = await res.json();
-                        errMsg = errData.message || errMsg;
-                    } catch(e) {
-                        const errTxt = await res.text();
-                        console.error('Resposta de erro do servidor:', errTxt);
-                    }
-                    this.showToast('❌ ' + errMsg);
-                    alert('Não foi possível alterar status: ' + errMsg);
-                    return;
-                }
-
-                const data = await res.json();
-                if (data.success) {
-                    // Atualiza o item correspondente no array raiz items
-                    const idx = this.items.findIndex(it => it.uid === item.uid);
-                    if (idx > -1) {
-                        if (data.is_item_paid !== undefined) this.items[idx].is_item_paid = Boolean(data.is_item_paid);
-                        if (data.is_frete_inter_paid !== undefined) this.items[idx].is_frete_inter_paid = Boolean(data.is_frete_inter_paid);
-                        if (data.is_taxa_aduaneira_paid !== undefined) this.items[idx].is_taxa_aduaneira_paid = Boolean(data.is_taxa_aduaneira_paid);
-                    }
-
-                    // Atualiza a referência de objeto recebida
-                    if (data.is_item_paid !== undefined) item.is_item_paid = Boolean(data.is_item_paid);
-                    if (data.is_frete_inter_paid !== undefined) item.is_frete_inter_paid = Boolean(data.is_frete_inter_paid);
-                    if (data.is_taxa_aduaneira_paid !== undefined) item.is_taxa_aduaneira_paid = Boolean(data.is_taxa_aduaneira_paid);
-
-                    // Reatribui items para garantir que todo getter (filteredItems) e x-for re-renderizem
-                    this.items = [...this.items];
-                    this.recalcStats();
-                    this.showToast(data.message || 'Status atualizado com sucesso!');
-                } else {
-                    alert(data.message || 'Erro ao alterar status de pagamento.');
-                }
-            } catch (err) {
-                console.error('Erro no togglePayment:', err);
-                alert('Erro de conexão ao alterar status: ' + (err.message || err));
-            } finally {
-                this.togglingKeys = this.togglingKeys.filter(k => k !== key);
-            }
-        },
-
-        get eligibleVisibleItems() {
-            return this.filteredItems.filter(it => it.pacote_status !== 'ENVIADO' && it.pacote_status !== 'ENTREGUE');
-        },
-
-        get allVisibleSelected() {
-            const eligible = this.eligibleVisibleItems;
-            if (!eligible.length) return false;
-            return eligible.every(it => this.selectedUids.includes(it.uid));
-        },
-
-        toggleSelectAll(checked) {
-            if (checked) {
-                this.eligibleVisibleItems.forEach(it => {
-                    if (!this.selectedUids.includes(it.uid)) {
-                        this.selectedUids.push(it.uid);
-                    }
-                });
-            } else {
-                const eligibleUids = this.eligibleVisibleItems.map(it => it.uid);
-                this.selectedUids = this.selectedUids.filter(uid => !eligibleUids.includes(uid));
-            }
-        },
-
-        toggleItemSelection(uid) {
-            const idx = this.selectedUids.indexOf(uid);
-            if (idx > -1) {
-                this.selectedUids.splice(idx, 1);
-            } else {
-                this.selectedUids.push(uid);
-            }
-        },
-
-        clearSelection() {
-            this.selectedUids = [];
-        },
-
-        resetFilters() {
-            this.filterGrupo = 'ALL';
-            this.filterEra = 'ALL';
-            this.filterCaixa = 'ALL';
-            this.filterItemPaid = 'ALL';
-            this.filterInterPaid = 'ALL';
-            this.filterTaxaPaid = 'ALL';
-            this.filterPacote = 'ALL';
-            this.searchQuery = '';
-        },
-
-        openPackagingModal() {
-            if (!this.selectedUids.length) return;
-            this.packagingModalOpen = true;
-        },
-
         openDispatchModal(id, identificador, transportadora, rastreio) {
             this.dispatchPacoteId = id;
             this.dispatchPacoteIdentificador = identificador;
-            this.dispatchTransportadora = transportadora || 'Correios Mini Envios';
+            this.dispatchTransportadora = transportadora || 'Correios';
             this.dispatchCodigoRastreio = rastreio || '';
             this.dispatchModalOpen = true;
         },

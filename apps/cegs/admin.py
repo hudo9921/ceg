@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog
 
 
 @admin.register(TipoItem)
@@ -528,4 +528,33 @@ class PacoteNacionalAdmin(admin.ModelAdmin):
             return format_html('<a href="{}" target="_blank" style="font-weight:bold; color:#0d6efd;">{} ↗</a>', url, obj.codigo_rastreio)
         return "-"
     codigo_rastreio_link.short_description = 'Rastreamento'
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'event_type_badge', 'action_label', 'actor_name', 'participant_name', 'ceg', 'old_value', 'new_value')
+    list_filter = ('event_type', 'created_at')
+    search_fields = ('action_label', 'participant_name', 'participant_phone', 'actor_name', 'ceg__title')
+    readonly_fields = ('created_at', 'event_type', 'actor', 'actor_name', 'participant', 'participant_name', 'participant_phone', 'ceg', 'slot', 'item_individual', 'action_label', 'field_name', 'old_value', 'new_value', 'metadata')
+
+    def event_type_badge(self, obj):
+        colors = {
+            AuditLog.EventType.ACCOUNT_CREATED: ('#805ad5', '#fff'),
+            AuditLog.EventType.CLAIM_SUCCESS: ('#198754', '#fff'),
+            AuditLog.EventType.CLAIM_ATTEMPT: ('#fd7e14', '#fff'),
+            AuditLog.EventType.CLAIM_CANCELLED: ('#dc3545', '#fff'),
+            AuditLog.EventType.PAYMENT_ITEM: ('#2e7d32', '#fff'),
+            AuditLog.EventType.PAYMENT_FRETE_INTER: ('#0284c7', '#fff'),
+            AuditLog.EventType.PAYMENT_TAXA: ('#b45309', '#fff'),
+            AuditLog.EventType.PAYMENT_FRETE_NACIONAL: ('#4338ca', '#fff'),
+            AuditLog.EventType.SLOT_ASSIGNED: ('#475569', '#fff'),
+            AuditLog.EventType.SLOT_RELEASED: ('#64748b', '#fff'),
+        }
+        bg, text = colors.get(obj.event_type, ('#6c757d', '#fff'))
+        return format_html(
+            '<span style="background-color: {}; color: {}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;">{}</span>',
+            bg, text, obj.get_event_type_display()
+        )
+    event_type_badge.short_description = 'Tipo de Evento'
+
 

@@ -49,6 +49,38 @@
                 }
             });
         });
+
+        function adminSidebarApp() {
+            const path = window.location.pathname;
+            let initial = 'cegs';
+            if (path.includes('caixa') || path.includes('consulta-joiner') || path.includes('envio')) {
+                initial = 'logistica';
+            } else if (path.includes('auditoria') || path.includes('vendas') || path.includes('sales')) {
+                initial = 'auditoria';
+            } else if (path.includes('whatsapp')) {
+                initial = 'sistema';
+            }
+
+            return {
+                adminSidebarOpen: false,
+                activeAccordion: initial,
+                searchQuery: '',
+                toggleAccordion(name) {
+                    this.activeAccordion = (this.activeAccordion === name) ? null : name;
+                },
+                isAccordionOpen(name) {
+                    if (this.searchQuery && this.searchQuery.trim() !== '') {
+                        return true;
+                    }
+                    return this.activeAccordion === name;
+                },
+                matchesSearch(keywords) {
+                    if (!this.searchQuery || !this.searchQuery.trim()) return true;
+                    const terms = this.searchQuery.toLowerCase().trim().split(/\s+/);
+                    return terms.every(term => keywords.toLowerCase().includes(term));
+                }
+            };
+        }
     </script>
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"
@@ -60,176 +92,382 @@
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
 
-    <!-- Navbar -->
-    <nav class="bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center space-x-4">
-                    <!-- Brand / Logo Destacado com Sombra Suave e Efeito Premium -->
-                    <a href="{% url 'home' %}" class="group flex items-center space-x-2.5 px-3.5 py-1.5 rounded-xl bg-white border border-pink-100 shadow-[0_2px_10px_-2px_rgba(236,72,153,0.28)] hover:shadow-[0_4px_16px_-2px_rgba(236,72,153,0.38)] hover:border-pink-300 transition-all duration-200">
-                        <span class="text-xl filter drop-shadow-xs group-hover:scale-110 transition-transform">✨</span>
-                        <span class="text-lg font-black tracking-tight">
-                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600">CEG</span><span class="text-slate-800 font-extrabold">Manager</span>
-                        </span>
-                    </a>
+    <!-- Contêiner de Navegação com Gestão de Acordeão Lateral -->
+    <div x-data="adminSidebarApp()" @keydown.window.escape="adminSidebarOpen = false">
+        <!-- Navbar Superior -->
+        <nav class="bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center space-x-3 sm:space-x-4">
+                        <!-- Brand / Logo Destacado com Sombra Suave e Efeito Premium -->
+                        <a href="{% url 'home' %}" class="group flex items-center space-x-2.5 px-3.5 py-1.5 rounded-xl bg-white border border-pink-100 shadow-[0_2px_10px_-2px_rgba(236,72,153,0.28)] hover:shadow-[0_4px_16px_-2px_rgba(236,72,153,0.38)] hover:border-pink-300 transition-all duration-200">
+                            <span class="text-xl filter drop-shadow-xs group-hover:scale-110 transition-transform">✨</span>
+                            <span class="text-lg font-black tracking-tight">
+                                <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600">CEG</span><span class="text-slate-800 font-extrabold">Manager</span>
+                            </span>
+                        </a>
 
-                    <!-- Separador entre o Logo e os Menus de Navegação -->
-                    <div class="hidden md:block h-6 w-px bg-slate-200"></div>
+                        <!-- Separador entre o Logo e os Menus de Navegação -->
+                        <div class="hidden sm:block h-6 w-px bg-slate-200"></div>
 
-                    <!-- Menu de Navegação com Separadores e Destaque Ativo -->
-                    <div class="hidden md:flex items-center space-x-1">
-                        <!-- 1. Todas as CEGs -->
-                        {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'ceg_detail' or request.path == '/' %}
-                            <a href="{% url 'home' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
-                                <span>Todas as CEGs</span>
-                            </a>
-                        {% else %}
-                            <a href="{% url 'home' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition">
-                                Todas as CEGs
-                            </a>
+                        <!-- 1. Link Principal: Todas as CEGs -->
+                        <div class="flex items-center space-x-1.5">
+                            {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'ceg_detail' or request.path == '/' %}
+                                <a href="{% url 'home' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                                    <span>Todas as CEGs</span>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'home' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition">
+                                    Todas as CEGs
+                                </a>
+                            {% endif %}
+
+                            {% if request.user.is_authenticated and request.user.is_staff %}
+                                <!-- Botão de Destaque: Painel de Ações de Admin (Abre o Acordeão Lateral) -->
+                                <button type="button"
+                                        @click="adminSidebarOpen = true"
+                                        class="ml-1 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-pink-600 shadow-sm flex items-center gap-2 transition duration-200 group border border-slate-800 cursor-pointer">
+                                    <span class="text-pink-400 group-hover:text-white transition-colors">⚡</span>
+                                    <span>Ações de Admin</span>
+                                    <span class="px-1.5 py-0.5 text-[10px] font-black rounded-md bg-slate-800 text-pink-300 group-hover:bg-pink-700 group-hover:text-white transition">Menu ▾</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Lado Direito do Topbar -->
+                    <div class="flex items-center space-x-2 sm:space-x-3">
+                        {% if request.user.is_authenticated and request.user.is_staff %}
+                            <!-- Botão Admin no Topo Direito (também abre o menu lateral) -->
+                            <button type="button"
+                                    @click="adminSidebarOpen = true"
+                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-sm hover:bg-amber-200 transition cursor-pointer"
+                                    title="Abrir Menu Lateral de Gestão">
+                                👑 Admin ▾
+                            </button>
                         {% endif %}
 
-                        {% if request.user.is_authenticated and request.user.is_staff %}
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- 2. Hub de Criações -->
-                            {% if 'creations' in request.path or 'creations' in request.resolver_match.url_name %}
-                                <a href="{% url 'creations_hub' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span>✨</span>
-                                    <span>Hub de Criações</span>
+                        {% if logged_participant %}
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'my_claims' %}" class="inline-flex items-center px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-800 hover:bg-pink-200 transition">
+                                    <span class="w-2 h-2 mr-1.5 bg-pink-500 rounded-full animate-pulse"></span>
+                                    <span class="max-w-[110px] sm:max-w-[160px] truncate">{{ logged_participant.display_name }}</span>
+                                    {% if logged_participant.unread_notifications_count > 0 %}
+                                        <span class="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px] font-black animate-bounce" title="{{ logged_participant.unread_notifications_count }} aviso(s) não lido(s)">
+                                            {{ logged_participant.unread_notifications_count }}
+                                        </span>
+                                    {% endif %}
                                 </a>
-                            {% else %}
-                                <a href="{% url 'creations_hub' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                    <span class="opacity-70">✨</span>
-                                    <span>Hub de Criações</span>
+
+                                <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-xs text-slate-400 hover:text-red-600 px-1.5 py-1">
+                                    Sair
                                 </a>
-                            {% endif %}
-
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- 3. Status das CEGs -->
-                            {% if request.resolver_match.url_name == 'cegs_status' or request.resolver_match.url_name == 'cegs_status_tab' or request.path == '/analytics/' or '/analytics/cegs' in request.path %}
-                                <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span>📦</span>
-                                    <span>Status das CEGs</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'cegs_status' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                    <span class="opacity-70">📦</span>
-                                    <span>Status das CEGs</span>
-                                </a>
-                            {% endif %}
-
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- Caixas & Remessas (KR / JP) -->
-                            {% if 'caixa' in request.path or 'caixa' in request.resolver_match.url_name %}
-                                <a href="{% url 'caixas_dashboard' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span>✈️</span>
-                                    <span>Caixas & Remessas</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'caixas_dashboard' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                    <span class="opacity-70">✈️</span>
-                                    <span>Caixas & Remessas</span>
-                                </a>
-                            {% endif %}
-
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- Consulta Joiner (Joiners / Itens, Pagamentos & Rastreios) -->
-                            {% if 'consulta-joiner' in request.path or 'envio' in request.path or request.resolver_match.url_name == 'consulta_joiner' or request.resolver_match.url_name == 'envios_nacionais' %}
-                                <a href="{% url 'consulta_joiner' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span>🔍</span>
-                                    <span>Consulta Joiner</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'consulta_joiner' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                    <span class="opacity-70">🔍</span>
-                                    <span>Consulta Joiner</span>
-                                </a>
-                            {% endif %}
-
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- 4. Relatório de Vendas -->
-                            {% if request.resolver_match.url_name == 'sales_report' or request.resolver_match.url_name == 'sales_report_alias' or '/analytics/vendas' in request.path or '/analytics/sales' in request.path %}
-                                <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span>📈</span>
-                                    <span>Relatório de Vendas</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'sales_report' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                    <span class="opacity-70">📈</span>
-                                    <span>Relatório de Vendas</span>
-                                </a>
-                            {% endif %}
-
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- WhatsApp Bot -->
-                            {% if request.resolver_match.url_name == 'admin_whatsapp' or '/admin/whatsapp' in request.path %}
-                                <a href="{% url 'admin_whatsapp' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-pink-50 text-pink-700 border border-pink-200/80 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span>🤖</span>
-                                    <span>Bot WhatsApp</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'admin_whatsapp' %}" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-pink-600 hover:bg-slate-50 transition flex items-center gap-1.5">
-                                    <span class="opacity-70">🤖</span>
-                                    <span>Bot WhatsApp</span>
-                                </a>
-                            {% endif %}
-
-                            <!-- Barrinha Separadora -->
-                            <span class="h-4 w-px bg-slate-200/80 mx-1 select-none" aria-hidden="true"></span>
-
-                            <!-- 5. Painel Admin -->
-                            <a href="/admin/" target="_blank" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition flex items-center gap-1">
-                                <span>Painel Admin</span>
-                                <span class="text-xs text-slate-400">↗</span>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'login_otp' %}" class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-pink-500 text-pink-600 hover:bg-pink-50 text-xs sm:text-sm font-semibold rounded-lg transition shadow-sm">
+                                📱 <span class="hidden sm:inline ml-1">Consultar com</span> WhatsApp
                             </a>
                         {% endif %}
                     </div>
                 </div>
+            </div>
+        </nav>
 
-                <div class="flex items-center space-x-3">
-                    {% if request.user.is_authenticated and request.user.is_staff %}
-                        <a href="{% url 'creations_hub' %}" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-sm" title="Logado como Administrador">
-                            👑 Admin
-                        </a>
-                    {% endif %}
-                    {% if logged_participant %}
-                        <div class="flex items-center space-x-2">
-                            <a href="{% url 'my_claims' %}" class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-pink-100 text-pink-800 hover:bg-pink-200 transition">
-                                <span class="w-2 h-2 mr-1.5 bg-pink-500 rounded-full animate-pulse"></span>
-                                {{ logged_participant.display_name }} (Meus Claims)
-                                {% if logged_participant.unread_notifications_count > 0 %}
-                                    <span class="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[10px] font-black animate-bounce" title="{{ logged_participant.unread_notifications_count }} aviso(s) não lido(s)">
-                                        {{ logged_participant.unread_notifications_count }}
+        {% if request.user.is_authenticated and request.user.is_staff %}
+            <!-- GAVETA LATERAL DESLIZANTE COM ACORDEÃO (SLIDE-OVER DRAWER) -->
+            <div x-show="adminSidebarOpen" x-cloak class="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+                <!-- Backdrop Escuro com Blur -->
+                <div x-show="adminSidebarOpen"
+                     x-transition:enter="transition-opacity ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="transition-opacity ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+                     @click="adminSidebarOpen = false"></div>
+
+                <!-- Painel Lateral Deslizante -->
+                <div class="fixed inset-y-0 left-0 max-w-full flex pointer-events-auto">
+                    <div x-show="adminSidebarOpen"
+                         x-transition:enter="transition ease-out duration-300 transform"
+                         x-transition:enter-start="-translate-x-full"
+                         x-transition:enter-end="translate-x-0"
+                         x-transition:leave="transition ease-in duration-200 transform"
+                         x-transition:leave-start="translate-x-0"
+                         x-transition:leave-end="-translate-x-full"
+                         class="w-screen max-w-xs sm:max-w-sm bg-white shadow-2xl border-r border-slate-200 flex flex-col h-full select-none">
+
+                        <!-- 1. Cabeçalho da Gaveta -->
+                        <div class="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-xl shadow-inner">
+                                    ⚡
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <h2 class="text-sm font-black tracking-tight text-white">Painel de Ações</h2>
+                                        <span class="px-1.5 py-0.2 bg-pink-500 text-white text-[9px] font-black rounded uppercase">Staff</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400">K-pop CEG Manager</p>
+                                </div>
+                            </div>
+                            <button type="button" @click="adminSidebarOpen = false"
+                                    class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                                    title="Fechar menu (Esc)">
+                                <span class="text-lg leading-none">&times;</span>
+                            </button>
+                        </div>
+
+                        <!-- 2. Usuário Staff Logado -->
+                        <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                                    {{ request.user.username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-800 block leading-tight">
+                                        {{ request.user.get_full_name|default:request.user.username }}
                                     </span>
-                                {% endif %}
-                            </a>
-
-                            <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-xs text-slate-400 hover:text-red-600 px-2 py-1">
-                                Sair
+                                    <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        Logado como Administrador
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="/admin/" target="_blank" class="text-[11px] font-bold text-slate-500 hover:text-pink-600 flex items-center gap-1 transition" title="Acessar Django Admin">
+                                <span>Django</span>
+                                <span>↗</span>
                             </a>
                         </div>
-                    {% else %}
-                        <a href="{% url 'login_otp' %}" class="inline-flex items-center px-4 py-2 border border-pink-500 text-pink-600 hover:bg-pink-50 text-xs sm:text-sm font-semibold rounded-lg transition shadow-sm">
-                            📱 Consultar com WhatsApp
-                        </a>
-                    {% endif %}
+
+                        <!-- Filtro de Busca Interna no Menu -->
+                        <div class="px-4 pt-3 pb-1">
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+                                <input type="text" x-model="searchQuery" placeholder="Filtrar opções (ex: frete, log, criar)..."
+                                       class="w-full pl-8 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                            </div>
+                        </div>
+
+                        <!-- 3. Corpo de Acordeões com Scroll -->
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            
+                            <!-- ACORDEÃO 1: CEGs & Criações -->
+                            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs"
+                                 x-show="matchesSearch('creations hub criacoes status cegs grupo era')">
+                                <button type="button"
+                                        @click="toggleAccordion('cegs')"
+                                        class="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/80 flex items-center justify-between transition text-left cursor-pointer">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="text-base">📦</span>
+                                        <span class="text-xs font-black text-slate-800 uppercase tracking-wide">CEGs & Criações</span>
+                                    </div>
+                                    <svg class="w-4 h-4 text-slate-400 transform transition-transform duration-200"
+                                         :class="isAccordionOpen('cegs') ? 'rotate-180 text-pink-600' : ''"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                
+                                <div x-show="isAccordionOpen('cegs')"
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     class="divide-y divide-slate-100 p-1.5 space-y-1">
+                                    <!-- Hub de Criações -->
+                                    <a href="{% url 'creations_hub' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if 'creations' in request.path %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">✨</span>
+                                        <div>
+                                            <div class="font-bold flex items-center gap-1.5">
+                                                <span>Hub de Criações</span>
+                                                <span class="px-1.5 py-0.2 text-[9px] font-black bg-pink-100 text-pink-700 rounded">Principal</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Criar e editar CEGs, Eras, Grupos e Itens Mercari</p>
+                                        </div>
+                                    </a>
+
+                                    <!-- Status das CEGs -->
+                                    <a href="{% url 'cegs_status' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if 'analytics/cegs' in request.path or request.resolver_match.url_name == 'cegs_status' %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">📦</span>
+                                        <div>
+                                            <div class="font-bold">Status das CEGs</div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Andamento de vagas, slots ocupados e fechamentos</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- ACORDEÃO 2: Logística & Operacional -->
+                            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs"
+                                 x-show="matchesSearch('caixas remessas consulta joiner envios nacionais pacotes frete')">
+                                <button type="button"
+                                        @click="toggleAccordion('logistica')"
+                                        class="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/80 flex items-center justify-between transition text-left cursor-pointer">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="text-base">✈️</span>
+                                        <span class="text-xs font-black text-slate-800 uppercase tracking-wide">Logística & Envios</span>
+                                    </div>
+                                    <svg class="w-4 h-4 text-slate-400 transform transition-transform duration-200"
+                                         :class="isAccordionOpen('logistica') ? 'rotate-180 text-pink-600' : ''"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                
+                                <div x-show="isAccordionOpen('logistica')"
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     class="divide-y divide-slate-100 p-1.5 space-y-1">
+                                    <!-- Caixas & Remessas KR/JP -->
+                                    <a href="{% url 'caixas_dashboard' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if 'caixa' in request.path %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">✈️</span>
+                                        <div>
+                                            <div class="font-bold">Caixas & Remessas (KR/JP)</div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Rateio de frete internacional e taxas aduaneiras</p>
+                                        </div>
+                                    </a>
+
+                                    <!-- Consulta Joiner -->
+                                    <a href="{% url 'consulta_joiner' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if request.resolver_match.url_name == 'consulta_joiner' or 'consulta-joiner' in request.path %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">🔍</span>
+                                        <div>
+                                            <div class="font-bold">Consulta Joiner 360º</div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Visão completa de itens, pagamentos e envios do participante</p>
+                                        </div>
+                                    </a>
+
+                                    <!-- Envios Nacionais -->
+                                    <a href="{% url 'envios_nacionais' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if request.resolver_match.url_name == 'envios_nacionais' or request.path == '/envios/' %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">🚚</span>
+                                        <div>
+                                            <div class="font-bold">Envios Nacionais & Pacotes</div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Painel geral de todos os envios, status, rastreios e feedbacks</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- ACORDEÃO 3: Auditoria & Finanças -->
+                            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs"
+                                 x-show="matchesSearch('auditoria logs vendas faturamento claims pagamentos')">
+                                <button type="button"
+                                        @click="toggleAccordion('auditoria')"
+                                        class="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/80 flex items-center justify-between transition text-left cursor-pointer">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="text-base">🛡️</span>
+                                        <span class="text-xs font-black text-slate-800 uppercase tracking-wide">Auditoria & Finanças</span>
+                                    </div>
+                                    <svg class="w-4 h-4 text-slate-400 transform transition-transform duration-200"
+                                         :class="isAccordionOpen('auditoria') ? 'rotate-180 text-pink-600' : ''"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                
+                                <div x-show="isAccordionOpen('auditoria')"
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     class="divide-y divide-slate-100 p-1.5 space-y-1">
+                                    <!-- Auditoria & Logs -->
+                                    <a href="{% url 'auditoria_logs' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if 'auditoria' in request.path or 'logs' in request.path %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">🛡️</span>
+                                        <div>
+                                            <div class="font-bold flex items-center gap-1.5">
+                                                <span>Auditoria & Logs</span>
+                                                <span class="px-1.5 py-0.2 text-[9px] font-black bg-emerald-100 text-emerald-700 rounded">Novo</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Histórico de contas, claims e quem marcou pagamentos</p>
+                                        </div>
+                                    </a>
+
+                                    <!-- Relatório de Vendas -->
+                                    <a href="{% url 'sales_report' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if 'vendas' in request.path or 'sales' in request.path %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">📈</span>
+                                        <div>
+                                            <div class="font-bold">Relatório de Vendas</div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Faturamento consolidado, ticket médio e balanço</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- ACORDEÃO 4: Sistema & Comunicação -->
+                            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs"
+                                 x-show="matchesSearch('whatsapp bot django admin configuracoes sistema')">
+                                <button type="button"
+                                        @click="toggleAccordion('sistema')"
+                                        class="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/80 flex items-center justify-between transition text-left cursor-pointer">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="text-base">🤖</span>
+                                        <span class="text-xs font-black text-slate-800 uppercase tracking-wide">Comunicação & Sistema</span>
+                                    </div>
+                                    <svg class="w-4 h-4 text-slate-400 transform transition-transform duration-200"
+                                         :class="isAccordionOpen('sistema') ? 'rotate-180 text-pink-600' : ''"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                
+                                <div x-show="isAccordionOpen('sistema')"
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     class="divide-y divide-slate-100 p-1.5 space-y-1">
+                                    <!-- Bot WhatsApp -->
+                                    <a href="{% url 'admin_whatsapp' %}"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium transition {% if 'whatsapp' in request.path %}bg-pink-50 text-pink-700 font-bold border border-pink-200/60{% else %}text-slate-700 hover:bg-slate-50 hover:text-pink-600{% endif %}">
+                                        <span class="text-base mt-0.5">🤖</span>
+                                        <div>
+                                            <div class="font-bold">Bot WhatsApp</div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Disparos de lembretes de pagamento e avisos</p>
+                                        </div>
+                                    </a>
+
+                                    <!-- Painel Django -->
+                                    <a href="/admin/" target="_blank"
+                                       class="flex items-start gap-3 p-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-purple-600 transition">
+                                        <span class="text-base mt-0.5">⚙️</span>
+                                        <div>
+                                            <div class="font-bold flex items-center gap-1">
+                                                <span>Painel Django Técnico</span>
+                                                <span class="text-[10px] text-slate-400">↗</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-400 font-normal leading-tight mt-0.5">Acesso raw a todas as tabelas do banco de dados</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- 4. Rodapé da Gaveta -->
+                        <div class="p-4 border-t border-slate-200 bg-slate-50/70 flex items-center justify-between text-xs">
+                            <a href="{% url 'home' %}" class="font-bold text-slate-600 hover:text-pink-600 transition flex items-center gap-1.5">
+                                <span>🏠</span>
+                                <span>Catálogo de CEGs</span>
+                            </a>
+                            <a href="/admin/logout/" class="font-bold text-rose-600 hover:text-rose-800 transition flex items-center gap-1">
+                                <span>Sair</span>
+                                <span>→</span>
+                            </a>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
+        {% endif %}
+    </div>
 
     <!-- Flash Messages -->
     {% if messages %}

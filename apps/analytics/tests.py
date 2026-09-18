@@ -434,4 +434,38 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertContains(res, 'Photocard Jihyo')
         self.assertContains(res, 'Photocard Seoyeon')
 
+    def test_ceg_operational_status_banner_and_image_display(self):
+        # Configura banner_url na CEG do TWICE
+        self.ceg_twice.banner_url = 'https://exemplo.com/twice-banner.jpg'
+        self.ceg_twice.save()
+
+        # Configura banner_url na Era do tripleS (como fallback)
+        self.era_triples.banner_url = 'https://exemplo.com/triples-era-banner.jpg'
+        self.era_triples.save()
+
+        data = AnalyticsService.get_cegs_operational_status()
+
+        # 1. Verifica no set incompleto (TWICE)
+        incomplete_twice = [s for s in data['sets_incomplete'] if s['ceg_id'] == self.ceg_twice.id][0]
+        self.assertEqual(incomplete_twice['banner_url'], 'https://exemplo.com/twice-banner.jpg')
+        self.assertEqual(incomplete_twice['image_url'], 'https://exemplo.com/twice-banner.jpg')
+
+        # 2. Verifica no set fechado (tripleS)
+        fechado_triples = [s for s in data['sets_fechados'] if s['ceg_id'] == self.ceg_triples.id][0]
+        self.assertEqual(fechado_triples['banner_url'], '')
+        self.assertEqual(fechado_triples['image_url'], 'https://exemplo.com/triples-era-banner.jpg')
+
+        # 3. Verifica no cegs_overview
+        overview_twice = [c for c in data['cegs_overview'] if c['ceg_id'] == self.ceg_twice.id][0]
+        self.assertEqual(overview_twice['banner_url'], 'https://exemplo.com/twice-banner.jpg')
+        self.assertEqual(overview_twice['image_url'], 'https://exemplo.com/twice-banner.jpg')
+
+        # 4. Verifica na view renderizada (HTML)
+        self.client.force_login(self.staff_user)
+        response = self.client.get('/analytics/cegs/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'https://exemplo.com/twice-banner.jpg')
+        self.assertContains(response, 'https://exemplo.com/triples-era-banner.jpg')
+
+
 

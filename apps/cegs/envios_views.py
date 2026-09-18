@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Avg
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from .creations_views import StaffRequiredMixin
@@ -25,11 +25,15 @@ def parse_decimal(val_str, default=None):
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
-class EnviosNacionaisView(StaffRequiredMixin, View):
+class ConsultaJoinerView(StaffRequiredMixin, View):
     """
-    Aba onde o admin pode escolher um joiner e com isso ver todas as CEGs/itens individuais dessa pessoa,
-    ver os status de pagamento (item, inter, taxa), filtrar por múltiplos critérios, selecionar itens
-    e empacotá-los para envio nacional.
+    Visão 360º dedicada de um Joiner (Participante):
+    - Dados cadastrais (Nome, WhatsApp, redes sociais, endereço/anotações)
+    - Resumo financeiro de pendências (itens, frete inter, taxas)
+    - Todos os slots de CEGs e itens individuais Mercari / JP
+    - Alternância rápida de pagamento (Item, Inter, Taxa) com 1 clique
+    - Lista de todos os pacotes nacionais enviados/preparados para ele e feedbacks recebidos
+    - Ferramenta de empacotamento de novos itens do participante
     """
 
     def get(self, request):
@@ -52,12 +56,12 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
         eras_list = []
         caixas_list = []
 
-        # Contadores gerais do joiner
         stats = {
             'total_items': 0,
             'unpacked_count': 0,
             'packed_count': 0,
             'enviados_count': 0,
+            'entregues_count': 0,
             'item_paid_count': 0,
             'item_unpaid_count': 0,
             'inter_unpaid_count': 0,
@@ -68,7 +72,7 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
             selected_participant = Participant.objects.filter(id=participant_id).first()
 
             if selected_participant:
-                # 1. Busca slots de CEG
+                # 1. Slots de CEG
                 slots = ItemSlot.objects.filter(claimed_by=selected_participant).select_related(
                     'set__ceg__era__group',
                     'set__ceg__caixa',
@@ -76,14 +80,14 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
                     'pacote_nacional'
                 ).order_by('-id')
 
-                # 2. Busca itens individuais Mercari / JP
+                # 2. Itens individuais Mercari / JP
                 itens_individuais = ItemIndividual.objects.filter(comprador=selected_participant).select_related(
                     'caixa',
                     'tipo_item',
                     'pacote_nacional'
                 ).order_by('-created_at')
 
-                # 3. Busca pacotes nacionais deste joiner
+                # 3. Pacotes nacionais deste joiner
                 pacotes = list(PacoteNacional.objects.filter(participant=selected_participant).prefetch_related(
                     'slots__item_definition',
                     'slots__set__ceg',
@@ -119,7 +123,9 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
 
                     stats['total_items'] += 1
                     if slot.pacote_nacional:
-                        if slot.pacote_nacional.status in (PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE):
+                        if slot.pacote_nacional.status == PacoteNacional.Status.ENTREGUE:
+                            stats['entregues_count'] += 1
+                        elif slot.pacote_nacional.status == PacoteNacional.Status.ENVIADO:
                             stats['enviados_count'] += 1
                         else:
                             stats['packed_count'] += 1
@@ -181,7 +187,6 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
                             'origem_display': caixa.get_origem_display(),
                         }
 
-                    # Mercari entra na categoria especial de grupo
                     groups_map['mercari'] = {'id': 'mercari', 'nome': 'Mercari / Avulsos (JP)'}
 
                     is_item_paid = item.produto_pago
@@ -192,7 +197,9 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
 
                     stats['total_items'] += 1
                     if item.pacote_nacional:
-                        if item.pacote_nacional.status in (PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE):
+                        if item.pacote_nacional.status == PacoteNacional.Status.ENTREGUE:
+                            stats['entregues_count'] += 1
+                        elif item.pacote_nacional.status == PacoteNacional.Status.ENVIADO:
                             stats['enviados_count'] += 1
                         else:
                             stats['packed_count'] += 1
@@ -247,7 +254,7 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
                 eras_list = sorted(eras_map.values(), key=lambda x: str(x['nome']))
                 caixas_list = sorted(caixas_map.values(), key=lambda x: str(x['nome']))
 
-        return render(request, 'cegs/envios_nacionais.html', {
+        return render(request, 'cegs/consulta_joiner.html', {
             'selected_participant': selected_participant,
             'participants_with_counts': participants_with_counts,
             'all_participants': all_participants,
@@ -261,6 +268,91 @@ class EnviosNacionaisView(StaffRequiredMixin, View):
         })
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
+    """
+    Painel Logístico Global de Envios Nacionais e Pacotes:
+    - Lista todos os pacotes montados na loja (sem exigir seleção de joiner)
+    - Filtros por:
+      - Status (Em Preparação, Enviados, Entregues)
+      - Joiner (Destinatário)
+      - Avaliação / Feedback (Com Feedback / Sem Feedback)
+      - Busca por código de rastreio ou identificador (PAC-XXXX)
+    - Visualização dos feedbacks e avaliações por estrelas (1 a 5)
+    - Ações de despacho, marcação de entrega, edição e exclusão de pacotes
+    """
+
+    def get(self, request):
+        status_filter = request.GET.get('status', '').strip()
+        participant_filter = request.GET.get('participant_id', '').strip()
+        feedback_filter = request.GET.get('feedback', '').strip()
+        search_query = request.GET.get('q', '').strip()
+
+        qs = PacoteNacional.objects.select_related('participant').prefetch_related(
+            'slots__item_definition',
+            'slots__set__ceg',
+            'itens_individuais'
+        )
+
+        # Filtros
+        if status_filter in [PacoteNacional.Status.EM_PREPARACAO, PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+            qs = qs.filter(status=status_filter)
+
+        if participant_filter:
+            qs = qs.filter(participant_id=participant_filter)
+
+        if feedback_filter == 'com_feedback':
+            qs = qs.filter(feedback_rating__isnull=False)
+        elif feedback_filter == 'sem_feedback':
+            qs = qs.filter(feedback_rating__isnull=True)
+
+        if search_query:
+            qs = qs.filter(
+                Q(identificador__icontains=search_query) |
+                Q(codigo_rastreio__icontains=search_query) |
+                Q(transportadora__icontains=search_query) |
+                Q(participant__name__icontains=search_query) |
+                Q(participant__username__icontains=search_query) |
+                Q(participant__social_handle__icontains=search_query)
+            )
+
+        pacotes = list(qs.order_by('-created_at'))
+
+        # Métricas Globais
+        all_pacotes_qs = PacoteNacional.objects.all()
+        total_pacotes = all_pacotes_qs.count()
+        em_preparacao_count = all_pacotes_qs.filter(status=PacoteNacional.Status.EM_PREPARACAO).count()
+        enviados_count = all_pacotes_qs.filter(status=PacoteNacional.Status.ENVIADO).count()
+        entregues_count = all_pacotes_qs.filter(status=PacoteNacional.Status.ENTREGUE).count()
+
+        feedbacks_qs = all_pacotes_qs.filter(feedback_rating__isnull=False)
+        com_feedback_count = feedbacks_qs.count()
+        media_rating_val = feedbacks_qs.aggregate(media=Avg('feedback_rating'))['media']
+        media_feedback = round(media_rating_val, 1) if media_rating_val else None
+
+        # Lista de participantes para filtro
+        all_participants = Participant.objects.all().order_by('name')
+
+        stats = {
+            'total_pacotes': total_pacotes,
+            'em_preparacao_count': em_preparacao_count,
+            'enviados_count': enviados_count,
+            'entregues_count': entregues_count,
+            'com_feedback_count': com_feedback_count,
+            'media_feedback': media_feedback,
+        }
+
+        return render(request, 'cegs/envios_nacionais.html', {
+            'pacotes': pacotes,
+            'stats': stats,
+            'all_participants': all_participants,
+            'status_filter': status_filter,
+            'participant_filter': participant_filter,
+            'feedback_filter': feedback_filter,
+            'search_query': search_query,
+        })
+
+
 class EmpacotarItensView(StaffRequiredMixin, View):
     """
     Agrupa itens selecionados de um participante em um PacoteNacional (novo ou existente).
@@ -269,13 +361,14 @@ class EmpacotarItensView(StaffRequiredMixin, View):
     def post(self, request):
         participant_id = request.POST.get('participant_id', '').strip()
         participant = get_object_or_404(Participant, id=participant_id)
+        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant.id}")
 
         action_type = request.POST.get('action_type', 'novo_pacote').strip()
         selected_uids = [u.strip() for u in request.POST.get('selected_uids', '').split(',') if u.strip()]
 
         if not selected_uids:
             messages.error(request, "Nenhum item foi selecionado para empacotamento.")
-            return redirect(f"/consulta-joiner/?participant_id={participant.id}")
+            return redirect(next_url)
 
         pacote = None
 
@@ -284,9 +377,8 @@ class EmpacotarItensView(StaffRequiredMixin, View):
             pacote = get_object_or_404(PacoteNacional, id=pacote_id, participant=participant)
             if pacote.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                 messages.error(request, "Não é possível adicionar itens a um pacote que já foi enviado nacionalmente ou entregue.")
-                return redirect(f"/consulta-joiner/?participant_id={participant.id}")
+                return redirect(next_url)
         else:
-            # Cria novo pacote
             identificador = request.POST.get('identificador', '').strip()
             transportadora = request.POST.get('transportadora', 'Correios').strip()
             codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
@@ -315,7 +407,6 @@ class EmpacotarItensView(StaffRequiredMixin, View):
                 slot_id = uid.replace('slot_', '')
                 try:
                     slot = ItemSlot.objects.get(id=slot_id, claimed_by=participant)
-                    # Bloqueio: item já enviado nacionalmente não pode ser empacotado novamente!
                     if slot.pacote_nacional and slot.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                         continue
                     slot.pacote_nacional = pacote
@@ -327,7 +418,6 @@ class EmpacotarItensView(StaffRequiredMixin, View):
                 item_id = uid.replace('mercari_', '')
                 try:
                     item = ItemIndividual.objects.get(id=item_id, comprador=participant)
-                    # Bloqueio: item já enviado nacionalmente não pode ser empacotado novamente!
                     if item.pacote_nacional and item.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                         continue
                     item.pacote_nacional = pacote
@@ -340,20 +430,18 @@ class EmpacotarItensView(StaffRequiredMixin, View):
 
         if total == 0:
             if action_type != 'adicionar_existente':
-                # Remove pacote vazio recém-criado
                 pacote.delete()
             messages.error(request, "Nenhum dos itens selecionados pôde ser empacotado (itens já enviados ou inválidos).")
-            return redirect(f"/consulta-joiner/?participant_id={participant.id}")
+            return redirect(next_url)
 
-        # Se o admin marcou a flag "Marcar como Enviado Imediatamente"
         marcar_enviado = request.POST.get('marcar_enviado') in ('1', 'on', 'true')
         if marcar_enviado:
             rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
             transp = request.POST.get('transportadora', '').strip()
-            pacote.marcar_como_enviado(codigo_rastreio=rastreio, transportadora=transp)
+            pacote.marcar_como_enviado(codigo_rastreio=rastreio, transportadora=transp, actor=request.user)
             messages.success(
                 request,
-                f"✨ Pacote {pacote.identificador} criado com {total} item(ns) e marcado como ENVIADO NACIONALMENTE!"
+                f"✨ Pacote {pacote.identificador} criado com {total} item(ns) e despachado com sucesso!"
             )
         else:
             messages.success(
@@ -361,7 +449,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
                 f"📦 {total} item(ns) empacotados com sucesso no pacote {pacote.identificador}!"
             )
 
-        return redirect(f"/consulta-joiner/?participant_id={participant.id}")
+        return redirect(next_url)
 
 
 class MarcarPacoteEnviadoView(StaffRequiredMixin, View):
@@ -374,14 +462,34 @@ class MarcarPacoteEnviadoView(StaffRequiredMixin, View):
         pacote = get_object_or_404(PacoteNacional, id=pacote_id)
         codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
         transportadora = request.POST.get('transportadora', '').strip()
+        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={pacote.participant_id}")
 
-        pacote.marcar_como_enviado(codigo_rastreio=codigo_rastreio, transportadora=transportadora)
+        pacote.marcar_como_enviado(codigo_rastreio=codigo_rastreio, transportadora=transportadora, actor=request.user)
 
         messages.success(
             request,
             f"🚀 Pacote {pacote.identificador} despachado com sucesso! O comprador {pacote.participant.display_name} foi notificado."
         )
-        return redirect(f"/consulta-joiner/?participant_id={pacote.participant_id}")
+        return redirect(next_url)
+
+
+class MarcarPacoteEntregueAdminView(StaffRequiredMixin, View):
+    """
+    Permite que o operador staff marque o pacote como entregue manualmente
+    diretamente pelo painel administrativo.
+    """
+
+    def post(self, request, pacote_id):
+        pacote = get_object_or_404(PacoteNacional, id=pacote_id)
+        next_url = request.POST.get('next', f"/envios/")
+
+        pacote.marcar_como_entregue(by='ADMIN', actor=request.user)
+
+        messages.success(
+            request,
+            f"🎉 Pacote {pacote.identificador} de {pacote.participant.display_name} marcado como ENTREGUE com sucesso!"
+        )
+        return redirect(next_url)
 
 
 class AtualizarPacoteView(StaffRequiredMixin, View):
@@ -391,6 +499,7 @@ class AtualizarPacoteView(StaffRequiredMixin, View):
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional, id=pacote_id)
+        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={pacote.participant_id}")
 
         status = request.POST.get('status', pacote.status).strip()
         codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
@@ -414,7 +523,7 @@ class AtualizarPacoteView(StaffRequiredMixin, View):
         pacote.save()
 
         messages.success(request, f"Detalhes do pacote {pacote.identificador} atualizados com sucesso.")
-        return redirect(f"/consulta-joiner/?participant_id={pacote.participant_id}")
+        return redirect(next_url)
 
 
 class DesempacotarItemView(StaffRequiredMixin, View):
@@ -425,13 +534,14 @@ class DesempacotarItemView(StaffRequiredMixin, View):
     def post(self, request):
         item_uid = request.POST.get('item_uid', '').strip()
         participant_id = request.POST.get('participant_id', '').strip()
+        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant_id}")
 
         if item_uid.startswith('slot_'):
             slot_id = item_uid.replace('slot_', '')
             slot = get_object_or_404(ItemSlot, id=slot_id)
             if slot.pacote_nacional and slot.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
-                messages.error(request, "Não é possível desempacotar um item que já foi enviado nacionalmente.")
-                return redirect(f"/consulta-joiner/?participant_id={participant_id}")
+                messages.error(request, "Não é possível desempacotar um item que já foi enviado nacionalmente ou entregue.")
+                return redirect(next_url)
             slot.pacote_nacional = None
             slot.save(update_fields=['pacote_nacional'])
             messages.success(request, f"Item '{slot.item_definition.name}' removido do pacote.")
@@ -439,13 +549,13 @@ class DesempacotarItemView(StaffRequiredMixin, View):
             item_id = item_uid.replace('mercari_', '')
             item = get_object_or_404(ItemIndividual, id=item_id)
             if item.pacote_nacional and item.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
-                messages.error(request, "Não é possível desempacotar um item que já foi enviado nacionalmente.")
-                return redirect(f"/consulta-joiner/?participant_id={participant_id}")
+                messages.error(request, "Não é possível desempacotar um item que já foi enviado nacionalmente ou entregue.")
+                return redirect(next_url)
             item.pacote_nacional = None
             item.save(update_fields=['pacote_nacional'])
             messages.success(request, f"Item '{item.nome}' removido do pacote.")
 
-        return redirect(f"/consulta-joiner/?participant_id={participant_id}")
+        return redirect(next_url)
 
 
 class ExcluirPacoteView(StaffRequiredMixin, View):
@@ -457,14 +567,15 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
         pacote = get_object_or_404(PacoteNacional, id=pacote_id)
         participant_id = pacote.participant_id
         identificador = pacote.identificador
+        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant_id}")
 
         if pacote.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
-            messages.error(request, "Não é possível excluir um pacote que já foi enviado nacionalmente.")
-            return redirect(f"/consulta-joiner/?participant_id={participant_id}")
+            messages.error(request, "Não é possível excluir um pacote que já foi enviado nacionalmente ou entregue.")
+            return redirect(next_url)
 
         pacote.slots.update(pacote_nacional=None)
         pacote.itens_individuais.update(pacote_nacional=None)
         pacote.delete()
 
         messages.success(request, f"Pacote {identificador} excluído com sucesso. Os itens retornaram para a fila.")
-        return redirect(f"/consulta-joiner/?participant_id={participant_id}")
+        return redirect(next_url)

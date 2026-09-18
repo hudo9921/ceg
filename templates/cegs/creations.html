@@ -215,53 +215,71 @@
                 </div>
             </a>
 
-            <!-- Retângulo 1: Cadastrar Grupo Novo -->
-            <button type="button" @click="openModal('group')"
-                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
-                    class="group text-left bg-white hover:bg-purple-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+           <!-- Retângulo 1: Artistas & Solistas (Cadastrar ou Editar) -->
+            <div x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                class="bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-purple-400 shadow-sm hover:shadow-md transition flex flex-col justify-between">
                 <div>
-                    <div class="w-12 h-12 rounded-xl bg-purple-100 group-hover:bg-purple-200 text-purple-700 flex items-center justify-center text-2xl mb-4 transition">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-2xl mb-4">
                         🎤
                     </div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
                         Artistas & Solistas
                     </span>
-                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-purple-700 transition">
-                        Cadastrar Grupo Novo
+                    <h3 class="text-base font-black text-slate-900 mt-2">
+                        Grupos & Artistas
                     </h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                        Adicione grupos como TWICE, Stray Kids, aespa, LE SSERAFIM ou solistas com foto e descrição.
+                        Adicione ou edite grupos como TWICE, Stray Kids, aespa, LE SSERAFIM ou solistas com foto e descrição.
                     </p>
                 </div>
-                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-purple-600">
-                    <span>Abrir Formulário</span>
-                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
-                </div>
-            </button>
 
-            <!-- Retângulo 2: Cadastrar Era Nova -->
-            <button type="button" @click="openModal('era')"
-                    x-show="currentCategory === 'all' || currentCategory === 'ceg'"
-                    class="group text-left bg-white hover:bg-indigo-50/50 p-6 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 shadow-sm hover:shadow-md transition flex flex-col justify-between cursor-pointer">
+                <!-- Ações: Novo vs Editar -->
+                <div class="mt-5 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button type="button" 
+                            @click="openModal('group')"
+                            class="py-2 px-3 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center gap-1 transition cursor-pointer">
+                        <span>+ Novo</span>
+                    </button>
+                    <button type="button" 
+                            @click="openModal('edit-group')"
+                            class="py-2 px-3 rounded-lg border border-slate-200 hover:border-purple-300 hover:bg-slate-50 text-slate-700 hover:text-purple-700 flex items-center justify-center gap-1 transition cursor-pointer">
+                        <span>✏️ Editar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Retângulo 2: Comeback / Álbum (Cadastrar ou Editar) -->
+            <div x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                class="bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 shadow-sm hover:shadow-md transition flex flex-col justify-between">
                 <div>
-                    <div class="w-12 h-12 rounded-xl bg-indigo-100 group-hover:bg-indigo-200 text-indigo-700 flex items-center justify-center text-2xl mb-4 transition">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl mb-4">
                         💿
                     </div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
                         Comeback / Álbum
                     </span>
-                    <h3 class="text-base font-black text-slate-900 mt-2 group-hover:text-indigo-700 transition">
-                        Cadastrar Era Nova
+                    <h3 class="text-base font-black text-slate-900 mt-2">
+                        Eras & Álbuns
                     </h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                        Vincule um novo álbum ou lançamento ao grupo para habilitar a criação de novas CEGs.
+                        Vincule um novo álbum ou gerencie lançamentos existentes para habilitar e organizar suas CEGs.
                     </p>
                 </div>
-                <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600">
-                    <span>Abrir Formulário</span>
-                    <span class="text-lg group-hover:translate-x-1 transition">➔</span>
+
+                <!-- Ações: Novo vs Editar -->
+                <div class="mt-5 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button type="button" 
+                            @click="openModal('era')"
+                            class="py-2 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center justify-center gap-1 transition cursor-pointer">
+                        <span>+ Nova</span>
+                    </button>
+                    <button type="button" 
+                            @click="openModal('edit-era')"
+                            class="py-2 px-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-1 transition cursor-pointer">
+                        <span>✏️ Editar</span>
+                    </button>
                 </div>
-            </button>
+            </div>
 
             <!-- Retângulo 3: Cadastrar CEG Nova (Destaque Principal) -->
             <button type="button" @click="openModal('ceg')"
@@ -691,10 +709,29 @@
                            @change="if ($event.target.files[0]) handleGroupImageFile($event.target.files[0])">
                     <input type="hidden" name="image_base64" :value="groupImageBase64">
 
-                    <input type="url" name="image_url" x-model="groupImageUrl"
+                    <input type="text" name="image_url" x-model="groupImageUrl"
                            @input="groupImagePreview = $event.target.value; groupImageBase64 = ''"
                            placeholder="Ou cole a URL direta da imagem (https://...)"
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                </div>
+
+                <!-- Cor Tema do Grupo -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>🎨 Cor Tema do Grupo (Opcional)</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Detectada da imagem se deixar em branco</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" :value="groupColorHex || '#8B5CF6'" @input="groupColorHex = $event.target.value"
+                               class="w-9 h-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0">
+                        <input type="text" name="color_hex" x-model="groupColorHex" placeholder="Ex: #EC4899 (ou deixe vazio para automático)"
+                               class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                        <button type="button" x-show="groupColorHex" @click="groupColorHex = ''"
+                                class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition"
+                                title="Redefinir para detecção automática">
+                            Auto
+                        </button>
+                    </div>
                 </div>
 
                 <div>
@@ -796,10 +833,29 @@
                            @change="if ($event.target.files[0]) handleEraBannerFile($event.target.files[0])">
                     <input type="hidden" name="banner_base64" :value="eraBannerBase64">
 
-                    <input type="url" name="banner_url" x-model="eraBannerUrl"
+                    <input type="text" name="banner_url" x-model="eraBannerUrl"
                            @input="eraBannerPreview = $event.target.value; eraBannerBase64 = ''"
                            placeholder="Ou cole a URL direta do banner (https://...)"
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <!-- Cor Tema da Era -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>🎨 Cor Tema da Era (Opcional)</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou herdada do grupo se deixar vazio</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" :value="eraColorHex || '#6366F1'" @input="eraColorHex = $event.target.value"
+                               class="w-9 h-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0">
+                        <input type="text" name="color_hex" x-model="eraColorHex" placeholder="Ex: #EC4899 (ou deixe vazio para automático)"
+                               class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <button type="button" x-show="eraColorHex" @click="eraColorHex = ''"
+                                class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition"
+                                title="Redefinir para detecção automática">
+                            Auto
+                        </button>
+                    </div>
                 </div>
 
                 <div>
@@ -817,6 +873,289 @@
                     <button type="submit"
                             class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
                         ✔ Salvar Era
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1B: EDITAR GRUPO EXISTENTE (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'edit-group' || activeModal === 'edit_group'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-purple-100/60">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">✏️</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Editar Grupo / Solista</h3>
+                        <p class="text-[11px] text-slate-500">Atualize informações ou altere a logo de um grupo já cadastrado.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'update_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <input type="hidden" name="group_id" :value="editingGroupId">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Selecione o Grupo para Editar *</label>
+                    <select x-model="editingGroupId" @change="onSelectEditGroup($event.target.value)" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                        <option value="">-- Escolha um Grupo --</option>
+                        <template x-for="g in groups" :key="g.id">
+                            <option :value="g.id" x-text="g.name" :selected="String(g.id) === String(editingGroupId)"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div x-show="editingGroupId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Grupo / Solista *</label>
+                    <input type="text" name="name" x-model="editingGroupName" required
+                           placeholder="Ex: LE SSERAFIM, Stray Kids, IU, aespa"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                </div>
+
+                <div x-show="editingGroupId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Foto / Logo do Grupo</label>
+
+                    <!-- Preview -->
+                    <div x-show="editGroupImagePreview" class="relative rounded-xl overflow-hidden border border-purple-200 h-36 bg-slate-900 flex items-center justify-center group mb-2">
+                        <img :src="editGroupImagePreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                        <img :src="editGroupImagePreview" alt="Logo Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
+                        <button type="button" @click="clearEditGroupImage()"
+                                class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                            ✕ Remover
+                        </button>
+                    </div>
+
+                    <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                    <div @dragover.prevent="editGroupDragOver = true"
+                         @dragleave.prevent="editGroupDragOver = false"
+                         @drop.prevent="editGroupDragOver = false; if ($event.dataTransfer.files[0]) handleEditGroupImageFile($event.dataTransfer.files[0])"
+                         @click="$refs.editGroupFileInput.click()"
+                         :class="editGroupDragOver ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-300' : 'border-slate-200 bg-slate-50 hover:bg-purple-50/50 hover:border-purple-300'"
+                         class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                        <span class="text-xl">📁</span>
+                        <p class="text-xs font-bold text-slate-800">
+                            Clique para alterar do PC ou dê <kbd class="px-1.5 py-0.5 bg-purple-100 text-purple-800 border border-purple-200 rounded font-black text-[10px]">Ctrl + V</kbd>
+                        </p>
+                        <p class="text-[10px] text-slate-400">Arraste uma nova imagem para cá</p>
+                    </div>
+
+                    <input type="file" x-ref="editGroupFileInput" name="image_file" accept="image/*" class="hidden"
+                           @change="if ($event.target.files[0]) handleEditGroupImageFile($event.target.files[0])">
+                    <input type="hidden" name="image_url" :value="editGroupImageUrl">
+
+                    <div class="mt-1">
+                        <div class="flex items-center gap-2 mb-1" x-show="editGroupImageUrl && (editGroupImageUrl.startsWith('/media/') || editGroupImageUrl.startsWith('data:'))">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span>✓</span>
+                                <span>Imagem do computador ativa</span>
+                            </span>
+                            <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                        </div>
+                        <input type="text"
+                               :value="editGroupImageUrl && (editGroupImageUrl.startsWith('/media/') || editGroupImageUrl.startsWith('data:')) ? '' : editGroupImageUrl"
+                               @input="editGroupImageUrl = $event.target.value; editGroupImagePreview = $event.target.value; editGroupImageBase64 = ''"
+                               placeholder="Ou cole a URL direta da imagem (https://...)"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <!-- Cor Tema do Grupo em Edição -->
+                <div x-show="editingGroupId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>🎨 Cor Tema do Grupo</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou personalizada</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" :value="editGroupColorHex || '#8B5CF6'" @input="editGroupColorHex = $event.target.value"
+                               class="w-9 h-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0">
+                        <input type="text" name="color_hex" x-model="editGroupColorHex" placeholder="Ex: #EC4899 (ou vazio para auto)"
+                               class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-purple-500 focus:bg-white transition">
+                        <button type="button" x-show="editGroupColorHex" @click="editGroupColorHex = ''"
+                                class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition"
+                                title="Redefinir para detecção automática da imagem">
+                            Auto
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="editingGroupId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Informações (opcional)</label>
+                    <textarea name="description" x-model="editingGroupDescription" rows="3"
+                              placeholder="Ex: Girl group da Source Music / HYBE..."
+                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" :disabled="!editingGroupId"
+                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ✔ Atualizar Grupo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2B: EDITAR ERA EXISTENTE (POP-UP) -->
+    <!-- ========================================================================= -->
+    <div x-show="activeModal === 'edit-era' || activeModal === 'edit_era'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+             @click.away="closeModal()">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-100/60">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">✏️</span>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900">Editar Era / Comeback</h3>
+                        <p class="text-[11px] text-slate-500">Altere o nome, grupo, data de lançamento ou banner da era.</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+                {% csrf_token %}
+                <input type="hidden" name="era_id" :value="editingEraId">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a Era para Editar *</label>
+                    <select x-model="editingEraId" @change="onSelectEditEra($event.target.value)" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <option value="">-- Escolha uma Era --</option>
+                        <template x-for="g in groups" :key="g.id">
+                            <optgroup :label="g.name">
+                                <template x-for="e in g.eras" :key="e.id">
+                                    <option :value="e.id" x-text="g.name + ' — ' + e.name" :selected="String(e.id) === String(editingEraId)"></option>
+                                </template>
+                            </optgroup>
+                        </template>
+                    </select>
+                </div>
+
+                <div x-show="editingEraId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Grupo / Solista *</label>
+                    <select name="group_id" x-model="editingEraGroupId" required
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <option value="">-- Selecione o Grupo --</option>
+                        <template x-for="g in groups" :key="g.id">
+                            <option :value="g.id" x-text="g.name" :selected="String(g.id) === String(editingEraGroupId)"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div x-show="editingEraId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Era / Comeback *</label>
+                    <input type="text" name="name" x-model="editingEraName" required
+                           placeholder="Ex: CRAZY, With YOU-th, Armageddon"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <div x-show="editingEraId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
+                    <input type="date" name="release_date" x-model="editingEraReleaseDate"
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <div x-show="editingEraId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Banner Promocional da Era</label>
+
+                    <!-- Preview -->
+                    <div x-show="editEraBannerPreview" class="relative rounded-xl overflow-hidden border border-indigo-200 h-36 bg-slate-900 flex items-center justify-center group mb-2">
+                        <img :src="editEraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                        <img :src="editEraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
+                        <button type="button" @click="clearEditEraBanner()"
+                                class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                            ✕ Remover
+                        </button>
+                    </div>
+
+                    <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                    <div @dragover.prevent="editEraDragOver = true"
+                         @dragleave.prevent="editEraDragOver = false"
+                         @drop.prevent="editEraDragOver = false; if ($event.dataTransfer.files[0]) handleEditEraBannerFile($event.dataTransfer.files[0])"
+                         @click="$refs.editEraFileInput.click()"
+                         :class="editEraDragOver ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-300' : 'border-slate-200 bg-slate-50 hover:bg-indigo-50/50 hover:border-indigo-300'"
+                         class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                        <span class="text-xl">📁</span>
+                        <p class="text-xs font-bold text-slate-800">
+                            Clique para alterar do PC ou dê <kbd class="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded font-black text-[10px]">Ctrl + V</kbd>
+                        </p>
+                        <p class="text-[10px] text-slate-400">Arraste o novo banner para cá</p>
+                    </div>
+
+                    <input type="file" x-ref="editEraFileInput" name="banner_file" accept="image/*" class="hidden"
+                           @change="if ($event.target.files[0]) handleEditEraBannerFile($event.target.files[0])">
+                    <input type="hidden" name="banner_base64" :value="editEraBannerBase64">
+
+                    <input type="hidden" name="banner_url" :value="editEraBannerUrl">
+
+                    <div class="mt-1">
+                        <div class="flex items-center gap-2 mb-1" x-show="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:'))">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span>✓</span>
+                                <span>Banner do computador ativo</span>
+                            </span>
+                            <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                        </div>
+                        <input type="text"
+                               :value="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:')) ? '' : editEraBannerUrl"
+                               @input="editEraBannerUrl = $event.target.value; editEraBannerPreview = $event.target.value; editEraBannerBase64 = ''"
+                               placeholder="Ou cole a URL direta do banner (https://...)"
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <!-- Cor Tema da Era em Edição -->
+                <div x-show="editingEraId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>🎨 Cor Tema da Era</span>
+                        <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou personalizada</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" :value="editEraColorHex || '#6366F1'" @input="editEraColorHex = $event.target.value"
+                               class="w-9 h-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0">
+                        <input type="text" name="color_hex" x-model="editEraColorHex" placeholder="Ex: #EC4899 (ou vazio para auto)"
+                               class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <button type="button" x-show="editEraColorHex" @click="editEraColorHex = ''"
+                                class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition"
+                                title="Redefinir para detecção automática da imagem/grupo">
+                            Auto
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="editingEraId">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Notas do Comeback (opcional)</label>
+                    <textarea name="description" x-model="editingEraDescription" rows="2"
+                              placeholder="Ex: 4º Mini Álbum..."
+                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="closeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" :disabled="!editingEraId"
+                            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
+                        ✔ Atualizar Era
                     </button>
                 </div>
             </form>
@@ -918,10 +1257,20 @@
                                @change="if ($event.target.files[0]) handleCegBannerFile($event.target.files[0])">
                         <input type="hidden" name="banner_base64" :value="cegBannerBase64">
 
-                        <input type="url" name="banner_url" x-model="cegBannerUrl"
-                               @input="cegBannerPreview = $event.target.value; cegBannerBase64 = ''"
-                               placeholder="Ou cole a URL direta do banner (https://...)"
-                               class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500 transition">
+                        <div class="mt-1">
+                            <div class="flex items-center gap-2 mb-1" x-show="cegBannerUrl && (cegBannerUrl.startsWith('/media/') || cegBannerUrl.startsWith('data:'))">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span>✓</span>
+                                    <span>Banner do computador ativo</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                            </div>
+                            <input type="text"
+                                   :value="cegBannerUrl && (cegBannerUrl.startsWith('/media/') || cegBannerUrl.startsWith('data:')) ? '' : cegBannerUrl"
+                                   @input="cegBannerUrl = $event.target.value; cegBannerPreview = $event.target.value; cegBannerBase64 = ''"
+                                   placeholder="Ou cole a URL direta do banner (https://...)"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500 transition">
+                        </div>
                     </div>
                 </div>
 
@@ -1252,7 +1601,7 @@
             </div>
 
             <form action="{% url 'create_set' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
-                {% csrf_token %}
+                {% csrf_token %>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a CEG *</label>
                     <select name="ceg_id" required
@@ -1713,7 +2062,7 @@
 
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-600 mb-1">Ou cole o link direto da imagem:</label>
-                                    <input type="url" name="foto_url" x-model="itemImageUrl" @input="handleUrlChange()"
+                                    <input type="text" name="foto_url" x-model="itemImageUrl" @input="handleUrlChange()"
                                            placeholder="https://exemplo.com/foto-proof.jpg"
                                            class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 transition">
                                 </div>
@@ -1938,7 +2287,7 @@
 
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-600 mb-1">Ou cole o link direto da imagem:</label>
-                                    <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
+                                    <input type="text" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
                                            placeholder="https://exemplo.com/foto-proof.jpg"
                                            class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-rose-500 transition">
                                 </div>
@@ -2065,13 +2414,37 @@ document.addEventListener('alpine:init', () => {
         groupImagePreview: '',
         groupImageBase64: '',
         groupImageUrl: '',
+        groupColorHex: '',
         groupDragOver: false,
+
+        // Estado de Edição de Grupo
+        editingGroupId: '',
+        editingGroupName: '',
+        editingGroupDescription: '',
+        editGroupImagePreview: '',
+        editGroupImageBase64: '',
+        editGroupImageUrl: '',
+        editGroupColorHex: '',
+        editGroupDragOver: false,
 
         // Estado da Era (criação com banner)
         eraBannerPreview: '',
         eraBannerBase64: '',
         eraBannerUrl: '',
+        eraColorHex: '',
         eraDragOver: false,
+
+        // Estado de Edição de Era
+        editingEraId: '',
+        editingEraGroupId: '',
+        editingEraName: '',
+        editingEraReleaseDate: '',
+        editingEraDescription: '',
+        editEraBannerPreview: '',
+        editEraBannerBase64: '',
+        editEraBannerUrl: '',
+        editEraColorHex: '',
+        editEraDragOver: false,
 
         // Estado da CEG (criação com banner)
         cegBannerPreview: '',
@@ -2137,8 +2510,14 @@ document.addEventListener('alpine:init', () => {
                 if (this.activeModal === 'group') {
                     this.handleGroupImageFile(imageFile);
                     e.preventDefault();
+                } else if (this.activeModal === 'edit-group' || this.activeModal === 'edit_group') {
+                    this.handleEditGroupImageFile(imageFile);
+                    e.preventDefault();
                 } else if (this.activeModal === 'era') {
                     this.handleEraBannerFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'edit-era' || this.activeModal === 'edit_era') {
+                    this.handleEditEraBannerFile(imageFile);
                     e.preventDefault();
                 } else if (this.activeModal === 'ceg') {
                     this.handleCegBannerFile(imageFile);
@@ -2247,7 +2626,20 @@ document.addEventListener('alpine:init', () => {
 
         openModal(name) {
             this.activeModal = name;
-            if (name === 'item_individual') {
+            if (name === 'edit-group' || name === 'edit_group') {
+                if (this.groups && this.groups.length > 0 && !this.editingGroupId) {
+                    this.onSelectEditGroup(this.groups[0].id);
+                }
+            } else if (name === 'edit-era' || name === 'edit_era') {
+                if (!this.editingEraId) {
+                    for (const g of this.groups) {
+                        if (g.eras && g.eras.length > 0) {
+                            this.onSelectEditEra(g.eras[0].id);
+                            break;
+                        }
+                    }
+                }
+            } else if (name === 'item_individual') {
                 this.itemImagePreview = '';
                 this.itemImageBase64 = '';
                 this.itemImageUrl = '';
@@ -2269,12 +2661,122 @@ document.addEventListener('alpine:init', () => {
             this.groupImagePreview = '';
             this.groupImageBase64 = '';
             this.groupImageUrl = '';
+            this.groupColorHex = '';
             this.eraBannerPreview = '';
             this.eraBannerBase64 = '';
             this.eraBannerUrl = '';
+            this.eraColorHex = '';
             this.cegBannerPreview = '';
             this.cegBannerBase64 = '';
             this.cegBannerUrl = '';
+            this.editGroupImagePreview = '';
+            this.editGroupImageBase64 = '';
+            this.editGroupImageUrl = '';
+            this.editGroupColorHex = '';
+            this.editEraBannerPreview = '';
+            this.editEraBannerBase64 = '';
+            this.editEraBannerUrl = '';
+            this.editEraColorHex = '';
+        },
+
+        onSelectEditGroup(groupId) {
+            this.editingGroupId = groupId || '';
+            if (!groupId) {
+                this.editingGroupName = '';
+                this.editingGroupDescription = '';
+                this.editGroupImagePreview = '';
+                this.editGroupImageBase64 = '';
+                this.editGroupImageUrl = '';
+                this.editGroupColorHex = '';
+                return;
+            }
+            const g = this.groups.find(item => String(item.id) === String(groupId));
+            if (g) {
+                this.editingGroupName = g.name || '';
+                this.editingGroupDescription = g.description || '';
+                this.editGroupImagePreview = g.image_url || '';
+                this.editGroupImageUrl = g.image_url || '';
+                this.editGroupImageBase64 = '';
+                this.editGroupColorHex = g.color_hex || '';
+            }
+        },
+        handleEditGroupImageFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.editGroupImagePreview = e.target.result;
+                this.editGroupImageBase64 = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('form[action*="update_group"] input[name="image_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearEditGroupImage() {
+            this.editGroupImagePreview = '';
+            this.editGroupImageBase64 = '';
+            this.editGroupImageUrl = '';
+            const fileInput = document.querySelector('form[action*="update_group"] input[name="image_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        onSelectEditEra(eraId) {
+            this.editingEraId = eraId || '';
+            if (!eraId) {
+                this.editingEraGroupId = '';
+                this.editingEraName = '';
+                this.editingEraReleaseDate = '';
+                this.editingEraDescription = '';
+                this.editEraBannerPreview = '';
+                this.editEraBannerBase64 = '';
+                this.editEraBannerUrl = '';
+                return;
+            }
+            let foundEra = null;
+            for (const g of this.groups) {
+                if (g.eras) {
+                    const e = g.eras.find(item => String(item.id) === String(eraId));
+                    if (e) {
+                        foundEra = e;
+                        break;
+                    }
+                }
+            }
+            if (foundEra) {
+                this.editingEraGroupId = foundEra.group_id || '';
+                this.editingEraName = foundEra.name || '';
+                this.editingEraReleaseDate = foundEra.release_date || '';
+                this.editingEraDescription = foundEra.description || '';
+                this.editEraBannerPreview = foundEra.banner_url || '';
+                this.editEraBannerUrl = foundEra.banner_url || '';
+                this.editEraBannerBase64 = '';
+                this.editEraColorHex = foundEra.color_hex || '';
+            }
+        },
+        handleEditEraBannerFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.editEraBannerPreview = e.target.result;
+                this.editEraBannerBase64 = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('form[action*="update_era"] input[name="banner_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearEditEraBanner() {
+            this.editEraBannerPreview = '';
+            this.editEraBannerBase64 = '';
+            this.editEraBannerUrl = '';
+            const fileInput = document.querySelector('form[action*="update_era"] input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
         },
 
         handleGroupImageFile(file) {

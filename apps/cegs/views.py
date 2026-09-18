@@ -548,7 +548,7 @@ class ToggleSlotPaymentView(View):
             if not field:
                 return JsonResponse({'success': False, 'message': 'Parâmetro "field" é obrigatório.'}, status=400)
 
-            new_val = slot.toggle_payment(field, value=value)
+            new_val = slot.toggle_payment(field, value=value, actor=request.user)
 
             field_labels = {
                 'item': 'Item',

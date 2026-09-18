@@ -382,26 +382,39 @@
                          x-transition
                          class="border border-slate-200 hover:border-pink-300 rounded-2xl p-4 transition bg-white shadow-2xs flex flex-col justify-between space-y-3">
                         <!-- Header do Card -->
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
-                                        {{ s.group_name }}
-                                    </span>
-                                    <span class="text-[10px] font-bold text-slate-500">
-                                        {{ s.era_name }}
-                                    </span>
-                                    <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-                                        Set #{{ s.set_number }}
-                                    </span>
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="flex items-start gap-3 min-w-0">
+                                {% if s.banner_url or s.image_url %}
+                                    <img src="{{ s.banner_url|default:s.image_url }}" alt="{{ s.ceg_title }}"
+                                         @click="zoomPhoto = '{{ s.banner_url|default:s.image_url }}'"
+                                         class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
+                                         title="Clique para ampliar o banner da CEG" />
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 font-bold text-base flex-shrink-0"
+                                         title="{{ s.group_name }}">
+                                        ✨
+                                    </div>
+                                {% endif %}
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                                            {{ s.group_name }}
+                                        </span>
+                                        <span class="text-[10px] font-bold text-slate-500">
+                                            {{ s.era_name }}
+                                        </span>
+                                        <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                                            Set #{{ s.set_number }}
+                                        </span>
+                                    </div>
+                                    <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
+                                        {{ s.ceg_clean_title|default:s.ceg_title }}
+                                    </h3>
                                 </div>
-                                <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
-                                    {{ s.ceg_clean_title|default:s.ceg_title }}
-                                </h3>
                             </div>
 
                             <a href="/ceg/{{ s.ceg_slug }}/"
-                               class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg text-xs border border-pink-200 transition flex items-center gap-1 cursor-pointer">
+                               class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg text-xs border border-pink-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
                                 <span>Abrir CEG</span> ↗
                             </a>
                         </div>
@@ -479,26 +492,39 @@
                          x-transition
                          class="border border-amber-200 bg-amber-50/20 hover:border-amber-300 rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3">
                         <!-- Header do Card -->
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
-                                        {{ s.group_name }}
-                                    </span>
-                                    <span class="text-[10px] font-bold text-slate-500">
-                                        {{ s.era_name }}
-                                    </span>
-                                    <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
-                                        Set #{{ s.set_number }} • 100% Claimado
-                                    </span>
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="flex items-start gap-3 min-w-0">
+                                {% if s.banner_url or s.image_url %}
+                                    <img src="{{ s.banner_url|default:s.image_url }}" alt="{{ s.ceg_title }}"
+                                         @click="zoomPhoto = '{{ s.banner_url|default:s.image_url }}'"
+                                         class="w-12 h-12 rounded-xl object-cover border border-amber-200/80 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
+                                         title="Clique para ampliar o banner da CEG" />
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 font-bold text-base flex-shrink-0"
+                                         title="{{ s.group_name }}">
+                                        🔒
+                                    </div>
+                                {% endif %}
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                                            {{ s.group_name }}
+                                        </span>
+                                        <span class="text-[10px] font-bold text-slate-500">
+                                            {{ s.era_name }}
+                                        </span>
+                                        <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
+                                            Set #{{ s.set_number }} • 100% Claimado
+                                        </span>
+                                    </div>
+                                    <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
+                                        {{ s.ceg_clean_title|default:s.ceg_title }}
+                                    </h3>
                                 </div>
-                                <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
-                                    {{ s.ceg_clean_title|default:s.ceg_title }}
-                                </h3>
                             </div>
 
                             <a href="/ceg/{{ s.ceg_slug }}/"
-                               class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer">
+                               class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
                                 <span>Ver</span> ↗
                             </a>
                         </div>
@@ -646,35 +672,48 @@
                          class="border rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3
                              {% if s.is_terminado %}bg-gradient-to-br from-amber-50/40 via-yellow-50/20 to-white border-amber-300 ring-1 ring-amber-200{% else %}bg-emerald-50/15 border-emerald-200 hover:border-emerald-300{% endif %}">
                         <!-- Header do Card -->
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
-                                        {{ s.group_name }}
-                                    </span>
-                                    <span class="text-[10px] font-bold text-slate-500">
-                                        {{ s.era_name }}
-                                    </span>
-                                    <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
-                                        Set #{{ s.set_number }}
-                                    </span>
-                                    {% if s.is_terminado %}
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-2xs flex items-center gap-1">
-                                            <span>🏆</span> SET TERMINADO
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="flex items-start gap-3 min-w-0">
+                                {% if s.banner_url or s.image_url %}
+                                    <img src="{{ s.banner_url|default:s.image_url }}" alt="{{ s.ceg_title }}"
+                                         @click="zoomPhoto = '{{ s.banner_url|default:s.image_url }}'"
+                                         class="w-12 h-12 rounded-xl object-cover border border-emerald-200 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
+                                         title="Clique para ampliar o banner da CEG" />
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-base flex-shrink-0"
+                                         title="{{ s.group_name }}">
+                                        {% if s.is_terminado %}🏆{% else %}💵{% endif %}
+                                    </div>
+                                {% endif %}
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                                            {{ s.group_name }}
                                         </span>
-                                    {% else %}
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                            ✓ Item Pago
+                                        <span class="text-[10px] font-bold text-slate-500">
+                                            {{ s.era_name }}
                                         </span>
-                                    {% endif %}
+                                        <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
+                                            Set #{{ s.set_number }}
+                                        </span>
+                                        {% if s.is_terminado %}
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-2xs flex items-center gap-1">
+                                                <span>🏆</span> SET TERMINADO
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                                ✓ Item Pago
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
+                                        {{ s.ceg_clean_title|default:s.ceg_title }}
+                                    </h3>
                                 </div>
-                                <h3 class="text-sm font-black text-slate-900 mt-1 leading-snug">
-                                    {{ s.ceg_clean_title|default:s.ceg_title }}
-                                </h3>
                             </div>
 
                             <a href="/ceg/{{ s.ceg_slug }}/"
-                               class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer">
+                               class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
                                 <span>Ver</span> ↗
                             </a>
                         </div>
@@ -830,24 +869,38 @@
                             x-transition
                             class="hover:bg-slate-50/80 transition">
                             <td class="py-3 px-4">
-                                <div class="font-black text-slate-900 text-sm leading-snug">{{ c.clean_title|default:c.title }}</div>
-                                <div class="text-[11px] text-slate-500 font-semibold">
-                                    {{ c.group_name }} • {{ c.era_name }}
+                                <div class="flex items-center gap-3">
+                                    {% if c.banner_url or c.image_url %}
+                                        <img src="{{ c.banner_url|default:c.image_url }}" alt="{{ c.title }}"
+                                             @click="zoomPhoto = '{{ c.banner_url|default:c.image_url }}'"
+                                             class="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
+                                             title="Clique para ampliar o banner da CEG" />
+                                    {% else %}
+                                        <div class="w-11 h-11 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
+                                            💿
+                                        </div>
+                                    {% endif %}
+                                    <div class="min-w-0">
+                                        <div class="font-black text-slate-900 text-sm leading-snug">{{ c.clean_title|default:c.title }}</div>
+                                        <div class="text-[11px] text-slate-500 font-semibold">
+                                            {{ c.group_name }} • {{ c.era_name }}
+                                        </div>
+                                        {% if c.caixa_nome %}
+                                            <div class="mt-1 flex items-center gap-1">
+                                                <a href="/caixas/{{ c.caixa_slug }}/"
+                                                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold transition"
+                                                   title="Remessa: {{ c.caixa_nome }} — {{ c.shipping_status_display }}">
+                                                    <span>{% if c.caixa_origem == 'KR' %}🇰🇷{% elif c.caixa_origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
+                                                    <span class="truncate max-w-[140px]">{{ c.caixa_nome }}</span>
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <div class="mt-1">
+                                                <span class="text-[10px] text-slate-400 italic">Sem caixa vinculada</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                {% if c.caixa_nome %}
-                                    <div class="mt-1 flex items-center gap-1">
-                                        <a href="/caixas/{{ c.caixa_slug }}/"
-                                           class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold transition"
-                                           title="Remessa: {{ c.caixa_nome }} — {{ c.shipping_status_display }}">
-                                            <span>{% if c.caixa_origem == 'KR' %}🇰🇷{% elif c.caixa_origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
-                                            <span class="truncate max-w-[140px]">{{ c.caixa_nome }}</span>
-                                        </a>
-                                    </div>
-                                {% else %}
-                                    <div class="mt-1">
-                                        <span class="text-[10px] text-slate-400 italic">Sem caixa vinculada</span>
-                                    </div>
-                                {% endif %}
                             </td>
                             <td class="py-3 px-3 text-center">
                                 {% if c.is_ativa %}
@@ -1392,7 +1445,7 @@
 
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-600 mb-1">Ou cole o link direto da imagem:</label>
-                                    <input type="url" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
+                                    <input type="text" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
                                            placeholder="https://exemplo.com/foto-proof.jpg"
                                            class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 transition">
                                 </div>
