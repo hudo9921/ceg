@@ -369,6 +369,7 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-200 pb-2">
+                            <th class="py-2.5 px-3 w-16">Foto</th>
                             <th class="py-2.5 px-3">CEG / Grupo</th>
                             <th class="py-2.5 px-3">Status da CEG</th>
                             <th class="py-2.5 px-3">Status de Envio</th>
@@ -379,14 +380,38 @@
                     <tbody class="divide-y divide-slate-100 text-xs">
                         {% for ceg in cegs %}
                             <tr class="hover:bg-slate-50/80 transition">
+                                <!-- Foto / Imagem da CEG -->
+                                <td class="py-3 px-3 w-16">
+                                    <div class="relative group w-12 h-12">
+                                        {% if ceg.display_image_url %}
+                                            <img src="{{ ceg.display_image_url }}"
+                                                 alt="{{ ceg.title }}"
+                                                 @click="openZoom('{{ ceg.display_image_url }}')"
+                                                 class="w-12 h-12 object-cover rounded-xl border border-slate-200 shadow-2xs cursor-pointer group-hover:opacity-80 transition">
+                                            <div @click="openZoom('{{ ceg.display_image_url }}')"
+                                                 class="absolute inset-0 bg-black/40 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition text-[10px] font-bold">
+                                                🔍 Ver
+                                            </div>
+                                        {% else %}
+                                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-2xs">
+                                                🎴
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
                                 <td class="py-3 px-3">
-                                    <div class="font-bold text-slate-900">
+                                    <div class="font-bold text-slate-900 leading-snug">
                                         <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-blue-600 hover:underline" title="{{ ceg.title }}">
                                             {{ ceg.display_title }}
                                         </a>
                                     </div>
-                                    <div class="text-[11px] text-slate-500">
-                                        {{ ceg.era.group.name }} &bull; {{ ceg.era.name }}
+                                    <div class="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                        <span class="font-bold text-slate-700">{{ ceg.era.group.name }}</span>
+                                        {% if ceg.era.name %}
+                                            <span>&bull;</span>
+                                            <span class="text-slate-500">{{ ceg.era.name }}</span>
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td class="py-3 px-3">
@@ -933,12 +958,19 @@
 
                     <div class="max-h-64 overflow-y-auto space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50">
                         {% for c in cegs_sem_caixa %}
-                            <label class="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200 hover:border-blue-400 cursor-pointer transition">
+                            <label class="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-200 hover:border-blue-400 cursor-pointer transition">
                                 <input type="checkbox" name="ceg_ids" value="{{ c.id }}"
-                                       class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4">
-                                <div class="text-xs">
-                                    <div class="font-bold text-slate-900">{{ c.title }}</div>
-                                    <div class="text-[11px] text-slate-500">{{ c.era.group.name }} &bull; {{ c.get_status_display }}</div>
+                                       class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 shrink-0">
+                                {% if c.display_image_url %}
+                                    <img src="{{ c.display_image_url }}" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0">
+                                {% else %}
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-xs font-black shrink-0">
+                                        🎴
+                                    </div>
+                                {% endif %}
+                                <div class="text-xs flex-1 min-w-0">
+                                    <div class="font-bold text-slate-900 truncate">{{ c.display_title }}</div>
+                                    <div class="text-[11px] text-slate-500 truncate">{{ c.era.group.name }} &bull; {{ c.get_status_display }}</div>
                                 </div>
                             </label>
                         {% endfor %}

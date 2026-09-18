@@ -534,6 +534,23 @@ class CEG(models.Model):
         return self.clean_title()
 
     @property
+    def display_image_url(self) -> str:
+        """
+        Retorna a melhor imagem representativa para a CEG:
+        1. Banner próprio da CEG (se houver)
+        2. Banner da Era vinculada (se houver)
+        3. Foto/Logo do Grupo vinculado (se houver)
+        """
+        if self.banner_url and self.banner_url.strip():
+            return self.banner_url.strip()
+        if hasattr(self, 'era') and self.era:
+            if self.era.banner_url and self.era.banner_url.strip():
+                return self.era.banner_url.strip()
+            if hasattr(self.era, 'group') and self.era.group and self.era.group.image_url and self.era.group.image_url.strip():
+                return self.era.group.image_url.strip()
+        return ""
+
+    @property
     def theme_color(self) -> str:
         """
         Retorna a cor temática com a seguinte cascata de prioridades:
