@@ -1,3 +1,4 @@
+import math
 import re
 from django.db import models
 from django.utils import timezone
@@ -661,7 +662,7 @@ class CEG(models.Model):
         """Segundos restantes para abertura"""
         if self.opens_at and timezone.now() < self.opens_at:
             delta = self.opens_at - timezone.now()
-            return max(0, int(delta.total_seconds()))
+            return max(0, int(math.ceil(delta.total_seconds())))
         return 0
 
     @property

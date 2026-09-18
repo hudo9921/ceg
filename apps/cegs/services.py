@@ -212,10 +212,12 @@ class ClaimService:
 
                     # 2. Validação do Modo Standby / Abertura da CEG (admin bypass)
                     if not bypass_status_check:
-                        if ceg.opens_at and timezone.now() < ceg.opens_at:
-                            raise CEGNotOpenYetError(
-                                f"A CEG ainda está em modo Standby! As reservas abrem em {ceg.opens_at.strftime('%d/%m/%Y às %H:%M:%S')}."
-                            )
+                        if ceg.opens_at:
+                            diff_seconds = (ceg.opens_at - timezone.now()).total_seconds()
+                            if diff_seconds > 1.0:
+                                raise CEGNotOpenYetError(
+                                    f"A CEG ainda está em modo Standby! As reservas abrem em {ceg.opens_at.strftime('%d/%m/%Y às %H:%M:%S')}."
+                                )
 
                         if ceg.status not in (CEG.Status.OPEN, CEG.Status.SCHEDULED):
                             raise CEGError("Esta CEG não está aceitando reservas no momento.")

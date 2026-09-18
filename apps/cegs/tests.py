@@ -1840,6 +1840,64 @@ class CEGAvailableSlotsKeepOpenTests(TestCase):
         self.assertEqual(self.ceg.status, CEG.Status.CLOSED)
 
 
+class CEGProgrammedClaimUnlockTests(TestCase):
+    def setUp(self):
+        ClaimService.reset_in_memory_counters()
+        self.group = KpopGroup.objects.create(name='Aespa', slug='aespa')
+        self.era = Era.objects.create(group=self.group, name='Armageddon', slug='armageddon')
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='CEG Standby Dynamic Test',
+            slug='ceg-standby-dynamic-test',
+            status=CEG.Status.SCHEDULED,
+            opens_at=timezone.now() + timedelta(seconds=10),
+            pix_key='pix@test.com'
+        )
+        self.item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Karina',
+            member_name='Karina',
+            default_price=45.00
+        )
+        self.cset = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.cset.generate_slots()
+        self.slot = self.cset.slots.first()
+
+    def test_countdown_seconds_uses_ceiling(self):
+        """Verifica se countdown_seconds utiliza arredondamento para cima garantindo sincronia"""
+        self.ceg.opens_at = timezone.now() + timedelta(seconds=5.2)
+        self.ceg.save(update_fields=['opens_at'])
+        self.assertEqual(self.ceg.countdown_seconds, 6)
+
+    def test_claim_at_zero_second_grace_window(self):
+        """Garante que requests no segundo zero (dentro de 1s de margem de clock) sejam aceitas com sucesso"""
+        self.ceg.opens_at = timezone.now() + timedelta(milliseconds=500)
+        self.ceg.save(update_fields=['opens_at'])
+        claim = ClaimService.claim_slot(
+            slot_id=self.slot.id,
+            name='Winter Fan',
+            phone='5511999998888',
+            social_handle='@winter_fan'
+        )
+        self.assertIsNotNone(claim)
+        self.assertEqual(claim.status, Claim.Status.PENDING)
+
+    def test_detail_template_does_not_shadow_is_standby_on_slots(self):
+        """Verifica se os cards de slots no template detail.html não sombreiam isStandby localmente"""
+        client = Client()
+        response = client.get(f'/ceg/{self.ceg.slug}/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # O template deve conter o dispatcher de evento de abertura
+        self.assertIn("window.dispatchEvent(new CustomEvent('standby-ended'))", content)
+        self.assertIn("@standby-ended.window=\"isStandby = false\"", content)
+
+        # O slot x-data NÃO deve declarar 'isStandby:' internamente (evitando shadow de escopo)
+        self.assertNotIn("status: 'AVAILABLE',\n                                 isStandby:", content)
+        self.assertNotIn("status: 'AVAILABLE',\r\n                                 isStandby:", content)
+
+
 
 
 
