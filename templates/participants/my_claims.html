@@ -676,47 +676,47 @@
             <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filtrar por Status:</span>
                 <button type="button" @click="statusFilter = 'ALL'"
-                        :class="statusFilter === 'ALL' ? 'bg-slate-900 text-white font-bold shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                        :class="statusFilter === 'ALL' ? 'bg-slate-900 dark:bg-pink-600 text-white font-bold shadow-sm' : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
                     <span>Todos os Itens</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                          :class="statusFilter === 'ALL' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'">
+                          :class="statusFilter === 'ALL' ? 'bg-slate-700 dark:bg-pink-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'">
                         {{ total_claims_count }}
                     </span>
                 </button>
                 <button type="button" @click="statusFilter = 'PENDING'"
-                        :class="statusFilter === 'PENDING' ? 'bg-amber-600 text-white font-bold shadow-sm' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 font-medium'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                        :class="statusFilter === 'PENDING' ? 'bg-amber-600 text-white font-bold shadow-sm' : 'bg-amber-50 dark:bg-[#131B2E] text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-[#1E293B] border border-amber-200 dark:border-amber-500/30 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
                     <span>⏳ Faltam Pagar</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                          :class="statusFilter === 'PENDING' ? 'bg-amber-700 text-white' : 'bg-amber-200 text-amber-900'">
+                          :class="statusFilter === 'PENDING' ? 'bg-amber-700 text-white' : 'bg-amber-200 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 dark:border dark:border-amber-800/60'">
                         {{ pending_claims_count }}
                     </span>
                 </button>
                 <button type="button" @click="statusFilter = 'PAID'"
-                        :class="statusFilter === 'PAID' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-medium'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                        :class="statusFilter === 'PAID' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'bg-emerald-50 dark:bg-[#131B2E] text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-[#1E293B] border border-emerald-200 dark:border-emerald-500/30 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
                     <span>✔ Já Pagos</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                          :class="statusFilter === 'PAID' ? 'bg-emerald-700 text-white' : 'bg-emerald-200 text-emerald-900'">
+                          :class="statusFilter === 'PAID' ? 'bg-emerald-700 text-white' : 'bg-emerald-200 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 dark:border dark:border-emerald-800/60'">
                         {{ paid_claims_count }}
                     </span>
                 </button>
                 <button type="button" @click="statusFilter = 'INTER_UNPAID'"
-                        :class="statusFilter === 'INTER_UNPAID' ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200 font-medium'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                        :class="statusFilter === 'INTER_UNPAID' ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-blue-50 dark:bg-[#131B2E] text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-[#1E293B] border border-blue-200 dark:border-blue-500/30 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
                     <span>✈️ Inter Não Pago</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                          :class="statusFilter === 'INTER_UNPAID' ? 'bg-blue-700 text-white' : 'bg-blue-200 text-blue-900'">
+                          :class="statusFilter === 'INTER_UNPAID' ? 'bg-blue-700 text-white' : 'bg-blue-200 dark:bg-blue-950/80 text-blue-900 dark:text-blue-300 dark:border dark:border-blue-800/60'">
                         {{ inter_unpaid_count }}
                     </span>
                 </button>
                 <button type="button" @click="statusFilter = 'TAXA_UNPAID'"
-                        :class="statusFilter === 'TAXA_UNPAID' ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200 font-medium'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                        :class="statusFilter === 'TAXA_UNPAID' ? 'bg-purple-600 text-white font-bold shadow-sm' : 'bg-purple-50 dark:bg-[#131B2E] text-purple-800 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-[#1E293B] border border-purple-200 dark:border-purple-500/30 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
                     <span>🏛️ Taxa Não Paga</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
-                          :class="statusFilter === 'TAXA_UNPAID' ? 'bg-purple-700 text-white' : 'bg-purple-200 text-purple-900'">
+                          :class="statusFilter === 'TAXA_UNPAID' ? 'bg-purple-700 text-white' : 'bg-purple-200 dark:bg-purple-950/80 text-purple-900 dark:text-purple-300 dark:border dark:border-purple-800/60'">
                         {{ taxa_unpaid_count }}
                     </span>
                 </button>

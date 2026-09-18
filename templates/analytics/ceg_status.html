@@ -180,30 +180,30 @@
             <div @click="setCardFilter('incomplete')"
                  class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
                  :class="activeCardFilter === 'incomplete'
-                     ? 'bg-pink-100/80 border-pink-500 ring-2 ring-pink-400 shadow-md scale-[1.01]'
-                     : 'bg-white border-slate-200 hover:border-pink-300 hover:shadow-md hover:scale-[1.01]'">
+                     ? 'bg-pink-100/80 dark:bg-pink-950/60 border-pink-500 ring-2 ring-pink-400 shadow-md scale-[1.01]'
+                     : 'bg-white dark:bg-[#131B2E] border-slate-200 dark:border-pink-500/20 hover:border-pink-300 dark:hover:border-pink-400 hover:shadow-md hover:scale-[1.01]'">
                 <div class="flex items-center justify-between">
                     <span class="text-[11px] font-bold uppercase tracking-wider"
-                          :class="activeCardFilter === 'incomplete' ? 'text-pink-950 font-black' : 'text-pink-700'">
+                          :class="activeCardFilter === 'incomplete' ? 'text-pink-950 dark:text-pink-200 font-black' : 'text-pink-700 dark:text-pink-400'">
                         SETS ABERTOS
                     </span>
                     <span class="p-2 rounded-xl text-base transition"
-                          :class="activeCardFilter === 'incomplete' ? 'bg-pink-600 text-white' : 'bg-pink-50 text-pink-600'">
+                          :class="activeCardFilter === 'incomplete' ? 'bg-pink-600 text-white' : 'bg-pink-50 dark:bg-pink-950/70 text-pink-600 dark:text-pink-300 dark:border dark:border-pink-800/60'">
                         ⚡
                     </span>
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-pink-900">{{ summary.incomplete_sets_count }}</div>
+                        <div class="text-3xl font-black text-pink-900 dark:text-pink-300">{{ summary.incomplete_sets_count }}</div>
                         <span x-show="activeCardFilter === 'incomplete'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-pink-600 text-white shadow-2xs">
                             Abertos
                         </span>
                     </div>
-                    <div class="text-xs text-pink-600 font-semibold mt-0.5 leading-relaxed">
+                    <div class="text-xs text-pink-600 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
                         Em {{ summary.active_cegs }} CEGs com vagas (de {{ summary.total_cegs }} cadastradas)
                     </div>
-                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-pink-100 flex items-center gap-1.5 text-pink-700">
+                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-pink-100 dark:border-slate-800 flex items-center gap-1.5 text-pink-700 dark:text-pink-400">
                         <span>👆</span>
                         <span>Filtrar sets abertos</span>
                     </div>
@@ -214,30 +214,30 @@
             <div @click="setCardFilter('fechados')"
                  class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
                  :class="activeCardFilter === 'fechados'
-                     ? 'bg-amber-100/80 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
-                     : 'bg-white border-slate-200 hover:border-amber-400 hover:shadow-md hover:scale-[1.01]'">
+                     ? 'bg-amber-100/80 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
+                     : 'bg-white dark:bg-[#131B2E] border-slate-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-400 hover:shadow-md hover:scale-[1.01]'">
                 <div class="flex items-center justify-between">
                     <span class="text-[11px] font-bold uppercase tracking-wider"
-                          :class="activeCardFilter === 'fechados' ? 'text-amber-950 font-black' : 'text-amber-800'">
+                          :class="activeCardFilter === 'fechados' ? 'text-amber-950 dark:text-amber-200 font-black' : 'text-amber-800 dark:text-amber-400'">
                         SETS FECHADOS
                     </span>
                     <span class="p-2 rounded-xl text-base transition"
-                          :class="activeCardFilter === 'fechados' ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700'">
+                          :class="activeCardFilter === 'fechados' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 dark:border dark:border-amber-800/60'">
                         🔒
                     </span>
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-amber-900">{{ summary.closed_sets_count }}</div>
+                        <div class="text-3xl font-black text-amber-900 dark:text-amber-300">{{ summary.closed_sets_count }}</div>
                         <span x-show="activeCardFilter === 'fechados'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-2xs">
                             Fechados
                         </span>
                     </div>
-                    <div class="text-xs text-amber-700 font-semibold mt-0.5 leading-relaxed">
+                    <div class="text-xs text-amber-700 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
                         100% claimados, aguardando pagamento
                     </div>
-                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-amber-100 flex items-center gap-1.5 text-amber-800">
+                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-amber-100 dark:border-slate-800 flex items-center gap-1.5 text-amber-800 dark:text-amber-400">
                         <span>👆</span>
                         <span>Filtrar fechados</span>
                     </div>
@@ -248,30 +248,30 @@
             <div @click="setCardFilter('pagos')"
                  class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
                  :class="activeCardFilter === 'pagos'
-                     ? 'bg-emerald-100/80 border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.01]'
-                     : 'bg-white border-slate-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.01]'">
+                     ? 'bg-emerald-100/80 dark:bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.01]'
+                     : 'bg-white dark:bg-[#131B2E] border-slate-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-400 hover:shadow-md hover:scale-[1.01]'">
                 <div class="flex items-center justify-between">
                     <span class="text-[11px] font-bold uppercase tracking-wider"
-                          :class="activeCardFilter === 'pagos' ? 'text-emerald-950 font-black' : 'text-emerald-800'">
+                          :class="activeCardFilter === 'pagos' ? 'text-emerald-950 dark:text-emerald-200 font-black' : 'text-emerald-800 dark:text-emerald-400'">
                         SETS PAGOS
                     </span>
                     <span class="p-2 rounded-xl text-base transition"
-                          :class="activeCardFilter === 'pagos' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700'">
+                          :class="activeCardFilter === 'pagos' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 dark:border dark:border-emerald-800/60'">
                         💵
                     </span>
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-emerald-900">{{ summary.paid_sets_count }}</div>
+                        <div class="text-3xl font-black text-emerald-900 dark:text-emerald-300">{{ summary.paid_sets_count }}</div>
                         <span x-show="activeCardFilter === 'pagos'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
                             Pagos
                         </span>
                     </div>
-                    <div class="text-xs text-emerald-700 font-semibold mt-0.5 leading-relaxed">
+                    <div class="text-xs text-emerald-700 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
                         {{ summary.paid_frete_sets_count|default:0 }} c/ frete pago • {{ summary.pending_frete_sets_count|default:0 }} frete em aberto
                     </div>
-                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-emerald-100 flex items-center gap-1.5 text-emerald-800">
+                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-emerald-100 dark:border-slate-800 flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400">
                         <span>👆</span>
                         <span>Filtrar pagos</span>
                     </div>
@@ -282,30 +282,30 @@
             <div @click="setCardFilter('terminados')"
                  class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
                  :class="activeCardFilter === 'terminados'
-                     ? 'bg-amber-100/90 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
-                     : 'bg-gradient-to-br from-amber-50/40 via-yellow-50/20 to-white border-slate-200 hover:border-amber-400 hover:shadow-md hover:scale-[1.01]'">
+                     ? 'bg-amber-100/90 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
+                     : 'bg-white dark:bg-[#131B2E] border-slate-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-400 hover:shadow-md hover:scale-[1.01]'">
                 <div class="flex items-center justify-between">
                     <span class="text-[11px] font-bold uppercase tracking-wider"
-                          :class="activeCardFilter === 'terminados' ? 'text-amber-950 font-black' : 'text-amber-800'">
+                          :class="activeCardFilter === 'terminados' ? 'text-amber-950 dark:text-amber-200 font-black' : 'text-amber-800 dark:text-amber-400'">
                         SETS TERMINADOS
                     </span>
                     <span class="p-2 rounded-xl text-base transition"
-                          :class="activeCardFilter === 'terminados' ? 'bg-amber-500 text-slate-950' : 'bg-amber-100 text-amber-700'">
+                          :class="activeCardFilter === 'terminados' ? 'bg-amber-500 text-slate-950' : 'bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 dark:border dark:border-amber-800/60'">
                         🏆
                     </span>
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-amber-950">{{ summary.finished_sets_count }}</div>
+                        <div class="text-3xl font-black text-amber-950 dark:text-amber-300">{{ summary.finished_sets_count }}</div>
                         <span x-show="activeCardFilter === 'terminados'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 shadow-2xs">
                             Terminados
                         </span>
                     </div>
-                    <div class="text-xs text-amber-800 font-semibold mt-0.5 leading-relaxed">
+                    <div class="text-xs text-amber-800 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
                         Tudo 100% pago (Item + Frete + Taxa)
                     </div>
-                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-amber-100 flex items-center gap-1.5 text-amber-800">
+                    <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-amber-100 dark:border-slate-800 flex items-center gap-1.5 text-amber-800 dark:text-amber-400">
                         <span>👆</span>
                         <span>Filtrar terminados</span>
                     </div>
