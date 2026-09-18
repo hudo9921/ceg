@@ -37,53 +37,53 @@
     <!-- CARDS DE MÉTRICAS GLOBAIS DE LOGÍSTICA -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <!-- Total de Pacotes -->
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total de Pacotes</div>
-            <div class="text-2xl font-black text-slate-900">{{ stats.total_pacotes }}</div>
-            <div class="text-[11px] text-slate-500">Todos os envios gerados</div>
+        <div class="bg-white dark:bg-[#131B2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Total de Pacotes</div>
+            <div class="text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_pacotes }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">Todos os envios gerados</div>
         </div>
 
         <!-- Em Preparação -->
-        <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Em Preparação</div>
-            <div class="text-2xl font-black text-amber-900">{{ stats.em_preparacao_count }}</div>
-            <div class="text-[11px] text-amber-700">Aguardando despacho</div>
+        <div class="bg-amber-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Em Preparação</div>
+            <div class="text-2xl font-black text-amber-900 dark:text-amber-300">{{ stats.em_preparacao_count }}</div>
+            <div class="text-[11px] text-amber-700 dark:text-slate-400">Aguardando despacho</div>
         </div>
 
         <!-- Enviados em Trânsito -->
-        <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Enviados / Trânsito</div>
-            <div class="text-2xl font-black text-blue-900">{{ stats.enviados_count }}</div>
-            <div class="text-[11px] text-blue-700">Com código de rastreio</div>
+        <div class="bg-blue-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-blue-200 dark:border-blue-500/40 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider">Enviados / Trânsito</div>
+            <div class="text-2xl font-black text-blue-900 dark:text-blue-300">{{ stats.enviados_count }}</div>
+            <div class="text-[11px] text-blue-700 dark:text-slate-400">Com código de rastreio</div>
         </div>
 
         <!-- Entregues -->
-        <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Entregues</div>
-            <div class="text-2xl font-black text-emerald-900">{{ stats.entregues_count }}</div>
-            <div class="text-[11px] text-emerald-700">Concluídos com sucesso</div>
+        <div class="bg-emerald-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/40 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Entregues</div>
+            <div class="text-2xl font-black text-emerald-900 dark:text-emerald-300">{{ stats.entregues_count }}</div>
+            <div class="text-[11px] text-emerald-700 dark:text-slate-400">Concluídos com sucesso</div>
         </div>
 
         <!-- Feedbacks Recebidos -->
-        <div class="bg-purple-50/70 p-4 rounded-2xl border border-purple-200 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-purple-800 uppercase tracking-wider">Avaliações</div>
-            <div class="text-2xl font-black text-purple-900">{{ stats.com_feedback_count }}</div>
-            <div class="text-[11px] text-purple-700">Feedbacks enviados</div>
+        <div class="bg-purple-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-purple-200 dark:border-purple-500/40 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-purple-800 dark:text-purple-400 uppercase tracking-wider">Avaliações</div>
+            <div class="text-2xl font-black text-purple-900 dark:text-purple-300">{{ stats.com_feedback_count }}</div>
+            <div class="text-[11px] text-purple-700 dark:text-slate-400">Feedbacks enviados</div>
         </div>
 
         <!-- Média de Avaliação -->
-        <div class="bg-pink-50/70 p-4 rounded-2xl border border-pink-200 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-pink-800 uppercase tracking-wider">Satisfação Média</div>
-            <div class="text-2xl font-black text-pink-900 flex items-center gap-1">
+        <div class="bg-pink-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-pink-200 dark:border-pink-500/40 shadow-sm space-y-1">
+            <div class="text-[11px] font-bold text-pink-800 dark:text-pink-400 uppercase tracking-wider">Satisfação Média</div>
+            <div class="text-2xl font-black text-pink-900 dark:text-pink-300 flex items-center gap-1">
                 {% if stats.media_feedback %}
                     <span>⭐</span>
                     <span>{{ stats.media_feedback }}</span>
-                    <span class="text-xs text-pink-600 font-bold">/5</span>
+                    <span class="text-xs text-pink-600 dark:text-pink-400 font-bold">/5</span>
                 {% else %}
-                    <span class="text-slate-400 text-lg font-bold">N/A</span>
+                    <span class="text-slate-400 dark:text-slate-500 text-lg font-bold">N/A</span>
                 {% endif %}
             </div>
-            <div class="text-[11px] text-pink-700">Média das notas de joiners</div>
+            <div class="text-[11px] text-pink-700 dark:text-slate-400">Média das notas de joiners</div>
         </div>
     </div>
 

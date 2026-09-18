@@ -272,16 +272,44 @@
             background-color: #1E293B !important;
         }
 
-        /* 9. Badges, Tints e Cartões Pastel em Dark Mode */
-        html.dark .bg-pink-50,
-        html.dark .bg-pink-50\/40,
-        html.dark .bg-pink-50\/50,
-        html.dark .bg-pink-50\/60,
-        html.dark .bg-pink-50\/80 {
-            background-color: rgba(131, 24, 67, 0.25) !important;
-            border-color: rgba(219, 39, 119, 0.35) !important;
+        /* 9. Cards de Métricas e Status em Dark Mode (Envios Nacionais, Painel /me, etc) */
+        html.dark [class*="bg-amber-50"],
+        html.dark [class*="bg-emerald-50"],
+        html.dark [class*="bg-blue-50"],
+        html.dark [class*="bg-purple-50"],
+        html.dark [class*="bg-pink-50"],
+        html.dark [class*="bg-rose-50"],
+        html.dark [class*="bg-sky-50"],
+        html.dark [class*="bg-teal-50"],
+        html.dark [class*="bg-indigo-50"] {
+            background-color: #131B2E !important;
         }
+
+        /* 10. ELIMINAR EFEITO PRATEADO / CROMADO DE GRADIENTES CLAROS */
+        html.dark [class*="from-pink-50"],
+        html.dark [class*="from-purple-50"],
+        html.dark [class*="from-indigo-50"],
+        html.dark [class*="from-blue-50"],
+        html.dark [class*="from-rose-50"],
+        html.dark [class*="from-amber-50"],
+        html.dark [class*="from-emerald-50"],
+        html.dark [class*="from-slate-50"],
+        html.dark [class*="via-white"],
+        html.dark [class*="via-purple-50"],
+        html.dark [class*="via-pink-50"],
+        html.dark [class*="via-blue-50"],
+        html.dark [class*="via-indigo-50"],
+        html.dark [class*="to-purple-50"],
+        html.dark [class*="to-pink-50"],
+        html.dark [class*="to-rose-50"],
+        html.dark [class*="to-blue-50"] {
+            background-image: none !important;
+            background-color: #131B2E !important;
+        }
+
+        /* Badges sólidas e Tints de destaque */
         html.dark .bg-pink-100,
+        html.dark .bg-pink-100\/60,
         html.dark .bg-pink-100\/80 {
             background-color: rgba(131, 24, 67, 0.45) !important;
             color: #F9A8D4 !important;
@@ -292,14 +320,10 @@
         html.dark .text-pink-800 {
             color: #F472B6 !important;
         }
-
-        html.dark .bg-purple-50,
-        html.dark .bg-purple-50\/20,
-        html.dark .bg-purple-50\/40,
-        html.dark .bg-purple-50\/50 {
-            background-color: rgba(88, 28, 135, 0.25) !important;
-            border-color: rgba(147, 51, 234, 0.35) !important;
+        html.dark .text-pink-900 {
+            color: #F9A8D4 !important;
         }
+
         html.dark .bg-purple-100 {
             background-color: rgba(88, 28, 135, 0.45) !important;
             color: #D8B4FE !important;
@@ -310,15 +334,10 @@
         html.dark .text-purple-800 {
             color: #C084FC !important;
         }
-
-        html.dark .bg-blue-50,
-        html.dark .bg-blue-50\/40,
-        html.dark .bg-blue-50\/50,
-        html.dark .bg-blue-50\/70,
-        html.dark .bg-blue-50\/80 {
-            background-color: rgba(30, 58, 138, 0.25) !important;
-            border-color: rgba(37, 99, 235, 0.35) !important;
+        html.dark .text-purple-900 {
+            color: #D8B4FE !important;
         }
+
         html.dark .bg-blue-100 {
             background-color: rgba(30, 58, 138, 0.45) !important;
             color: #93C5FD !important;
@@ -326,17 +345,13 @@
         }
         html.dark .text-blue-600,
         html.dark .text-blue-700,
-        html.dark .text-blue-800,
-        html.dark .text-blue-900 {
+        html.dark .text-blue-800 {
             color: #60A5FA !important;
         }
-
-        html.dark .bg-emerald-50,
-        html.dark .bg-emerald-50\/40,
-        html.dark .bg-emerald-50\/50 {
-            background-color: rgba(6, 78, 59, 0.25) !important;
-            border-color: rgba(5, 150, 105, 0.35) !important;
+        html.dark .text-blue-900 {
+            color: #93C5FD !important;
         }
+
         html.dark .bg-emerald-100 {
             background-color: rgba(6, 78, 59, 0.45) !important;
             color: #6EE7B7 !important;
@@ -344,18 +359,13 @@
         }
         html.dark .text-emerald-600,
         html.dark .text-emerald-700,
-        html.dark .text-emerald-800,
-        html.dark .text-emerald-900 {
+        html.dark .text-emerald-800 {
             color: #34D399 !important;
         }
-
-        html.dark .bg-amber-50,
-        html.dark .bg-amber-50\/40,
-        html.dark .bg-amber-50\/50,
-        html.dark .bg-amber-50\/70 {
-            background-color: rgba(120, 53, 15, 0.25) !important;
-            border-color: rgba(217, 119, 6, 0.35) !important;
+        html.dark .text-emerald-900 {
+            color: #6EE7B7 !important;
         }
+
         html.dark .bg-amber-100 {
             background-color: rgba(120, 53, 15, 0.45) !important;
             color: #FCD34D !important;
@@ -363,17 +373,27 @@
         }
         html.dark .text-amber-600,
         html.dark .text-amber-700,
-        html.dark .text-amber-800,
-        html.dark .text-amber-900 {
+        html.dark .text-amber-800 {
             color: #FBBF24 !important;
         }
-
-        html.dark .bg-rose-50,
-        html.dark .bg-rose-50\/40,
-        html.dark .bg-rose-50\/50 {
-            background-color: rgba(136, 19, 55, 0.25) !important;
-            border-color: rgba(225, 29, 72, 0.35) !important;
+        html.dark .text-amber-900 {
+            color: #FDE68A !important;
         }
+
+        /* Badges de Contagem e Pílulas nos Cards */
+        html.dark .bg-amber-200,
+        html.dark .bg-amber-200\/70 {
+            background-color: rgba(245, 158, 11, 0.25) !important;
+            color: #FDE68A !important;
+            border: 1px solid rgba(245, 158, 11, 0.5) !important;
+        }
+        html.dark .bg-emerald-200,
+        html.dark .bg-emerald-200\/70 {
+            background-color: rgba(16, 185, 129, 0.25) !important;
+            color: #6EE7B7 !important;
+            border: 1px solid rgba(16, 185, 129, 0.5) !important;
+        }
+
         html.dark .bg-rose-100 {
             background-color: rgba(136, 19, 55, 0.45) !important;
             color: #FDA4AF !important;
@@ -385,10 +405,6 @@
             color: #FB7185 !important;
         }
 
-        html.dark .bg-teal-50 {
-            background-color: rgba(19, 78, 74, 0.25) !important;
-            border-color: rgba(13, 148, 136, 0.35) !important;
-        }
         html.dark .bg-teal-100 {
             background-color: rgba(19, 78, 74, 0.45) !important;
             color: #5EEAD4 !important;
@@ -398,10 +414,6 @@
             color: #5EEAD4 !important;
         }
 
-        html.dark .bg-sky-50 {
-            background-color: rgba(12, 74, 110, 0.25) !important;
-            border-color: rgba(2, 132, 199, 0.35) !important;
-        }
         html.dark .bg-sky-100 {
             background-color: rgba(12, 74, 110, 0.45) !important;
             color: #7DD3FC !important;
@@ -412,10 +424,6 @@
             color: #7DD3FC !important;
         }
 
-        html.dark .bg-indigo-50 {
-            background-color: rgba(49, 46, 129, 0.25) !important;
-            border-color: rgba(79, 70, 229, 0.35) !important;
-        }
         html.dark .bg-indigo-100 {
             background-color: rgba(49, 46, 129, 0.45) !important;
             color: #A5B4FC !important;
@@ -423,28 +431,6 @@
         }
         html.dark .text-indigo-800 {
             color: #A5B4FC !important;
-        }
-
-        /* 10. Gradientes Claros Pastel convertidos em Dark Mode */
-        html.dark .from-pink-50,
-        html.dark .from-purple-50,
-        html.dark .from-blue-50,
-        html.dark .from-rose-50,
-        html.dark .from-amber-50 {
-            --tw-gradient-from: #131B2E var(--tw-gradient-from-position) !important;
-        }
-        html.dark .via-white,
-        html.dark .via-purple-50,
-        html.dark .via-pink-50,
-        html.dark .via-blue-50,
-        html.dark .via-indigo-50 {
-            --tw-gradient-via: #172036 var(--tw-gradient-via-position) !important;
-        }
-        html.dark .to-purple-50,
-        html.dark .to-pink-50,
-        html.dark .to-blue-50,
-        html.dark .to-rose-50 {
-            --tw-gradient-to: #131B2E var(--tw-gradient-to-position) !important;
         }
 
         /* 11. Bordas coloridas com opacidade dark */

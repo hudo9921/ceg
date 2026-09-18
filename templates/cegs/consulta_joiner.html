@@ -52,22 +52,22 @@
     </div>
 
     <!-- SELETOR E BUSCA DE JOINER -->
-    <div class="bg-gradient-to-r from-pink-50 via-white to-purple-50 rounded-2xl border border-pink-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+    <div class="bg-gradient-to-r from-pink-50 via-white to-purple-50 dark:from-[#131B2E] dark:via-[#131B2E] dark:to-[#131B2E] dark:bg-[#131B2E] dark:bg-none rounded-2xl border border-pink-200/80 dark:border-pink-500/20 p-5 sm:p-6 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-xl bg-pink-600 text-white flex items-center justify-center text-sm font-bold shadow-2xs">
                     👤
                 </div>
                 <div>
-                    <h2 class="text-sm sm:text-base font-black text-slate-900">Selecione o Joiner (Participante)</h2>
-                    <p class="text-xs text-slate-500">Busque por nome, apelido, WhatsApp ou @ do Twitter/Instagram</p>
+                    <h2 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">Selecione o Joiner (Participante)</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Busque por nome, apelido, WhatsApp ou @ do Twitter/Instagram</p>
                 </div>
             </div>
 
             {% if selected_participant %}
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-500">Visualizando:</span>
-                    <span class="px-3 py-1 bg-white border border-pink-300 rounded-lg text-xs font-black text-pink-700 shadow-2xs">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Visualizando:</span>
+                    <span class="px-3 py-1 bg-white dark:bg-[#0F172A] border border-pink-300 dark:border-pink-500/40 rounded-lg text-xs font-black text-pink-700 dark:text-pink-300 shadow-2xs">
                         {{ selected_participant.display_name }}
                     </span>
                     <a href="{% url 'consulta_joiner' %}" class="text-xs text-slate-400 hover:text-red-600 underline font-medium">
@@ -83,7 +83,7 @@
                 <form method="get" action="{% url 'consulta_joiner' %}" id="form-select-participant">
                     <div class="relative">
                         <select name="participant_id" id="select-participant" onchange="this.form.submit()"
-                                class="w-full bg-white border border-slate-300 rounded-xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-pink-500 focus:border-pink-500 cursor-pointer">
+                                class="w-full bg-white dark:bg-[#0F172A] border border-slate-300 dark:border-slate-700 rounded-xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-2xs focus:ring-2 focus:ring-pink-500 focus:border-pink-500 cursor-pointer">
                             <option value="">-- Escolha um participante com itens pendentes de envio --</option>
                             {% for p in participants_with_counts %}
                                 <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
@@ -103,8 +103,8 @@
             </div>
 
             <!-- Dica Rápida -->
-            <div class="md:col-span-4 text-xs text-slate-500 bg-white/70 p-3 rounded-xl border border-slate-200">
-                💡 <strong class="text-slate-700">Dica:</strong> Clique nos botões de <span class="font-bold text-slate-700">Item, Inter e Taxa</span> de cada card para alternar rapidamente entre Pago e Pendente.
+            <div class="md:col-span-4 text-xs text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-[#0F172A] p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                💡 <strong class="text-slate-700 dark:text-slate-200">Dica:</strong> Clique nos botões de <span class="font-bold text-slate-700 dark:text-slate-200">Item, Inter e Taxa</span> de cada card para alternar rapidamente entre Pago e Pendente.
             </div>
         </div>
 
