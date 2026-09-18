@@ -784,8 +784,7 @@
                         <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}"
                             class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-black rounded-md uppercase tracking-wider hover:bg-blue-200 transition flex items-center gap-1"
                             title="Caixa / Remessa vinculada">
-                            <span>{% if ceg.caixa.origem == 'KR' %}🇰🇷{% elif ceg.caixa.origem == 'JP' %}🇯🇵{% else
-                                %}📦{% endif %}</span>
+                            <span>{% if ceg.caixa.origem == 'KR' %}🇰🇷{% elif ceg.caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
                             <span>{{ ceg.caixa.nome }}</span>
                         </a>
                         <span
@@ -861,8 +860,7 @@
                             </span>
                         </div>
                         <h4 class="text-sm sm:text-base font-black text-white mt-0.5">
-                            {{ ceg.caixa.nome }} &bull; <span class="text-blue-300">{{ ceg.get_shipping_status_display
-                                }}</span>
+                            {{ ceg.caixa.nome }} &bull; <span class="text-blue-300">{{ ceg.get_shipping_status_display }}</span>
                         </h4>
                     </div>
                 </div>
@@ -957,8 +955,7 @@
                         </div>
                         <div class="text-sm font-black text-white">
                             {% if ceg.has_multiple_frete_rates %}
-                            <span>R$ {{ ceg.min_frete_inter|floatformat:2 }} ~ R$ {{ ceg.max_frete_inter|floatformat:2
-                                }}</span>
+                            <span>R$ {{ ceg.min_frete_inter|floatformat:2 }} ~ R$ {{ ceg.max_frete_inter|floatformat:2 }}</span>
                             <span class="block text-[10px] font-medium text-blue-200/90 mt-0.5">Valores variados por
                                 tipo de item</span>
                             {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
@@ -991,8 +988,7 @@
                         </div>
                         <div class="text-sm font-black text-white">
                             {% if ceg.has_multiple_taxa_rates %}
-                            <span>R$ {{ ceg.min_taxa_aduaneira|floatformat:2 }} ~ R$ {{
-                                ceg.max_taxa_aduaneira|floatformat:2 }}</span>
+                            <span>R$ {{ ceg.min_taxa_aduaneira|floatformat:2 }} ~ R$ {{ ceg.max_taxa_aduaneira|floatformat:2 }}</span>
                             <span class="block text-[10px] font-medium text-emerald-200/90 mt-0.5">Valores variados por
                                 tipo de item</span>
                             {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
@@ -2153,8 +2149,7 @@
                                 Desvincular) --</option>
                             {% for c in all_caixas %}
                             <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
-                                {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem
-                                == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
+                                {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
                                 {{ c.nome }} ({{ c.get_status_display }})
                             </option>
                             {% endfor %}
@@ -3282,8 +3277,7 @@
                 <label class="block text-sm font-bold text-slate-700">
                     Para confirmar, digite o título exato da CEG:
                 </label>
-                <p class="text-xs text-slate-500 font-mono bg-slate-100 px-3 py-1.5 rounded-lg select-all">{{ ceg.title
-                    }}</p>
+                <p class="text-xs text-slate-500 font-mono bg-slate-100 px-3 py-1.5 rounded-lg select-all">{{ ceg.title }}</p>
                 <input type="text" x-model="deleteCegConfirmText" placeholder="Digite o título aqui..."
                     class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     :class="deleteCegConfirmText && deleteCegConfirmText !== '{{ ceg.title|escapejs }}' ? 'border-red-400 bg-red-50' : ''">
