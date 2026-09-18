@@ -192,18 +192,109 @@ class CaixasViewsTests(TestCase):
         self.assertContains(response, "Caixa Mercari IVE #01")
         self.assertContains(response, "Caixas & Remessas Internacionais")
 
-    def test_caixa_detail_view(self):
-        # Visitante anônimo deve ser bloqueado
+    def test_caixa_detail_view_anonymous(self):
+        """Visitante anônimo acessa visão pública da caixa (status 200), mas tracking e admin ficam ocultos."""
         self.client.logout()
         response = self.client.get(reverse('caixa_detail', kwargs={'slug': self.caixa.slug}))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Caixa Mercari IVE #01")
+        self.assertContains(response, "Linha do Tempo da Remessa")
+        self.assertContains(response, "1. Consolidação")
+        # Tracking code e ações de admin NÃO devem aparecer
+        self.assertNotContains(response, "JP123456789BR")
+        self.assertNotContains(response, "Vincular Outras CEGs")
+        self.assertNotContains(response, "Atualização em Cascata do Status de Envio")
 
-        # Admin acessa com sucesso
+    def test_caixa_detail_view_joiner_with_session(self):
+        """Participante com sessão vê resumos financeiros, prazos, taxas e seus itens, sem código de rastreio."""
+        from apps.cegs.models import TipoItem, CaixaItemRate
+        self.client.logout()
+
+        # Configura tipo de item e taxas na caixa
+        tipo_pc = TipoItem.objects.create(nome="Photocard Teste")
+        CaixaItemRate.objects.create(
+            caixa=self.caixa,
+            tipo_item=tipo_pc,
+            frete_unitario=Decimal("15.00"),
+            taxa_unitaria=Decimal("8.50")
+        )
+
+        # Configura prazos na caixa
+        self.caixa.prazo_frete = timezone.now() + datetime.timedelta(days=3)
+        self.caixa.prazo_taxa = timezone.now() + datetime.timedelta(days=7)
+        self.caixa.save()
+
+        # Cria participante e slot vinculado
+        participant = Participant.objects.create(
+            whatsapp="5511988887777",
+            name="Wonyoung Fan",
+            username="wonyfan"
+        )
+        item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name="Wonyoung PC",
+            default_price=Decimal("50.00"),
+            tipo_item=tipo_pc
+        )
+        c_set = CEGSet.objects.create(ceg=self.ceg, set_number=1, is_active=True)
+        slot = ItemSlot.objects.create(
+            set=c_set,
+            item_definition=item_def,
+            price=Decimal("50.00"),
+            status=ItemSlot.Status.RESERVED,
+            frete_inter_valor=Decimal("15.00"),
+            is_frete_inter_paid=False,
+            taxa_aduaneira_valor=Decimal("8.50"),
+            is_taxa_aduaneira_paid=False
+        )
+        Claim.objects.create(
+            slot=slot,
+            participant=participant,
+            total_price=Decimal("50.00"),
+            status=Claim.Status.PENDING
+        )
+
+        # Injeta participante na sessão
+        session = self.client.session
+        session['participant_id'] = participant.id
+        session.save()
+
+        response = self.client.get(reverse('caixa_detail', kwargs={'slug': self.caixa.slug}))
+        self.assertEqual(response.status_code, 200)
+
+        # Resumos no topo para o joiner
+        self.assertContains(response, "Resumo Financeiro da sua Remessa")
+        self.assertContains(response, "Itens Pendentes")
+        self.assertContains(response, "Frete a Pagar")
+        self.assertContains(response, "Taxa a Pagar")
+        self.assertContains(response, "Total a Pagar nesta Caixa")
+
+        # Prazos e taxas da remessa
+        self.assertContains(response, "Prazo Pagamento Frete Internacional")
+        self.assertContains(response, "Prazo Pagamento Taxa Aduaneira")
+        self.assertContains(response, "FRETE INTER")
+        self.assertContains(response, "TAXA ADUAN.")
+
+        # Itens e CEG do participante
+        self.assertContains(response, "Seus Itens &amp; CEGs nesta Remessa")
+        self.assertContains(response, "Wonyoung PC")
+        self.assertContains(response, "IVE SWITCH Digipack")
+
+        # O código de rastreio e botões de admin NUNCA devem aparecer para o joiner
+        self.assertNotContains(response, "JP123456789BR")
+        self.assertNotContains(response, "Vincular Outras CEGs")
+        self.assertNotContains(response, "Ajustar Valores / Prazos")
+
+    def test_caixa_detail_view_admin(self):
+        """Administrador tem acesso completo incluindo código de rastreio e ferramentas de gestão."""
         self.client.login(username='admin', password='adminpass123')
         response = self.client.get(reverse('caixa_detail', kwargs={'slug': self.caixa.slug}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Caixa Mercari IVE #01")
         self.assertContains(response, "IVE SWITCH Digipack")
+        # Admin DEVE ver código de rastreio e ferramentas
+        self.assertContains(response, "JP123456789BR")
+        self.assertContains(response, "Rateio de Frete Internacional")
 
     def test_caixa_create_view_permissions(self):
         # Visitante anônimo deve ser redirecionado para login

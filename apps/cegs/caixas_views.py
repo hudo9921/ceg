@@ -115,11 +115,14 @@ class CaixasDashboardView(StaffRequiredMixin, View):
         return render(request, 'cegs/caixas_list.html', context)
 
 
-class CaixaDetailView(StaffRequiredMixin, View):
+class CaixaDetailView(View):
     """
     Detalhes de uma Caixa / Remessa específica.
-    Exibe informações de rastreio, linha do tempo dos status, CEGs atreladas,
-    itens individuais atrelados e atalhos para atualização de envio em cascata.
+    Para Administradores: exibe ferramentas de gestão, propagação em cascata, vinculação de CEGs,
+    edição de taxas e todos os itens atrelados.
+    Para Participantes (Joiners): exibe linha do tempo, prazos, taxas por tipo de item, resumo financeiro
+    dos valores a pagar (itens pendentes, frete a pagar, taxa a pagar) e os seus itens específicos por CEG.
+    O código de rastreio fica protegido e oculto para joiners.
     """
 
     def get(self, request, slug):
@@ -133,10 +136,11 @@ class CaixaDetailView(StaffRequiredMixin, View):
             slug=slug
         )
 
+        is_staff_user = request.user.is_authenticated and request.user.is_staff
         cegs = caixa.cegs.select_related('era__group').prefetch_related('sets').all()
-        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
+        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at') if is_staff_user else CEG.objects.none()
         itens_individuais = caixa.itens_individuais.select_related('comprador', 'tipo_item').all().order_by('-created_at')
-        itens_individuais_sem_caixa = ItemIndividual.objects.filter(caixa__isnull=True).select_related('comprador', 'tipo_item').order_by('-created_at')
+        itens_individuais_sem_caixa = ItemIndividual.objects.filter(caixa__isnull=True).select_related('comprador', 'tipo_item').order_by('-created_at') if is_staff_user else ItemIndividual.objects.none()
 
         status_step_map = {
             Caixa.Status.EM_CONSOLIDACAO: 1,
@@ -216,15 +220,127 @@ class CaixaDetailView(StaffRequiredMixin, View):
             if has_configured:
                 configured_rates.append(row_data)
 
-        # Ordenação inteligente: tipos com itens na caixa ou taxas salvas vêm primeiro,
-        # seguidos pelos demais tipos em ordem alfabética normalizada
         item_rates_data.sort(key=lambda x: (
             0 if (x['total_count'] > 0 or x['has_configured']) else 1,
             _normalize_name(x['tipo'].nome)
         ))
 
+        # =========================================================================
+        # DADOS ESPECÍFICOS DO PARTICIPANTE AUTENTICADO (JOINER)
+        # =========================================================================
+        participant_id = request.session.get('participant_id')
+        participant = None
+        participant_claims = []
+        participant_cegs_dict = {}
+        participant_itens_individuais = []
+
+        participant_pending_items_count = 0
+        participant_pending_items_total = Decimal('0.00')
+        participant_frete_pendente_total = Decimal('0.00')
+        participant_frete_pago_total = Decimal('0.00')
+        participant_taxa_pendente_total = Decimal('0.00')
+        participant_taxa_paga_total = Decimal('0.00')
+        participant_pix_key = ''
+        participant_pix_instructions = ''
+
+        if participant_id:
+            from apps.participants.models import Participant, Claim
+            participant = Participant.objects.filter(id=participant_id).first()
+
+        if participant:
+            claims_qs = Claim.objects.filter(
+                participant=participant,
+                slot__set__ceg__caixa=caixa
+            ).exclude(
+                status=Claim.Status.CANCELLED
+            ).select_related(
+                'slot__set__ceg__era__group',
+                'slot__item_definition__tipo_item',
+                'slot__pacote_nacional'
+            ).order_by('slot__set__ceg__title', 'slot__set__set_number', 'slot__item_definition__name')
+
+            participant_claims = list(claims_qs)
+
+            for c in participant_claims:
+                ceg = c.slot.set.ceg
+                if ceg.id not in participant_cegs_dict:
+                    participant_cegs_dict[ceg.id] = {
+                        'ceg': ceg,
+                        'claims': [],
+                        'count_pending': 0,
+                        'count_paid': 0,
+                        'total_items_pending': Decimal('0.00'),
+                        'total_frete_pending': Decimal('0.00'),
+                        'total_taxa_pending': Decimal('0.00'),
+                        'total_geral_ceg': Decimal('0.00'),
+                    }
+                p_ceg = participant_cegs_dict[ceg.id]
+                p_ceg['claims'].append(c)
+
+                if c.status == Claim.Status.PENDING:
+                    p_ceg['count_pending'] += 1
+                    p_ceg['total_items_pending'] += c.total_price
+                    participant_pending_items_count += 1
+                    participant_pending_items_total += c.total_price
+                elif c.status == Claim.Status.PAID:
+                    p_ceg['count_paid'] += 1
+
+                slot_frete = c.slot.frete_inter or Decimal('0.00')
+                if slot_frete > 0:
+                    if not c.slot.is_frete_inter_paid:
+                        p_ceg['total_frete_pending'] += slot_frete
+                        participant_frete_pendente_total += slot_frete
+                    else:
+                        participant_frete_pago_total += slot_frete
+
+                slot_taxa = c.slot.taxa_aduaneira or Decimal('0.00')
+                if slot_taxa > 0:
+                    if not c.slot.is_taxa_aduaneira_paid:
+                        p_ceg['total_taxa_pending'] += slot_taxa
+                        participant_taxa_pendente_total += slot_taxa
+                    else:
+                        participant_taxa_paga_total += slot_taxa
+
+                if not participant_pix_key and ceg.pix_key:
+                    participant_pix_key = ceg.pix_key
+                    participant_pix_instructions = ceg.pix_instructions
+
+            for p_ceg in participant_cegs_dict.values():
+                p_ceg['total_geral_ceg'] = (
+                    p_ceg['total_items_pending'] +
+                    p_ceg['total_frete_pending'] +
+                    p_ceg['total_taxa_pending']
+                )
+
+            # Itens Individuais do participante nesta caixa
+            mercari_qs = caixa.itens_individuais.filter(
+                comprador=participant
+            ).select_related('tipo_item', 'pacote_nacional').order_by('-created_at')
+            participant_itens_individuais = list(mercari_qs)
+
+            for it in participant_itens_individuais:
+                if it.status == ItemIndividual.Status.PENDING and it.preco_produto:
+                    participant_pending_items_count += 1
+                    participant_pending_items_total += it.preco_produto
+
+                if it.frete_inter and it.frete_inter > 0:
+                    if not it.frete_inter_pago:
+                        participant_frete_pendente_total += it.frete_inter
+                    else:
+                        participant_frete_pago_total += it.frete_inter
+
+                if it.taxa_aduaneira and it.taxa_aduaneira > 0:
+                    if not it.taxa_aduaneira_paga:
+                        participant_taxa_pendente_total += it.taxa_aduaneira
+                    else:
+                        participant_taxa_paga_total += it.taxa_aduaneira
+
+        participant_total_devido_frete_taxa = participant_frete_pendente_total + participant_taxa_pendente_total
+        participant_total_geral_pendente = participant_pending_items_total + participant_total_devido_frete_taxa
+
         itens_individuais_data = []
-        for it in itens_individuais:
+        itens_para_json = itens_individuais if is_staff_user else participant_itens_individuais
+        for it in itens_para_json:
             itens_individuais_data.append({
                 'id': it.id,
                 'nome': it.nome,
@@ -233,11 +349,11 @@ class CaixaDetailView(StaffRequiredMixin, View):
                 'quantidade': it.quantidade,
                 'status': it.status,
                 'status_display': it.get_status_display(),
-                'comprador_id': it.comprador_id,
-                'comprador_name': it.comprador.name,
-                'comprador_display': it.comprador.display_name,
-                'comprador_phone': it.comprador.whatsapp,
-                'comprador_handle': it.comprador.social_handle or '',
+                'comprador_id': it.comprador_id if is_staff_user else None,
+                'comprador_name': it.comprador.name if is_staff_user else '',
+                'comprador_display': it.comprador.display_name if is_staff_user else '',
+                'comprador_phone': it.comprador.whatsapp if is_staff_user else '',
+                'comprador_handle': (it.comprador.social_handle or '') if is_staff_user else '',
                 'caixa_id': it.caixa_id,
                 'link_pedido': it.link_pedido or '',
                 'image_url': it.image_display_url,
@@ -258,8 +374,8 @@ class CaixaDetailView(StaffRequiredMixin, View):
             'caixa': caixa,
             'cegs': cegs,
             'cegs_sem_caixa': cegs_sem_caixa,
-            'itens_individuais': itens_individuais,
-            'itens_individuais_count': itens_individuais.count(),
+            'itens_individuais': itens_individuais if is_staff_user else participant_itens_individuais,
+            'itens_individuais_count': itens_individuais.count() if is_staff_user else len(participant_itens_individuais),
             'itens_individuais_sem_caixa': itens_individuais_sem_caixa,
             'itens_individuais_data': itens_individuais_data,
             'itens_individuais_json': json.dumps(itens_individuais_data),
@@ -273,11 +389,27 @@ class CaixaDetailView(StaffRequiredMixin, View):
             'configured_rates_count': len(configured_rates),
             'all_tipos_item': all_tipos,
             'tipos_item_json': json.dumps(list(TipoItem.objects.values('id', 'nome'))),
-            'all_caixas': Caixa.objects.all().order_by('-created_at'),
+            'all_caixas': Caixa.objects.all().order_by('-created_at') if is_staff_user else Caixa.objects.none(),
             'item_individual_statuses': ItemIndividual.Status.choices,
-            'is_staff_user': request.user.is_authenticated and request.user.is_staff,
+            'is_staff_user': is_staff_user,
             'is_caixa_frete_expired': is_caixa_frete_expired,
             'is_caixa_taxa_expired': is_caixa_taxa_expired,
+
+            # Dados do participante
+            'participant': participant,
+            'participant_claims': participant_claims,
+            'participant_cegs': list(participant_cegs_dict.values()),
+            'participant_itens_individuais': participant_itens_individuais,
+            'participant_pending_items_count': participant_pending_items_count,
+            'participant_pending_items_total': participant_pending_items_total,
+            'participant_frete_pendente_total': participant_frete_pendente_total,
+            'participant_frete_pago_total': participant_frete_pago_total,
+            'participant_taxa_pendente_total': participant_taxa_pendente_total,
+            'participant_taxa_paga_total': participant_taxa_paga_total,
+            'participant_total_devido_frete_taxa': participant_total_devido_frete_taxa,
+            'participant_total_geral_pendente': participant_total_geral_pendente,
+            'participant_pix_key': participant_pix_key,
+            'participant_pix_instructions': participant_pix_instructions,
         }
         return render(request, 'cegs/caixa_detail.html', context)
 

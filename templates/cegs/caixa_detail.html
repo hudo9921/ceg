@@ -10,10 +10,17 @@
 
     <!-- Voltar e Ações do Topo -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <a href="{% url 'caixas_dashboard' %}" class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-blue-600 transition">
-            <span>←</span>
-            <span>Voltar para Caixas & Remessas</span>
-        </a>
+        {% if is_staff_user %}
+            <a href="{% url 'caixas_dashboard' %}" class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-blue-600 transition">
+                <span>←</span>
+                <span>Voltar para Caixas & Remessas</span>
+            </a>
+        {% else %}
+            <a href="{% url 'my_claims' %}" class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-pink-600 transition">
+                <span>←</span>
+                <span>Voltar para Minhas Reservas</span>
+            </a>
+        {% endif %}
 
         {% if is_staff_user %}
             <div class="flex items-center gap-2">
@@ -77,14 +84,14 @@
                     </span>
                 </div>
 
-                {% if caixa.codigo_rastreio %}
+                {% if is_staff_user and caixa.codigo_rastreio %}
                     <div class="bg-blue-50/80 border border-blue-200 px-3.5 py-2 rounded-xl flex items-center gap-2">
                         <span class="text-xs font-bold text-blue-900">Rastreio:</span>
                         <a href="{{ caixa.tracking_url }}" target="_blank"
                            class="font-mono font-black text-xs sm:text-sm text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1">
                             <span>🔗 {{ caixa.codigo_rastreio }}</span>
                         </a>
-                        <button type="button" @click="copyToClipboard('{{ caixa.codigo_rastreio }}')"
+                        <button type="button" @click="copyToClipboard('{{ caixa.codigo_rastreio }}', 'Código de rastreio copiado!')"
                                 class="text-blue-500 hover:text-blue-700 text-xs p-1 rounded" title="Copiar código">
                             📋
                         </button>
@@ -192,6 +199,133 @@
                         <span>🚀</span>
                     </button>
                 </form>
+            </div>
+        {% endif %}
+
+        <!-- 💰 Resumo Financeiro da sua Remessa (Para o Participante / Joiner) -->
+        {% if participant %}
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-50 via-pink-50/40 to-purple-50/40 dark:from-slate-900/90 dark:via-pink-950/20 dark:to-purple-950/20 border border-pink-200/90 dark:border-pink-900/50 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-pink-100 dark:border-slate-800 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-xl bg-pink-100 dark:bg-pink-950/70 text-pink-600 dark:text-pink-300 flex items-center justify-center text-base font-bold shadow-2xs">
+                            👤
+                        </span>
+                        <div>
+                            <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                Resumo Financeiro da sua Remessa
+                            </div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                Olá, {{ participant.display_name }}!
+                            </h3>
+                        </div>
+                    </div>
+
+                    {% if participant_total_geral_pendente > 0 and participant_pix_key %}
+                        <button type="button" @click="copyToClipboard('{{ participant_pix_key }}', 'Chave Pix copiada com sucesso!')"
+                                class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                            <span>📋 Copiar Chave Pix</span>
+                        </button>
+                    {% elif participant_total_geral_pendente == 0 and participant_claims or participant_itens_individuais %}
+                        <span class="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
+                            ✔ Tudo quitado nesta remessa!
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Grid de Métricas: Itens Pendentes | Frete a pagar | Taxa a pagar | Total a Pagar -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <!-- 1. Itens Pendentes -->
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">
+                            Itens Pendentes
+                        </span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
+                                R$ {{ participant_pending_items_total|floatformat:2 }}
+                            </span>
+                            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                {{ participant_pending_items_count }} item{% if participant_pending_items_count != 1 %}s{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Frete a Pagar -->
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">
+                            Frete a Pagar
+                        </span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span class="text-base sm:text-lg font-black text-blue-600 dark:text-blue-400 font-mono">
+                                R$ {{ participant_frete_pendente_total|floatformat:2 }}
+                            </span>
+                            {% if participant_frete_pendente_total == 0 and participant_frete_pago_total > 0 %}
+                                <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">✔ Quitado</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 3. Taxa a Pagar -->
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">
+                            Taxa a Pagar
+                        </span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span class="text-base sm:text-lg font-black text-purple-600 dark:text-purple-400 font-mono">
+                                R$ {{ participant_taxa_pendente_total|floatformat:2 }}
+                            </span>
+                            {% if participant_taxa_pendente_total == 0 and participant_taxa_paga_total > 0 %}
+                                <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">✔ Quitada</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 4. Total a Pagar nesta Remessa -->
+                    <div class="p-3.5 rounded-xl bg-pink-50/80 dark:bg-pink-950/40 border border-pink-300 dark:border-pink-800/80 shadow-2xs">
+                        <span class="text-[10px] uppercase font-bold text-pink-700 dark:text-pink-300 block">
+                            Total a Pagar nesta Caixa
+                        </span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span class="text-lg sm:text-xl font-black text-pink-700 dark:text-pink-300 font-mono">
+                                R$ {{ participant_total_geral_pendente|floatformat:2 }}
+                            </span>
+                            {% if participant_total_devido_frete_taxa > 0 %}
+                                <span class="text-[10px] font-bold text-pink-600 dark:text-pink-400" title="Frete + Taxa pendentes">
+                                    (F+T: R$ {{ participant_total_devido_frete_taxa|floatformat:2 }})
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if participant_pix_key and participant_total_geral_pendente > 0 %}
+                    <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <div>
+                            <strong>🔑 Chave Pix:</strong> <code class="font-mono font-bold">{{ participant_pix_key }}</code>
+                            {% if participant_pix_instructions %}
+                                <span class="text-[11px] block text-amber-700 dark:text-amber-400 mt-0.5">{{ participant_pix_instructions }}</span>
+                            {% endif %}
+                        </div>
+                        <button type="button" @click="copyToClipboard('{{ participant_pix_key }}', 'Chave Pix copiada com sucesso!')"
+                                class="px-3 py-1 rounded-lg bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-bold hover:bg-amber-300 transition shrink-0 cursor-pointer">
+                            Copiar Chave
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        {% elif not is_staff_user %}
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">
+                        Você tem itens nesta remessa?
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Identifique-se com seu WhatsApp para ver exatamente quais dos seus itens estão nesta caixa e os valores pendentes de frete e taxa.
+                    </p>
+                </div>
+                <a href="{% url 'login_otp' %}?next={{ request.path }}"
+                   class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs shadow-xs transition shrink-0">
+                    Acessar Minhas Reservas →
+                </a>
             </div>
         {% endif %}
 
@@ -315,6 +449,7 @@
     <!-- ========================================================================= -->
     <!-- SUB-TABS: GERAL, CEGS VINCULADAS, ITENS MERCARI -->
     <!-- ========================================================================= -->
+    {% if is_staff_user %}
     <div class="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
         <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Exibir Categoria:</span>
         <button type="button" @click="currentTab = 'all'"
@@ -935,6 +1070,392 @@
         </div>
     </div>
 
+    {% else %}
+    <!-- ========================================================================= -->
+    <!-- VISÃO DO PARTICIPANTE (JOINER): SUAS CEGS E ITENS NESTA REMESSA -->
+    <!-- ========================================================================= -->
+    {% if participant %}
+        <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>📦</span>
+                        <span>Seus Itens &amp; CEGs nesta Remessa</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Acompanhe abaixo os seus slots em cada compra em grupo e itens individuais presentes nesta caixa.
+                    </p>
+                </div>
+            </div>
+
+            {% if participant_cegs %}
+                <div class="space-y-6">
+                    {% for p_ceg in participant_cegs %}
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <!-- Cabeçalho da CEG do Participante -->
+                            <div class="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    {% if p_ceg.ceg.display_image_url %}
+                                        <img src="{{ p_ceg.ceg.display_image_url }}"
+                                             alt="{{ p_ceg.ceg.title }}"
+                                             @click="openZoom('{{ p_ceg.ceg.display_image_url }}')"
+                                             class="w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer hover:opacity-80 transition shrink-0">
+                                    {% else %}
+                                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center text-white text-xl font-black shadow-2xs shrink-0">
+                                            🎴
+                                        </div>
+                                    {% endif %}
+                                    <div class="space-y-1">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-bold rounded-full text-[10px]">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                <span>{{ p_ceg.ceg.get_shipping_status_display }}</span>
+                                            </span>
+                                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                                {{ p_ceg.ceg.era.group.name }}{% if p_ceg.ceg.era.name %} &bull; {{ p_ceg.ceg.era.name }}{% endif %}
+                                            </span>
+                                        </div>
+                                        <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                                            <a href="{% url 'ceg_detail' slug=p_ceg.ceg.slug %}" class="hover:text-blue-600 hover:underline">
+                                                {{ p_ceg.ceg.display_title }}
+                                            </a>
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                <!-- Resumo financeiro desta CEG para o participante -->
+                                <div class="flex flex-wrap items-center gap-2 text-xs">
+                                    <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Itens</span>
+                                        <span class="font-black text-slate-900 dark:text-white font-mono">R$ {{ p_ceg.total_items_pending|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Frete</span>
+                                        <span class="font-black text-blue-600 dark:text-blue-400 font-mono">R$ {{ p_ceg.total_frete_pending|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Taxa</span>
+                                        <span class="font-black text-purple-600 dark:text-purple-400 font-mono">R$ {{ p_ceg.total_taxa_pending|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800">
+                                        <span class="text-[10px] text-pink-600 dark:text-pink-400 uppercase font-bold block">Total CEG</span>
+                                        <span class="font-black text-pink-700 dark:text-pink-300 font-mono">R$ {{ p_ceg.total_geral_ceg|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabela de Itens / Slots do Participante nesta CEG -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                                            <th class="py-3 px-4">Set</th>
+                                            <th class="py-3 px-4">Item / Inclusão</th>
+                                            <th class="py-3 px-4">Integrante</th>
+                                            <th class="py-3 px-4">Preço Item</th>
+                                            <th class="py-3 px-4">Frete Inter</th>
+                                            <th class="py-3 px-4">Taxa Aduaneira</th>
+                                            <th class="py-3 px-4">Envio Nacional</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                        {% for claim in p_ceg.claims %}
+                                            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                                <!-- Set -->
+                                                <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-300">
+                                                    Set {{ claim.slot.set.set_number }}
+                                                </td>
+
+                                                <!-- Item / Inclusão -->
+                                                <td class="py-3 px-4">
+                                                    <div class="font-bold text-slate-900 dark:text-white">
+                                                        {{ claim.slot.item_definition.name }}
+                                                    </div>
+                                                    {% if claim.slot.item_definition.tipo_item %}
+                                                        <span class="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                                                            🏷️ {{ claim.slot.item_definition.tipo_item.nome }}
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+
+                                                <!-- Integrante -->
+                                                <td class="py-3 px-4">
+                                                    {% if claim.slot.member %}
+                                                        <span class="font-bold text-slate-800 dark:text-slate-200">
+                                                            {{ claim.slot.member.name }}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-slate-400 italic">Sem integrante</span>
+                                                    {% endif %}
+                                                </td>
+
+                                                <!-- Preço do Item -->
+                                                <td class="py-3 px-4">
+                                                    <div class="font-mono font-bold text-slate-900 dark:text-white">
+                                                        R$ {{ claim.total_price|floatformat:2 }}
+                                                    </div>
+                                                    <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                        {% if claim.status == 'PAID' %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                        {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                        {% if claim.status == 'PAID' %}✓ Pago{% else %}⏳ Pendente{% endif %}
+                                                    </span>
+                                                </td>
+
+                                                <!-- Frete Inter -->
+                                                <td class="py-3 px-4">
+                                                    {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}
+                                                        <div class="font-mono font-bold text-slate-900 dark:text-white">
+                                                            R$ {{ claim.slot.frete_inter|floatformat:2 }}
+                                                        </div>
+                                                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                            {% if claim.slot.is_frete_inter_paid %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                            {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                            {% if claim.slot.is_frete_inter_paid %}✓ Pago{% else %}⏳ Pendente{% endif %}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                                                            {% if caixa.prazo_frete %}Isento{% else %}A definir{% endif %}
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+
+                                                <!-- Taxa Aduaneira -->
+                                                <td class="py-3 px-4">
+                                                    {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}
+                                                        <div class="font-mono font-bold text-slate-900 dark:text-white">
+                                                            R$ {{ claim.slot.taxa_aduaneira|floatformat:2 }}
+                                                        </div>
+                                                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                            {% if claim.slot.is_taxa_aduaneira_paid %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                            {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                            {% if claim.slot.is_taxa_aduaneira_paid %}✓ Paga{% else %}⏳ Pendente{% endif %}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                                                            {% if caixa.status == 'LIBERADA' or caixa.status == 'ENTREGUE' or caixa.status == 'FINALIZADA' %}Isenta{% else %}A definir{% endif %}
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+
+                                                <!-- Envio Nacional -->
+                                                <td class="py-3 px-4">
+                                                    {% if claim.slot.pacote_nacional %}
+                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-300 font-bold text-[11px]">
+                                                            <span>📦 Pacote #{{ claim.slot.pacote_nacional.id }}</span>
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-slate-400 dark:text-slate-500 text-[11px]">
+                                                            Aguardando chegada
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Itens Individuais Mercari do Participante nesta Caixa -->
+            {% if participant_itens_individuais %}
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-5 sm:p-6">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🇯🇵</span>
+                            <div>
+                                <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                    Seus Itens Individuais (Mercari) nesta Caixa
+                                </h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Itens adquiridos avulsos que estão viajando nesta mesma remessa.
+                                </p>
+                            </div>
+                        </div>
+                        <span class="bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 text-xs font-black px-2.5 py-0.5 rounded-full">
+                            {{ participant_itens_individuais|length }} item(ns)
+                        </span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                                    <th class="py-2.5 px-3">Foto</th>
+                                    <th class="py-2.5 px-3">Item</th>
+                                    <th class="py-2.5 px-3 text-center">Qtd</th>
+                                    <th class="py-2.5 px-3">Status</th>
+                                    <th class="py-2.5 px-3">Frete Inter</th>
+                                    <th class="py-2.5 px-3">Taxa Aduaneira</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                {% for item in participant_itens_individuais %}
+                                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                        <!-- Foto -->
+                                        <td class="py-3 px-3 w-14">
+                                            <div class="w-12 h-12 relative group">
+                                                <img src="{{ item.image_display_url }}" alt="{{ item.nome }}"
+                                                     @click="openZoom('{{ item.image_display_url }}')"
+                                                     class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer hover:opacity-80 transition">
+                                            </div>
+                                        </td>
+
+                                        <!-- Nome & Tipo -->
+                                        <td class="py-3 px-3">
+                                            <div class="font-bold text-slate-900 dark:text-white">{{ item.nome }}</div>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                {% if item.tipo_item %}
+                                                    <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                        🏷️ {{ item.tipo_item.nome }}
+                                                    </span>
+                                                {% endif %}
+                                                {% if item.preco_produto %}
+                                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                                        Preço: R$ {{ item.preco_produto }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+
+                                        <!-- Qtd -->
+                                        <td class="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
+                                            {{ item.quantidade }}
+                                        </td>
+
+                                        <!-- Status -->
+                                        <td class="py-3 px-3">
+                                            <span class="inline-block text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider
+                                                {% if item.status == 'COMPRADO' %}bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300
+                                                {% elif item.status == 'WAREHOUSE' %}bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300
+                                                {% elif item.status == 'EM_CONSOLIDACAO' %}bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300
+                                                {% elif item.status == 'ENVIADO' %}bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300
+                                                {% elif item.status == 'NO_BRASIL' %}bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300
+                                                {% elif item.status == 'FINALIZADO' %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                {% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
+                                                {{ item.get_status_display }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Frete Inter -->
+                                        <td class="py-3 px-3">
+                                            {% if item.frete_inter %}
+                                                <div class="font-mono font-bold text-slate-900 dark:text-white">R$ {{ item.frete_inter }}</div>
+                                                <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                    {% if item.frete_inter_pago %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                    {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                    {% if item.frete_inter_pago %}✓ Pago{% else %}⏳ Pendente{% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">-</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Taxa Aduaneira -->
+                                        <td class="py-3 px-3">
+                                            {% if item.taxa_aduaneira %}
+                                                <div class="font-mono font-bold text-slate-900 dark:text-white">R$ {{ item.taxa_aduaneira }}</div>
+                                                <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                    {% if item.taxa_aduaneira_paga %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                    {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                    {% if item.taxa_aduaneira_paga %}✓ Paga{% else %}⏳ Pendente{% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if not participant_cegs and not participant_itens_individuais %}
+                <div class="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-center space-y-3">
+                    <span class="text-3xl block">ℹ️</span>
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">
+                        Você não possui itens alocados nesta remessa
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Suas compras podem estar consolidadas em outras remessas ou aguardando o fechamento de novas caixas.
+                    </p>
+                    <a href="{% url 'my_claims' %}"
+                       class="inline-block px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs transition shadow-xs">
+                        Ver Minhas Reservas & Compras →
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Todas as CEGs presentes nesta Caixa (Visão Pública da Remessa) -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div class="space-y-1">
+                <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>📦</span>
+                    <span>CEGs Consolidadas nesta Caixa</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Todas as compras em grupo que estão sendo transportadas juntas nesta remessa internacional.
+                </p>
+            </div>
+            <span class="bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 text-xs font-black px-2.5 py-0.5 rounded-full">
+                {{ cegs.count }} CEG(s)
+            </span>
+        </div>
+
+        {% if cegs %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for ceg in cegs %}
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 bg-slate-50/50 dark:bg-slate-800/40 transition flex gap-3.5">
+                        {% if ceg.display_image_url %}
+                            <img src="{{ ceg.display_image_url }}"
+                                 alt="{{ ceg.title }}"
+                                 @click="openZoom('{{ ceg.display_image_url }}')"
+                                 class="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer hover:opacity-80 transition shadow-2xs">
+                        {% else %}
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold shrink-0 shadow-2xs">
+                                🎴
+                            </div>
+                        {% endif %}
+                        <div class="min-w-0 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-900 dark:text-white truncate" title="{{ ceg.title }}">
+                                    <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-blue-600 hover:underline">
+                                        {{ ceg.display_title }}
+                                    </a>
+                                </h4>
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 truncate">
+                                    {{ ceg.era.group.name }}{% if ceg.era.name %} &bull; {{ ceg.era.name }}{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px]">
+                                <span class="font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                                    {{ ceg.get_shipping_status_display }}
+                                </span>
+                                <a href="{% url 'ceg_detail' slug=ceg.slug %}"
+                                   class="font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5">
+                                    <span>Ver CEG</span>
+                                    <span>↗</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-8 text-xs text-slate-400">
+                Nenhuma CEG cadastrada nesta remessa ainda.
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Modal para Vincular CEGs (Alpine.js) -->
     {% if is_staff_user and cegs_sem_caixa %}
         <div x-show="linkModalOpen" x-cloak
@@ -1431,10 +1952,10 @@
                 this.zoomImageUrl = null;
             },
 
-            copyToClipboard(text) {
+            copyToClipboard(text, msg = 'Copiado para a área de transferência!') {
                 if (!text) return;
                 navigator.clipboard.writeText(text).then(() => {
-                    alert('Código de rastreio copiado: ' + text);
+                    alert(msg);
                 }).catch(err => {
                     console.error('Falha ao copiar:', err);
                 });
