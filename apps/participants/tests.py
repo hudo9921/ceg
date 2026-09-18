@@ -324,14 +324,14 @@ class ParticipantProfileTests(TestCase):
         self.assertTrue(ceg_data['has_multiple_fretes'])
         self.assertTrue(ceg_data['has_multiple_taxas'])
 
-        # HTML deve conter o componente acordeão e valores
-        self.assertContains(response, 'Valores de Frete &amp; Taxa por Tipo de Item')
-        self.assertContains(response, 'Total Devido:')
-        self.assertContains(response, 'R$ 55,00 a pagar')
-        self.assertContains(response, 'R$ 30,00 a pagar')
-        self.assertContains(response, 'R$ 85,00')
-        self.assertContains(response, 'Photocard')
-        self.assertContains(response, 'Álbum')
+        # HTML deve conter totais no cabeçalho da CEG e valores individuais na tabela
+        self.assertContains(response, 'Frete a Pagar:')
+        self.assertContains(response, 'R$ 55,00')
+        self.assertContains(response, 'Taxa a Pagar:')
+        self.assertContains(response, 'R$ 30,00')
+        self.assertContains(response, 'Total a Pagar nesta CEG:')
+        self.assertContains(response, 'R$ 245,00')
+        self.assertNotContains(response, 'Valores de Frete')
 
 
 class ParticipantNotificationTests(TestCase):
