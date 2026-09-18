@@ -259,6 +259,15 @@ class CaixasViewsTests(TestCase):
         session['participant_id'] = participant.id
         session.save()
 
+        # Cria uma outra CEG vinculada à mesma caixa onde o participante NÃO tem itens
+        CEG.objects.create(
+            era=self.era,
+            title="IVE I'VE MINE Outro Comprador",
+            slug="ive-ive-mine-outro",
+            status=CEG.Status.OPEN,
+            caixa=self.caixa
+        )
+
         response = self.client.get(reverse('caixa_detail', kwargs={'slug': self.caixa.slug}))
         self.assertEqual(response.status_code, 200)
 
@@ -275,10 +284,14 @@ class CaixasViewsTests(TestCase):
         self.assertContains(response, "FRETE INTER")
         self.assertContains(response, "TAXA ADUAN.")
 
-        # Itens e CEG do participante
+        # Itens e CEG do participante (apenas as dele!)
         self.assertContains(response, "Seus Itens &amp; CEGs nesta Remessa")
         self.assertContains(response, "Wonyoung PC")
         self.assertContains(response, "IVE SWITCH Digipack")
+
+        # Outras CEGs na caixa onde o usuário não tem itens NÃO devem ser exibidas
+        self.assertNotContains(response, "IVE I'VE MINE Outro Comprador")
+        self.assertNotContains(response, "CEGs Consolidadas nesta Caixa")
 
         # O código de rastreio e botões de admin NUNCA devem aparecer para o joiner
         self.assertNotContains(response, "JP123456789BR")
