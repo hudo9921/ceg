@@ -1,32 +1,49 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}CEGs de K-pop — Reservas e Compras em Grupo{% endblock %}
+{% block title %}ValCegs — Reservas e Compras em Grupo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dark .ceg-card {
+        background: linear-gradient(125deg, rgba(255, 255, 255, 0.03) 0%, rgba(19, 27, 46, 0.96) 45%, #131B2E 100%) !important;
+    }
+    .dark .ceg-card-sub {
+        background-color: rgba(15, 23, 42, 0.75) !important;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-12">
+<div class="space-y-10">
 
-    <!-- Hero Banner -->
-    <div class="relative overflow-hidden bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-700 rounded-2xl shadow-xl text-white p-8 sm:p-12">
-        <div class="relative z-10 max-w-3xl space-y-4">
-            <span class="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
-                Compras em Grupo de K-pop
-            </span>
-            <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-                Garanta seus Photocards & Inclusões favoritos sem estresse.
-            </h1>
-            <p class="text-pink-100 text-sm sm:text-base">
-                Substitua formulários manuais e planilhas confusas. Faça suas reservas com trava de concorrência em tempo real e consulte todos os seus pedidos pelo WhatsApp sem precisar de senha.
-            </p>
-            <div class="pt-2 flex flex-wrap gap-3">
-                <a href="#cegs-abertas" class="px-5 py-2.5 bg-white text-pink-700 hover:bg-pink-50 font-bold text-sm rounded-xl shadow transition">
+    <!-- Hero Banner Oficial ValCegs MASTERLIST (Estilo Pastel Y2K K-Pop) -->
+    <div class="relative overflow-hidden rounded-3xl shadow-md border border-pink-200/80 dark:border-slate-800 bg-pink-100 dark:bg-slate-900 transition-all duration-300">
+        <div class="w-full relative aspect-[21/6] sm:aspect-[24/7] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-gradient-to-r from-pink-400 via-rose-300 to-pink-500">
+            <img src="{% static 'images/banner_masterlist.png' %}"
+                 alt="ValCegs Masterlist"
+                 class="w-full h-full object-cover sm:object-contain object-center">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent sm:hidden"></div>
+        </div>
+        
+        <!-- Faixa de Ações Rápidas Pastel -->
+        <div class="p-3.5 sm:p-5 bg-white/90 dark:bg-[#131B2E]/90 backdrop-blur-md border-t border-pink-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xl">🎀</span>
+                <div>
+                    <h2 class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">ValCegs &bull; Masterlist de Compras em Grupo</h2>
+                    <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Garanta seus Photocards, POBs e Inclusões com trava no segundo zero.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="#cegs-abertas" class="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition">
                     🔥 Ver CEGs Abertas
                 </a>
-                <a href="{% url 'login_otp' %}" class="px-5 py-2.5 bg-pink-900/40 hover:bg-pink-900/60 border border-white/30 text-white font-semibold text-sm rounded-xl backdrop-blur-sm transition">
-                    📱 Consultar Meus Claims via WhatsApp
+                <a href="{% url 'login_otp' %}" class="px-3.5 py-1.5 sm:px-4 sm:py-2 bg-pink-50 dark:bg-slate-800 hover:bg-pink-100 dark:hover:bg-slate-700 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-slate-700 font-bold text-xs sm:text-sm rounded-xl transition">
+                    📱 Meus Claims
                 </a>
             </div>
         </div>
-        <div class="absolute -right-10 -bottom-10 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
     </div>
 
     <!-- Seção: CEGs Abertas para Reserva -->
@@ -77,34 +94,34 @@
              }">
         <!-- Cabeçalho da Seção -->
         <div class="space-y-1">
-            <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
+            <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
                 CEGs Abertas para Reserva
             </h2>
-            <p class="text-sm text-slate-500">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Escolha os photocards e itens que deseja em cada Set antes que esgotem.</p>
         </div>
 
         <!-- Barra de Filtros Conforme Wireframe: Grupo | Era | Membro | Tipo de Item | Ordenar (Full Width acima das CEGs) -->
         {% if active_cegs %}
-            <div class="w-full bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="w-full bg-white/95 dark:bg-[#131B2E] p-4 sm:p-5 rounded-2xl border border-pink-100/80 dark:border-slate-800 shadow-xs space-y-3 transition-colors">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 flex-1">
                         <!-- Busca Textual de CEG -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
                                 🔍 Buscar CEG:
                             </label>
                             <div class="relative">
                                 <input type="text"
                                        x-model="searchQuery"
                                        placeholder="Nome, era, item..."
-                                       class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl pl-8 pr-7 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition">
+                                       class="w-full bg-pink-50/40 dark:bg-slate-900 border border-pink-200/60 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl pl-8 pr-7 py-2.5 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition">
                                 <span class="absolute left-2.5 top-2.5 text-xs text-slate-400 pointer-events-none">🔍</span>
                                 <button type="button"
                                         x-show="searchQuery"
                                         x-cloak
                                         @click="searchQuery = ''"
-                                        class="absolute right-2 top-2.5 text-xs text-slate-400 hover:text-slate-700 cursor-pointer">
+                                        class="absolute right-2 top-2.5 text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
                                     ✕
                                 </button>
                             </div>
@@ -112,12 +129,12 @@
 
                         <!-- Filtro por Grupo -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 🎵 Filtrar Grupo:
                             </label>
                             <select x-model="selectedGroup"
                                     @change="selectedEra = ''"
-                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                    class="w-full bg-pink-50/30 dark:bg-slate-900 border border-pink-200/60 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
                                 <option value="">Todos os Grupos ({{ active_cegs|length }})</option>
                                 {% for g in open_groups %}
                                     <option value="{{ g.id }}">{{ g.name }} ({{ g.cegs_count }})</option>
@@ -127,11 +144,11 @@
 
                         <!-- Filtro por Era -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 💿 Filtrar por Era:
                             </label>
                             <select x-model="selectedEra"
-                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                    class="w-full bg-pink-50/30 dark:bg-slate-900 border border-pink-200/60 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
                                 <option value="">Todas as Eras</option>
                                 {% for e in open_eras %}
                                     <option value="{{ e.id }}"
@@ -144,11 +161,11 @@
 
                         <!-- Filtro por Membro / Integrante -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 ✨ Filtrar por Membro:
                             </label>
                             <select x-model="selectedMember"
-                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                    class="w-full bg-pink-50/30 dark:bg-slate-900 border border-pink-200/60 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
                                 <option value="">Todos os Integrantes</option>
                                 {% for m in open_members %}
                                     <option value="{{ m|lower }}">{{ m }}</option>
@@ -156,13 +173,13 @@
                             </select>
                         </div>
 
-                        <!-- Filtro por Tipo de Item (Pool das Caixas: Photocard, Álbum, Mistas, etc.) -->
+                        <!-- Filtro por Tipo de Item -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 🏷️ Tipo de Item:
                             </label>
                             <select x-model="selectedTipo"
-                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                    class="w-full bg-pink-50/30 dark:bg-slate-900 border border-pink-200/60 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
                                 <option value="">Todos os Tipos ({{ active_cegs|length }})</option>
                                 <option value="mista">🔀 CEGs Mistas ({{ count_mistas }})</option>
                                 <optgroup label="Apenas Este Tipo (Exclusivo)">
@@ -184,12 +201,12 @@
 
                         <!-- Ordenador por Preço / Vagas -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 ↕️ Ordenar por:
                             </label>
                             <select x-model="sortBy"
                                     @change="sortCards()"
-                                    class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
+                                    class="w-full bg-pink-50/30 dark:bg-slate-900 border border-pink-200/60 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2.5 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition cursor-pointer">
                                 <option value="recentes">⚡ Mais Recentes</option>
                                 <option value="preco_asc">💰 Menor Preço</option>
                                 <option value="preco_desc">💎 Maior Preço</option>
@@ -205,7 +222,7 @@
                          class="flex items-end justify-end pt-1 sm:pt-0">
                         <button type="button"
                                 @click="searchQuery = ''; selectedGroup = ''; selectedEra = ''; selectedMember = ''; selectedTipo = ''; sortBy = 'recentes'; sortCards()"
-                                class="px-3.5 py-2.5 text-xs font-bold text-pink-700 hover:text-pink-900 bg-pink-50 hover:bg-pink-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-pink-200">
+                                class="px-3.5 py-2.5 text-xs font-bold text-pink-700 dark:text-pink-300 hover:text-pink-900 dark:hover:text-pink-100 bg-pink-50 dark:bg-slate-800 hover:bg-pink-100 dark:hover:bg-slate-700 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-pink-200 dark:border-slate-700">
                             <span>✕</span>
                             <span>Limpar Filtros</span>
                         </button>
@@ -265,11 +282,11 @@
                                 <div class="min-w-0 flex-1 space-y-1.5">
                                     <!-- Badges: Status, Grupo, Era e Tipo de Item -->
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wide">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 uppercase tracking-wide">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                             <span>Aberta</span>
                                         </span>
-                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold bg-pink-50 text-pink-700 border border-pink-200 uppercase tracking-wide">
+                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800 uppercase tracking-wide">
                                             {{ ceg.era.group.name }}
                                         </span>
                                         {% if ceg.theme_color %}
@@ -279,17 +296,17 @@
                                                 <span>{{ ceg.era.name }}</span>
                                             </span>
                                         {% else %}
-                                            <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wide">
+                                            <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase tracking-wide">
                                                 {{ ceg.era.name }}
                                             </span>
                                         {% endif %}
                                         {% if ceg.is_mista %}
-                                            <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wide flex items-center gap-1" title="{{ ceg.tipo_names_str }}">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 uppercase tracking-wide flex items-center gap-1" title="{{ ceg.tipo_names_str }}">
                                                 <span>🔀</span>
                                                 <span>Mista</span>
                                             </span>
                                         {% elif ceg.primary_tipo_name %}
-                                            <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200 uppercase tracking-wide flex items-center gap-1">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 uppercase tracking-wide flex items-center gap-1">
                                                 <span>📦</span>
                                                 <span>{{ ceg.primary_tipo_name }}</span>
                                             </span>
@@ -297,7 +314,7 @@
                                     </div>
 
                                     <!-- Nome da CEG -->
-                                    <h3 class="text-base sm:text-lg font-black text-slate-900 leading-snug truncate">
+                                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 leading-snug truncate">
                                         <a href="{% url 'ceg_detail' slug=ceg.slug %}"
                                            class="transition-colors duration-200 hover:opacity-85"
                                            onmouseover="{% if ceg.theme_color %}this.style.color='{{ ceg.theme_color }}'{% endif %}"
@@ -308,13 +325,13 @@
                                     </h3>
 
                                     <!-- Progresso / Preenchimento Estilizado -->
-                                    <div class="flex items-center gap-2.5 text-xs text-slate-500">
+                                    <div class="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400">
                                         <div class="w-24 sm:w-32 rounded-full h-2 overflow-hidden shrink-0"
                                              style="{% if ceg.theme_color %}background-color: {{ ceg.theme_color }}20;{% else %}background-color: #f1f5f9;{% endif %}">
                                             <div class="h-2 rounded-full transition-all duration-500"
                                                  style="width: {{ ceg.progress_percentage }}%; {% if ceg.theme_color %}background: linear-gradient(90deg, {{ ceg.theme_color }}, {{ ceg.theme_color }}dd); box-shadow: 0 0 8px {{ ceg.theme_color }}60;{% else %}background-color: #10B981;{% endif %}"></div>
                                         </div>
-                                        <span class="text-[11px] font-semibold text-slate-600">
+                                        <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                                             {{ ceg.reserved_slots_count }}/{{ ceg.total_slots_count }} preenchidos ({{ ceg.progress_percentage }}%)
                                         </span>
                                     </div>
@@ -322,21 +339,21 @@
                             </div>
 
                             <!-- Bloco Direito: Valor dos Itens + Itens Sobrando (com expansão) + Botão Claim -->
-                            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between md:justify-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between md:justify-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
                                 
                                 <!-- Valor dos Itens -->
                                 <div class="shrink-0">
                                     {% if ceg.has_single_price and ceg.single_price %}
-                                        <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-center">
-                                            <div class="text-[9px] uppercase font-bold text-emerald-600 tracking-wider">Valor por item</div>
-                                            <div class="text-xs sm:text-sm font-black text-emerald-800 whitespace-nowrap">
+                                        <div class="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-xl text-center">
+                                            <div class="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Valor por item</div>
+                                            <div class="text-xs sm:text-sm font-black text-emerald-800 dark:text-emerald-200 whitespace-nowrap">
                                                 R$ {{ ceg.single_price|floatformat:2 }} cada
                                             </div>
                                         </div>
                                     {% elif ceg.has_different_prices %}
-                                        <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-center">
-                                            <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Valor dos itens</div>
-                                            <div class="text-xs font-bold text-slate-600 whitespace-nowrap">
+                                        <div class="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-center">
+                                            <div class="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-400 tracking-wider">Valor dos itens</div>
+                                            <div class="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
                                                 valores variados
                                             </div>
                                         </div>
@@ -350,7 +367,7 @@
                                                 @click="showAvailable = !showAvailable"
                                                 class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer border shadow-2xs"
                                                 style="{% if ceg.theme_color %}border-color: {{ ceg.theme_color }}45; color: {{ ceg.theme_color }}; background-color: {{ ceg.theme_color }}10;{% endif %}"
-                                                :class="showAvailable ? 'ring-2 ring-pink-300' : 'hover:opacity-90'">
+                                                :class="showAvailable ? 'ring-2 ring-pink-300 dark:ring-pink-700' : 'hover:opacity-90'">
                                             <span class="relative flex h-2 w-2 shrink-0">
                                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
                                                       style="{% if ceg.theme_color %}background-color: {{ ceg.theme_color }};{% else %}background-color: #34d399;{% endif %}"></span>
@@ -370,7 +387,7 @@
                                             </svg>
                                         </button>
                                     {% else %}
-                                        <div class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 border border-slate-200 text-slate-500 flex items-center gap-1.5 whitespace-nowrap">
+                                        <div class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center gap-1.5 whitespace-nowrap">
                                             <span>✨ 100% preenchida</span>
                                         </div>
                                     {% endif %}
@@ -397,7 +414,7 @@
                              x-transition:leave="transition ease-in duration-150"
                              x-transition:leave-start="opacity-100 translate-y-0"
                              x-transition:leave-end="opacity-0 -translate-y-2"
-                             class="border-t p-4 sm:p-5"
+                             class="ceg-card-sub border-t p-4 sm:p-5"
                              style="{% if ceg.theme_color %}background-color: {{ ceg.theme_color }}08; border-color: {{ ceg.theme_color }}30;{% else %}background-color: rgba(248, 250, 252, 0.8); border-color: #f1f5f9;{% endif %}">
                             
                             <div class="space-y-3">
@@ -406,12 +423,12 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-base">📋</span>
                                         <div>
-                                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
                                                 Itens e vagas disponíveis nesta CEG
                                             </h4>
-                                            <p class="text-[11px] text-slate-500">
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400">
                                                 {% if ceg.has_single_price and ceg.single_price %}
-                                                    Todos os itens custam <strong class="text-emerald-700">R$ {{ ceg.single_price|floatformat:2 }} cada</strong>.
+                                                    Todos os itens custam <strong class="text-emerald-700 dark:text-emerald-300">R$ {{ ceg.single_price|floatformat:2 }} cada</strong>.
                                                 {% elif ceg.has_different_prices %}
                                                     Itens com valores variados conforme o slot.
                                                 {% endif %}
@@ -430,13 +447,13 @@
                                 {% if ceg.available_slots_count > 0 %}
                                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
                                         {% for item in ceg.grouped_available_items %}
-                                            <div class="p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-1.5">
+                                            <div class="p-2.5 bg-white dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs space-y-1.5">
                                                 <div class="flex items-center justify-between gap-1">
-                                                    <span class="text-xs font-bold text-slate-900 truncate" title="{{ item.display_name }}">
+                                                    <span class="text-xs font-bold text-slate-900 dark:text-slate-100 truncate" title="{{ item.display_name }}">
                                                         {{ item.display_name }}
                                                     </span>
                                                     {% if ceg.has_different_prices and item.price %}
-                                                        <span class="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100 shrink-0">
+                                                        <span class="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-100 dark:border-emerald-800 shrink-0">
                                                             R$ {{ item.price|floatformat:2 }}
                                                         </span>
                                                     {% endif %}
@@ -444,7 +461,7 @@
 
                                                 <!-- Sets onde está sobrando -->
                                                 <div class="flex flex-wrap items-center gap-1">
-                                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Vago em:</span>
+                                                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Vago em:</span>
                                                     {% for s in item.sets %}
                                                         <span class="px-1.5 py-0.2 rounded text-[10px] font-extrabold shadow-2xs border"
                                                               style="{% if ceg.theme_color %}background-color: {{ ceg.theme_color }}14; color: {{ ceg.theme_color }}; border-color: {{ ceg.theme_color }}40;{% else %}background-color: #fdf2f8; color: #be185d; border-color: #fbcfe8;{% endif %}">
@@ -456,9 +473,9 @@
                                         {% endfor %}
                                     </div>
                                 {% else %}
-                                    <div class="py-3 text-center text-slate-500">
-                                        <span class="font-bold text-emerald-700 block">✨ 100% preenchida!</span>
-                                        <p class="text-xs text-slate-400">Todos os sets estão completos, não há itens sobrando nesta CEG.</p>
+                                    <div class="py-3 text-center text-slate-500 dark:text-slate-400">
+                                        <span class="font-bold text-emerald-700 dark:text-emerald-300 block">✨ 100% preenchida!</span>
+                                        <p class="text-xs text-slate-400 dark:text-slate-500">Todos os sets estão completos, não há itens sobrando nesta CEG.</p>
                                     </div>
                                 {% endif %}
                             </div>
@@ -469,8 +486,8 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 space-y-2">
-                <p class="text-lg font-bold text-slate-700">Nenhuma CEG aberta com vagas no momento.</p>
+            <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-pink-100 dark:border-slate-800 p-8 text-center text-slate-500 dark:text-slate-400 space-y-2">
+                <p class="text-lg font-bold text-slate-700 dark:text-slate-200">Nenhuma CEG aberta com vagas no momento.</p>
                 <p class="text-xs">Todas as vagas foram preenchidas ou fique de olho nas CEGs agendadas abaixo!</p>
             </div>
         {% endif %}
@@ -480,15 +497,15 @@
             <div class="pt-2" x-data="{ showFullCegs: false }">
                 <button type="button"
                         @click="showFullCegs = !showFullCegs"
-                        class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between sm:justify-start gap-2.5 cursor-pointer border bg-slate-100/90 hover:bg-slate-200/80 border-slate-200 text-slate-700 shadow-2xs">
+                        class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between sm:justify-start gap-2.5 cursor-pointer border bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs">
                     <div class="flex items-center gap-2">
                         <span>✨</span>
                         <span>Ver CEGs com sets 100% preenchidos</span>
-                        <span class="bg-slate-200 text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        <span class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] font-black px-2 py-0.5 rounded-full">
                             {{ full_cegs|length }}
                         </span>
                     </div>
-                    <svg class="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-slate-500"
+                    <svg class="w-3.5 h-3.5 transition-transform duration-200 shrink-0 text-slate-500 dark:text-slate-400"
                          :class="showFullCegs ? 'rotate-180' : ''"
                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
@@ -501,38 +518,38 @@
                     {% for ceg in full_cegs %}
                         <div x-show="checkSearch('{{ ceg.title|escapejs }} {{ ceg.display_title|escapejs }} {{ ceg.era.group.name|escapejs }} {{ ceg.era.name|escapejs }}')"
                              x-transition
-                             class="bg-white/90 rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                             class="bg-white/90 dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5 min-w-0">
-                                <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200">
+                                <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                     {% if ceg.banner_url %}
                                         <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}" class="w-full h-full object-cover">
                                     {% else %}
-                                        <div class="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 font-bold text-xs">
+                                        <div class="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 font-bold text-xs">
                                             🎴
                                         </div>
                                     {% endif %}
                                 </div>
                                 <div class="min-w-0 space-y-0.5">
-                                    <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                                    <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                                         <span>{{ ceg.era.group.name }}</span>
                                         <span>•</span>
                                         <span>{{ ceg.era.name }}</span>
                                     </div>
-                                    <h4 class="text-sm font-black text-slate-900 truncate">
-                                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-pink-600">
+                                    <h4 class="text-sm font-black text-slate-900 dark:text-slate-100 truncate">
+                                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-pink-600 dark:hover:text-pink-400">
                                             {{ ceg.display_title }}
                                         </a>
                                     </h4>
-                                    <span class="text-[11px] text-slate-500 font-medium">
+                                    <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                                         {{ ceg.reserved_slots_count }}/{{ ceg.total_slots_count }} preenchidos (100%)
                                     </span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
-                                <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 border border-emerald-200 text-emerald-800">
+                                <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300">
                                     ✨ 100% preenchida
                                 </span>
-                                <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition">
+                                <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition">
                                     Ver CEG →
                                 </a>
                             </div>
@@ -547,16 +564,16 @@
     {% if scheduled_cegs %}
     <section class="space-y-4">
         <div>
-            <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
+            <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <span>⏳</span>
                 Em Breve: Modo Standby & Countdown
             </h2>
-            <p class="text-sm text-slate-500">CEGs cadastradas antecipadamente. Os botões de reserva serão destravados automaticamente no segundo zero!</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">CEGs cadastradas antecipadamente. Os botões de reserva serão destravados automaticamente no segundo zero!</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for ceg in scheduled_cegs %}
-                <div class="bg-white rounded-2xl border-2 border-amber-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                <div class="bg-white dark:bg-[#131B2E] rounded-2xl border-2 border-amber-200 dark:border-amber-500/40 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
                      x-data="{
                          secondsLeft: {{ ceg.countdown_seconds }},
                          timer: null,
@@ -580,8 +597,8 @@
                              }
                          }, 1000);
                      ">
-                    <div class="bg-amber-50 p-4 border-b border-amber-100 flex items-center justify-between">
-                        <span class="text-xs font-bold text-amber-800 uppercase tracking-wide">
+                    <div class="bg-amber-50 dark:bg-amber-950/60 p-4 border-b border-amber-100 dark:border-amber-800/60 flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide">
                             {{ ceg.era.group.name }}
                         </span>
                         <div class="flex items-center space-x-1.5 text-xs font-black bg-amber-500 text-white px-2.5 py-1 rounded-md shadow-sm">
@@ -591,37 +608,37 @@
                     </div>
 
                     <div class="p-5 flex-grow space-y-3">
-                        <h3 class="text-lg font-bold text-slate-900 leading-snug">
-                            <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-amber-600 transition">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                            <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-amber-600 dark:hover:text-amber-400 transition">
                                 {{ ceg.display_title }}
                             </a>
                         </h3>
-                        <p class="text-xs text-slate-600">
+                        <p class="text-xs text-slate-600 dark:text-slate-300">
                             Abre em: <strong>{{ ceg.opens_at|date:"d/m/Y às H:i" }}</strong>
                         </p>
-                        <p class="text-xs text-slate-500 line-clamp-2">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                             {{ ceg.description|default:"Acesse a página para ver a prévia das inclusões e preços com antecedência." }}
                         </p>
 
                         <!-- Accordion: Prévia de Itens & Preços -->
-                        <div class="pt-2 border-t border-amber-100" x-data="{ showPreview: false }">
+                        <div class="pt-2 border-t border-amber-100 dark:border-amber-900/40" x-data="{ showPreview: false }">
                             <button type="button"
                                     @click="showPreview = !showPreview"
-                                    class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs font-semibold transition group cursor-pointer border bg-amber-50/70 hover:bg-amber-100/80 border-amber-200/80 text-amber-900">
+                                    class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs font-semibold transition group cursor-pointer border bg-amber-50/70 dark:bg-amber-950/40 hover:bg-amber-100/80 dark:hover:bg-amber-900/60 border-amber-200/80 dark:border-amber-800/80 text-amber-900 dark:text-amber-300">
                                 <div class="flex items-center gap-1.5">
                                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                                     <span class="font-bold">Prévia dos itens</span>
                                     {% if ceg.available_slots_count > 0 %}
-                                        <span class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-950">
+                                        <span class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-950 dark:text-amber-100">
                                             {{ ceg.available_slots_count }}
                                         </span>
                                     {% endif %}
                                 </div>
 
-                                <div class="flex items-center gap-1 text-amber-700 group-hover:text-amber-900">
+                                <div class="flex items-center gap-1 text-amber-700 dark:text-amber-400 group-hover:text-amber-900 dark:group-hover:text-amber-200">
                                     <span class="text-[11px] font-medium" x-text="showPreview ? 'Recolher' : 'Ver itens'"></span>
                                     <svg class="w-3.5 h-3.5 transition-transform duration-200"
-                                         :class="showPreview ? 'rotate-180 text-amber-700' : 'text-amber-500'"
+                                         :class="showPreview ? 'rotate-180 text-amber-700 dark:text-amber-300' : 'text-amber-500'"
                                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
                                     </svg>
@@ -636,21 +653,21 @@
                                  x-transition:leave="transition ease-in duration-150"
                                  x-transition:leave-start="opacity-100 translate-y-0"
                                  x-transition:leave-end="opacity-0 -translate-y-1"
-                                 class="mt-2 p-3 bg-amber-50/90 rounded-xl border border-amber-200/80 space-y-2.5 text-xs">
+                                 class="mt-2 p-3 bg-amber-50/90 dark:bg-amber-950/40 rounded-xl border border-amber-200/80 dark:border-amber-805/60 space-y-2.5 text-xs">
                                 {% if ceg.has_single_price and ceg.single_price %}
-                                    <div class="flex items-center justify-between bg-white border border-amber-200 px-2.5 py-1.5 rounded-lg text-amber-950">
+                                    <div class="flex items-center justify-between bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-lg text-amber-950 dark:text-amber-100">
                                         <span class="font-medium text-[11px] flex items-center gap-1.5">
                                             <span>🏷️</span>
                                             <span>Preço por item:</span>
                                         </span>
-                                        <span class="font-black text-xs text-amber-800 bg-amber-100 px-2 py-0.5 rounded shadow-2xs">
+                                        <span class="font-black text-xs text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded shadow-2xs">
                                             R$ {{ ceg.single_price|floatformat:2 }} cada
                                         </span>
                                     </div>
                                 {% elif ceg.has_different_prices %}
-                                    <div class="flex items-start gap-1.5 bg-white border border-amber-200 p-2 rounded-lg text-amber-900">
+                                    <div class="flex items-start gap-1.5 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 p-2 rounded-lg text-amber-900 dark:text-amber-100">
                                         <span class="text-xs shrink-0 mt-0.5">ℹ️</span>
-                                        <p class="text-[11px] leading-tight text-amber-800">
+                                        <p class="text-[11px] leading-tight text-amber-800 dark:text-amber-200">
                                             Itens com <strong>valores variados</strong> na CEG. Consulte os preços clicando no botão abaixo.
                                         </p>
                                     </div>
@@ -658,18 +675,18 @@
 
                                 {% if ceg.grouped_available_items %}
                                     <div class="space-y-1.5">
-                                        <div class="text-[10px] font-bold text-amber-800/70 uppercase tracking-wider">
+                                        <div class="text-[10px] font-bold text-amber-800/70 dark:text-amber-400 uppercase tracking-wider">
                                             Itens disponíveis por Set:
                                         </div>
-                                        <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1 divide-y divide-amber-200/50">
+                                        <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1 divide-y divide-amber-200/50 dark:divide-amber-800/50">
                                             {% for item in ceg.grouped_available_items %}
                                                 <div class="pt-1.5 first:pt-0 flex items-center justify-between gap-2">
-                                                    <span class="font-bold text-slate-800 truncate" title="{{ item.display_name }}">
+                                                    <span class="font-bold text-slate-800 dark:text-slate-100 truncate" title="{{ item.display_name }}">
                                                         {{ item.display_name }}
                                                     </span>
                                                     <div class="flex flex-wrap gap-1 items-center justify-end shrink-0">
                                                         {% for s in item.sets %}
-                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-amber-800 border border-amber-200 shadow-2xs">
+                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700 shadow-2xs">
                                                                 Set #{{ s }}
                                                             </span>
                                                         {% endfor %}
@@ -696,18 +713,18 @@
 
     <!-- Seção: CEGs Concluídas ou Encerradas -->
     {% if closed_cegs %}
-    <section class="space-y-4 pt-6 border-t border-slate-200">
-        <h2 class="text-lg font-bold text-slate-700">
+    <section class="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-800">
+        <h2 class="text-lg font-bold text-slate-700 dark:text-slate-300">
             📁 CEGs Anteriores / Encerradas
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {% for ceg in closed_cegs %}
-                <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div class="bg-white dark:bg-[#131B2E] p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                        <span class="text-[11px] font-semibold text-slate-400 uppercase">{{ ceg.era.group.name }}</span>
-                        <h4 class="text-sm font-bold text-slate-800">{{ ceg.display_title }}</h4>
+                        <span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase">{{ ceg.era.group.name }}</span>
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100">{{ ceg.display_title }}</h4>
                     </div>
-                    <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="text-xs font-semibold text-slate-500 hover:text-slate-900">
+                    <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
                         Ver histórico →
                     </a>
                 </div>

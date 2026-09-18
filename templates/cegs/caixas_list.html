@@ -1,78 +1,78 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Caixas & Remessas Internacionais (KR / JP) — K-pop CEG Manager{% endblock %}
+{% block title %}ValCegs Caixinhas — Remessas KR / JP{% endblock %}
 
 {% block content %}
 <div x-data="caixasDashboard()" class="space-y-8">
 
-    <!-- Header & Hero -->
-    <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white p-6 sm:p-8 rounded-2xl shadow-xl border border-white/10">
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="space-y-2 max-w-2xl">
-                <div class="flex items-center gap-2">
-                    <span class="bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                        ✈️ Logística & Consolidação Internacional
-                    </span>
-                    <span class="text-xs text-slate-300">Remessas KR / JP (Mercari)</span>
+    <!-- Hero Banner Oficial ValCegs CAIXINHAS (Estilo Pastel Céu / Y2K) -->
+    <div class="relative overflow-hidden rounded-3xl shadow-md border border-sky-200/80 dark:border-slate-800 bg-sky-100 dark:bg-slate-900 transition-all duration-300">
+        <div class="w-full relative aspect-[21/6] sm:aspect-[24/7] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-gradient-to-r from-sky-400 via-blue-300 to-sky-500">
+            <img src="{% static 'images/banner_caixinhas.png' %}"
+                 alt="ValCegs Caixinhas"
+                 class="w-full h-full object-cover sm:object-contain object-center">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent sm:hidden"></div>
+        </div>
+        
+        <!-- Faixa de Ações Rápidas Pastel -->
+        <div class="p-3.5 sm:p-5 bg-white/90 dark:bg-[#131B2E]/90 backdrop-blur-md border-t border-sky-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xl">✈️</span>
+                <div>
+                    <h2 class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">ValCegs &bull; Rastreamento de Caixas & Remessas Internacionais</h2>
+                    <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Acompanhe envio, rastreio e chegada de caixas da Coreia do Sul (KR) e Japão (JP Mercari).</p>
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
-                    Caixas & Remessas Internacionais
-                </h1>
-                <p class="text-xs sm:text-sm text-slate-300">
-                    Gerencie o envio das caixas vindas da Coreia do Sul e Japão. A atualização do status de uma caixa sincroniza automaticamente todas as CEGs atreladas e notifica os compradores!
-                </p>
             </div>
 
-            <!-- Botão de Criação para Organizador -->
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {% if is_staff_user %}
-                    <a href="{% url 'caixa_create' %}" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition transform hover:-translate-y-0.5">
-                        <span class="text-base">➕</span>
-                        <span>Nova Caixa / Remessa</span>
+            {% if is_staff_user %}
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'caixa_create' %}" class="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition transform hover:-translate-y-0.5">
+                        ➕ Nova Caixa / Remessa
                     </a>
-                {% endif %}
-            </div>
+                </div>
+            {% endif %}
         </div>
 
-        <!-- KPI Mini Cards -->
-        <div class="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-            <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
-                <span class="block text-xl sm:text-2xl font-black text-white">{{ total_caixas }}</span>
-                <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Total de Caixas</span>
+        <!-- KPI Mini Cards em Estilo Pastel & Dark Mode -->
+        <div class="px-4 pb-5 sm:px-6 sm:pb-6 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+            <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md px-3 py-2.5 rounded-xl border border-sky-100 dark:border-slate-700 shadow-2xs">
+                <span class="block text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">{{ total_caixas }}</span>
+                <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">Total de Caixas</span>
             </div>
-            <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
-                <span class="block text-xl sm:text-2xl font-black text-blue-300">🇰🇷 {{ caixas_kr }}</span>
-                <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Caixas Coreia</span>
+            <div class="bg-sky-50/80 dark:bg-sky-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-sky-200/80 dark:border-sky-800/60 shadow-2xs">
+                <span class="block text-xl sm:text-2xl font-black text-sky-700 dark:text-sky-300">🇰🇷 {{ caixas_kr }}</span>
+                <span class="text-[10px] uppercase font-bold text-sky-800/80 dark:text-sky-300 tracking-wider">Caixas Coreia</span>
             </div>
-            <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
-                <span class="block text-xl sm:text-2xl font-black text-rose-300">🇯🇵 {{ caixas_jp }}</span>
-                <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Caixas Mercari (JP)</span>
+            <div class="bg-rose-50/80 dark:bg-rose-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-rose-200/80 dark:border-rose-800/60 shadow-2xs">
+                <span class="block text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300">🇯🇵 {{ caixas_jp }}</span>
+                <span class="text-[10px] uppercase font-bold text-rose-800/80 dark:text-rose-300 tracking-wider">Caixas Mercari (JP)</span>
             </div>
-            <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
-                <span class="block text-xl sm:text-2xl font-black text-amber-300">✈️ {{ caixas_em_transito }}</span>
-                <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Em Trânsito / Alfândega</span>
+            <div class="bg-amber-50/80 dark:bg-amber-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-amber-200/80 dark:border-amber-800/60 shadow-2xs">
+                <span class="block text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300">✈️ {{ caixas_em_transito }}</span>
+                <span class="text-[10px] uppercase font-bold text-amber-800/80 dark:text-amber-300 tracking-wider">Em Trânsito</span>
             </div>
-            <div class="bg-white/10 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10">
-                <span class="block text-xl sm:text-2xl font-black text-emerald-300">📦 {{ total_cegs_vinculadas }}</span>
-                <span class="text-[10px] uppercase font-bold text-slate-300 tracking-wider">CEGs Consolidadas</span>
+            <div class="bg-emerald-50/80 dark:bg-emerald-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
+                <span class="block text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300">📦 {{ total_cegs_vinculadas }}</span>
+                <span class="text-[10px] uppercase font-bold text-emerald-800/80 dark:text-emerald-300 tracking-wider">CEGs Vinculadas</span>
             </div>
         </div>
     </div>
 
     <!-- Filtros & Barra de Pesquisa -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="bg-white dark:bg-[#131B2E] p-4 rounded-2xl border border-sky-100/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
         <!-- Abas de Origem -->
         <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
             <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
-               class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap {% if not origem_filter %}bg-slate-900 text-white shadow-xs{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {% if not origem_filter %}bg-slate-900 dark:bg-slate-700 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
                 Todas as Origens
             </a>
             <a href="?origem=KR{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-               class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap {% if origem_filter == 'KR' %}bg-blue-600 text-white shadow-xs{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {% if origem_filter == 'KR' %}bg-sky-600 dark:bg-sky-500 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
                 🇰🇷 Coreia do Sul (KR)
             </a>
             <a href="?origem=JP{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-               class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap {% if origem_filter == 'JP' %}bg-rose-600 text-white shadow-xs{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {% if origem_filter == 'JP' %}bg-rose-600 dark:bg-rose-500 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
                 🇯🇵 Japão / Mercari (JP)
             </a>
         </div>
@@ -83,7 +83,7 @@
                 <input type="hidden" name="origem" value="{{ origem_filter }}">
             {% endif %}
             <select name="status" onchange="this.form.submit()"
-                    class="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-2 text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    class="bg-sky-50/40 dark:bg-slate-900 border border-sky-200/60 dark:border-slate-700 text-xs font-semibold rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                 <option value="">Todos os Status</option>
                 {% for val, label in status_choices %}
                     <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
@@ -92,12 +92,12 @@
 
             <div class="relative flex-grow md:w-64">
                 <input type="text" name="q" value="{{ search_query }}" placeholder="Buscar caixa, rastreio ou CEG..."
-                       class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg pl-8 pr-3 py-2 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                       class="w-full bg-sky-50/40 dark:bg-slate-900 border border-sky-200/60 dark:border-slate-700 text-xs rounded-xl pl-8 pr-3 py-2 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                 <span class="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
             </div>
 
             {% if origem_filter or status_filter or search_query %}
-                <a href="{% url 'caixas_dashboard' %}" class="text-xs text-slate-400 hover:text-slate-700 px-2 py-1 font-medium" title="Limpar filtros">
+                <a href="{% url 'caixas_dashboard' %}" class="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1 font-medium" title="Limpar filtros">
                     ✕ Limpar
                 </a>
             {% endif %}
@@ -109,33 +109,33 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {% for item in caixas_data %}
                 {% with caixa=item.caixa %}
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
+                <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
                     <!-- Topo do Card -->
-                    <div class="p-5 border-b border-slate-100 space-y-4">
+                    <div class="p-5 border-b border-slate-100 dark:border-slate-800 space-y-4">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <!-- Ícone / Flag grande -->
                                 <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold shadow-xs
-                                    {% if caixa.origem == 'KR' %}bg-blue-50 text-blue-600 border border-blue-200
-                                    {% elif caixa.origem == 'JP' %}bg-rose-50 text-rose-600 border border-rose-200
-                                    {% else %}bg-slate-50 text-slate-600 border border-slate-200{% endif %}">
+                                    {% if caixa.origem == 'KR' %}bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800
+                                    {% elif caixa.origem == 'JP' %}bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800
+                                    {% else %}bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %}">
                                     {% if caixa.origem == 'KR' %}🇰🇷{% elif caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}
                                 </div>
                                 <div>
                                     <div class="flex items-center gap-2">
-                                        <h2 class="text-base sm:text-lg font-black text-slate-900 group-hover:text-blue-600 transition">
+                                        <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
                                             <a href="{% url 'caixa_detail' slug=caixa.slug %}">{{ caixa.nome }}</a>
                                         </h2>
                                     </div>
                                     <div class="flex items-center gap-2 mt-0.5">
                                         <span class="text-[11px] font-bold px-2 py-0.5 rounded-full
-                                            {% if caixa.origem == 'KR' %}bg-blue-100 text-blue-800
-                                            {% elif caixa.origem == 'JP' %}bg-rose-100 text-rose-800
-                                            {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                            {% if caixa.origem == 'KR' %}bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300
+                                            {% elif caixa.origem == 'JP' %}bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300
+                                            {% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
                                             {{ caixa.get_origem_display }}
                                         </span>
                                         {% if caixa.transportadora %}
-                                            <span class="text-xs text-slate-500 font-medium">
+                                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                                 via {{ caixa.transportadora }}
                                             </span>
                                         {% endif %}
@@ -146,14 +146,14 @@
                             <!-- Badge de Status Atual -->
                             <div class="text-right">
                                 <span class="inline-block text-[11px] font-black px-2.5 py-1 rounded-full shadow-2xs
-                                    {% if caixa.status == 'EM_CONSOLIDACAO' %}bg-slate-100 text-slate-700 border border-slate-300
-                                    {% elif caixa.status == 'PRONTA_ENVIO' %}bg-sky-100 text-sky-800 border border-sky-300
-                                    {% elif caixa.status == 'ENVIADA' %}bg-blue-100 text-blue-800 border border-blue-300
-                                    {% elif caixa.status == 'NO_BRASIL' %}bg-amber-100 text-amber-900 border border-amber-300
-                                    {% elif caixa.status == 'TRIBUTADA' %}bg-orange-100 text-orange-900 border border-orange-300
-                                    {% elif caixa.status == 'LIBERADA' %}bg-teal-100 text-teal-900 border border-teal-300
-                                    {% elif caixa.status == 'ENTREGUE' %}bg-emerald-100 text-emerald-800 border border-emerald-300
-                                    {% else %}bg-purple-100 text-purple-800 border border-purple-300{% endif %}">
+                                    {% if caixa.status == 'EM_CONSOLIDACAO' %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700
+                                    {% elif caixa.status == 'PRONTA_ENVIO' %}bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800
+                                    {% elif caixa.status == 'ENVIADA' %}bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800
+                                    {% elif caixa.status == 'NO_BRASIL' %}bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800
+                                    {% elif caixa.status == 'TRIBUTADA' %}bg-orange-100 dark:bg-orange-950/80 text-orange-900 dark:text-orange-300 border border-orange-300 dark:border-orange-800
+                                    {% elif caixa.status == 'LIBERADA' %}bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-800
+                                    {% elif caixa.status == 'ENTREGUE' %}bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800
+                                    {% else %}bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800{% endif %}">
                                     {{ caixa.get_status_display }}
                                 </span>
                             </div>
@@ -161,32 +161,32 @@
 
                         <!-- Linha de Progresso Visual da Remessa -->
                         <div class="space-y-1.5">
-                            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                                 <span>Etapa {{ item.step }} de 7</span>
-                                <span class="font-bold text-slate-700">{{ item.progress_pct }}%</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-200">{{ item.progress_pct }}%</span>
                             </div>
-                            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                                 <div class="h-2 rounded-full transition-all duration-500
                                     {% if caixa.status == 'ENTREGUE' or caixa.status == 'FINALIZADA' %}bg-emerald-500
                                     {% elif caixa.status == 'NO_BRASIL' or caixa.status == 'TRIBUTADA' or caixa.status == 'LIBERADA' %}bg-amber-500
-                                    {% else %}bg-blue-500{% endif %}"
+                                    {% else %}bg-sky-500{% endif %}"
                                      style="width: {{ item.progress_pct }}%"></div>
                             </div>
                         </div>
 
                         <!-- Código de Rastreio e Datas -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 bg-slate-50/80 p-3 rounded-xl border border-slate-100">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 bg-slate-50/80 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                             <!-- Rastreio -->
                             <div class="flex flex-col">
-                                <span class="text-[10px] uppercase font-bold text-slate-400">Código de Rastreio</span>
+                                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Código de Rastreio</span>
                                 {% if caixa.codigo_rastreio %}
                                     <div class="flex items-center gap-1.5 mt-0.5">
                                         <a href="{{ caixa.tracking_url }}" target="_blank"
-                                           class="font-mono font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
+                                           class="font-mono font-bold text-xs text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 hover:underline flex items-center gap-1">
                                             <span>🔗 {{ caixa.codigo_rastreio }}</span>
                                         </a>
                                         <button type="button" @click="copyToClipboard('{{ caixa.codigo_rastreio }}')"
-                                                class="text-slate-400 hover:text-slate-600 text-xs p-0.5 rounded" title="Copiar código">
+                                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-0.5 rounded cursor-pointer" title="Copiar código">
                                             📋
                                         </button>
                                     </div>
@@ -197,14 +197,14 @@
 
                             <!-- Datas -->
                             <div class="flex flex-col">
-                                <span class="text-[10px] uppercase font-bold text-slate-400">Datas & Prazos</span>
-                                <div class="text-xs text-slate-700 font-medium mt-0.5">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Datas & Prazos</span>
+                                <div class="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5">
                                     {% if caixa.data_envio %}
                                         <span>✈️ Enviada: <b>{{ caixa.data_envio|date:"d/m/Y" }}</b></span>
                                     {% elif caixa.data_previsao %}
                                         <span>⏱️ Previsão: <b>{{ caixa.data_previsao|date:"d/m/Y" }}</b></span>
                                     {% else %}
-                                        <span class="text-slate-400 italic">Aguardando envio</span>
+                                        <span class="text-slate-400 dark:text-slate-500 italic">Aguardando envio</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -213,13 +213,13 @@
                         <!-- CEGs & Itens Vinculados nesta Caixa -->
                         <div class="space-y-2">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold text-slate-700 flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
                                     <span>🏷️ Conteúdo na remessa:</span>
-                                    <span class="bg-blue-100 text-blue-800 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                    <span class="bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 text-[10px] font-black px-1.5 py-0.5 rounded-full">
                                         {{ item.cegs_count }} CEG(s)
                                     </span>
                                     {% if item.itens_count > 0 %}
-                                        <span class="bg-rose-100 text-rose-800 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                        <span class="bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-[10px] font-black px-1.5 py-0.5 rounded-full">
                                             🇯🇵 {{ item.itens_count }} item(ns) Mercari
                                         </span>
                                     {% endif %}
@@ -230,21 +230,21 @@
                                 <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                                     {% for c in item.cegs %}
                                         <a href="{% url 'ceg_detail' slug=c.slug %}"
-                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-blue-50 text-slate-800 hover:text-blue-700 border border-slate-200 transition">
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 hover:text-sky-700 dark:hover:text-sky-300 border border-slate-200 dark:border-slate-700 transition">
                                             <span>{{ c.era.group.name }}</span>
                                             <span class="text-slate-400">/</span>
                                             <span class="truncate max-w-[140px]">{{ c.title }}</span>
                                         </a>
                                     {% endfor %}
                                     {% for it in item.itens %}
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                                             <span>🇯🇵</span>
                                             <span class="truncate max-w-[140px]">{{ it.nome }}</span>
                                         </span>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <p class="text-xs text-slate-400 italic bg-amber-50/60 border border-amber-200/60 p-2 rounded-lg text-amber-800">
+                                <p class="text-xs text-slate-400 italic bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 p-2 rounded-lg text-amber-800 dark:text-amber-300">
                                     ⚠️ Nenhum item ou CEG vinculado a esta caixa ainda.
                                 </p>
                             {% endif %}
@@ -252,9 +252,9 @@
                     </div>
 
                     <!-- Rodapé do Card com Ações -->
-                    <div class="p-4 bg-slate-50/90 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    <div class="p-4 bg-slate-50/90 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                         <a href="{% url 'caixa_detail' slug=caixa.slug %}"
-                           class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center justify-center sm:justify-start gap-1 py-1.5 transition">
+                           class="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 flex items-center justify-center sm:justify-start gap-1 py-1.5 transition">
                             <span>Ver Detalhes, CEGs & Itens Mercari</span>
                             <span>→</span>
                         </a>
@@ -263,11 +263,11 @@
                             <!-- Ação Rápida de Atualizar Status em Cascata -->
                             <div class="flex items-center gap-2">
                                 <button type="button" @click="openQuickStatusModal('{{ caixa.slug }}', '{{ caixa.nome|escapejs }}', '{{ caixa.status }}')"
-                                        class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-blue-500 text-slate-700 hover:text-blue-600 text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5">
+                                        class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-sky-500 text-slate-700 dark:text-slate-200 hover:text-sky-600 text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                                     <span>⚡ Atualizar Status</span>
                                 </button>
                                 <a href="{% url 'caixa_update' slug=caixa.slug %}"
-                                   class="p-1.5 rounded-lg bg-white border border-slate-300 hover:border-slate-400 text-slate-600 hover:text-slate-900 text-xs transition" title="Editar Caixa">
+                                   class="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-slate-400 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 text-xs transition" title="Editar Caixa">
                                     ✏️
                                 </a>
                             </div>
@@ -279,11 +279,11 @@
         </div>
     {% else %}
         <!-- Estado Vazio -->
-        <div class="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center space-y-4">
+        <div class="bg-white dark:bg-[#131B2E] rounded-2xl border-2 border-dashed border-sky-200 dark:border-slate-800 p-12 text-center space-y-4">
             <div class="text-4xl">📦</div>
             <div class="space-y-1">
-                <h3 class="text-lg font-black text-slate-800">Nenhuma caixa / remessa encontrada</h3>
-                <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Nenhuma caixa / remessa encontrada</h3>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                     {% if origem_filter or status_filter or search_query %}
                         Nenhuma remessa corresponde aos filtros selecionados. Tente limpar os filtros para ver todas as caixas.
                     {% else %}
@@ -292,7 +292,7 @@
                 </p>
             </div>
             {% if is_staff_user %}
-                <a href="{% url 'caixa_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">
+                <a href="{% url 'caixa_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition">
                     <span>➕ Cadastrar Primeira Caixa</span>
                 </a>
             {% endif %}
@@ -301,30 +301,30 @@
 
     <!-- Seção de CEGs sem Caixa (Apenas para Administrador) -->
     {% if is_staff_user and cegs_sem_caixa %}
-        <div class="bg-amber-50/80 border border-amber-200 rounded-2xl p-5 space-y-3">
+        <div class="bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-5 space-y-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="text-amber-600 text-base">⚠️</span>
-                    <h3 class="text-sm font-bold text-amber-900">
+                    <span class="text-amber-600 dark:text-amber-400 text-base">⚠️</span>
+                    <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">
                         CEGs Aguardando Vinculação a uma Remessa ({{ cegs_sem_caixa.count }})
                     </h3>
                 </div>
-                <span class="text-xs text-amber-700 font-medium">Sem caixa atrelada</span>
+                <span class="text-xs text-amber-700 dark:text-amber-300 font-medium">Sem caixa atrelada</span>
             </div>
-            <p class="text-xs text-amber-800">
+            <p class="text-xs text-amber-800 dark:text-amber-300">
                 As seguintes CEGs ainda não estão atreladas a nenhuma Caixa (KR ou JP). Vincule-as ao criar uma nova caixa ou entrando nos detalhes de uma caixa existente:
             </p>
             <div class="flex flex-wrap gap-2 pt-1">
                 {% for c in cegs_sem_caixa|slice:":10" %}
                     <a href="{% url 'ceg_detail' slug=c.slug %}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-amber-200 text-xs font-semibold text-slate-800 hover:border-blue-400 hover:text-blue-600 transition shadow-2xs">
-                        <span class="text-slate-400">CEG:</span>
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:border-sky-400 hover:text-sky-600 dark:hover:text-sky-300 transition shadow-2xs">
+                        <span class="text-slate-400 dark:text-slate-500">CEG:</span>
                         <span>{{ c.title }}</span>
-                        <span class="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded font-bold">{{ c.get_status_display }}</span>
+                        <span class="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 rounded font-bold">{{ c.get_status_display }}</span>
                     </a>
                 {% endfor %}
                 {% if cegs_sem_caixa.count > 10 %}
-                    <span class="text-xs text-amber-700 font-bold self-center">
+                    <span class="text-xs text-amber-700 dark:text-amber-300 font-bold self-center">
                         + {{ cegs_sem_caixa.count|add:"-10" }} outras CEGs
                     </span>
                 {% endif %}
@@ -337,14 +337,14 @@
         <div x-show="quickModalOpen" x-cloak
              class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
              @keydown.escape.window="quickModalOpen = false">
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4"
+            <div class="bg-white dark:bg-[#131B2E] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-4"
                  @click.away="quickModalOpen = false">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div class="flex items-center gap-2">
                         <span class="text-xl">⚡</span>
-                        <h3 class="font-black text-slate-900 text-base" x-text="'Atualizar: ' + targetCaixaName"></h3>
+                        <h3 class="font-black text-slate-900 dark:text-slate-100 text-base" x-text="'Atualizar: ' + targetCaixaName"></h3>
                     </div>
-                    <button type="button" @click="quickModalOpen = false" class="text-slate-400 hover:text-slate-700">✕</button>
+                    <button type="button" @click="quickModalOpen = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">✕</button>
                 </div>
 
                 <form :action="'/caixas/' + targetCaixaSlug + '/status/'" method="post" class="space-y-4">
@@ -352,31 +352,31 @@
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
 
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-700">Selecione o Novo Status</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Selecione o Novo Status</label>
                         <select name="novo_status" x-model="selectedStatus"
-                                class="w-full bg-slate-50 border border-slate-300 text-sm font-semibold rounded-xl px-3 py-2.5 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm font-semibold rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                             {% for val, label in status_choices %}
                                 <option value="{{ val }}">{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <p class="text-[11px] text-blue-600 font-medium">
+                        <p class="text-[11px] text-sky-600 dark:text-sky-400 font-medium">
                             ℹ️ Todas as CEGs atreladas serão atualizadas em cascata e compradores notificados.
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-700">Data do Evento (Opcional)</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Data do Evento (Opcional)</label>
                         <input type="date" name="data_evento"
-                               class="w-full bg-slate-50 border border-slate-300 text-sm rounded-xl px-3 py-2 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                               class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                     </div>
 
-                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" @click="quickModalOpen = false"
-                                class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                                class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer">
                             Cancelar
                         </button>
                         <button type="submit"
-                                class="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition">
+                                class="px-5 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-md shadow-sky-500/20 transition cursor-pointer">
                             Confirmar & Sincronizar
                         </button>
                     </div>
