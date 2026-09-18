@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib import messages
@@ -243,7 +244,7 @@ class MyClaimsView(View):
         claims = participant.claims.select_related(
             'slot__set__ceg__era__group',
             'slot__set__ceg__caixa',
-            'slot__item_definition',
+            'slot__item_definition__tipo_item',
             'slot__pacote_nacional'
         ).order_by('-claimed_at')
 
@@ -266,14 +267,14 @@ class MyClaimsView(View):
         itens_frete_unpaid_count = sum(1 for it in itens_individuais_list if it.frete_inter and it.frete_inter > 0 and not it.frete_inter_pago)
         itens_taxa_unpaid_count = sum(1 for it in itens_individuais_list if it.taxa_aduaneira and it.taxa_aduaneira > 0 and not it.taxa_aduaneira_paga)
 
-        # Contagens de frete inter e taxa não pagos (apenas quando o valor cadastrado na CEG for > 0)
+        # Contagens de frete inter e taxa não pagos (considerando valor efetivo do slot ou da CEG)
         inter_unpaid_count = sum(
             1 for c in claims_list
-            if c.slot.set.ceg.frete_inter and c.slot.set.ceg.frete_inter > 0 and not c.slot.is_frete_inter_paid
+            if c.slot.frete_inter and c.slot.frete_inter > 0 and not c.slot.is_frete_inter_paid
         )
         taxa_unpaid_count = sum(
             1 for c in claims_list
-            if c.slot.set.ceg.taxa_aduaneira and c.slot.set.ceg.taxa_aduaneira > 0 and not c.slot.is_taxa_aduaneira_paid
+            if c.slot.taxa_aduaneira and c.slot.taxa_aduaneira > 0 and not c.slot.is_taxa_aduaneira_paid
         )
 
         # Agrupamento de reservas por CEG para facilitar o pagamento e visualização
@@ -325,25 +326,116 @@ class MyClaimsView(View):
                     'caixa': ceg.caixa,
                     'caixa_id': str(ceg.caixa_id) if ceg.caixa_id else '',
                     'claims': [],
-                    'total_pending': 0,
-                    'total_paid': 0,
+                    'total_pending': Decimal('0.00'),
+                    'total_paid': Decimal('0.00'),
                     'count_pending': 0,
                     'count_paid': 0,
                     'count_inter_unpaid': 0,
                     'count_taxa_unpaid': 0,
+                    'count_inter_paid': 0,
+                    'count_taxa_paid': 0,
+                    'total_frete_inter': Decimal('0.00'),
+                    'total_frete_inter_pendente': Decimal('0.00'),
+                    'total_frete_inter_pago': Decimal('0.00'),
+                    'total_taxa_aduaneira': Decimal('0.00'),
+                    'total_taxa_aduaneira_pendente': Decimal('0.00'),
+                    'total_taxa_aduaneira_paga': Decimal('0.00'),
+                    'tipos_dict': {},
                 }
-            cegs_dict[ceg.id]['claims'].append(claim)
-            if claim.status == Claim.Status.PENDING:
-                cegs_dict[ceg.id]['total_pending'] += claim.total_price
-                cegs_dict[ceg.id]['count_pending'] += 1
-            elif claim.status == Claim.Status.PAID:
-                cegs_dict[ceg.id]['total_paid'] += claim.total_price
-                cegs_dict[ceg.id]['count_paid'] += 1
+            ceg_data = cegs_dict[ceg.id]
+            ceg_data['claims'].append(claim)
 
-            if ceg.frete_inter and ceg.frete_inter > 0 and not claim.slot.is_frete_inter_paid:
-                cegs_dict[ceg.id]['count_inter_unpaid'] += 1
-            if ceg.taxa_aduaneira and ceg.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid:
-                cegs_dict[ceg.id]['count_taxa_unpaid'] += 1
+            # Preço do Item
+            if claim.status == Claim.Status.PENDING:
+                ceg_data['total_pending'] += claim.total_price
+                ceg_data['count_pending'] += 1
+            elif claim.status == Claim.Status.PAID:
+                ceg_data['total_paid'] += claim.total_price
+                ceg_data['count_paid'] += 1
+
+            # Frete Inter e Taxa Aduaneira efetivos do Slot
+            slot = claim.slot
+            slot_frete = slot.frete_inter or Decimal('0.00')
+            slot_taxa = slot.taxa_aduaneira or Decimal('0.00')
+
+            if slot_frete > 0:
+                ceg_data['total_frete_inter'] += slot_frete
+                if slot.is_frete_inter_paid:
+                    ceg_data['total_frete_inter_pago'] += slot_frete
+                    ceg_data['count_inter_paid'] += 1
+                else:
+                    ceg_data['total_frete_inter_pendente'] += slot_frete
+                    ceg_data['count_inter_unpaid'] += 1
+
+            if slot_taxa > 0:
+                ceg_data['total_taxa_aduaneira'] += slot_taxa
+                if slot.is_taxa_aduaneira_paid:
+                    ceg_data['total_taxa_aduaneira_paga'] += slot_taxa
+                    ceg_data['count_taxa_paid'] += 1
+                else:
+                    ceg_data['total_taxa_aduaneira_pendente'] += slot_taxa
+                    ceg_data['count_taxa_unpaid'] += 1
+
+            # Resumo detalhado por Tipo de Item para exibição no Acordeão
+            item_def = slot.item_definition
+            if item_def.tipo_item:
+                tipo_key = f"ti_{item_def.tipo_item.id}"
+                tipo_nome = item_def.tipo_item.nome
+            elif item_def.item_type:
+                tipo_key = f"it_{item_def.item_type}"
+                tipo_nome = item_def.get_item_type_display()
+            else:
+                tipo_key = "outros"
+                tipo_nome = "Outros"
+
+            if tipo_key not in ceg_data['tipos_dict']:
+                ceg_data['tipos_dict'][tipo_key] = {
+                    'tipo_nome': tipo_nome,
+                    'count': 0,
+                    'frete_unitario': slot_frete,
+                    'taxa_unitaria': slot_taxa,
+                    'frete_total': Decimal('0.00'),
+                    'taxa_total': Decimal('0.00'),
+                    'frete_pendente': Decimal('0.00'),
+                    'taxa_pendente': Decimal('0.00'),
+                    'frete_pago': Decimal('0.00'),
+                    'taxa_paga': Decimal('0.00'),
+                    'count_frete_unpaid': 0,
+                    'count_taxa_unpaid': 0,
+                    'prazo_frete': slot.prazo_frete_inter_efetivo,
+                    'prazo_taxa': slot.prazo_taxa_aduaneira_efetivo,
+                }
+            td = ceg_data['tipos_dict'][tipo_key]
+            td['count'] += 1
+            td['frete_total'] += slot_frete
+            td['taxa_total'] += slot_taxa
+            if slot_frete > 0:
+                if not slot.is_frete_inter_paid:
+                    td['frete_pendente'] += slot_frete
+                    td['count_frete_unpaid'] += 1
+                else:
+                    td['frete_pago'] += slot_frete
+            if slot_taxa > 0:
+                if not slot.is_taxa_aduaneira_paid:
+                    td['taxa_pendente'] += slot_taxa
+                    td['count_taxa_unpaid'] += 1
+                else:
+                    td['taxa_paga'] += slot_taxa
+
+        # Consolidação de Totais e Tipos de Itens por CEG
+        for c_data in cegs_dict.values():
+            c_data['total_devido_frete_taxa'] = c_data['total_frete_inter_pendente'] + c_data['total_taxa_aduaneira_pendente']
+            c_data['total_geral_pendente'] = c_data['total_pending'] + c_data['total_devido_frete_taxa']
+            tipos_resumo = sorted(c_data['tipos_dict'].values(), key=lambda x: x['tipo_nome'])
+            c_data['tipos_resumo'] = tipos_resumo
+
+            fretes_set = {t['frete_unitario'] for t in tipos_resumo if t['frete_unitario'] > 0}
+            taxas_set = {t['taxa_unitaria'] for t in tipos_resumo if t['taxa_unitaria'] > 0}
+            c_data['has_multiple_fretes'] = len(fretes_set) > 1
+            c_data['has_multiple_taxas'] = len(taxas_set) > 1
+            c_data['single_frete_inter'] = next(iter(fretes_set)) if len(fretes_set) == 1 else None
+            c_data['single_taxa_aduaneira'] = next(iter(taxas_set)) if len(taxas_set) == 1 else None
+            c_data['has_any_rates'] = bool(fretes_set or taxas_set or c_data['total_frete_inter'] > 0 or c_data['total_taxa_aduaneira'] > 0)
 
         for item in itens_individuais_list:
             qtd = item.quantidade or 1
@@ -419,6 +511,8 @@ class MyClaimsView(View):
 
         itens_frete_unpaid_total = sum(it.frete_inter for it in itens_individuais_list if it.frete_inter and not it.frete_inter_pago)
         itens_taxa_unpaid_total = sum(it.taxa_aduaneira for it in itens_individuais_list if it.taxa_aduaneira and not it.taxa_aduaneira_paga)
+        cegs_frete_unpaid_total = sum(c['total_frete_inter_pendente'] for c in cegs_dict.values())
+        cegs_taxa_unpaid_total = sum(c['total_taxa_aduaneira_pendente'] for c in cegs_dict.values())
 
         return render(request, 'participants/my_claims.html', {
             'participant': participant,
@@ -435,6 +529,8 @@ class MyClaimsView(View):
             'taxa_unpaid_count': taxa_unpaid_count,
             'total_pending_all': total_pending_all,
             'total_paid_all': total_paid_all,
+            'cegs_frete_unpaid_total': cegs_frete_unpaid_total,
+            'cegs_taxa_unpaid_total': cegs_taxa_unpaid_total,
             'itens_individuais': itens_individuais_list,
             'itens_individuais_count': itens_individuais_count,
             'itens_frete_unpaid_count': itens_frete_unpaid_count,

@@ -243,6 +243,96 @@ class ParticipantProfileTests(TestCase):
         self.assertContains(response, 'Inter Não Pago')
         self.assertContains(response, 'Taxa Não Paga')
 
+    def test_my_claims_rates_accordion_and_totals_by_item_type(self):
+        from decimal import Decimal
+        from apps.groups.models import KpopGroup, Era
+        from apps.cegs.models import CEG, CEGSet, CEGItemDefinition, ItemSlot, TipoItem
+        from apps.participants.models import Claim
+        from django.utils import timezone
+
+        group = KpopGroup.objects.create(name='NewJeans')
+        era = Era.objects.create(group=group, name='Get Up')
+        ceg = CEG.objects.create(
+            era=era,
+            title='CEG Bag Version',
+            opens_at=timezone.now() - timezone.timedelta(hours=1),
+            frete_inter=Decimal('10.00'),
+            taxa_aduaneira=Decimal('5.00')
+        )
+        set_obj = CEGSet.objects.create(ceg=ceg, set_number=1)
+
+        tipo_pc, _ = TipoItem.objects.get_or_create(nome='Photocard')
+        tipo_album, _ = TipoItem.objects.get_or_create(nome='Álbum')
+
+        item_pc = CEGItemDefinition.objects.create(ceg=ceg, name='Photocard Hanni', item_type='PHOTOCARD', tipo_item=tipo_pc)
+        item_pc2 = CEGItemDefinition.objects.create(ceg=ceg, name='Photocard Minji', item_type='PHOTOCARD', tipo_item=tipo_pc)
+        item_album = CEGItemDefinition.objects.create(ceg=ceg, name='Álbum Completo', item_type='ALBUM', tipo_item=tipo_album)
+
+        # Slot 1: Photocard com frete 10.00 e taxa 5.00 (pendentes)
+        slot1 = ItemSlot.objects.create(
+            set=set_obj, item_definition=item_pc, price=40.00,
+            status=ItemSlot.Status.RESERVED, claimed_by=self.participant,
+            frete_inter_valor=Decimal('10.00'), taxa_aduaneira_valor=Decimal('5.00'),
+            is_frete_inter_paid=False, is_taxa_aduaneira_paid=False
+        )
+        Claim.objects.create(slot=slot1, participant=self.participant, status=Claim.Status.PENDING, total_price=40.00)
+
+        # Slot 2: Outro Photocard (mesmo tipo)
+        slot2 = ItemSlot.objects.create(
+            set=set_obj, item_definition=item_pc2, price=40.00,
+            status=ItemSlot.Status.RESERVED, claimed_by=self.participant,
+            frete_inter_valor=Decimal('10.00'), taxa_aduaneira_valor=Decimal('5.00'),
+            is_frete_inter_paid=True, is_taxa_aduaneira_paid=False
+        )
+        Claim.objects.create(slot=slot2, participant=self.participant, status=Claim.Status.PAID, total_price=40.00)
+
+        # Slot 3: Álbum com frete 45.00 e taxa 20.00 (pendentes)
+        slot3 = ItemSlot.objects.create(
+            set=set_obj, item_definition=item_album, price=120.00,
+            status=ItemSlot.Status.RESERVED, claimed_by=self.participant,
+            frete_inter_valor=Decimal('45.00'), taxa_aduaneira_valor=Decimal('20.00'),
+            is_frete_inter_paid=False, is_taxa_aduaneira_paid=False
+        )
+        Claim.objects.create(slot=slot3, participant=self.participant, status=Claim.Status.PENDING, total_price=120.00)
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        response = self.client.get('/me/')
+        self.assertEqual(response.status_code, 200)
+
+        ceg_data = response.context['cegs_groups'][0]
+        # Totais consolidados
+        # Frete total: 10 + 10 + 45 = 65.00; Frete pendente: 10 + 45 = 55.00; Frete pago: 10.00
+        self.assertEqual(ceg_data['total_frete_inter'], Decimal('65.00'))
+        self.assertEqual(ceg_data['total_frete_inter_pendente'], Decimal('55.00'))
+        self.assertEqual(ceg_data['total_frete_inter_pago'], Decimal('10.00'))
+
+        # Taxa total: 5 + 5 + 20 = 30.00; Taxa pendente: 30.00; Taxa paga: 0.00
+        self.assertEqual(ceg_data['total_taxa_aduaneira'], Decimal('30.00'))
+        self.assertEqual(ceg_data['total_taxa_aduaneira_pendente'], Decimal('30.00'))
+
+        # Total devido frete + taxa: 55.00 + 30.00 = 85.00
+        self.assertEqual(ceg_data['total_devido_frete_taxa'], Decimal('85.00'))
+
+        # Total geral pendente (itens pendentes 40 + 120 = 160 + 85 = 245.00)
+        self.assertEqual(ceg_data['total_geral_pendente'], Decimal('245.00'))
+
+        # Resumo por tipos de item
+        self.assertEqual(len(ceg_data['tipos_resumo']), 2)
+        self.assertTrue(ceg_data['has_multiple_fretes'])
+        self.assertTrue(ceg_data['has_multiple_taxas'])
+
+        # HTML deve conter o componente acordeão e valores
+        self.assertContains(response, 'Valores de Frete &amp; Taxa por Tipo de Item')
+        self.assertContains(response, 'Total Devido:')
+        self.assertContains(response, 'R$ 55,00 a pagar')
+        self.assertContains(response, 'R$ 30,00 a pagar')
+        self.assertContains(response, 'R$ 85,00')
+        self.assertContains(response, 'Photocard')
+        self.assertContains(response, 'Álbum')
+
 
 class ParticipantNotificationTests(TestCase):
     def setUp(self):
