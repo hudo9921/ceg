@@ -13,6 +13,7 @@ from apps.participants.models import Participant
 
 
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    login_url = '/admin/login/'
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.is_staff
 

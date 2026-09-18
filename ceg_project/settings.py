@@ -81,6 +81,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ceg_project.urls'
 
+LOGIN_URL = '/admin/login/'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
