@@ -35,6 +35,9 @@ class KpopGroup(models.Model):
                     self.color_hex = extracted
             except Exception:
                 pass
+        if not self.color_hex:
+            palette = ['#EC4899', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#84CC16']
+            self.color_hex = palette[sum(ord(c) for c in (self.name or '')) % len(palette)]
         super().save(*args, **kwargs)
 
 
@@ -86,4 +89,7 @@ class Era(models.Model):
                             self.color_hex = extracted
                     except Exception:
                         pass
+        if not self.color_hex:
+            palette = ['#EC4899', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#84CC16']
+            self.color_hex = palette[sum(ord(c) for c in (self.name or '')) % len(palette)]
         super().save(*args, **kwargs)

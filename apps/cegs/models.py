@@ -555,55 +555,28 @@ class CEG(models.Model):
     def theme_color(self) -> str:
         """
         Retorna a cor temática com a seguinte cascata de prioridades:
-        1. Cor da Era vinculada (color_hex ou extração do banner_url)
-        2. Cor do Grupo vinculado (color_hex ou extração da image_url)
-        3. Cor extraída do banner da própria CEG (se houver)
+        1. Cor da Era vinculada (color_hex)
+        2. Cor do Grupo vinculado (color_hex)
+        3. Paleta vibrante determinística baseada na Era/Grupo
+        4. Fallback padrão (#EC4899)
         """
         try:
-            # 1. Era vinculada
             era = getattr(self, 'era', None)
-            if era:
-                if getattr(era, 'color_hex', None) and era.color_hex.strip():
-                    return era.color_hex.strip()
-                if getattr(era, 'banner_url', None) and era.banner_url.strip():
-                    try:
-                        from apps.groups.color_utils import extract_dominant_color
-                        extracted = extract_dominant_color(era.banner_url)
-                        if extracted:
-                            era.color_hex = extracted
-                            era.save(update_fields=['color_hex'])
-                            return extracted
-                    except Exception:
-                        pass
+            if era and getattr(era, 'color_hex', None) and era.color_hex.strip():
+                return era.color_hex.strip()
 
-            # 2. Grupo vinculado (via era ou direto)
             group = getattr(era, 'group', None) if era else getattr(self, 'group', None)
-            if group:
-                if getattr(group, 'color_hex', None) and group.color_hex.strip():
-                    return group.color_hex.strip()
-                if getattr(group, 'image_url', None) and group.image_url.strip():
-                    try:
-                        from apps.groups.color_utils import extract_dominant_color
-                        extracted = extract_dominant_color(group.image_url)
-                        if extracted:
-                            group.color_hex = extracted
-                            group.save(update_fields=['color_hex'])
-                            return extracted
-                    except Exception:
-                        pass
+            if group and getattr(group, 'color_hex', None) and group.color_hex.strip():
+                return group.color_hex.strip()
 
-            # 3. Imagem da própria CEG
-            if getattr(self, 'banner_url', None) and self.banner_url.strip():
-                try:
-                    from apps.groups.color_utils import extract_dominant_color
-                    extracted = extract_dominant_color(self.banner_url)
-                    if extracted:
-                        return extracted
-                except Exception:
-                    pass
+            palette = ['#EC4899', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#84CC16']
+            if era and getattr(era, 'name', None):
+                return palette[sum(ord(c) for c in era.name) % len(palette)]
+            if group and getattr(group, 'name', None):
+                return palette[sum(ord(c) for c in group.name) % len(palette)]
         except Exception:
             pass
-        return ""
+        return "#EC4899"
 
     def save(self, *args, **kwargs):
         if not self.slug:
