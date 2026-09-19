@@ -852,6 +852,13 @@ class CEGItemDefinition(models.Model):
     )
     image_url = models.URLField('URL da Foto / Prévia', max_length=500, blank=True)
     order_index = models.PositiveIntegerField('Ordem de Exibição', default=0)
+    sub_category = models.CharField(
+        'Subcategoria',
+        max_length=50,
+        blank=True,
+        default='',
+        help_text='Subcategoria do Photocard (ex: Regulares, Pob, LD, VCE, Broadcast)'
+    )
 
     class Meta:
         verbose_name = 'Definição de Item da CEG'

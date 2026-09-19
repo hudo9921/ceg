@@ -498,6 +498,23 @@ class CreationsHubIntegrationTests(TestCase):
         self.assertContains(resp_admin, 'Cadastrar Era Nova')
         self.assertContains(resp_admin, 'Adicionar Novo Set')
 
+    def test_creations_hub_serializes_group_members_for_auto_populate(self):
+        from apps.groups.models import GroupMember
+        GroupMember.objects.create(group=self.group, name='Nayeon', order=1)
+        GroupMember.objects.create(group=self.group, name='Jeongyeon', order=2)
+        GroupMember.objects.create(group=self.group, name='Momo', order=3)
+
+        self.client.force_login(self.admin_user)
+        resp = self.client.get('/creations/')
+        self.assertEqual(resp.status_code, 200)
+
+        # O JSON de grupos deve incluir os integrantes ordenados
+        self.assertContains(resp, 'Nayeon')
+        self.assertContains(resp, 'Jeongyeon')
+        self.assertContains(resp, 'Momo')
+        self.assertContains(resp, 'Regulares')
+        self.assertContains(resp, 'Broadcast')
+
     def test_create_group_via_post(self):
         self.client.force_login(self.admin_user)
         post_data = {
@@ -580,6 +597,39 @@ class CreationsHubIntegrationTests(TestCase):
         self.assertContains(response, 'CEG TWICE With YOU-th - Digipack Split')
         self.assertContains(response, 'Photocard POB Nayeon')
         self.assertContains(response, 'Photocard POB Momo')
+
+    def test_create_ceg_with_sub_categories_and_types(self):
+        self.client.force_login(self.admin_user)
+
+        import json
+        items_payload = [
+            {'name': 'Photocard Regular Nayeon', 'member_name': 'Nayeon', 'item_type': 'PHOTOCARD', 'sub_category': 'Regulares', 'default_price': '35.00'},
+            {'name': 'Photocard POB Momo', 'member_name': 'Momo', 'item_type': 'PHOTOCARD', 'sub_category': 'Pob', 'default_price': '45.00'},
+            {'name': 'Photocard LD Sana', 'member_name': 'Sana', 'item_type': 'PHOTOCARD', 'sub_category': 'LD', 'default_price': '50.00'},
+            {'name': 'Photocard VCE Jihyo', 'member_name': 'Jihyo', 'item_type': 'PHOTOCARD', 'sub_category': 'VCE', 'default_price': '55.00'},
+            {'name': 'Photocard Broadcast Mina', 'member_name': 'Mina', 'item_type': 'PHOTOCARD', 'sub_category': 'Broadcast', 'default_price': '90.00'},
+        ]
+
+        post_data = {
+            'era_id': self.era.id,
+            'title': 'CEG TWICE Subcategories Test',
+            'status': 'OPEN',
+            'pix_key': 'twice@pix.com',
+            'items_json': json.dumps(items_payload),
+        }
+
+        response = self.client.post('/creations/ceg/create/', data=post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        ceg = CEG.objects.get(title='CEG TWICE Subcategories Test')
+        self.assertEqual(ceg.item_definitions.count(), 5)
+
+        sub_categories = {item.member_name: item.sub_category for item in ceg.item_definitions.all()}
+        self.assertEqual(sub_categories['Nayeon'], 'Regulares')
+        self.assertEqual(sub_categories['Momo'], 'Pob')
+        self.assertEqual(sub_categories['Sana'], 'LD')
+        self.assertEqual(sub_categories['Jihyo'], 'VCE')
+        self.assertEqual(sub_categories['Mina'], 'Broadcast')
 
     def test_create_set_for_existing_ceg(self):
         self.client.force_login(self.admin_user)
