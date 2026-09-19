@@ -1287,22 +1287,23 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Filtrar por Grupo</label>
-                            <select x-model="selectedGroupId"
+                            <select x-model="selectedGroupId" @change="onCegGroupChange()"
                                     class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
-                                <option value="">-- Todos os Grupos --</option>
+                                <option value="">-- Selecione o Grupo --</option>
                                 <template x-for="g in groups" :key="g.id">
-                                    <option :value="g.id" x-text="g.name"></option>
+                                    <option :value="g.id" x-text="g.name" :selected="g.id == selectedGroupId"></option>
                                 </template>
                             </select>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Era / Comeback *</label>
-                            <select name="era_id" required x-model="selectedEraId"
+                            <select name="era_id" required x-model="selectedEraId" @change="onCegEraChange()"
                                     class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
                                 <option value="">-- Selecione a Era correspondente --</option>
                                 {% for e in eras %}
                                     <option value="{{ e.id }}"
+                                            data-group="{{ e.group.id }}"
                                             x-show="!selectedGroupId || selectedGroupId == '{{ e.group.id }}'">
                                         {{ e.group.name }} — {{ e.name }}
                                     </option>
@@ -1533,33 +1534,85 @@
                         </div>
                     </div>
 
-                    <!-- Barra de Atalho em Lote por Nomes de Integrantes -->
-                    <div class="p-3 bg-white border border-pink-200 rounded-xl space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1">
-                                <span>⚡</span> Gerar Photocards em Lote por Nomes
+                    <!-- Barra de Atalho em Lote (Mass Apply) & Tipo de Item -->
+                    <div class="p-3.5 bg-white border border-pink-200 rounded-xl space-y-3 shadow-xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-pink-100 pb-2">
+                            <span class="text-[11px] font-black text-pink-900 uppercase flex items-center gap-1.5">
+                                <span>⚡</span> Configuração em Lote (Mass Apply)
                             </span>
-                            <span class="text-[10px] text-pink-700 bg-pink-100 px-2 py-0.5 rounded font-bold">Atalho Ágil</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                            <div class="sm:col-span-7">
-                                <input type="text" x-model="batchMembersText"
-                                       placeholder="Nomes separados por vírgula: Nayeon, Jeongyeon, Momo, Sana, Jihyo..."
-                                       @keydown.enter.prevent="addMembersBatch()"
-                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800">
-                            </div>
-                            <div class="sm:col-span-3 flex gap-1">
-                                <input type="number" step="0.01" x-model="batchDefaultPrice"
-                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900">
-                                <button type="button" @click="applyBatchPrice()"
-                                        class="px-2 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] rounded-lg cursor-pointer">
-                                    Aplicar
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="populateItemsFromGroup(selectedGroupId)"
+                                        x-show="selectedGroupId"
+                                        title="Recarrega a lista de itens com os integrantes do grupo selecionado"
+                                        class="text-[10px] text-pink-700 hover:text-pink-900 bg-pink-100 hover:bg-pink-200 px-2 py-0.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer">
+                                    <span>🔄</span> Restaurar Integrantes do Grupo
                                 </button>
+                                <span class="text-[10px] text-pink-700 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded font-bold">Atalho Ágil</span>
+                            </div>
+                        </div>
+
+                        <!-- Linha de Mass Apply: Tipo de Item, Subcategoria, Preço e Botão Aplicar -->
+                        <div class="p-2.5 bg-pink-50/50 rounded-xl border border-pink-100 space-y-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                <!-- 1. Tipo de Item em Lote -->
+                                <div :class="isPhotocardTipo(batchTipoItemId) ? 'sm:col-span-3' : 'sm:col-span-5'">
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Tipo de Item</label>
+                                    <select x-model="batchTipoItemId" @change="onBatchTipoChange()"
+                                            class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 shadow-2xs">
+                                        <template x-for="t in tiposItem" :key="t.id">
+                                            <option :value="t.id" x-text="t.nome" :selected="t.id == batchTipoItemId"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <!-- 2. Subcategoria (Regulares, Pob, LD, VCE, Broadcast) -->
+                                <div class="sm:col-span-3" x-show="isPhotocardTipo(batchTipoItemId)">
+                                    <label class="block text-[10px] font-bold text-pink-900 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                        <span>✨</span> Subcategoria
+                                    </label>
+                                    <select x-model="batchSubCategory"
+                                            class="w-full bg-white border border-pink-300 text-pink-950 font-black rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-pink-500 shadow-2xs">
+                                        <option value="Regulares">Regulares</option>
+                                        <option value="Pob">Pob</option>
+                                        <option value="LD">LD</option>
+                                        <option value="VCE">VCE</option>
+                                        <option value="Broadcast">Broadcast</option>
+                                    </select>
+                                </div>
+
+                                <!-- 3. Preço Padrão em Lote -->
+                                <div class="sm:col-span-3">
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Preço em Lote (R$)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">R$</span>
+                                        <input type="number" step="0.01" x-model="batchDefaultPrice"
+                                               class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 focus:ring-2 focus:ring-pink-500 shadow-2xs">
+                                    </div>
+                                </div>
+
+                                <!-- 4. Botão Mass Apply -->
+                                <div :class="isPhotocardTipo(batchTipoItemId) ? 'sm:col-span-3' : 'sm:col-span-4'">
+                                    <button type="button" @click="applyBatchToAll()"
+                                            class="w-full py-2 px-3 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span>⚡</span>
+                                        <span>Aplicar em Todos</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Adicionar Itens Extras por Nomes -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center pt-0.5">
+                            <div class="sm:col-span-10">
+                                <input type="text" x-model="batchMembersText"
+                                       placeholder="Adicionar novos photocards/itens (nomes separados por vírgula)..."
+                                       @keydown.enter.prevent="addMembersBatch()"
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:bg-white focus:ring-1 focus:ring-pink-500">
                             </div>
                             <div class="sm:col-span-2">
                                 <button type="button" @click="addMembersBatch()"
-                                        class="w-full py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg cursor-pointer">
-                                    ➕ Gerar
+                                        class="w-full py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1 cursor-pointer">
+                                    <span>➕</span> Gerar
                                 </button>
                             </div>
                         </div>
@@ -1581,15 +1634,17 @@
                                     </div>
 
                                     <!-- Integrante -->
-                                    <div class="w-full sm:w-32">
+                                    <div class="w-full sm:w-28">
                                         <input type="text" x-model="item.member_name"
+                                               @input="onItemMemberInput(item, index)"
                                                placeholder="Integrante"
                                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
                                     </div>
 
                                     <!-- Tipo -->
-                                    <div class="w-full sm:w-32">
+                                    <div class="w-full sm:w-28">
                                         <select x-model="item.tipo_item_id"
+                                                @change="onItemTipoChange(item, index)"
                                                 class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-700">
                                             <template x-for="t in tiposItem" :key="t.id">
                                                 <option :value="t.id" x-text="t.nome" :selected="t.id == item.tipo_item_id"></option>
@@ -1597,11 +1652,25 @@
                                         </select>
                                     </div>
 
+                                    <!-- Subcategoria (Exibida se for Photocard) -->
+                                    <div class="w-full sm:w-28" x-show="isPhotocardTipo(item.tipo_item_id)">
+                                        <select x-model="item.sub_category"
+                                                @change="onItemSubCategoryChange(item, index)"
+                                                title="Subcategoria do Photocard"
+                                                class="w-full bg-pink-50 border border-pink-300 text-pink-950 font-bold rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-pink-500">
+                                            <option value="Regulares">Regulares</option>
+                                            <option value="Pob">Pob</option>
+                                            <option value="LD">LD</option>
+                                            <option value="VCE">VCE</option>
+                                            <option value="Broadcast">Broadcast</option>
+                                        </select>
+                                    </div>
+
                                     <!-- Preço -->
-                                    <div class="w-full sm:w-28 relative">
+                                    <div class="w-full sm:w-24 relative">
                                         <span class="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">R$</span>
                                         <input type="number" step="0.01" x-model="item.default_price" required
-                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900">
+                                               class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-7 pr-2 py-1.5 text-xs font-black text-slate-900">
                                     </div>
 
                                     <!-- Botão Excluir -->
@@ -2500,6 +2569,8 @@ document.addEventListener('alpine:init', () => {
         selectedEraId: '',
         batchMembersText: '',
         batchDefaultPrice: '45.00',
+        batchTipoItemId: '',
+        batchSubCategory: 'Pob',
         initialSetsCount: 1,
 
         // Estado do Grupo (criação com foto/logo e membros)
@@ -2569,11 +2640,7 @@ document.addEventListener('alpine:init', () => {
         showPhoneSuggestions: false,
         editingItem: {},
 
-        items: [
-            { name: 'Photocard POB 1', member_name: 'Integrante 1', item_type: 'PHOTOCARD', tipo_item_id: '', default_price: '45.00', image_url: '', participant_id: '' },
-            { name: 'Photocard POB 2', member_name: 'Integrante 2', item_type: 'PHOTOCARD', tipo_item_id: '', default_price: '45.00', image_url: '', participant_id: '' },
-            { name: 'Álbum Selado (Sem POB)', member_name: '', item_type: 'ALBUM', tipo_item_id: '', default_price: '120.00', image_url: '', participant_id: '' }
-        ],
+        items: [],
 
         init() {
             // Garante seleção padrão de tipo
@@ -2582,10 +2649,17 @@ document.addEventListener('alpine:init', () => {
                     this.itemTipoId = this.tiposItem[0].id;
                 }
                 const defaultPhotocard = this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0];
-                const defaultAlbum = this.tiposItem.find(t => t.nome.toLowerCase().includes('álbum') || t.nome.toLowerCase().includes('album')) || defaultPhotocard;
-                if (defaultPhotocard && this.items[0]) this.items[0].tipo_item_id = defaultPhotocard.id;
-                if (defaultPhotocard && this.items[1]) this.items[1].tipo_item_id = defaultPhotocard.id;
-                if (defaultAlbum && this.items[2]) this.items[2].tipo_item_id = defaultAlbum.id;
+                if (defaultPhotocard && !this.batchTipoItemId) {
+                    this.batchTipoItemId = defaultPhotocard.id;
+                }
+            }
+
+            // Auto-popula itens a partir do primeiro grupo disponível
+            if (this.groups && this.groups.length > 0) {
+                if (!this.selectedGroupId) {
+                    this.selectedGroupId = this.groups[0].id;
+                }
+                this.populateItemsFromGroup(this.selectedGroupId);
             }
 
             // Escuta global de paste para colar imagem via Ctrl+C / Ctrl+V em qualquer modal ativo
@@ -2752,6 +2826,13 @@ document.addEventListener('alpine:init', () => {
                 this.showPhoneSuggestions = false;
                 if (hubData.selectedCaixaId) {
                     this.selectedCaixaId = hubData.selectedCaixaId;
+                }
+            } else if (name === 'ceg') {
+                if (!this.selectedGroupId && this.groups && this.groups.length > 0) {
+                    this.selectedGroupId = this.groups[0].id;
+                }
+                if (this.selectedGroupId && (!this.items || this.items.length === 0)) {
+                    this.populateItemsFromGroup(this.selectedGroupId);
                 }
             }
         },
@@ -3164,15 +3245,188 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        isPhotocardTipo(tipoId) {
+            const targetId = tipoId || this.batchTipoItemId;
+            if (!targetId && this.tiposItem && this.tiposItem.length > 0) {
+                return true;
+            }
+            const t = (this.tiposItem || []).find(item => String(item.id) === String(targetId));
+            if (!t) return true;
+            const n = t.nome.toLowerCase();
+            return n.includes('photocard') || n.includes('card') || n.includes('pob');
+        },
+
+        getItemTypeFromTipo(tipoId) {
+            const t = (this.tiposItem || []).find(item => String(item.id) === String(tipoId));
+            if (!t) return 'PHOTOCARD';
+            const n = t.nome.toLowerCase();
+            if (n.includes('álbum') || n.includes('album')) return 'ALBUM';
+            if (n.includes('inclus')) return 'INCLUSION';
+            if (n.includes('pob')) return 'POB';
+            if (n.includes('photocard') || n.includes('card')) return 'PHOTOCARD';
+            return 'OTHER';
+        },
+
+        formatPhotocardName(subCat, memberName, index = null) {
+            const cleanSub = subCat || 'Pob';
+            const subLabel = cleanSub === 'Regulares' ? 'Regular' : cleanSub.toUpperCase();
+            const cleanMember = (memberName || '').trim();
+            if (cleanMember) {
+                return `Photocard ${subLabel} ${cleanMember}`;
+            }
+            const idxStr = (index !== null && index !== undefined) ? ` #${index + 1}` : '';
+            return `Photocard ${subLabel}${idxStr}`;
+        },
+
+        populateItemsFromGroup(groupId) {
+            if (!groupId) return;
+            const g = this.groups.find(item => String(item.id) === String(groupId));
+            if (!g) return;
+
+            const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
+                ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
+                : null;
+            const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+
+            if (g.members && g.members.length > 0) {
+                this.items = g.members.map((m, idx) => {
+                    const mName = typeof m === 'object' ? m.name : m;
+                    return {
+                        name: isPc ? this.formatPhotocardName(subCat, mName, idx) : mName,
+                        member_name: mName,
+                        item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                        sub_category: subCat,
+                        tipo_item_id: tipoId,
+                        default_price: this.batchDefaultPrice || '45.00',
+                        image_url: '',
+                        participant_id: ''
+                    };
+                });
+            } else {
+                this.items = [{
+                    name: isPc ? this.formatPhotocardName(subCat, '', 0) : 'Item 1',
+                    member_name: '',
+                    item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                    sub_category: subCat,
+                    tipo_item_id: tipoId,
+                    default_price: this.batchDefaultPrice || '45.00',
+                    image_url: '',
+                    participant_id: ''
+                }];
+            }
+        },
+
+        onCegGroupChange() {
+            if (this.selectedGroupId) {
+                this.populateItemsFromGroup(this.selectedGroupId);
+                if (this.selectedEraId) {
+                    const eraEl = document.querySelector('select[name="era_id"] option[value="' + this.selectedEraId + '"]');
+                    if (eraEl && eraEl.dataset.group && String(eraEl.dataset.group) !== String(this.selectedGroupId)) {
+                        this.selectedEraId = '';
+                    }
+                }
+            }
+        },
+
+        onCegEraChange() {
+            if (this.selectedEraId) {
+                let foundGroupId = null;
+                for (const g of this.groups) {
+                    if (g.eras && g.eras.some(e => String(e.id) === String(this.selectedEraId))) {
+                        foundGroupId = g.id;
+                        break;
+                    }
+                }
+                if (!foundGroupId) {
+                    const eraEl = document.querySelector('select[name="era_id"] option[value="' + this.selectedEraId + '"]');
+                    if (eraEl && eraEl.dataset.group) {
+                        foundGroupId = eraEl.dataset.group;
+                    }
+                }
+                if (foundGroupId && String(this.selectedGroupId) !== String(foundGroupId)) {
+                    this.selectedGroupId = foundGroupId;
+                    this.populateItemsFromGroup(foundGroupId);
+                }
+            }
+        },
+
+        onBatchTipoChange() {
+            if (this.isPhotocardTipo(this.batchTipoItemId) && !this.batchSubCategory) {
+                this.batchSubCategory = 'Pob';
+            }
+        },
+
+        applyBatchToAll() {
+            const tipoId = this.batchTipoItemId;
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const price = this.batchDefaultPrice || '45.00';
+
+            this.items.forEach((item, idx) => {
+                if (price) {
+                    item.default_price = price;
+                }
+                if (tipoId) {
+                    item.tipo_item_id = tipoId;
+                    item.item_type = isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId);
+                }
+                if (isPc) {
+                    item.sub_category = subCat;
+                    if (item.member_name) {
+                        item.name = this.formatPhotocardName(subCat, item.member_name, idx);
+                    } else if (!item.name || item.name.toLowerCase().includes('photocard') || item.name.toLowerCase().includes('novo item')) {
+                        item.name = this.formatPhotocardName(subCat, '', idx);
+                    }
+                } else {
+                    item.sub_category = '';
+                }
+            });
+        },
+
+        onItemTipoChange(item, index) {
+            const isPc = this.isPhotocardTipo(item.tipo_item_id);
+            item.item_type = isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(item.tipo_item_id);
+            if (isPc) {
+                if (!item.sub_category) item.sub_category = this.batchSubCategory || 'Pob';
+                if (item.member_name) {
+                    item.name = this.formatPhotocardName(item.sub_category, item.member_name, index);
+                }
+            } else {
+                item.sub_category = '';
+            }
+        },
+
+        onItemSubCategoryChange(item, index) {
+            if (item.member_name) {
+                item.name = this.formatPhotocardName(item.sub_category, item.member_name, index);
+            } else if (!item.name || item.name.toLowerCase().includes('photocard')) {
+                item.name = this.formatPhotocardName(item.sub_category, '', index);
+            }
+        },
+
+        onItemMemberInput(item, index) {
+            if (this.isPhotocardTipo(item.tipo_item_id)) {
+                const subCat = item.sub_category || this.batchSubCategory || 'Pob';
+                item.name = this.formatPhotocardName(subCat, item.member_name, index);
+            }
+        },
+
         addItem() {
             const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
                 ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
                 : null;
+            const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const idx = this.items.length;
             this.items.push({
-                name: 'Novo Item ' + (this.items.length + 1),
+                name: isPc ? this.formatPhotocardName(subCat, '', idx) : ('Novo Item ' + (idx + 1)),
                 member_name: '',
-                item_type: 'PHOTOCARD',
-                tipo_item_id: defaultPhotocard ? defaultPhotocard.id : '',
+                item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                sub_category: subCat,
+                tipo_item_id: tipoId,
                 default_price: this.batchDefaultPrice || '45.00',
                 image_url: '',
                 participant_id: ''
@@ -3184,33 +3438,27 @@ document.addEventListener('alpine:init', () => {
             }
         },
         applyBatchPrice() {
-            if (!this.batchDefaultPrice) return;
-            this.items.forEach(i => {
-                if (i.item_type !== 'ALBUM') {
-                    i.default_price = this.batchDefaultPrice;
-                }
-            });
+            this.applyBatchToAll();
         },
         addMembersBatch() {
             if (!this.batchMembersText.trim()) return;
             const names = this.batchMembersText.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
             if (!names.length) return;
 
-            if (this.items.length === 3 && this.items[0].name.includes('Photocard POB 1')) {
-                this.items = [];
-            }
-
             const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
                 ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
                 : null;
-            const defaultTipoId = defaultPhotocard ? defaultPhotocard.id : '';
+            const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
 
             names.forEach((name) => {
                 this.items.push({
-                    name: 'Photocard POB ' + name,
+                    name: isPc ? this.formatPhotocardName(subCat, name, this.items.length) : name,
                     member_name: name,
-                    item_type: 'PHOTOCARD',
-                    tipo_item_id: defaultTipoId,
+                    item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                    sub_category: subCat,
+                    tipo_item_id: tipoId,
                     default_price: this.batchDefaultPrice || '45.00',
                     image_url: '',
                     participant_id: ''

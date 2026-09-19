@@ -593,6 +593,7 @@ class CreateCEGView(StaffRequiredMixin, View):
             item_prices = request.POST.getlist('item_price[]')
             item_images = request.POST.getlist('item_image[]')
             item_tipos = request.POST.getlist('item_tipo_id[]')
+            item_sub_cats = request.POST.getlist('item_sub_category[]')
 
             for idx, i_name in enumerate(item_names):
                 if i_name.strip():
@@ -601,6 +602,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                         'member_name': item_members[idx].strip() if idx < len(item_members) else '',
                         'item_type': item_types[idx].strip() if idx < len(item_types) else CEGItemDefinition.ItemType.PHOTOCARD,
                         'tipo_item_id': item_tipos[idx].strip() if idx < len(item_tipos) else '',
+                        'sub_category': item_sub_cats[idx].strip() if idx < len(item_sub_cats) else '',
                         'default_price': item_prices[idx].strip() if idx < len(item_prices) else '45.00',
                         'image_url': item_images[idx].strip() if idx < len(item_images) else '',
                         'order_index': idx + 1,
@@ -666,6 +668,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                         member_name=item_data.get('member_name', '').strip(),
                         item_type=item_data.get('item_type', CEGItemDefinition.ItemType.PHOTOCARD),
                         tipo_item=tipo_item,
+                        sub_category=item_data.get('sub_category', '').strip(),
                         default_price=price,
                         image_url=item_data.get('image_url', '').strip(),
                         order_index=int(item_data.get('order_index', order_idx))
