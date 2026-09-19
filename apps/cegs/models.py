@@ -1843,6 +1843,13 @@ class ItemVitrine(models.Model):
         verbose_name='Era / Comeback'
     )
     integrante = models.CharField('Integrante', max_length=100, blank=True)
+    sub_category = models.CharField(
+        'Subcategoria / Tipo de Photocard',
+        max_length=50,
+        blank=True,
+        default='',
+        help_text='Subcategoria do Photocard (ex: Regulares, Pob, LD, VCE, Broadcast, Fansign)'
+    )
     preco = models.DecimalField('Preço (R$)', max_digits=10, decimal_places=2)
     quantidade = models.PositiveIntegerField('Quantidade em Estoque', default=1)
     status = models.CharField(

@@ -211,3 +211,84 @@ class VitrineTests(TestCase):
         # 9. Teste de idempotência: se tentar listar novamente, slot_giselle não aparece mais
         resp_again = self.client.get(url_transfer)
         self.assertEqual(resp_again.context['unclaimed_count'], 0)
+
+    def test_vitrine_filter_by_member_and_sub_category(self):
+        # Cria item adicional para Winter com Lucky Draw
+        item_winter = ItemVitrine.objects.create(
+            titulo='Winter Armageddon Lucky Draw',
+            tipo_item=self.tipo_pc,
+            group=self.group,
+            era=self.era,
+            integrante='Winter',
+            sub_category='Lucky Draw',
+            preco=Decimal('65.00'),
+            quantidade=1,
+            status=ItemVitrine.Status.DISPONIVEL
+        )
+        self.item_vitrine.sub_category = 'POB'
+        self.item_vitrine.save()
+
+        # 1. Filtro por Membro: Karina
+        resp_karina = self.client.get(reverse('vitrine_list') + '?member=Karina')
+        self.assertEqual(resp_karina.status_code, 200)
+        self.assertContains(resp_karina, 'Karina Armageddon POB')
+        self.assertNotContains(resp_karina, 'Winter Armageddon Lucky Draw')
+
+        # 2. Filtro por Membro: Winter
+        resp_winter = self.client.get(reverse('vitrine_list') + '?member=Winter')
+        self.assertEqual(resp_winter.status_code, 200)
+        self.assertContains(resp_winter, 'Winter Armageddon Lucky Draw')
+        self.assertNotContains(resp_winter, 'Karina Armageddon POB')
+
+        # 3. Filtro por Subcategoria: Lucky Draw
+        resp_ld = self.client.get(reverse('vitrine_list') + '?sub_category=Lucky%20Draw')
+        self.assertEqual(resp_ld.status_code, 200)
+        self.assertContains(resp_ld, 'Winter Armageddon Lucky Draw')
+        self.assertNotContains(resp_ld, 'Karina Armageddon POB')
+
+        # 4. Filtro por Subcategoria: POB
+        resp_pob = self.client.get(reverse('vitrine_list') + '?sub_category=POB')
+        self.assertEqual(resp_pob.status_code, 200)
+        self.assertContains(resp_pob, 'Karina Armageddon POB')
+        self.assertNotContains(resp_pob, 'Winter Armageddon Lucky Draw')
+
+    def test_vitrine_create_and_update_with_sub_category(self):
+        self.client.login(username='admin_gom', password='password123')
+
+        # Criação com sub_category
+        post_data = {
+            'titulo': 'Ningning Fansign Card',
+            'tipo_item': self.tipo_pc.id,
+            'group': self.group.id,
+            'era': self.era.id,
+            'integrante': 'Ningning',
+            'sub_category': 'Fansign',
+            'preco': '58.00',
+            'quantidade': '1',
+            'status': ItemVitrine.Status.DISPONIVEL,
+        }
+        resp_post = self.client.post(reverse('vitrine_create'), post_data)
+        self.assertRedirects(resp_post, reverse('vitrine_list'))
+
+        created = ItemVitrine.objects.filter(titulo='Ningning Fansign Card').first()
+        self.assertIsNotNone(created)
+        self.assertEqual(created.integrante, 'Ningning')
+        self.assertEqual(created.sub_category, 'Fansign')
+
+        # Atualização da sub_category
+        resp_edit = self.client.post(reverse('vitrine_edit', kwargs={'slug': created.slug}), {
+            'titulo': 'Ningning Fansign Card - Edição Especial',
+            'tipo_item': self.tipo_pc.id,
+            'group': self.group.id,
+            'era': self.era.id,
+            'integrante': 'Ningning',
+            'sub_category': 'Broadcast',
+            'preco': '70.00',
+            'quantidade': '1',
+            'status': ItemVitrine.Status.DISPONIVEL,
+        })
+        self.assertRedirects(resp_edit, reverse('vitrine_list'))
+
+        created.refresh_from_db()
+        self.assertEqual(created.sub_category, 'Broadcast')
+        self.assertEqual(created.preco, Decimal('70.00'))

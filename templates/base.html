@@ -634,25 +634,33 @@
 
                         <!-- Login WhatsApp ou Perfil do Participante -->
                         {% if logged_participant %}
-                            <div class="flex items-center space-x-1 sm:space-x-1.5">
-                                <a href="{% url 'my_claims' %}" class="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold bg-pink-100 dark:bg-pink-950/60 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800 hover:bg-pink-200 dark:hover:bg-pink-900 transition shadow-2xs">
-                                    <span class="w-1.5 h-1.5 mr-1 bg-pink-500 rounded-full animate-pulse"></span>
-                                    <span class="max-w-[70px] sm:max-w-[140px] truncate text-[11px] sm:text-xs">{{ logged_participant.display_name }}</span>
+                            <div class="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+                                <a href="{% url 'my_claims' %}" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/80 hover:bg-pink-100 dark:hover:bg-pink-900 transition shadow-2xs">
+                                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" title="Sessão ativa"></span>
+                                    <span class="max-w-[70px] sm:max-w-[130px] truncate text-[11px] sm:text-xs font-black">{{ logged_participant.display_name }}</span>
                                     {% if logged_participant.unread_notifications_count > 0 %}
-                                        <span class="ml-1 px-1 py-0.2 bg-red-500 text-white rounded-full text-[9px] font-black animate-bounce" title="{{ logged_participant.unread_notifications_count }} aviso(s) não lido(s)">
+                                        <span class="px-1.5 py-0.2 bg-red-500 text-white rounded-full text-[9px] font-black animate-bounce" title="{{ logged_participant.unread_notifications_count }} aviso(s) não lido(s)">
                                             {{ logged_participant.unread_notifications_count }}
                                         </span>
                                     {% endif %}
                                 </a>
 
-                                <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 px-1 py-1 transition font-medium">
+                                <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 px-1.5 py-1 transition font-semibold">
                                     Sair
                                 </a>
                             </div>
                         {% else %}
-                            <a href="{% url 'login_otp' %}" class="inline-flex items-center px-2.5 sm:px-4 py-1 sm:py-1.5 border border-pink-400 dark:border-pink-500 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/40 text-[11px] sm:text-xs font-bold rounded-xl transition shadow-2xs shrink-0">
-                                <span>📱</span>
-                                <span class="hidden xs:inline ml-1 font-extrabold">WhatsApp</span>
+                            <a href="{% url 'login_otp' %}"
+                               class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-700 text-white shadow-xs hover:shadow-md transition-all duration-200 shrink-0 group border border-pink-400/30"
+                               title="Entrar com WhatsApp">
+                                <svg class="w-3.5 h-3.5 text-pink-100 group-hover:scale-110 transition-transform duration-200 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                </svg>
+                                <span>Entrar</span>
+                                <span class="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 dark:bg-black/20 px-1.5 py-0.5 rounded-md text-white/95">
+                                    <span>💬</span>
+                                    <span>WhatsApp</span>
+                                </span>
                             </a>
                         {% endif %}
 
@@ -737,6 +745,24 @@
                         <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">Itens disponíveis com envio imediato</div>
                     </a>
                 </div>
+
+                {% if not logged_participant %}
+                    <!-- Acesso Rápido para Joiners / Participantes no Menu Mobile -->
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                        <a href="{% url 'login_otp' %}"
+                           @click="mobileNavOpen = false"
+                           class="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white text-xs font-bold hover:from-pink-600 hover:to-rose-700 transition shadow-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">👤</span>
+                                <div class="text-left">
+                                    <div class="font-black text-xs">Entrar com WhatsApp</div>
+                                    <div class="text-[10px] text-pink-100 font-normal">Acompanhe suas reservas, claims e avisos</div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-black px-2 py-1 rounded-md bg-white/20">Acessar →</span>
+                        </a>
+                    </div>
+                {% endif %}
 
                 {% if request.user.is_authenticated and request.user.is_staff %}
                     <!-- Opção 3: Painel do Organizador (Staff/Admin) -->

@@ -73,8 +73,8 @@
                 </div>
             </div>
 
-            <!-- Linha 2: Grupo, Era e Integrante -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Linha 2: Grupo, Era, Integrante e Subcategoria / Tipo de Photocard -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                         Grupo / Solista
@@ -104,13 +104,38 @@
                 </div>
 
                 <div class="space-y-1">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                        Integrante (se aplicável)
-                    </label>
-                    <input type="text" name="integrante"
-                           value="{% if item %}{{ item.integrante }}{% endif %}"
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                            Integrante
+                        </label>
+                        <template x-if="selectedGroup && filteredMembers.length > 0">
+                            <span class="text-[10px] font-bold text-pink-500" x-text="filteredMembers.length + ' sugestão(ões)'"></span>
+                        </template>
+                    </div>
+                    <input type="text" name="integrante" list="membersList"
+                           x-model="selectedMember"
                            placeholder="Ex: Karina, Wonyoung, San"
                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+                    <datalist id="membersList">
+                        <template x-for="m in filteredMembers" :key="m">
+                            <option :value="m"></option>
+                        </template>
+                    </datalist>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Tipo de Photocard / Edição
+                    </label>
+                    <input type="text" name="sub_category" list="subCategoryList"
+                           value="{% if item %}{{ item.sub_category }}{% endif %}"
+                           placeholder="Ex: Regulares, POB, LD..."
+                           class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+                    <datalist id="subCategoryList">
+                        {% for sub in photocard_subcategories %}
+                            <option value="{{ sub }}"></option>
+                        {% endfor %}
+                    </datalist>
                 </div>
             </div>
 
@@ -255,10 +280,12 @@
 <script>
 function vitrineFormApp() {
     const erasMap = JSON.parse('{{ eras_by_group_json|escapejs }}' || '{}');
+    const membersMap = JSON.parse('{{ members_by_group_json|escapejs }}' || '{}');
 
     return {
         selectedGroup: '{% if item and item.group_id %}{{ item.group_id }}{% endif %}',
         selectedEra: '{% if item and item.era_id %}{{ item.era_id }}{% endif %}',
+        selectedMember: '{% if item and item.integrante %}{{ item.integrante|escapejs }}{% endif %}',
         imageUrlInput: '{% if item %}{{ item.display_image_url }}{% endif %}',
         filePreview: null,
 
@@ -273,8 +300,11 @@ function vitrineFormApp() {
             return erasMap[this.selectedGroup] || [];
         },
 
-        get previewSrc() {
-            return this.filePreview || this.imageUrlInput || '';
+        get filteredMembers() {
+            if (this.selectedGroup && membersMap[this.selectedGroup]) {
+                return membersMap[this.selectedGroup];
+            }
+            return [];
         },
 
         onGroupChange() {
