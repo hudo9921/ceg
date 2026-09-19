@@ -74,7 +74,21 @@ class VitrineListView(View):
         if era_id and era_id.isdigit():
             queryset = queryset.filter(era_id=int(era_id))
 
-        # 6. Ordenação
+        # 6. Filtro por Membro / Integrante
+        member = request.GET.get('member', '').strip()
+        if member:
+            queryset = queryset.filter(
+                Q(integrante__iexact=member) | Q(titulo__icontains=member)
+            )
+
+        # 7. Filtro por Subcategoria / Tipo de Photocard
+        sub_category = request.GET.get('sub_category', '').strip()
+        if sub_category:
+            queryset = queryset.filter(
+                Q(sub_category__iexact=sub_category) | Q(titulo__icontains=sub_category)
+            )
+
+        # 8. Ordenação
         sort_by = request.GET.get('sort', 'destaque').strip()
         if sort_by == 'menor_preco':
             queryset = queryset.order_by('preco', '-destaque', '-created_at')
@@ -93,42 +107,64 @@ class VitrineListView(View):
         total_reservados = ItemVitrine.objects.filter(status=ItemVitrine.Status.RESERVADO).count()
         total_vendidos = ItemVitrine.objects.filter(status=ItemVitrine.Status.VENDIDO).count()
 
-        # Paginação
-        paginator = Paginator(queryset, 24)
-        page_number = request.GET.get('page')
-        itens_page = paginator.get_page(page_number)
+        # Itens para renderização no template (suporta filtragem instantânea no client-side)
+        itens = queryset
 
-        # Metadados para filtros
         tipos_item = TipoItem.objects.all().order_by('nome')
-        groups = KpopGroup.objects.all().order_by('name')
+        groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-
         is_staff_user = bool(request.user.is_authenticated and request.user.is_staff)
 
-        # Preparar dados estruturados de grupos e eras para dropdown dinâmico no frontend
         eras_by_group = {}
         for e in eras:
-            eras_by_group.setdefault(e.group_id, []).append({
-                'id': e.id,
-                'name': e.name,
-            })
+            eras_by_group.setdefault(e.group_id, []).append({'id': e.id, 'name': e.name})
+
+        members_by_group = {}
+        all_members_set = set()
+        for g in groups:
+            m_list = list(g.members.values_list('name', flat=True))
+            members_by_group[g.id] = m_list
+            all_members_set.update(m_list)
+
+        vitrine_members = ItemVitrine.objects.exclude(integrante='').values_list('integrante', flat=True).distinct()
+        for vm in vitrine_members:
+            if vm and vm.strip():
+                all_members_set.add(vm.strip())
+        all_members = sorted(list(all_members_set))
+
+        photocard_subcategories = ['Regulares', 'POB', 'Lucky Draw', 'Fansign', 'Broadcast', 'Inclusão', 'Outro']
+        is_photocard_selected = False
+        photocard_tipo_id = None
+        for t in tipos_item:
+            if 'photocard' in t.nome.lower():
+                photocard_tipo_id = str(t.id)
+                if str(tipo_id) == str(t.id):
+                    is_photocard_selected = True
 
         context = {
-            'itens': itens_page,
+            'itens': itens,
             'tipos_item': tipos_item,
             'groups': groups,
             'eras': eras,
             'eras_by_group_json': json.dumps(eras_by_group),
+            'members_by_group_json': json.dumps(members_by_group),
+            'all_members': all_members,
+            'all_members_json': json.dumps(all_members),
+            'photocard_subcategories': photocard_subcategories,
+            'photocard_tipo_id': photocard_tipo_id,
+            'is_photocard_selected': is_photocard_selected,
             'selected_tipo': tipo_id,
             'selected_group': group_id,
             'selected_era': era_id,
+            'selected_member': member,
+            'selected_sub_category': sub_category,
             'selected_status': status_filter,
             'selected_sort': sort_by,
             'search_query': q,
             'total_disponiveis': total_disponiveis,
             'total_reservados': total_reservados,
             'total_vendidos': total_vendidos,
-            'total_encontrados': paginator.count,
+            'total_encontrados': queryset.count(),
             'is_staff_user': is_staff_user,
         }
         return render(request, 'cegs/vitrine.html', context)
@@ -139,7 +175,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
 
     def get(self, request):
         tipos_item = TipoItem.objects.all().order_by('nome')
-        groups = KpopGroup.objects.all().order_by('name')
+        groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
         caixas = Caixa.objects.all().order_by('-created_at')
 
@@ -150,6 +186,12 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
                 'name': e.name,
             })
 
+        members_by_group = {}
+        for g in groups:
+            members_by_group[g.id] = list(g.members.values_list('name', flat=True))
+
+        photocard_subcategories = ['Regulares', 'POB', 'Lucky Draw', 'Fansign', 'Broadcast', 'Inclusão', 'Outro']
+
         context = {
             'action': 'create',
             'tipos_item': tipos_item,
@@ -157,6 +199,8 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
             'eras': eras,
             'caixas': caixas,
             'eras_by_group_json': json.dumps(eras_by_group),
+            'members_by_group_json': json.dumps(members_by_group),
+            'photocard_subcategories': photocard_subcategories,
             'status_choices': ItemVitrine.Status.choices,
         }
         return render(request, 'cegs/vitrine_form.html', context)
@@ -169,6 +213,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
 
         descricao = request.POST.get('descricao', '').strip()
         integrante = request.POST.get('integrante', '').strip()
+        sub_category = request.POST.get('sub_category', '').strip()
         status = request.POST.get('status', ItemVitrine.Status.DISPONIVEL)
         destaque = request.POST.get('destaque') == 'on' or request.POST.get('destaque') == 'true'
 
@@ -220,6 +265,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
             group=group,
             era=era,
             integrante=integrante,
+            sub_category=sub_category,
             preco=preco,
             quantidade=quantidade,
             status=status,
@@ -238,7 +284,7 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
     def get(self, request, slug):
         item = get_object_or_404(ItemVitrine, slug=slug)
         tipos_item = TipoItem.objects.all().order_by('nome')
-        groups = KpopGroup.objects.all().order_by('name')
+        groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
         caixas = Caixa.objects.all().order_by('-created_at')
 
@@ -249,6 +295,12 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
                 'name': e.name,
             })
 
+        members_by_group = {}
+        for g in groups:
+            members_by_group[g.id] = list(g.members.values_list('name', flat=True))
+
+        photocard_subcategories = ['Regulares', 'POB', 'Lucky Draw', 'Fansign', 'Broadcast', 'Inclusão', 'Outro']
+
         context = {
             'action': 'update',
             'item': item,
@@ -257,6 +309,8 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
             'eras': eras,
             'caixas': caixas,
             'eras_by_group_json': json.dumps(eras_by_group),
+            'members_by_group_json': json.dumps(members_by_group),
+            'photocard_subcategories': photocard_subcategories,
             'status_choices': ItemVitrine.Status.choices,
         }
         return render(request, 'cegs/vitrine_form.html', context)
@@ -272,6 +326,7 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
         item.titulo = titulo
         item.descricao = request.POST.get('descricao', '').strip()
         item.integrante = request.POST.get('integrante', '').strip()
+        item.sub_category = request.POST.get('sub_category', '').strip()
         item.status = request.POST.get('status', item.status)
         item.destaque = request.POST.get('destaque') == 'on' or request.POST.get('destaque') == 'true'
 
@@ -445,6 +500,7 @@ class CaixaTransferUnclaimedToVitrineView(StaffRequiredMixin, View):
                     group=group,
                     era=era,
                     integrante=item_def.member_name or '',
+                    sub_category=getattr(item_def, 'sub_category', '') or '',
                     preco=preco,
                     quantidade=1,
                     status=ItemVitrine.Status.DISPONIVEL,
