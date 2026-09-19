@@ -1676,7 +1676,7 @@ class AuditLog(models.Model):
     old_value = models.CharField('Valor Anterior', max_length=255, blank=True)
     new_value = models.CharField('Novo Valor', max_length=255, blank=True)
     metadata = models.JSONField('Metadados Adicionais', default=dict, blank=True)
-    created_at = models.DateTimeField('Data e Hora', auto_now_add=True, db_index=True)
+    created_at = models.DateTimeField('Data e Hora', default=timezone.now, db_index=True)
 
     class Meta:
         verbose_name = 'Log de Auditoria'

@@ -18,6 +18,7 @@ class AuditService:
         slot=None,
         ceg=None,
         item_individual=None,
+        pacote_nacional=None,
         field_name: str = '',
         old_value: str = '',
         new_value: str = '',
@@ -51,6 +52,10 @@ class AuditService:
             participant = item_individual.comprador
             p_name = p_name or participant.name
             p_phone = p_phone or participant.whatsapp
+        elif pacote_nacional and getattr(pacote_nacional, 'participant', None):
+            participant = pacote_nacional.participant
+            p_name = p_name or participant.name
+            p_phone = p_phone or participant.whatsapp
 
         # Normaliza CEG
         if not ceg and slot and hasattr(slot, 'set') and getattr(slot.set, 'ceg', None):
@@ -67,6 +72,7 @@ class AuditService:
                 ceg=ceg,
                 slot=slot,
                 item_individual=item_individual,
+                pacote_nacional=pacote_nacional,
                 action_label=action_label,
                 field_name=field_name,
                 old_value=str(old_value) if old_value is not None else '',
@@ -223,7 +229,42 @@ class AuditService:
         )
 
     @staticmethod
-    def log_slot_assignment(slot, participant, action: str, actor=None, metadata: Optional[Dict[str, Any]] = None):
+    def log_claim_success_from_claim(claim, actor=None, metadata: Optional[Dict[str, Any]] = None, created_at=None):
+        """Registra um claim com sucesso/reserva garantida a partir do modelo Claim."""
+        from apps.cegs.models import AuditLog
+
+        slot = claim.slot
+        participant = claim.participant
+        slot_name = f"Set {slot.set.set_number} | {slot.item_definition.name}" if slot and hasattr(slot, 'set') else "Slot de Item"
+        p_name = participant.name if participant else "Participante"
+        p_handle = f" ({participant.social_handle})" if participant and participant.social_handle else ""
+        action_label = f"Claim Garantido: {p_name}{p_handle} no {slot_name}"
+
+        meta = metadata or {}
+        meta.update({
+            'claim_id': claim.id,
+            'slot_id': slot.id if slot else None,
+            'total_price': str(claim.total_price),
+            'status': claim.status,
+            'participant_notes': claim.participant_notes or '',
+        })
+
+        claim_date = created_at or claim.claimed_at or (slot.claimed_at if slot else None) or claim.paid_at or timezone.now()
+
+        return AuditService.log_event(
+            event_type=AuditLog.EventType.CLAIM_SUCCESS,
+            action_label=action_label,
+            actor=actor or 'Sistema (Claim)',
+            participant=participant,
+            slot=slot,
+            old_value="Disponível",
+            new_value=p_name,
+            metadata=meta,
+            created_at=claim_date,
+        )
+
+    @staticmethod
+    def log_slot_assignment(slot, participant, action: str, actor=None, metadata: Optional[Dict[str, Any]] = None, created_at=None):
         """Registra alocação manual ou desvinculação de slot."""
         from apps.cegs.models import AuditLog
 
@@ -253,25 +294,43 @@ class AuditService:
             old_value=old_val,
             new_value=new_val,
             metadata=meta,
+            created_at=created_at,
         )
 
     @classmethod
     def backfill_historical_logs(cls):
-        """Popula o AuditLog com dados que já existiam antes (participantes e claims)."""
-        from apps.participants.models import Participant
-        from apps.cegs.models import ClaimAttemptLog, AuditLog
+        """
+        Popula o AuditLog com todos os dados que já existiam antes:
+        1. Participantes (contas criadas)
+        2. Tentativas de Claim (ClaimAttemptLog)
+        3. Claims garantidas (Claim)
+        4. Slots com participantes vinculados (ItemSlot.claimed_by)
+        5. Itens avulsos Mercari (ItemIndividual.comprador)
+        6. Pagamentos quitados (Item, Frete Inter, Taxa Aduaneira, Frete Nacional)
+        7. Pacotes de Envio Nacional (solicitados, despachados, entregues)
+        """
+        from apps.participants.models import Participant, Claim
+        from apps.cegs.models import ClaimAttemptLog, ItemSlot, ItemIndividual, PacoteNacional, AuditLog
 
-        count_accounts = 0
-        count_claims = 0
+        counts = {
+            'accounts': 0,
+            'claim_logs': 0,
+            'claims': 0,
+            'slots_assigned': 0,
+            'mercari_assigned': 0,
+            'payments': 0,
+            'packages': 0,
+            'total': 0,
+        }
 
-        # 1. Participantes existentes
+        # 1. Participantes existentes (ACCOUNT_CREATED)
         existing_p_ids = set(
             AuditLog.objects.filter(event_type=AuditLog.EventType.ACCOUNT_CREATED)
             .values_list('participant_id', flat=True)
         )
         for p in Participant.objects.exclude(id__in=existing_p_ids).order_by('created_at'):
-            cls.log_account_created(p, actor='Sistema (Legado)', created_at=p.created_at)
-            count_accounts += 1
+            cls.log_account_created(p, actor='Sistema (Histórico)', created_at=p.created_at)
+            counts['accounts'] += 1
 
         # 2. ClaimAttemptLogs existentes
         existing_claim_log_ids = set()
@@ -284,6 +343,248 @@ class AuditService:
 
         for cl in ClaimAttemptLog.objects.select_related('slot__set__ceg', 'slot__item_definition').exclude(id__in=existing_claim_log_ids).order_by('created_at'):
             cls.log_claim_attempt(cl, actor='Sistema (Claim Engine)', created_at=cl.created_at)
-            count_claims += 1
+            counts['claim_logs'] += 1
 
-        return count_accounts, count_claims
+        # 3. Claims existentes (Claim)
+        for claim in Claim.objects.select_related('slot__set__ceg', 'slot__item_definition', 'participant').order_by('claimed_at', 'id'):
+            if not claim.slot or not claim.participant:
+                continue
+            has_log = AuditLog.objects.filter(
+                slot=claim.slot,
+                participant=claim.participant,
+                event_type__in=[AuditLog.EventType.CLAIM_SUCCESS, AuditLog.EventType.SLOT_ASSIGNED]
+            ).exists()
+            if not has_log:
+                cls.log_claim_success_from_claim(claim, actor='Sistema (Histórico Claim)')
+                counts['claims'] += 1
+
+        # 4. Slots que têm claimed_by mas não têm log de sucesso ou alocação
+        for slot in ItemSlot.objects.filter(claimed_by__isnull=False).select_related('claimed_by', 'set__ceg', 'item_definition').order_by('id'):
+            has_log = AuditLog.objects.filter(
+                slot=slot,
+                participant=slot.claimed_by,
+                event_type__in=[AuditLog.EventType.CLAIM_SUCCESS, AuditLog.EventType.SLOT_ASSIGNED]
+            ).exists()
+            if not has_log:
+                created_date = slot.claimed_at or (slot.set.ceg.created_at if hasattr(slot, 'set') and slot.set and slot.set.ceg else timezone.now())
+                cls.log_slot_assignment(
+                    slot=slot,
+                    participant=slot.claimed_by,
+                    action='assign',
+                    actor='Sistema (Histórico Alocação)',
+                    created_at=created_date,
+                )
+                counts['slots_assigned'] += 1
+
+        # 5. Itens individuais Mercari com comprador
+        for item in ItemIndividual.objects.filter(comprador__isnull=False).select_related('comprador', 'caixa').order_by('id'):
+            has_log = AuditLog.objects.filter(
+                item_individual=item,
+                participant=item.comprador,
+            ).exists()
+            if not has_log:
+                cls.log_event(
+                    event_type=AuditLog.EventType.OTHER,
+                    action_label=f"Compra Individual (Mercari) '{item.nome}' vinculada para {item.comprador.name}",
+                    actor='Sistema (Histórico Mercari)',
+                    participant=item.comprador,
+                    item_individual=item,
+                    new_value=item.comprador.name,
+                    created_at=item.created_at,
+                    metadata={'item_individual_id': item.id, 'preco': str(item.preco_produto or 0)},
+                )
+                counts['mercari_assigned'] += 1
+
+        # 6. Pagamentos históricos em ItemSlot
+        for slot in ItemSlot.objects.filter(claimed_by__isnull=False).select_related('claimed_by', 'set__ceg', 'item_definition'):
+            base_date = slot.claimed_at or (slot.set.ceg.created_at if hasattr(slot, 'set') and slot.set and slot.set.ceg else timezone.now())
+
+            # Item pago
+            if slot.is_item_paid and not AuditLog.objects.filter(slot=slot, event_type=AuditLog.EventType.PAYMENT_ITEM).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_ITEM,
+                    action_label=f"Pagamento do Item alterado para [Pago ✔] em 'Set {slot.set.set_number} - {slot.item_definition.name}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=slot.claimed_by,
+                    slot=slot,
+                    field_name='is_item_paid',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'slot_id': slot.id, 'price': str(slot.price)},
+                )
+                counts['payments'] += 1
+
+            # Frete Inter pago
+            if slot.is_frete_inter_paid and not AuditLog.objects.filter(slot=slot, event_type=AuditLog.EventType.PAYMENT_FRETE_INTER).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_FRETE_INTER,
+                    action_label=f"Frete Internacional alterado para [Pago ✔] em 'Set {slot.set.set_number} - {slot.item_definition.name}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=slot.claimed_by,
+                    slot=slot,
+                    field_name='is_frete_inter_paid',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'slot_id': slot.id},
+                )
+                counts['payments'] += 1
+
+            # Taxa Aduaneira paga
+            if slot.is_taxa_aduaneira_paid and not AuditLog.objects.filter(slot=slot, event_type=AuditLog.EventType.PAYMENT_TAXA).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_TAXA,
+                    action_label=f"Taxa Aduaneira alterada para [Pago ✔] em 'Set {slot.set.set_number} - {slot.item_definition.name}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=slot.claimed_by,
+                    slot=slot,
+                    field_name='is_taxa_aduaneira_paid',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'slot_id': slot.id},
+                )
+                counts['payments'] += 1
+
+            # Frete Nacional pago
+            if slot.is_frete_nacional_paid and not AuditLog.objects.filter(slot=slot, event_type=AuditLog.EventType.PAYMENT_FRETE_NACIONAL).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_FRETE_NACIONAL,
+                    action_label=f"Frete Nacional alterado para [Pago ✔] em 'Set {slot.set.set_number} - {slot.item_definition.name}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=slot.claimed_by,
+                    slot=slot,
+                    field_name='is_frete_nacional_paid',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'slot_id': slot.id},
+                )
+                counts['payments'] += 1
+
+        # Pagamentos históricos em ItemIndividual
+        for item in ItemIndividual.objects.filter(comprador__isnull=False).select_related('comprador'):
+            base_date = item.created_at
+
+            if item.produto_pago and not AuditLog.objects.filter(item_individual=item, event_type=AuditLog.EventType.PAYMENT_ITEM).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_ITEM,
+                    action_label=f"Pagamento do Item alterado para [Pago ✔] em '{item.nome}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=item.comprador,
+                    item_individual=item,
+                    field_name='produto_pago',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'item_individual_id': item.id},
+                )
+                counts['payments'] += 1
+
+            if item.frete_inter_pago and not AuditLog.objects.filter(item_individual=item, event_type=AuditLog.EventType.PAYMENT_FRETE_INTER).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_FRETE_INTER,
+                    action_label=f"Frete Internacional alterado para [Pago ✔] em '{item.nome}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=item.comprador,
+                    item_individual=item,
+                    field_name='frete_inter_pago',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'item_individual_id': item.id},
+                )
+                counts['payments'] += 1
+
+            if item.taxa_aduaneira_paga and not AuditLog.objects.filter(item_individual=item, event_type=AuditLog.EventType.PAYMENT_TAXA).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_TAXA,
+                    action_label=f"Taxa Aduaneira alterada para [Pago ✔] em '{item.nome}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=item.comprador,
+                    item_individual=item,
+                    field_name='taxa_aduaneira_paga',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'item_individual_id': item.id},
+                )
+                counts['payments'] += 1
+
+            if item.frete_nacional_pago and not AuditLog.objects.filter(item_individual=item, event_type=AuditLog.EventType.PAYMENT_FRETE_NACIONAL).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PAYMENT_FRETE_NACIONAL,
+                    action_label=f"Frete Nacional alterado para [Pago ✔] em '{item.nome}'",
+                    actor='Sistema (Histórico Pagamento)',
+                    participant=item.comprador,
+                    item_individual=item,
+                    field_name='frete_nacional_pago',
+                    old_value='Pendente ⏳',
+                    new_value='Pago ✔',
+                    created_at=base_date,
+                    metadata={'item_individual_id': item.id},
+                )
+                counts['payments'] += 1
+
+        # 7. Pacotes Nacionais históricos
+        for pacote in PacoteNacional.objects.select_related('participant').order_by('created_at'):
+            total_it = pacote.total_itens
+            # Solicitação
+            if not AuditLog.objects.filter(pacote_nacional=pacote, event_type=AuditLog.EventType.PACKAGE_REQUESTED).exists():
+                cls.log_event(
+                    event_type=AuditLog.EventType.PACKAGE_REQUESTED,
+                    action_label=f"Solicitação de envio nacional ({total_it} itens) via Minha Caixinha",
+                    actor='Sistema (Histórico)',
+                    participant=pacote.participant,
+                    pacote_nacional=pacote,
+                    new_value=pacote.identificador,
+                    created_at=pacote.solicitado_em or pacote.created_at,
+                    metadata={'pacote_id': pacote.id, 'total_itens': total_it},
+                )
+                counts['packages'] += 1
+
+            # Despacho / Enviado
+            if pacote.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                if not AuditLog.objects.filter(pacote_nacional=pacote, event_type=AuditLog.EventType.PACKAGE_SENT).exists():
+                    cls.log_event(
+                        event_type=AuditLog.EventType.PACKAGE_SENT,
+                        action_label=f"Pacote {pacote.identificador} despachado via {pacote.transportadora}",
+                        actor='Sistema (Histórico)',
+                        participant=pacote.participant,
+                        pacote_nacional=pacote,
+                        field_name='status',
+                        old_value='EM_PREPARACAO',
+                        new_value='ENVIADO',
+                        created_at=pacote.data_envio or pacote.created_at,
+                        metadata={'pacote_id': pacote.id, 'codigo_rastreio': pacote.codigo_rastreio},
+                    )
+                    counts['packages'] += 1
+
+            # Entregue
+            if pacote.status == PacoteNacional.Status.ENTREGUE:
+                if not AuditLog.objects.filter(pacote_nacional=pacote, event_type=AuditLog.EventType.PACKAGE_DELIVERED).exists():
+                    cls.log_event(
+                        event_type=AuditLog.EventType.PACKAGE_DELIVERED,
+                        action_label=f"Pacote {pacote.identificador} confirmado como entregue ({pacote.entregue_por})",
+                        actor='Sistema (Histórico)',
+                        participant=pacote.participant,
+                        pacote_nacional=pacote,
+                        field_name='status',
+                        old_value='ENVIADO',
+                        new_value='ENTREGUE',
+                        created_at=pacote.data_entrega or pacote.updated_at or pacote.created_at,
+                        metadata={'pacote_id': pacote.id, 'feedback_rating': pacote.feedback_rating},
+                    )
+                    counts['packages'] += 1
+
+        counts['total'] = (
+            counts['accounts']
+            + counts['claim_logs']
+            + counts['claims']
+            + counts['slots_assigned']
+            + counts['mercari_assigned']
+            + counts['payments']
+            + counts['packages']
+        )
+        return counts

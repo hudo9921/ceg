@@ -453,6 +453,26 @@ class BulkJoinerAllocatorService:
                     }
                 )
 
+                try:
+                    from apps.cegs.audit_service import AuditService
+                    AuditService.log_slot_assignment(
+                        slot=slot,
+                        participant=participant,
+                        action='assign',
+                        actor=options.get('actor') if options else 'Bulk Allocator (Planilha/GOM)',
+                        metadata={'is_paid': is_paid, 'batch': True}
+                    )
+                    if is_paid:
+                        AuditService.log_payment_change(
+                            slot=slot,
+                            field_name='is_item_paid',
+                            old_value=False,
+                            new_value=True,
+                            actor=options.get('actor') if options else 'Bulk Allocator (Planilha/GOM)',
+                        )
+                except Exception:
+                    pass
+
                 allocated_count += 1
 
         return {
@@ -489,6 +509,7 @@ class BulkJoinerAllocatorService:
                     continue
 
                 if action == 'release':
+                    old_participant = slot.claimed_by
                     slot.claimed_by = None
                     slot.claimed_at = None
                     slot.status = ItemSlot.Status.AVAILABLE
@@ -498,9 +519,22 @@ class BulkJoinerAllocatorService:
                     if hasattr(slot, 'claim') and slot.claim:
                         slot.claim.delete()
 
+                    if old_participant:
+                        try:
+                            from apps.cegs.audit_service import AuditService
+                            AuditService.log_slot_assignment(
+                                slot=slot,
+                                participant=old_participant,
+                                action='release',
+                                actor='Bulk Allocator (Grade Interativa)',
+                            )
+                        except Exception:
+                            pass
+
                     released_count += 1
 
                 elif action == 'toggle_payment':
+                    old_paid = slot.is_item_paid
                     new_paid = bool(up.get('is_paid', not slot.is_item_paid))
                     slot.is_item_paid = new_paid
                     if slot.claimed_by:
@@ -511,6 +545,18 @@ class BulkJoinerAllocatorService:
                         slot.claim.status = Claim.Status.PAID if new_paid else Claim.Status.PENDING
                         slot.claim.paid_at = timezone.now() if new_paid else None
                         slot.claim.save(update_fields=['status', 'paid_at'])
+
+                    try:
+                        from apps.cegs.audit_service import AuditService
+                        AuditService.log_payment_change(
+                            slot=slot,
+                            field_name='is_item_paid',
+                            old_value=old_paid,
+                            new_value=new_paid,
+                            actor='Bulk Allocator (Grade Interativa)',
+                        )
+                    except Exception:
+                        pass
 
                     updated_count += 1
 
@@ -539,6 +585,27 @@ class BulkJoinerAllocatorService:
                             'paid_at': timezone.now() if is_paid else None,
                         }
                     )
+
+                    try:
+                        from apps.cegs.audit_service import AuditService
+                        AuditService.log_slot_assignment(
+                            slot=slot,
+                            participant=participant,
+                            action='assign',
+                            actor='Bulk Allocator (Grade Interativa)',
+                            metadata={'is_paid': is_paid}
+                        )
+                        if is_paid:
+                            AuditService.log_payment_change(
+                                slot=slot,
+                                field_name='is_item_paid',
+                                old_value=False,
+                                new_value=True,
+                                actor='Bulk Allocator (Grade Interativa)',
+                            )
+                    except Exception:
+                        pass
+
                     updated_count += 1
 
         return {

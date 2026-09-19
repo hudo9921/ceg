@@ -911,9 +911,22 @@ class ManageSlotView(View):
 
             # 3. Remover Reserva / Desistência (repassa automaticamente para o 1º da fila se houver)
             if remove_claim or action == 'remove_claim':
+                old_p = slot.claimed_by
                 if hasattr(slot, 'claim') and slot.claim:
                     slot.claim.delete()
                 promoted_entry = ClaimService.promote_from_waiting_list_on_slot_released(slot)
+                if old_p:
+                    try:
+                        from apps.cegs.audit_service import AuditService
+                        AuditService.log_slot_assignment(
+                            slot=slot,
+                            participant=old_p,
+                            action='release',
+                            actor=request.user,
+                            metadata={'promoted_waiting': bool(promoted_entry)}
+                        )
+                    except Exception:
+                        pass
                 if promoted_entry:
                     msg_text = (
                         f"Reserva cancelada. O slot foi repassado com prioridade para o 1º da fila de espera: "
@@ -950,6 +963,17 @@ class ManageSlotView(View):
                             total_price=slot.price,
                             status=Claim.Status.PAID if slot.is_item_paid else Claim.Status.PENDING
                         )
+
+                    try:
+                        from apps.cegs.audit_service import AuditService
+                        AuditService.log_slot_assignment(
+                            slot=slot,
+                            participant=new_participant,
+                            action='assign',
+                            actor=request.user,
+                        )
+                    except Exception:
+                        pass
                 except Participant.DoesNotExist:
                     return JsonResponse({'success': False, 'message': 'Participante não encontrado.'}, status=404)
 

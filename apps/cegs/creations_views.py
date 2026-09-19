@@ -709,6 +709,17 @@ class CreateCEGView(StaffRequiredMixin, View):
                                         participant_notes="Pré-reservado pelo organizador na abertura da CEG",
                                         claimed_at=now
                                     )
+                                    try:
+                                        from apps.cegs.audit_service import AuditService
+                                        AuditService.log_slot_assignment(
+                                            slot=slot,
+                                            participant=participant,
+                                            action='assign',
+                                            actor=request.user,
+                                            metadata={'notes': 'Pré-reserva na criação da CEG'}
+                                        )
+                                    except Exception:
+                                        pass
                                     pre_reserved_count += 1
                                 except (Participant.DoesNotExist, ValueError):
                                     pass

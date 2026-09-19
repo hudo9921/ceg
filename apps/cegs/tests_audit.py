@@ -169,3 +169,119 @@ class AuditLogSystemTests(TestCase):
         content = res_csv.content.decode('utf-8')
         self.assertIn('Mina Myoui', content)
         self.assertIn('Pagamento do Item', content)
+
+    def test_backfill_comprehensive(self):
+        """Testa o backfill histórico completo de participantes, claims, slots quitados e pacotes."""
+        from apps.participants.models import Claim
+        from apps.cegs.models import PacoteNacional
+
+        # Limpa logs existentes para validar o backfill do zero
+        AuditLog.objects.all().delete()
+
+        # 1. Participante sem log
+        p = Participant.objects.create(name='Chaeyoung Son', whatsapp='5511944443333')
+        # Remove o log criado pelo signal para simular dado pré-existente legado
+        AuditLog.objects.filter(participant=p).delete()
+
+        # 2. Slot e Claim pré-existente
+        self.slot.claimed_by = p
+        self.slot.is_item_paid = True
+        self.slot.save()
+        claim = Claim.objects.create(
+            slot=self.slot,
+            participant=p,
+            status=Claim.Status.PAID,
+            total_price=30.00
+        )
+        AuditLog.objects.all().delete()
+
+        # 3. Pacote Nacional pré-existente
+        pacote = PacoteNacional.objects.create(
+            participant=p,
+            status=PacoteNacional.Status.ENVIADO,
+            transportadora='Jadlog',
+            codigo_rastreio='JAD123456'
+        )
+        AuditLog.objects.all().delete()
+
+        self.assertEqual(AuditLog.objects.count(), 0)
+
+        # Executa backfill
+        stats = AuditService.backfill_historical_logs()
+        self.assertGreaterEqual(stats['accounts'], 1)
+        self.assertGreaterEqual(stats['claims'], 1)
+        self.assertGreaterEqual(stats['payments'], 1)
+        self.assertGreaterEqual(stats['packages'], 1)
+        self.assertGreaterEqual(stats['total'], 4)
+
+        # Verifica presença de cada tipo de evento
+        self.assertTrue(AuditLog.objects.filter(event_type=AuditLog.EventType.ACCOUNT_CREATED, participant=p).exists())
+        self.assertTrue(AuditLog.objects.filter(event_type=AuditLog.EventType.CLAIM_SUCCESS, slot=self.slot).exists())
+        self.assertTrue(AuditLog.objects.filter(event_type=AuditLog.EventType.PAYMENT_ITEM, slot=self.slot).exists())
+        self.assertTrue(AuditLog.objects.filter(event_type=AuditLog.EventType.PACKAGE_SENT, pacote_nacional=pacote).exists())
+
+    def test_claim_post_save_signal_safety_net(self):
+        """Ao criar um Claim diretamente sem passar pelo engine, o signal deve registrar CLAIM_SUCCESS."""
+        from apps.participants.models import Claim
+        p = Participant.objects.create(name='Dahyun Kim', whatsapp='5511933332222')
+        AuditLog.objects.all().delete()
+
+        claim = Claim.objects.create(
+            slot=self.slot,
+            participant=p,
+            status=Claim.Status.PENDING,
+            total_price=30.00
+        )
+
+        log = AuditLog.objects.filter(
+            event_type=AuditLog.EventType.CLAIM_SUCCESS,
+            slot=self.slot,
+            participant=p
+        ).first()
+
+        self.assertIsNotNone(log)
+        self.assertEqual(log.participant, p)
+        self.assertIn('Dahyun Kim', log.action_label)
+
+    def test_bulk_allocator_audit_logging(self):
+        """Testa se o alocador em lote gera logs ao atribuir, liberar e alternar pagamento."""
+        from apps.cegs.services_allocator import BulkJoinerAllocatorService
+        p = Participant.objects.create(name='Tzuyu Chou', whatsapp='5511922221111')
+        AuditLog.objects.all().delete()
+
+        # 1. Atribuição via grade interativa
+        BulkJoinerAllocatorService.save_matrix_allocations(
+            ceg=self.ceg,
+            updates=[{
+                'slot_id': self.slot.id,
+                'action': 'assign',
+                'participant_id': p.id,
+                'is_paid': True
+            }]
+        )
+
+        self.assertTrue(AuditLog.objects.filter(
+            event_type=AuditLog.EventType.SLOT_ASSIGNED,
+            slot=self.slot,
+            participant=p
+        ).exists())
+
+        self.assertTrue(AuditLog.objects.filter(
+            event_type=AuditLog.EventType.PAYMENT_ITEM,
+            slot=self.slot,
+            participant=p
+        ).exists())
+
+        # 2. Liberação via grade interativa
+        BulkJoinerAllocatorService.save_matrix_allocations(
+            ceg=self.ceg,
+            updates=[{
+                'slot_id': self.slot.id,
+                'action': 'release',
+            }]
+        )
+
+        self.assertTrue(AuditLog.objects.filter(
+            event_type=AuditLog.EventType.SLOT_RELEASED,
+            slot=self.slot
+        ).exists())
