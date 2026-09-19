@@ -6,6 +6,11 @@
 {{ filter_options|json_script:"filter-options-data" }}
 {{ mercari_status.items|default:"[]"|json_script:"mercari-items-data" }}
 {{ tipos_item|default:"[]"|json_script:"tipos-item-data" }}
+{{ sets_incomplete|default:"[]"|json_script:"sets-incomplete-data" }}
+{{ sets_fechados|default:"[]"|json_script:"sets-fechados-data" }}
+{{ sets_pagos|default:"[]"|json_script:"sets-pagos-data" }}
+{{ sets_terminados|default:"[]"|json_script:"sets-terminados-data" }}
+{{ cegs_overview|default:"[]"|json_script:"cegs-overview-data" }}
 
 <div class="space-y-8" x-data="cegStatusApp()">
 
@@ -83,7 +88,7 @@
 
             <!-- Botão Limpar Filtros -->
             <button type="button"
-                    x-show="selectedGroup || selectedEra || searchQuery"
+                    x-show="hasActiveFilters"
                     x-cloak
                     @click="clearFilters()"
                     class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
@@ -101,15 +106,16 @@
                 <div class="relative">
                     <input type="text"
                            x-model="searchQuery"
-                           @keydown.enter="applyFilter()"
+                           @input.debounce.150ms="onFilterChange()"
+                           @keydown.enter.prevent
                            placeholder="Digite para buscar: ex. Weverse, Pureflow, Sakura, PF-32..."
                            class="w-full pl-9 pr-8 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-xs font-bold text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-400 transition">
                     <span class="absolute left-3 top-2 text-xs text-slate-400 pointer-events-none">🔍</span>
                     <button type="button"
                             x-show="searchQuery"
                             x-cloak
-                            @click="searchQuery = ''; if ('{{ search_query|default:"" }}') applyFilter();"
-                            class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-white transition">
+                            @click="searchQuery = ''; onFilterChange();"
+                            class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-white transition cursor-pointer">
                         ✕
                     </button>
                 </div>
@@ -136,7 +142,7 @@
                     <span>💿</span> Era / Álbum
                 </label>
                 <select x-model="selectedEra"
-                        @change="applyFilter()"
+                        @change="onFilterChange()"
                         class="w-full px-3 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-pink-400 cursor-pointer">
                     <option value="" class="bg-slate-900 text-white">Todas as Eras</option>
                     <template x-for="e in availableEras" :key="e.id">
@@ -151,20 +157,22 @@
             <div class="flex items-center gap-2 flex-wrap">
                 <span>Exibindo dados de:</span>
                 <span class="font-black text-pink-300">
-                    {% if selected_group_name %}{{ selected_group_name }}{% else %}Todos os Grupos{% endif %}
-                    {% if selected_era_name %} • {{ selected_era_name }}{% endif %}
+                    <span x-text="currentGroupName"></span>
+                    <template x-if="currentEraName">
+                        <span x-text="' • ' + currentEraName"></span>
+                    </template>
                 </span>
                 <template x-if="searchQuery">
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[11px] font-bold">
                         <span>Texto:</span>
                         <b x-text="'&ldquo;' + searchQuery + '&rdquo;'"></b>
-                        <button type="button" @click="searchQuery = ''; if ('{{ search_query|default:"" }}') applyFilter();" class="text-white hover:text-pink-200 ml-1 cursor-pointer">✕</button>
+                        <button type="button" @click="searchQuery = ''; onFilterChange();" class="text-white hover:text-pink-200 ml-1 cursor-pointer">✕</button>
                     </span>
                 </template>
             </div>
 
             <button type="button"
-                    x-show="selectedGroup || selectedEra || searchQuery"
+                    x-show="hasActiveFilters"
                     x-cloak
                     @click="clearFilters()"
                     class="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
@@ -194,14 +202,14 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-pink-900 dark:text-pink-300">{{ summary.incomplete_sets_count }}</div>
+                        <div class="text-3xl font-black text-pink-900 dark:text-pink-300" x-text="incompleteCount">{{ summary.incomplete_sets_count }}</div>
                         <span x-show="activeCardFilter === 'incomplete'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-pink-600 text-white shadow-2xs">
                             Abertos
                         </span>
                     </div>
                     <div class="text-xs text-pink-600 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
-                        Em {{ summary.active_cegs }} CEGs com vagas (de {{ summary.total_cegs }} cadastradas)
+                        Em <span x-text="activeCegsCount">{{ summary.active_cegs }}</span> CEGs com vagas
                     </div>
                     <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-pink-100 dark:border-slate-800 flex items-center gap-1.5 text-pink-700 dark:text-pink-400">
                         <span>👆</span>
@@ -228,7 +236,7 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-amber-900 dark:text-amber-300">{{ summary.closed_sets_count }}</div>
+                        <div class="text-3xl font-black text-amber-900 dark:text-amber-300" x-text="closedCount">{{ summary.closed_sets_count }}</div>
                         <span x-show="activeCardFilter === 'fechados'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-2xs">
                             Fechados
@@ -262,14 +270,14 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-emerald-900 dark:text-emerald-300">{{ summary.paid_sets_count }}</div>
+                        <div class="text-3xl font-black text-emerald-900 dark:text-emerald-300" x-text="paidCount">{{ summary.paid_sets_count }}</div>
                         <span x-show="activeCardFilter === 'pagos'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
                             Pagos
                         </span>
                     </div>
                     <div class="text-xs text-emerald-700 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
-                        {{ summary.paid_frete_sets_count|default:0 }} c/ frete pago • {{ summary.pending_frete_sets_count|default:0 }} frete em aberto
+                        Sets com itens quitados
                     </div>
                     <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-emerald-100 dark:border-slate-800 flex items-center gap-1.5 text-emerald-800 dark:text-emerald-400">
                         <span>👆</span>
@@ -296,7 +304,7 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex items-baseline gap-2">
-                        <div class="text-3xl font-black text-amber-950 dark:text-amber-300">{{ summary.finished_sets_count }}</div>
+                        <div class="text-3xl font-black text-amber-950 dark:text-amber-300" x-text="finishedCount">{{ summary.finished_sets_count }}</div>
                         <span x-show="activeCardFilter === 'terminados'"
                               class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 shadow-2xs">
                             Terminados
@@ -371,14 +379,14 @@
                 </p>
             </div>
             <span class="px-3 py-1 bg-pink-100 text-pink-800 text-xs font-bold rounded-full">
-                {{ sets_incomplete|length }} set(s) em andamento
+                <span x-text="incompleteCount">{{ sets_incomplete|length }}</span> set(s) em andamento
             </span>
         </div>
 
         {% if sets_incomplete %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {% for s in sets_incomplete %}
-                    <div x-show="matchSearch('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }} {% for item in s.missing_items %}{{ item.item_name|escapejs }} {{ item.member_name|escapejs }} {% endfor %}')"
+                    <div x-show="matchItem('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }} {% for item in s.missing_items %}{{ item.item_name|escapejs }} {{ item.member_name|escapejs }} {% endfor %}', '{{ s.group_id }}', '{{ s.era_id }}')"
                          x-transition
                          class="border border-slate-200 hover:border-pink-300 rounded-2xl p-4 transition bg-white shadow-2xs flex flex-col justify-between space-y-3">
                         <!-- Header do Card -->
@@ -456,6 +464,16 @@
                         </div>
                     </div>
                 {% endfor %}
+
+                <!-- Empty state dinâmico se a busca não encontrar nada -->
+                <div x-show="incompleteCount === 0"
+                     x-cloak
+                     class="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <div class="text-3xl">🔍</div>
+                    <h3 class="text-sm font-bold text-slate-800">Nenhum set incompleto encontrado para este filtro!</h3>
+                    <p class="text-xs text-slate-400">Todos os sets estão 100% preenchidos ou não há CEGs correspondentes aos filtros selecionados.</p>
+                    <button type="button" @click="clearFilters()" class="text-xs font-bold text-pink-600 hover:underline cursor-pointer">✕ Limpar Filtros</button>
+                </div>
             </div>
         {% else %}
             <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
@@ -481,14 +499,14 @@
                 </p>
             </div>
             <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
-                {{ sets_fechados|length }} set(s) fechado(s)
+                <span x-text="closedCount">{{ sets_fechados|length }}</span> set(s) fechado(s)
             </span>
         </div>
 
         {% if sets_fechados %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for s in sets_fechados %}
-                    <div x-show="matchSearch('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}')"
+                    <div x-show="matchItem('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}', '{{ s.group_id }}', '{{ s.era_id }}')"
                          x-transition
                          class="border border-amber-200 bg-amber-50/20 hover:border-amber-300 rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3">
                         <!-- Header do Card -->
@@ -562,6 +580,16 @@
                         </div>
                     </div>
                 {% endfor %}
+
+                <!-- Empty state dinâmico se o filtro não encontrar nada -->
+                <div x-show="closedCount === 0"
+                     x-cloak
+                     class="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <div class="text-3xl">🔍</div>
+                    <h3 class="text-sm font-bold text-slate-800">Nenhum set fechado encontrado para este filtro!</h3>
+                    <p class="text-xs text-slate-400">Não há sets fechados correspondentes aos filtros selecionados.</p>
+                    <button type="button" @click="clearFilters()" class="text-xs font-bold text-pink-600 hover:underline cursor-pointer">✕ Limpar Filtros</button>
+                </div>
             </div>
         {% else %}
             <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
@@ -587,7 +615,7 @@
                 </p>
             </div>
             <span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
-                {{ sets_pagos|length }} set(s) 100% pago(s)
+                <span x-text="paidCount">{{ sets_pagos|length }}</span> set(s) 100% pago(s)
             </span>
         </div>
 
@@ -598,7 +626,7 @@
                     @click="pagosSubFilter = 'all'"
                     class="px-3 py-1.5 rounded-xl font-bold transition cursor-pointer"
                     :class="pagosSubFilter === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'">
-                Todos os Pagos ({{ sets_pagos|length }})
+                Todos os Pagos (<span x-text="paidCount">{{ sets_pagos|length }}</span>)
             </button>
             <button type="button"
                     @click="pagosSubFilter = 'frete_pago'"
@@ -628,7 +656,7 @@
                     @click="pagosSubFilter = 'terminados'"
                     class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5"
                     :class="pagosSubFilter === 'terminados' ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-xs ring-2 ring-amber-300' : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'">
-                <span>🏆</span> Sets Terminados (Tudo Pago) ({{ sets_terminados|length }})
+                <span>🏆</span> Sets Terminados (Tudo Pago) (<span x-text="finishedCount">{{ sets_terminados|length }}</span>)
             </button>
         </div>
 
@@ -667,7 +695,7 @@
                              {{ s.has_taxa|yesno:'true,false' }},
                              {{ s.taxa_aduaneira_paid|yesno:'true,false' }},
                              {{ s.taxa_aduaneira_pending|yesno:'true,false' }}
-                         ) && matchSearch('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}')"
+                         ) && matchItem('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}', '{{ s.group_id }}', '{{ s.era_id }}')"
                          x-transition
                          class="border rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3
                              {% if s.is_terminado %}bg-gradient-to-br from-amber-50/40 via-yellow-50/20 to-white border-amber-300 ring-1 ring-amber-200{% else %}bg-emerald-50/15 border-emerald-200 hover:border-emerald-300{% endif %}">
@@ -865,7 +893,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for c in cegs_overview %}
-                        <tr x-show="isCegRowVisible({{ c.is_ativa|yesno:'true,false' }}, {{ c.has_incomplete_sets|yesno:'true,false' }}, {{ c.closed_sets_count|default:0 }}, {{ c.paid_sets_count|default:0 }}, {{ c.finished_sets_count|default:0 }}) && matchSearch('{{ c.title|escapejs }} {{ c.clean_title|escapejs }} {{ c.group_name|escapejs }} {{ c.era_name|escapejs }} {{ c.caixa_nome|default:''|escapejs }}')"
+                        <tr x-show="isCegRowVisible({{ c.is_ativa|yesno:'true,false' }}, {{ c.has_incomplete_sets|yesno:'true,false' }}, {{ c.closed_sets_count|default:0 }}, {{ c.paid_sets_count|default:0 }}, {{ c.finished_sets_count|default:0 }}) && matchItem('{{ c.title|escapejs }} {{ c.clean_title|escapejs }} {{ c.group_name|escapejs }} {{ c.era_name|escapejs }} {{ c.caixa_nome|default:''|escapejs }}', '{{ c.group_id }}', '{{ c.era_id }}')"
                             x-transition
                             class="hover:bg-slate-50/80 transition">
                             <td class="py-3 px-4">
@@ -965,13 +993,16 @@
                                 </a>
                             </td>
                         </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="10" class="py-6 text-center text-slate-400">
-                                Nenhuma CEG encontrada com os filtros selecionados.
-                            </td>
-                        </tr>
                     {% endfor %}
+
+                    <!-- Empty state dinâmico para a tabela de CEGs -->
+                    <tr x-show="visibleCegsCount === 0" x-cloak>
+                        <td colspan="10" class="py-8 text-center text-slate-400 space-y-2">
+                            <div class="text-2xl">🔍</div>
+                            <div class="font-bold text-slate-700">Nenhuma CEG encontrada com os filtros selecionados.</div>
+                            <div><button type="button" @click="clearFilters()" class="text-xs font-bold text-pink-600 hover:underline cursor-pointer">✕ Limpar Filtros</button></div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -1521,11 +1552,6 @@ function cegStatusApp() {
         searchQuery: '{{ search_query|default:""|escapejs }}',
         activeCardFilter: 'all', // 'all', 'active_cegs', 'incomplete', 'fechados', 'pagos', 'terminados'
         pagosSubFilter: 'all', // 'all', 'frete_pago', 'taxa_paga', 'terminados'
-        matchSearch(text) {
-            if (!this.searchQuery || !this.searchQuery.trim()) return true;
-            const q = this.searchQuery.toLowerCase().trim();
-            return (text || '').toLowerCase().includes(q);
-        },
         zoomPhoto: null,
         itemDragOver: false,
         editItemModalOpen: false,
@@ -1538,10 +1564,141 @@ function cegStatusApp() {
         newTipoDescricao: '',
         tiposItem: JSON.parse(document.getElementById('tipos-item-data')?.textContent || '[]'),
         mercariItems: JSON.parse(document.getElementById('mercari-items-data')?.textContent || '[]'),
-        filterOptions: JSON.parse(document.getElementById('filter-options-data').textContent),
+        filterOptions: JSON.parse(document.getElementById('filter-options-data')?.textContent || '{"groups":[],"eras":[]}'),
+        setsIncomplete: JSON.parse(document.getElementById('sets-incomplete-data')?.textContent || '[]'),
+        setsFechados: JSON.parse(document.getElementById('sets-fechados-data')?.textContent || '[]'),
+        setsPagos: JSON.parse(document.getElementById('sets-pagos-data')?.textContent || '[]'),
+        setsTerminados: JSON.parse(document.getElementById('sets-terminados-data')?.textContent || '[]'),
+        cegsOverview: JSON.parse(document.getElementById('cegs-overview-data')?.textContent || '[]'),
         get availableEras() {
             if (!this.selectedGroup) return this.filterOptions.eras;
             return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+        },
+        matchSearch(text) {
+            if (!this.searchQuery || !this.searchQuery.trim()) return true;
+            const q = this.searchQuery.toLowerCase().trim();
+            return (text || '').toLowerCase().includes(q);
+        },
+        matchItem(text, groupId, eraId) {
+            if (this.selectedGroup && String(groupId) !== String(this.selectedGroup)) {
+                return false;
+            }
+            if (this.selectedEra && String(eraId) !== String(this.selectedEra)) {
+                return false;
+            }
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                return (text || '').toLowerCase().includes(q);
+            }
+            return true;
+        },
+        matchSetObj(s) {
+            if (!s) return false;
+            if (this.selectedGroup && String(s.group_id) !== String(this.selectedGroup)) return false;
+            if (this.selectedEra && String(s.era_id) !== String(this.selectedEra)) return false;
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                let missingStr = '';
+                if (s.missing_items && Array.isArray(s.missing_items)) {
+                    missingStr = s.missing_items.map(m => (m.member_name || '') + ' ' + (m.item_name || '')).join(' ');
+                }
+                const hay = ((s.ceg_title || '') + ' ' + (s.ceg_clean_title || '') + ' ' + (s.group_name || '') + ' ' + (s.era_name || '') + ' ' + missingStr).toLowerCase();
+                return hay.includes(q);
+            }
+            return true;
+        },
+        matchCegObj(c) {
+            if (!c) return false;
+            if (this.selectedGroup && String(c.group_id) !== String(this.selectedGroup)) return false;
+            if (this.selectedEra && String(c.era_id) !== String(this.selectedEra)) return false;
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                const hay = ((c.title || '') + ' ' + (c.clean_title || '') + ' ' + (c.group_name || '') + ' ' + (c.era_name || '') + ' ' + (c.caixa_nome || '')).toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return this.isCegRowVisible(c.is_ativa, c.has_incomplete_sets, c.closed_sets_count, c.paid_sets_count, c.finished_sets_count);
+        },
+        get incompleteCount() {
+            return this.setsIncomplete.filter(s => this.matchSetObj(s)).length;
+        },
+        get closedCount() {
+            return this.setsFechados.filter(s => this.matchSetObj(s)).length;
+        },
+        get paidCount() {
+            return this.setsPagos.filter(s => this.matchSetObj(s)).length;
+        },
+        get finishedCount() {
+            return this.setsTerminados.filter(s => this.matchSetObj(s)).length;
+        },
+        get activeCegsCount() {
+            return this.cegsOverview.filter(c => {
+                if (!c.has_incomplete_sets) return false;
+                if (this.selectedGroup && String(c.group_id) !== String(this.selectedGroup)) return false;
+                if (this.selectedEra && String(c.era_id) !== String(this.selectedEra)) return false;
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    const hay = ((c.title || '') + ' ' + (c.clean_title || '') + ' ' + (c.group_name || '') + ' ' + (c.era_name || '') + ' ' + (c.caixa_nome || '')).toLowerCase();
+                    return hay.includes(q);
+                }
+                return true;
+            }).length;
+        },
+        get visibleCegsCount() {
+            return this.cegsOverview.filter(c => this.matchCegObj(c)).length;
+        },
+        get hasActiveFilters() {
+            return Boolean(
+                (this.selectedCategory && this.selectedCategory !== 'all') ||
+                this.selectedGroup ||
+                this.selectedEra ||
+                (this.searchQuery && this.searchQuery.trim()) ||
+                (this.activeCardFilter && this.activeCardFilter !== 'all')
+            );
+        },
+        get currentGroupName() {
+            if (!this.selectedGroup) return 'Todos os Grupos';
+            const g = this.filterOptions.groups.find(x => String(x.id) === String(this.selectedGroup));
+            return g ? g.name : 'Todos os Grupos';
+        },
+        get currentEraName() {
+            if (!this.selectedEra) return '';
+            const e = this.filterOptions.eras.find(x => String(x.id) === String(this.selectedEra));
+            return e ? e.name : '';
+        },
+        onFilterChange() {
+            this.updateUrl();
+        },
+        onGroupChange() {
+            if (this.selectedGroup && this.selectedEra) {
+                const eraObj = this.filterOptions.eras.find(e => String(e.id) === String(this.selectedEra));
+                if (!eraObj || String(eraObj.group_id) !== String(this.selectedGroup)) {
+                    this.selectedEra = '';
+                }
+            }
+            this.updateUrl();
+        },
+        setCategory(cat) {
+            this.selectedCategory = cat;
+            this.updateUrl();
+        },
+        clearFilters() {
+            this.selectedCategory = 'all';
+            this.selectedGroup = '';
+            this.selectedEra = '';
+            this.searchQuery = '';
+            this.activeCardFilter = 'all';
+            this.pagosSubFilter = 'all';
+            this.updateUrl();
+        },
+        updateUrl() {
+            const params = new URLSearchParams();
+            if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
+            if (this.selectedGroup) params.set('group', this.selectedGroup);
+            if (this.selectedEra) params.set('era', this.selectedEra);
+            if (this.searchQuery && this.searchQuery.trim()) params.set('search', this.searchQuery.trim());
+            const qs = params.toString();
+            const newUrl = window.location.pathname + (qs ? ('?' + qs) : '');
+            window.history.replaceState({}, '', newUrl);
         },
         init() {
             window.addEventListener('paste', (e) => {
@@ -1648,25 +1805,6 @@ function cegStatusApp() {
                 alert('Erro ao conectar com o servidor.');
             }
         },
-        setCategory(cat) {
-            this.selectedCategory = cat;
-            this.applyFilter();
-        },
-        onGroupChange() {
-            this.selectedEra = '';
-            this.applyFilter();
-        },
-        applyFilter() {
-            const params = new URLSearchParams();
-            if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
-            if (this.selectedGroup) params.set('group', this.selectedGroup);
-            if (this.selectedEra) params.set('era', this.selectedEra);
-            if (this.searchQuery && this.searchQuery.trim()) params.set('search', this.searchQuery.trim());
-            window.location.search = params.toString();
-        },
-        clearFilters() {
-            window.location.href = '{% url "cegs_status" %}';
-        },
         setCardFilter(filterName) {
             if (this.activeCardFilter === filterName && filterName !== 'all') {
                 this.activeCardFilter = 'all';
@@ -1722,12 +1860,19 @@ function cegStatusApp() {
             return true;
         },
         hasNoVisiblePagos() {
-            if (this.pagosSubFilter === 'frete_pago') return Number('{{ summary.paid_frete_sets_count|default:0 }}') === 0;
-            if (this.pagosSubFilter === 'frete_aberto') return Number('{{ summary.pending_frete_sets_count|default:0 }}') === 0;
-            if (this.pagosSubFilter === 'taxa_paga') return Number('{{ summary.paid_taxa_sets_count|default:0 }}') === 0;
-            if (this.pagosSubFilter === 'taxa_aberto') return Number('{{ summary.pending_taxa_sets_count|default:0 }}') === 0;
-            if (this.pagosSubFilter === 'terminados') return Number('{{ sets_terminados|length|default:0 }}') === 0;
-            return Number('{{ sets_pagos|length|default:0 }}') === 0;
+            const visible = this.setsPagos.filter(s => {
+                if (!this.matchSetObj(s)) return false;
+                return this.isPagoSetVisible(
+                    s.is_terminado,
+                    s.has_frete,
+                    s.frete_inter_paid,
+                    s.frete_inter_pending,
+                    s.has_taxa,
+                    s.taxa_aduaneira_paid,
+                    s.taxa_aduaneira_pending
+                );
+            });
+            return visible.length === 0;
         },
         isCegRowVisible(isAtiva, hasIncomplete, closedSetsCnt, paidSetsCnt, finishedSetsCnt) {
             if (this.activeCardFilter === 'active_cegs') {
@@ -1748,22 +1893,23 @@ function cegStatusApp() {
             return true;
         },
         getCegTableSubtext() {
+            const count = this.visibleCegsCount;
             if (this.activeCardFilter === 'active_cegs') {
-                return 'Filtrando: apenas CEGs ativas (com vagas a preencher)';
+                return `Filtrando: ${count} CEG(s) ativa(s) (com vagas)`;
             }
             if (this.activeCardFilter === 'incomplete') {
-                return 'Filtrando: apenas CEGs com vagas abertas';
+                return `Filtrando: ${count} CEG(s) com vagas abertas`;
             }
             if (this.activeCardFilter === 'fechados' || this.activeCardFilter === 'completed') {
-                return 'Filtrando: apenas CEGs com sets 100% fechados (aguardando pagamento)';
+                return `Filtrando: ${count} CEG(s) com sets fechados`;
             }
             if (this.activeCardFilter === 'pagos') {
-                return 'Filtrando: apenas CEGs com sets 100% pagos';
+                return `Filtrando: ${count} CEG(s) com sets 100% pagos`;
             }
             if (this.activeCardFilter === 'terminados') {
-                return 'Filtrando: apenas CEGs com sets terminados (tudo pago)';
+                return `Filtrando: ${count} CEG(s) com sets terminados`;
             }
-            return 'Exibindo todas as {{ cegs_overview|length }} CEG(s)';
+            return `Exibindo ${count} de ${this.cegsOverview.length} CEG(s)`;
         }
     };
 }
