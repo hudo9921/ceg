@@ -576,6 +576,8 @@ class ToggleSlotPaymentView(View):
                 'is_frete_nacional_paid': slot.is_frete_nacional_paid,
                 'status': slot.status,
                 'status_display': slot.get_status_display(),
+                'pode_empacotar': slot.pode_empacotar,
+                'motivo_bloqueio': slot.motivo_bloqueio,
             })
         except ValueError as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=400)

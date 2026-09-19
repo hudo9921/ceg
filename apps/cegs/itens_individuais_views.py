@@ -448,6 +448,8 @@ class ToggleItemPaymentView(StaffRequiredMixin, View):
                 'is_item_paid': item.produto_pago,
                 'is_frete_inter_paid': item.frete_inter_pago,
                 'is_taxa_aduaneira_paid': item.taxa_aduaneira_paga,
+                'pode_empacotar': item.pode_empacotar,
+                'motivo_bloqueio': item.motivo_bloqueio,
             })
 
         messages.success(request, msg)

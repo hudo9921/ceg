@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio
 
 
 @admin.register(TipoItem)
@@ -556,5 +556,12 @@ class AuditLogAdmin(admin.ModelAdmin):
             bg, text, obj.get_event_type_display()
         )
     event_type_badge.short_description = 'Tipo de Evento'
+
+
+@admin.register(ConfiguracaoEnvio)
+class ConfiguracaoEnvioAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'link_formulario_google', 'updated_at')
+    fields = ('link_formulario_google', 'instrucoes_envio', 'updated_at')
+    readonly_fields = ('updated_at',)
 
 

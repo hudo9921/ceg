@@ -79,14 +79,16 @@ class CaixasDashboardView(StaffRequiredMixin, View):
             Caixa.Status.TRIBUTADA: 4,
             Caixa.Status.LIBERADA: 5,
             Caixa.Status.ENTREGUE: 6,
-            Caixa.Status.FINALIZADA: 7,
+            Caixa.Status.FINALIZADA: 6,
         }
 
         caixas_data = []
+        caixas_em_vigencia = []
+        caixas_chegaram_gom = []
         for c in caixas_qs:
             step = status_step_map.get(c.status, 1)
-            pct = int((step / 7) * 100)
-            caixas_data.append({
+            pct = int((step / 6) * 100)
+            item_info = {
                 'caixa': c,
                 'step': step,
                 'progress_pct': min(pct, 100),
@@ -94,10 +96,19 @@ class CaixasDashboardView(StaffRequiredMixin, View):
                 'cegs_count': c.cegs.count(),
                 'itens': c.itens_individuais.all(),
                 'itens_count': c.itens_individuais.count(),
-            })
+            }
+            caixas_data.append(item_info)
+            if c.status in (Caixa.Status.ENTREGUE, Caixa.Status.FINALIZADA):
+                caixas_chegaram_gom.append(item_info)
+            else:
+                caixas_em_vigencia.append(item_info)
+
+        status_choices = [c for c in Caixa.Status.choices if c[0] != Caixa.Status.FINALIZADA]
 
         context = {
             'caixas_data': caixas_data,
+            'caixas_em_vigencia': caixas_em_vigencia,
+            'caixas_chegaram_gom': caixas_chegaram_gom,
             'total_caixas': total_caixas,
             'caixas_kr': caixas_kr,
             'caixas_jp': caixas_jp,
@@ -106,7 +117,7 @@ class CaixasDashboardView(StaffRequiredMixin, View):
             'total_cegs_vinculadas': total_cegs_vinculadas,
             'cegs_sem_caixa': cegs_sem_caixa,
             'origem_choices': Caixa.Origem.choices,
-            'status_choices': Caixa.Status.choices,
+            'status_choices': status_choices,
             'origem_filter': origem_filter,
             'status_filter': status_filter,
             'search_query': search_query,
@@ -150,7 +161,7 @@ class CaixaDetailView(View):
             Caixa.Status.TRIBUTADA: 4,
             Caixa.Status.LIBERADA: 5,
             Caixa.Status.ENTREGUE: 6,
-            Caixa.Status.FINALIZADA: 7,
+            Caixa.Status.FINALIZADA: 6,
         }
         current_step = status_step_map.get(caixa.status, 1)
 
@@ -380,7 +391,7 @@ class CaixaDetailView(View):
             'itens_individuais_data': itens_individuais_data,
             'itens_individuais_json': json.dumps(itens_individuais_data),
             'current_step': current_step,
-            'status_choices': Caixa.Status.choices,
+            'status_choices': [c for c in Caixa.Status.choices if c[0] != Caixa.Status.FINALIZADA],
             'origem_choices': Caixa.Origem.choices,
             'total_slots_cegs': total_slots_cegs,
             'reserved_slots_cegs': reserved_slots_cegs,
@@ -463,7 +474,7 @@ class CaixaCreateView(StaffRequiredMixin, View):
         return render(request, 'cegs/caixa_form.html', {
             'action': 'create',
             'origem_choices': Caixa.Origem.choices,
-            'status_choices': Caixa.Status.choices,
+            'status_choices': [c for c in Caixa.Status.choices if c[0] != Caixa.Status.FINALIZADA],
             'cegs_sem_caixa': cegs_sem_caixa,
         })
 
@@ -533,7 +544,7 @@ class CaixaUpdateView(StaffRequiredMixin, View):
             'action': 'edit',
             'caixa': caixa,
             'origem_choices': Caixa.Origem.choices,
-            'status_choices': Caixa.Status.choices,
+            'status_choices': [c for c in Caixa.Status.choices if c[0] != Caixa.Status.FINALIZADA],
             'cegs_sem_caixa': cegs_sem_caixa,
         })
 

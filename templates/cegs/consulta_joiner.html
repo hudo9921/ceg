@@ -193,40 +193,63 @@
             </div>
 
             <!-- CARDS DE RESUMO FINANCEIRO E EMPACOTAMENTO (REATIVOS) -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
                 <!-- Total Itens -->
-                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 cursor-pointer hover:bg-slate-100 transition"
+                     @click="filterPacote = 'ALL'" title="Ver todos os itens">
                     <div class="text-[11px] font-bold text-slate-400 uppercase">Total Geral</div>
                     <div class="text-xl font-black text-slate-900" x-text="statsData.total_items">{{ stats.total_items }}</div>
                     <div class="text-[10px] text-slate-500">Cards & Mercari</div>
                 </div>
 
+                <!-- Prontos p/ Empacotar -->
+                <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-300 space-y-1 cursor-pointer hover:bg-emerald-100/70 transition"
+                     @click="filterPacote = 'READY_TO_PACK'" title="Clique para filtrar apenas os itens 100% quitados e disponíveis">
+                    <div class="text-[11px] font-bold text-emerald-800 uppercase flex items-center justify-between">
+                        <span>Prontos Envio</span>
+                        <span class="text-[10px]">📦</span>
+                    </div>
+                    <div class="text-xl font-black text-emerald-900" x-text="statsData.ready_to_pack_count">{{ stats.ready_to_pack_count|default:0 }}</div>
+                    <div class="text-[10px] text-emerald-700">100% quitados no BR</div>
+                </div>
+
                 <!-- Não Empacotados -->
-                <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-1">
-                    <div class="text-[11px] font-bold text-amber-800 uppercase">Livres p/ Envio</div>
+                <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 space-y-1 cursor-pointer hover:bg-amber-100 transition"
+                     @click="filterPacote = 'UNPACKED'" title="Clique para filtrar itens livres sem pacote">
+                    <div class="text-[11px] font-bold text-amber-800 uppercase">Livres (Geral)</div>
                     <div class="text-xl font-black text-amber-900" x-text="statsData.unpacked_count">{{ stats.unpacked_count }}</div>
-                    <div class="text-[10px] text-amber-700">Aguardando pacote</div>
+                    <div class="text-[10px] text-amber-700">Sem pacote</div>
                 </div>
 
                 <!-- Em Preparação -->
-                <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-1">
+                <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-1 cursor-pointer hover:bg-blue-100 transition"
+                     @click="filterPacote = 'PACKED'" title="Clique para filtrar itens em preparação / embalando">
                     <div class="text-[11px] font-bold text-blue-800 uppercase">Em Preparação</div>
                     <div class="text-xl font-black text-blue-900" x-text="statsData.packed_count">{{ stats.packed_count }}</div>
                     <div class="text-[10px] text-blue-700">Embalando / Pacote</div>
                 </div>
 
                 <!-- Já Enviados Nacionalmente -->
-                <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 space-y-1">
-                    <div class="text-[11px] font-bold text-emerald-800 uppercase">Já Despachados</div>
-                    <div class="text-xl font-black text-emerald-900" x-text="statsData.enviados_count">{{ stats.enviados_count }}</div>
-                    <div class="text-[10px] text-emerald-700">Com rastreio</div>
+                <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-1 cursor-pointer hover:bg-purple-100 transition"
+                     @click="filterPacote = 'ENVIADO'" title="Clique para filtrar itens despachados nacionalmente">
+                    <div class="text-[11px] font-bold text-purple-800 uppercase">Já Despachados</div>
+                    <div class="text-xl font-black text-purple-900" x-text="statsData.enviados_count">{{ stats.enviados_count }}</div>
+                    <div class="text-[10px] text-purple-700">Com rastreio</div>
+                </div>
+
+                <!-- Entregues ao Joiner -->
+                <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-300 space-y-1 cursor-pointer hover:bg-emerald-100 transition"
+                     @click="filterPacote = 'ENTREGUE'" title="Clique para filtrar itens já entregues ao joiner">
+                    <div class="text-[11px] font-bold text-emerald-800 uppercase">Entregues</div>
+                    <div class="text-xl font-black text-emerald-900" x-text="statsData.entregues_count">{{ stats.entregues_count|default:0 }}</div>
+                    <div class="text-[10px] text-emerald-700">Ao joiner</div>
                 </div>
 
                 <!-- Frete Inter Pendente -->
-                <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-1">
-                    <div class="text-[11px] font-bold text-purple-800 uppercase">Inter Pendente</div>
-                    <div class="text-xl font-black text-purple-900" x-text="statsData.inter_unpaid_count">{{ stats.inter_unpaid_count }}</div>
-                    <div class="text-[10px] text-purple-700">A pagar frete inter</div>
+                <div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-200 space-y-1">
+                    <div class="text-[11px] font-bold text-indigo-800 uppercase">Inter Pendente</div>
+                    <div class="text-xl font-black text-indigo-900" x-text="statsData.inter_unpaid_count">{{ stats.inter_unpaid_count }}</div>
+                    <div class="text-[10px] text-indigo-700">A pagar frete inter</div>
                 </div>
 
                 <!-- Taxa Pendente -->
@@ -513,6 +536,15 @@
                             :class="filterPacote === 'ALL' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
                         Todos os Itens
                     </button>
+                    <button type="button" @click="filterPacote = 'READY_TO_PACK'"
+                            class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                            :class="filterPacote === 'READY_TO_PACK' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'">
+                        <span>📦</span>
+                        <span>Prontos para Empacotar</span>
+                        <span class="px-1.5 py-0.2 text-[10px] rounded-full font-black"
+                              :class="filterPacote === 'READY_TO_PACK' ? 'bg-white/20 text-white' : 'bg-emerald-200 text-emerald-900'"
+                              x-text="items.filter(it => it.pode_empacotar).length"></span>
+                    </button>
                     <button type="button" @click="filterPacote = 'UNPACKED'"
                             class="px-3 py-1 rounded-lg text-xs font-bold transition"
                             :class="filterPacote === 'UNPACKED' ? 'bg-amber-600 text-white shadow-2xs' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'">
@@ -525,8 +557,13 @@
                     </button>
                     <button type="button" @click="filterPacote = 'ENVIADO'"
                             class="px-3 py-1 rounded-lg text-xs font-bold transition"
-                            :class="filterPacote === 'ENVIADO' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'">
+                            :class="filterPacote === 'ENVIADO' ? 'bg-purple-600 text-white shadow-2xs' : 'bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100'">
                         Enviados Nacionalmente
+                    </button>
+                    <button type="button" @click="filterPacote = 'ENTREGUE'"
+                            class="px-3 py-1 rounded-lg text-xs font-bold transition"
+                            :class="filterPacote === 'ENTREGUE' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'">
+                        Entregues
                     </button>
                 </div>
 
@@ -607,8 +644,16 @@
                                 </div>
                             </template>
 
-                            <!-- Se não foi enviado: checkbox ativo para empacotamento -->
-                            <template x-if="item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE'">
+                            <!-- Se não pode empacotar (e não foi enviado): cadeado com motivo de bloqueio -->
+                            <template x-if="item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE' && !item.pode_empacotar">
+                                <div class="mt-1 sm:mt-0 w-5 h-5 rounded-md bg-slate-100 text-slate-400 flex items-center justify-center text-[11px] font-black border border-slate-300 shadow-2xs select-none cursor-not-allowed"
+                                     :title="item.motivo_bloqueio || 'Bloqueado para empacotamento'">
+                                    🔒
+                                </div>
+                            </template>
+
+                            <!-- Se pode empacotar: checkbox ativo para empacotamento -->
+                            <template x-if="item.pode_empacotar">
                                 <input type="checkbox" :value="item.uid"
                                        @change="toggleItemSelection(item.uid)"
                                        :checked="selectedUids.includes(item.uid)"
@@ -723,6 +768,16 @@
                                         <span class="text-slate-500" x-text="'Caixa: ' + item.caixa_nome"></span>
                                     </template>
                                 </div>
+
+                                <!-- Aviso de Bloqueio de Empacotamento se não elegível -->
+                                <template x-if="!item.pode_empacotar && item.motivo_bloqueio && item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE'">
+                                    <div class="pt-1">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                            <span>🔒</span>
+                                            <span x-text="item.motivo_bloqueio"></span>
+                                        </span>
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
@@ -1171,9 +1226,11 @@ function enviosNacionaisApp() {
                 if (this.filterTaxaPaid === 'UNPAID' && item.is_taxa_aduaneira_paid) return false;
 
                 // Filtro Status de Pacote
+                if (this.filterPacote === 'READY_TO_PACK' && !item.pode_empacotar) return false;
                 if (this.filterPacote === 'UNPACKED' && item.pacote_identificador) return false;
-                if (this.filterPacote === 'PACKED' && (!item.pacote_identificador || item.pacote_status === 'ENVIADO')) return false;
+                if (this.filterPacote === 'PACKED' && (!item.pacote_identificador || item.pacote_status === 'ENVIADO' || item.pacote_status === 'ENTREGUE')) return false;
                 if (this.filterPacote === 'ENVIADO' && item.pacote_status !== 'ENVIADO') return false;
+                if (this.filterPacote === 'ENTREGUE' && item.pacote_status !== 'ENTREGUE') return false;
 
                 // Busca textual
                 if (this.searchQuery.trim()) {
@@ -1203,6 +1260,8 @@ function enviosNacionaisApp() {
             unpacked_count: {{ stats.unpacked_count|default:0 }},
             packed_count: {{ stats.packed_count|default:0 }},
             enviados_count: {{ stats.enviados_count|default:0 }},
+            entregues_count: {{ stats.entregues_count|default:0 }},
+            ready_to_pack_count: {{ stats.ready_to_pack_count|default:0 }},
             item_paid_count: {{ stats.item_paid_count|default:0 }},
             item_unpaid_count: {{ stats.item_unpaid_count|default:0 }},
             inter_unpaid_count: {{ stats.inter_unpaid_count|default:0 }},
@@ -1218,7 +1277,7 @@ function enviosNacionaisApp() {
         },
 
         recalcStats() {
-            let itemPaid = 0, itemUnpaid = 0, interUnpaid = 0, taxaUnpaid = 0;
+            let itemPaid = 0, itemUnpaid = 0, interUnpaid = 0, taxaUnpaid = 0, readyCount = 0;
             this.items.forEach(it => {
                 if (it.is_item_paid) {
                     itemPaid++;
@@ -1231,11 +1290,15 @@ function enviosNacionaisApp() {
                 if (it.taxa_aduaneira_valor > 0 && !it.is_taxa_aduaneira_paid) {
                     taxaUnpaid++;
                 }
+                if (it.pode_empacotar) {
+                    readyCount++;
+                }
             });
             this.statsData.item_paid_count = itemPaid;
             this.statsData.item_unpaid_count = itemUnpaid;
             this.statsData.inter_unpaid_count = interUnpaid;
             this.statsData.taxa_unpaid_count = taxaUnpaid;
+            this.statsData.ready_to_pack_count = readyCount;
         },
 
         async togglePayment(item, field) {
@@ -1302,12 +1365,21 @@ function enviosNacionaisApp() {
                         if (data.is_item_paid !== undefined) this.items[idx].is_item_paid = Boolean(data.is_item_paid);
                         if (data.is_frete_inter_paid !== undefined) this.items[idx].is_frete_inter_paid = Boolean(data.is_frete_inter_paid);
                         if (data.is_taxa_aduaneira_paid !== undefined) this.items[idx].is_taxa_aduaneira_paid = Boolean(data.is_taxa_aduaneira_paid);
+                        if (data.pode_empacotar !== undefined) this.items[idx].pode_empacotar = Boolean(data.pode_empacotar);
+                        if (data.motivo_bloqueio !== undefined) this.items[idx].motivo_bloqueio = data.motivo_bloqueio || '';
                     }
 
                     // Atualiza a referência de objeto recebida
                     if (data.is_item_paid !== undefined) item.is_item_paid = Boolean(data.is_item_paid);
                     if (data.is_frete_inter_paid !== undefined) item.is_frete_inter_paid = Boolean(data.is_frete_inter_paid);
                     if (data.is_taxa_aduaneira_paid !== undefined) item.is_taxa_aduaneira_paid = Boolean(data.is_taxa_aduaneira_paid);
+                    if (data.pode_empacotar !== undefined) item.pode_empacotar = Boolean(data.pode_empacotar);
+                    if (data.motivo_bloqueio !== undefined) item.motivo_bloqueio = data.motivo_bloqueio || '';
+
+                    // Se deixou de poder empacotar, remove da seleção
+                    if (!item.pode_empacotar) {
+                        this.selectedUids = this.selectedUids.filter(u => u !== item.uid);
+                    }
 
                     // Reatribui items para garantir que todo getter (filteredItems) e x-for re-renderizem
                     this.items = [...this.items];
@@ -1325,7 +1397,7 @@ function enviosNacionaisApp() {
         },
 
         get eligibleVisibleItems() {
-            return this.filteredItems.filter(it => it.pacote_status !== 'ENVIADO' && it.pacote_status !== 'ENTREGUE');
+            return this.filteredItems.filter(it => it.pode_empacotar);
         },
 
         get allVisibleSelected() {

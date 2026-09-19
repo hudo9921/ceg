@@ -36,7 +36,7 @@ class Caixa(models.Model):
         NO_BRASIL = 'NO_BRASIL', 'No Brasil (Fiscalização aduaneira)'
         TRIBUTADA = 'TRIBUTADA', 'Tributada (Aguardando taxa)'
         LIBERADA = 'LIBERADA', 'Liberada pela alfândega (A caminho)'
-        ENTREGUE = 'ENTREGUE', 'Entregue ao organizador (Em triagem)'
+        ENTREGUE = 'ENTREGUE', 'Chegou na casa da GOM'
         FINALIZADA = 'FINALIZADA', 'Finalizada (Envios nacionais concluídos)'
 
     nome = models.CharField('Nome da Caixa / Remessa', max_length=150)
@@ -955,6 +955,7 @@ class CEGSet(models.Model):
 
 class PacoteNacional(models.Model):
     class Status(models.TextChoices):
+        SOLICITADO = 'SOLICITADO', 'Solicitado pelo Joiner'
         EM_PREPARACAO = 'EM_PREPARACAO', 'Em Preparação / Embalando'
         ENVIADO = 'ENVIADO', 'Enviado Nacionalmente'
         ENTREGUE = 'ENTREGUE', 'Entregue'
@@ -980,6 +981,10 @@ class PacoteNacional(models.Model):
         default=Status.EM_PREPARACAO,
         db_index=True
     )
+    endereco_destinatario = models.TextField('Endereço de Destino Informado', blank=True)
+    cep_destinatario = models.CharField('CEP de Destino', max_length=15, blank=True)
+    observacoes_joiner = models.TextField('Observações / Preferências do Joiner', blank=True)
+    solicitado_em = models.DateTimeField('Data da Solicitação pelo Joiner', null=True, blank=True)
     codigo_rastreio = models.CharField(
         'Código de Rastreio',
         max_length=100,
@@ -1348,6 +1353,47 @@ class ItemSlot(models.Model):
             return self.prazo_taxa_aduaneira
         return self.set.ceg.prazo_pagamento_taxa_aduaneira
 
+    def check_packaging_eligibility(self):
+        """
+        Verifica se o slot está elegível para ser empacotado pela GOM ou solicitado pelo Joiner.
+        Retorna (is_eligible: bool, motivo_bloqueio: str).
+        """
+        # 1. Já está em pacote ativo?
+        if self.pacote_nacional:
+            st = self.pacote_nacional.status
+            if st in [PacoteNacional.Status.SOLICITADO, PacoteNacional.Status.EM_PREPARACAO, PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                return False, f"Já no pacote {self.pacote_nacional.identificador} ({self.pacote_nacional.get_status_display()})"
+
+        # 2. Produto pago?
+        is_item_paid = self.is_item_paid or self.status == ItemSlot.Status.PAID
+        if not is_item_paid:
+            return False, "Item pendente de pagamento"
+
+        # 3. Posse física com a GOM no Brasil
+        ceg = self.set.ceg
+        caixa = ceg.caixa
+        if caixa:
+            if caixa.status not in [Caixa.Status.ENTREGUE, Caixa.Status.FINALIZADA]:
+                return False, f"Caixa em trânsito internacional ({caixa.nome} - {caixa.get_status_display()})"
+            frete_val = self.frete_inter or 0
+            if frete_val > 0 and not self.is_frete_inter_paid:
+                return False, "Frete internacional pendente de pagamento"
+            taxa_val = self.taxa_aduaneira or 0
+            if taxa_val > 0 and not self.is_taxa_aduaneira_paid:
+                return False, "Taxa aduaneira pendente de pagamento"
+
+        return True, ""
+
+    @property
+    def pode_empacotar(self) -> bool:
+        eligible, _ = self.check_packaging_eligibility()
+        return eligible
+
+    @property
+    def motivo_bloqueio(self) -> str:
+        _, motivo = self.check_packaging_eligibility()
+        return motivo
+
 
 class ClaimAttemptLog(models.Model):
     class Result(models.TextChoices):
@@ -1516,6 +1562,45 @@ class ItemIndividual(models.Model):
             return self.tipo_item.nome
         return "Item"
 
+    def check_packaging_eligibility(self):
+        """
+        Verifica se o item individual está elegível para ser empacotado pela GOM ou solicitado pelo Joiner.
+        Retorna (is_eligible: bool, motivo_bloqueio: str).
+        """
+        # 1. Já está em pacote ativo?
+        if self.pacote_nacional:
+            st = self.pacote_nacional.status
+            if st in [PacoteNacional.Status.SOLICITADO, PacoteNacional.Status.EM_PREPARACAO, PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                return False, f"Já no pacote {self.pacote_nacional.identificador} ({self.pacote_nacional.get_status_display()})"
+
+        # 2. Produto pago?
+        if not self.produto_pago:
+            return False, "Item pendente de pagamento"
+
+        # 3. Posse física com a GOM no Brasil
+        caixa = self.caixa
+        if caixa:
+            if caixa.status not in [Caixa.Status.ENTREGUE, Caixa.Status.FINALIZADA]:
+                return False, f"Caixa em trânsito internacional ({caixa.nome} - {caixa.get_status_display()})"
+            frete_val = self.frete_inter or 0
+            if frete_val > 0 and not self.frete_inter_pago:
+                return False, "Frete internacional pendente de pagamento"
+            taxa_val = self.taxa_aduaneira or 0
+            if taxa_val > 0 and not self.taxa_aduaneira_paga:
+                return False, "Taxa aduaneira pendente de pagamento"
+
+        return True, ""
+
+    @property
+    def pode_empacotar(self) -> bool:
+        eligible, _ = self.check_packaging_eligibility()
+        return eligible
+
+    @property
+    def motivo_bloqueio(self) -> str:
+        _, motivo = self.check_packaging_eligibility()
+        return motivo
+
 
 class AuditLog(models.Model):
     class EventType(models.TextChoices):
@@ -1527,6 +1612,7 @@ class AuditLog(models.Model):
         PAYMENT_FRETE_INTER = 'PAYMENT_FRETE_INTER', 'Pagamento de Frete Internacional'
         PAYMENT_TAXA = 'PAYMENT_TAXA', 'Pagamento de Taxa Aduaneira'
         PAYMENT_FRETE_NACIONAL = 'PAYMENT_FRETE_NACIONAL', 'Pagamento de Frete Nacional'
+        PACKAGE_REQUESTED = 'PACKAGE_REQUESTED', 'Solicitação de Envio Nacional'
         PACKAGE_SENT = 'PACKAGE_SENT', 'Pacote Despachado / Enviado'
         PACKAGE_DELIVERED = 'PACKAGE_DELIVERED', 'Pacote Entregue / Feedback Registrado'
         SLOT_ASSIGNED = 'SLOT_ASSIGNED', 'Slot Vinculado Manualmente'
@@ -1599,4 +1685,36 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.get_event_type_display()}] {self.action_label} ({self.created_at.strftime('%d/%m/%Y %H:%M')})"
+
+
+class ConfiguracaoEnvio(models.Model):
+    """
+    Configuração singleton de envio nacional gerenciada pela GOM.
+    Permite configurar o formulário externo (Google Forms) para coleta de endereços e regras.
+    """
+    link_formulario_google = models.URLField(
+        'Link do Formulário de Envio (Google Forms)',
+        max_length=500,
+        blank=True,
+        help_text='Link do Google Forms onde os joiners preenchem o endereço e preferências de envio nacional.'
+    )
+    instrucoes_envio = models.TextField(
+        'Instruções / Informações de Envio',
+        blank=True,
+        help_text='Instruções exibidas para os joiners ao solicitar envio nacional na Minha Caixinha.'
+    )
+    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração de Envio Nacional'
+        verbose_name_plural = 'Configurações de Envio Nacional'
+
+    def __str__(self):
+        return "Configuração de Envio Nacional"
+
+    @classmethod
+    def get_solo(cls):
+        config, _ = cls.objects.get_or_create(id=1)
+        return config
+
 

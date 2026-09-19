@@ -181,6 +181,11 @@ class EnviosNacionaisTests(TestCase):
         """Testa a adição de um item a um pacote existente em preparação."""
         self.client.login(username='admin_staff', password='password123')
 
+        # Torna slot2 elegível para empacotar
+        self.slot2.is_frete_inter_paid = True
+        self.slot2.is_taxa_aduaneira_paid = True
+        self.slot2.save()
+
         pacote = PacoteNacional.objects.create(
             participant=self.participant,
             identificador='PAC-EXISTENTE-01',
@@ -298,6 +303,36 @@ class EnviosNacionaisTests(TestCase):
         self.assertContains(resp, 'PAC-RASTREIO-99')
         self.assertContains(resp, 'QD987654321BR')
         self.assertContains(resp, 'rastreamento.correios.com.br')
+
+    def test_pacote_entregue_movido_para_recebidos_e_sem_badge_envio(self):
+        """Quando o pacote é entregue, ele deve ser exibido em 'Pacotes Recebidos',
+        não em 'Meus Pacotes & Envios Nacionais', e o badge no botão da aba Caixinha
+        não deve exibir '1 envio(s)'."""
+        pacote = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-ENTREGUE-01',
+            transportadora='Correios',
+            status=PacoteNacional.Status.ENTREGUE,
+            feedback_rating=5,
+            feedback_texto='Chegou perfeito!'
+        )
+        self.slot1.pacote_nacional = pacote
+        self.slot1.save()
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        resp = self.client.get(reverse('my_claims'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Pacotes Recebidos')
+        self.assertContains(resp, 'PAC-ENTREGUE-01')
+        self.assertContains(resp, 'Chegou perfeito!')
+        # Não deve exibir a seção de em andamento já que não há outros pacotes
+        self.assertNotContains(resp, 'Meus Pacotes & Envios Nacionais')
+        # Nem deve exibir o badge '1 envio(s)' na aba superior
+        self.assertNotContains(resp, '1 envio(s)')
+        self.assertNotContains(resp, 'envio(s)')
 
     def test_item_enviado_bloqueado_para_reempacotar(self):
         """Itens que já foram enviados nacionalmente não podem ser re-empacotados."""

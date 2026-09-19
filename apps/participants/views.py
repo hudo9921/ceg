@@ -514,6 +514,58 @@ class MyClaimsView(View):
         cegs_frete_unpaid_total = sum(c['total_frete_inter_pendente'] for c in cegs_dict.values())
         cegs_taxa_unpaid_total = sum(c['total_taxa_aduaneira_pendente'] for c in cegs_dict.values())
 
+        from apps.cegs.models import PacoteNacional, ConfiguracaoEnvio, AuditLog
+
+        itens_caixinha_prontos = []
+        itens_caixinha_bloqueados = []
+
+        for claim in claims_list:
+            slot = claim.slot
+            pode, motivo = slot.check_packaging_eligibility()
+            ceg = slot.set.ceg
+            item_data = {
+                'uid': f"slot_{slot.id}",
+                'type': 'slot',
+                'id': slot.id,
+                'titulo': slot.item_definition.name,
+                'integrante': slot.item_definition.member_name or '',
+                'origem': ceg.title,
+                'tipo_item': slot.item_definition.tipo_item_nome,
+                'imagem': slot.item_definition.image_url or ceg.banner_url or '',
+                'preco': slot.price,
+                'motivo_bloqueio': motivo,
+                'pode_empacotar': pode,
+            }
+            if pode:
+                itens_caixinha_prontos.append(item_data)
+            else:
+                if not slot.pacote_nacional or slot.pacote_nacional.status not in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                    itens_caixinha_bloqueados.append(item_data)
+
+        for item in itens_individuais_list:
+            pode, motivo = item.check_packaging_eligibility()
+            item_data = {
+                'uid': f"mercari_{item.id}",
+                'type': 'mercari',
+                'id': item.id,
+                'titulo': item.nome,
+                'integrante': '',
+                'origem': 'Mercari / Pedido Individual',
+                'tipo_item': item.tipo_item_nome,
+                'imagem': item.image_display_url,
+                'preco': item.preco_produto or 0,
+                'motivo_bloqueio': motivo,
+                'pode_empacotar': pode,
+            }
+            if pode:
+                itens_caixinha_prontos.append(item_data)
+            else:
+                if not item.pacote_nacional or item.pacote_nacional.status not in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                    itens_caixinha_bloqueados.append(item_data)
+
+        pacotes_em_andamento = [p for p in pacotes_nacionais if p.status != PacoteNacional.Status.ENTREGUE]
+        pacotes_recebidos = [p for p in pacotes_nacionais if p.status == PacoteNacional.Status.ENTREGUE]
+
         return render(request, 'participants/my_claims.html', {
             'participant': participant,
             'cegs_groups': list(cegs_dict.values()),
@@ -541,6 +593,12 @@ class MyClaimsView(View):
             'notifications': notifications,
             'unread_notifications_count': unread_notifications_count,
             'pacotes_nacionais': pacotes_nacionais,
+            'pacotes_em_andamento': pacotes_em_andamento,
+            'pacotes_recebidos': pacotes_recebidos,
+            'itens_caixinha_prontos': itens_caixinha_prontos,
+            'itens_caixinha_bloqueados': itens_caixinha_bloqueados,
+            'total_caixinha_disponivel': len(itens_caixinha_prontos),
+            'configuracao_envio': ConfiguracaoEnvio.get_solo(),
         })
 
 
@@ -633,4 +691,123 @@ class ConfirmarEntregaPacoteView(View):
             f"🎉 Entrega do pacote {pacote.identificador} confirmada com sucesso! Muito obrigado pela sua avaliação e feedback!"
         )
         return redirect('my_claims')
+
+
+class SolicitarEnvioNacionalView(View):
+    """
+    Permite que o participante solicite o envio nacional dos itens disponíveis em sua caixinha.
+    Não coleta endereço no sistema: o endereço é preenchido no Google Forms oficial da GOM.
+    Cria um PacoteNacional com status SOLICITADO e vincula os itens selecionados.
+    """
+
+    def post(self, request):
+        participant_id = request.session.get('participant_id')
+        if not participant_id:
+            messages.error(request, "Você precisa estar conectado com seu WhatsApp para solicitar o envio.")
+            return redirect('login_otp')
+
+        participant = get_object_or_404(Participant, id=participant_id)
+        from apps.cegs.models import PacoteNacional, ItemSlot, ItemIndividual, AuditLog
+
+        selected_uids = [u.strip() for u in request.POST.get('selected_uids', '').split(',') if u.strip()]
+        observacoes = request.POST.get('observacoes', '').strip()
+
+        if not selected_uids:
+            messages.error(request, "Por favor, selecione ao menos um item da sua caixinha para solicitar o envio.")
+            return redirect('my_claims')
+
+        pacote = PacoteNacional.objects.create(
+            participant=participant,
+            status=PacoteNacional.Status.SOLICITADO,
+            observacoes_joiner=observacoes,
+            solicitado_em=timezone.now()
+        )
+
+        slots_vinculados = 0
+        mercari_vinculados = 0
+
+        for uid in selected_uids:
+            if uid.startswith('slot_'):
+                slot_id = uid.replace('slot_', '')
+                try:
+                    slot = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').get(
+                        id=slot_id, claimed_by=participant
+                    )
+                    if not slot.pode_empacotar:
+                        continue
+                    slot.pacote_nacional = pacote
+                    slot.save(update_fields=['pacote_nacional'])
+                    slots_vinculados += 1
+                except ItemSlot.DoesNotExist:
+                    continue
+            elif uid.startswith('mercari_'):
+                item_id = uid.replace('mercari_', '')
+                try:
+                    item = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').get(
+                        id=item_id, comprador=participant
+                    )
+                    if not item.pode_empacotar:
+                        continue
+                    item.pacote_nacional = pacote
+                    item.save(update_fields=['pacote_nacional'])
+                    mercari_vinculados += 1
+                except ItemIndividual.DoesNotExist:
+                    continue
+
+        total = slots_vinculados + mercari_vinculados
+
+        if total == 0:
+            pacote.delete()
+            messages.error(request, "Nenhum dos itens selecionados pôde ser solicitado (itens já empacotados, com pendências financeiras ou em trânsito).")
+            return redirect('my_claims')
+
+        # Registra auditoria
+        try:
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.PACKAGE_REQUESTED,
+                participant=participant,
+                participant_name=participant.name,
+                participant_phone=participant.whatsapp,
+                pacote_nacional=pacote,
+                action_label=f"Solicitação de envio nacional ({total} itens) via Minha Caixinha",
+                new_value=pacote.identificador,
+            )
+        except Exception:
+            pass
+
+        messages.success(
+            request,
+            f"🎉 Solicitação de envio do pacote {pacote.identificador} ({total} item(ns)) realizada com sucesso! "
+            "A GOM foi notificada e em breve cotará seu frete nacional."
+        )
+        return redirect('/me/?tab=caixinha')
+
+
+class CancelarSolicitacaoEnvioView(View):
+    """
+    Permite que o participante cancele uma solicitação de envio pendente (status SOLICITADO),
+    liberando os itens de volta para a sua Minha Caixinha.
+    """
+
+    def post(self, request, pacote_id):
+        participant_id = request.session.get('participant_id')
+        if not participant_id:
+            messages.error(request, "Você precisa estar conectado para cancelar.")
+            return redirect('login_otp')
+
+        participant = get_object_or_404(Participant, id=participant_id)
+        from apps.cegs.models import PacoteNacional
+        pacote = get_object_or_404(PacoteNacional, id=pacote_id, participant=participant)
+
+        if pacote.status != PacoteNacional.Status.SOLICITADO:
+            messages.error(request, "Apenas solicitações aguardando cotação da GOM podem ser canceladas pelo joiner.")
+            return redirect('/me/?tab=caixinha')
+
+        identificador = pacote.identificador
+        pacote.slots.update(pacote_nacional=None)
+        pacote.itens_individuais.update(pacote_nacional=None)
+        pacote.delete()
+
+        messages.success(request, f"Solicitação {identificador} cancelada com sucesso. Seus itens voltaram para a sua caixinha.")
+        return redirect('/me/?tab=caixinha')
 

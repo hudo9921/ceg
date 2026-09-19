@@ -9,7 +9,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from .creations_views import StaffRequiredMixin
 from apps.participants.models import Participant, ParticipantNotification
-from .models import PacoteNacional, ItemSlot, ItemIndividual, Caixa
+from .models import PacoteNacional, ItemSlot, ItemIndividual, Caixa, ConfiguracaoEnvio
 from apps.groups.models import KpopGroup, Era
 
 
@@ -59,6 +59,7 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
         stats = {
             'total_items': 0,
             'unpacked_count': 0,
+            'ready_to_pack_count': 0,
             'packed_count': 0,
             'enviados_count': 0,
             'entregues_count': 0,
@@ -143,6 +144,10 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                     if taxa_aduaneira_val > 0 and not is_taxa_aduaneira_paid:
                         stats['taxa_unpaid_count'] += 1
 
+                    pode_empacotar, motivo_bloqueio = slot.check_packaging_eligibility()
+                    if pode_empacotar:
+                        stats['ready_to_pack_count'] += 1
+
                     items_data.append({
                         'uid': f"slot_{slot.id}",
                         'type': 'slot',
@@ -169,6 +174,8 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                         'taxa_aduaneira_valor': taxa_aduaneira_val,
                         'is_taxa_aduaneira_paid': is_taxa_aduaneira_paid,
                         'is_frete_nacional_paid': slot.is_frete_nacional_paid,
+                        'pode_empacotar': pode_empacotar,
+                        'motivo_bloqueio': motivo_bloqueio,
                         'pacote_id': slot.pacote_nacional.id if slot.pacote_nacional else None,
                         'pacote_identificador': slot.pacote_nacional.identificador if slot.pacote_nacional else '',
                         'pacote_status': slot.pacote_nacional.status if slot.pacote_nacional else '',
@@ -217,6 +224,10 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                     if taxa_aduaneira_val > 0 and not is_taxa_aduaneira_paid:
                         stats['taxa_unpaid_count'] += 1
 
+                    pode_empacotar, motivo_bloqueio = item.check_packaging_eligibility()
+                    if pode_empacotar:
+                        stats['ready_to_pack_count'] += 1
+
                     items_data.append({
                         'uid': f"mercari_{item.id}",
                         'type': 'mercari',
@@ -243,6 +254,8 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                         'taxa_aduaneira_valor': taxa_aduaneira_val,
                         'is_taxa_aduaneira_paid': is_taxa_aduaneira_paid,
                         'is_frete_nacional_paid': False,
+                        'pode_empacotar': pode_empacotar,
+                        'motivo_bloqueio': motivo_bloqueio,
                         'pacote_id': item.pacote_nacional.id if item.pacote_nacional else None,
                         'pacote_identificador': item.pacote_nacional.identificador if item.pacote_nacional else '',
                         'pacote_status': item.pacote_nacional.status if item.pacote_nacional else '',
@@ -295,7 +308,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         )
 
         # Filtros
-        if status_filter in [PacoteNacional.Status.EM_PREPARACAO, PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+        if status_filter in [PacoteNacional.Status.SOLICITADO, PacoteNacional.Status.EM_PREPARACAO, PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
             qs = qs.filter(status=status_filter)
 
         if participant_filter:
@@ -321,6 +334,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         # Métricas Globais
         all_pacotes_qs = PacoteNacional.objects.all()
         total_pacotes = all_pacotes_qs.count()
+        solicitados_count = all_pacotes_qs.filter(status=PacoteNacional.Status.SOLICITADO).count()
         em_preparacao_count = all_pacotes_qs.filter(status=PacoteNacional.Status.EM_PREPARACAO).count()
         enviados_count = all_pacotes_qs.filter(status=PacoteNacional.Status.ENVIADO).count()
         entregues_count = all_pacotes_qs.filter(status=PacoteNacional.Status.ENTREGUE).count()
@@ -335,6 +349,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
 
         stats = {
             'total_pacotes': total_pacotes,
+            'solicitados_count': solicitados_count,
             'em_preparacao_count': em_preparacao_count,
             'enviados_count': enviados_count,
             'entregues_count': entregues_count,
@@ -350,12 +365,14 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
             'participant_filter': participant_filter,
             'feedback_filter': feedback_filter,
             'search_query': search_query,
+            'configuracao_envio': ConfiguracaoEnvio.get_solo(),
         })
 
 
 class EmpacotarItensView(StaffRequiredMixin, View):
     """
     Agrupa itens selecionados de um participante em um PacoteNacional (novo ou existente).
+    Garante que apenas itens com permissão e sem bloqueios sejam empacotados.
     """
 
     def post(self, request):
@@ -406,8 +423,8 @@ class EmpacotarItensView(StaffRequiredMixin, View):
             if uid.startswith('slot_'):
                 slot_id = uid.replace('slot_', '')
                 try:
-                    slot = ItemSlot.objects.get(id=slot_id, claimed_by=participant)
-                    if slot.pacote_nacional and slot.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                    slot = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').get(id=slot_id, claimed_by=participant)
+                    if not slot.pode_empacotar:
                         continue
                     slot.pacote_nacional = pacote
                     slot.save(update_fields=['pacote_nacional'])
@@ -417,8 +434,8 @@ class EmpacotarItensView(StaffRequiredMixin, View):
             elif uid.startswith('mercari_'):
                 item_id = uid.replace('mercari_', '')
                 try:
-                    item = ItemIndividual.objects.get(id=item_id, comprador=participant)
-                    if item.pacote_nacional and item.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
+                    item = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').get(id=item_id, comprador=participant)
+                    if not item.pode_empacotar:
                         continue
                     item.pacote_nacional = pacote
                     item.save(update_fields=['pacote_nacional'])
@@ -431,7 +448,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
         if total == 0:
             if action_type != 'adicionar_existente':
                 pacote.delete()
-            messages.error(request, "Nenhum dos itens selecionados pôde ser empacotado (itens já enviados ou inválidos).")
+            messages.error(request, "Nenhum dos itens selecionados pôde ser empacotado (itens bloqueados, não quitados ou não recebidos no Brasil).")
             return redirect(next_url)
 
         marcar_enviado = request.POST.get('marcar_enviado') in ('1', 'on', 'true')
@@ -578,4 +595,23 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
         pacote.delete()
 
         messages.success(request, f"Pacote {identificador} excluído com sucesso. Os itens retornaram para a fila.")
+        return redirect(next_url)
+
+
+class AtualizarConfiguracaoEnvioView(StaffRequiredMixin, View):
+    """
+    Atualiza o link do formulário Google e instruções de envio nacional configurados pela GOM.
+    """
+
+    def post(self, request):
+        link_google = request.POST.get('link_formulario_google', '').strip()
+        instrucoes = request.POST.get('instrucoes_envio', '').strip()
+        next_url = request.POST.get('next', '/envios/')
+
+        config = ConfiguracaoEnvio.get_solo()
+        config.link_formulario_google = link_google
+        config.instrucoes_envio = instrucoes
+        config.save()
+
+        messages.success(request, "Link do Formulário de Envio Nacional atualizado com sucesso!")
         return redirect(next_url)

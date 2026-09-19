@@ -105,7 +105,7 @@
             <h2 class="text-xs font-black uppercase tracking-wider text-slate-400">
                 Linha do Tempo da Remessa
             </h2>
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                 <!-- 1. Em Consolidação -->
                 <div class="p-3 rounded-xl border text-center transition
                     {% if current_step >= 1 %}bg-blue-50 border-blue-300 text-blue-900{% else %}bg-slate-50 border-slate-200 text-slate-400{% endif %}">
@@ -146,20 +146,12 @@
                     <span class="text-[9px] block text-slate-500">A caminho do org.</span>
                 </div>
 
-                <!-- 6. Entregue -->
+                <!-- 6. Chegou na casa da GOM -->
                 <div class="p-3 rounded-xl border text-center transition
                     {% if current_step >= 6 %}bg-emerald-50 border-emerald-300 text-emerald-900{% else %}bg-slate-50 border-slate-200 text-slate-400{% endif %}">
                     <span class="text-lg block">🏠</span>
-                    <span class="text-[11px] font-bold block mt-1">6. Recebida</span>
-                    <span class="text-[9px] block text-slate-500">{% if caixa.data_recebimento %}{{ caixa.data_recebimento|date:"d/m/Y" }}{% else %}Em triagem{% endif %}</span>
-                </div>
-
-                <!-- 7. Finalizada -->
-                <div class="p-3 rounded-xl border text-center transition
-                    {% if current_step >= 7 %}bg-purple-50 border-purple-300 text-purple-900{% else %}bg-slate-50 border-slate-200 text-slate-400{% endif %}">
-                    <span class="text-lg block">🎉</span>
-                    <span class="text-[11px] font-bold block mt-1">7. Finalizada</span>
-                    <span class="text-[9px] block text-slate-500">Envios concluídos</span>
+                    <span class="text-[11px] font-bold block mt-1">6. Chegou na GOM</span>
+                    <span class="text-[9px] block text-slate-500">{% if caixa.data_recebimento %}{{ caixa.data_recebimento|date:"d/m/Y" }}{% else %}Entregue ao organizador{% endif %}</span>
                 </div>
             </div>
         </div>

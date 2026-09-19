@@ -53,6 +53,7 @@ from .envios_views import (
     AtualizarPacoteView,
     DesempacotarItemView,
     ExcluirPacoteView,
+    AtualizarConfiguracaoEnvioView,
 )
 
 from .allocator_views import (
@@ -99,6 +100,7 @@ urlpatterns = [
     path('envios/pacote/<int:pacote_id>/atualizar/', AtualizarPacoteView.as_view(), name='atualizar_pacote'),
     path('envios/desempacotar/', DesempacotarItemView.as_view(), name='desempacotar_item'),
     path('envios/pacote/<int:pacote_id>/excluir/', ExcluirPacoteView.as_view(), name='excluir_pacote'),
+    path('envios/configuracao/', AtualizarConfiguracaoEnvioView.as_view(), name='atualizar_configuracao_envio'),
 
     # Itens Individuais (Pedidos Mercari / JP / etc.)
     path('itens-individuais/create/', CreateItemIndividualView.as_view(), name='create_item_individual'),

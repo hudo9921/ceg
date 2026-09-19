@@ -34,14 +34,71 @@
         </div>
     </div>
 
+    <!-- Card de Configuração do Google Forms de Envio Nacional (GOM) -->
+    <div class="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-pink-500/5 rounded-2xl border border-pink-200/80 p-5 shadow-2xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-pink-600 text-white flex items-center justify-center text-lg shadow-sm">
+                📋
+            </div>
+            <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-black text-slate-900">Formulário de Envio Nacional (Google Forms)</h3>
+                    {% if configuracao_envio.link_formulario_google %}
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Link Ativo
+                        </span>
+                    {% else %}
+                        <span class="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold text-[10px] rounded-full">Não Configurado</span>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-500">
+                    {% if configuracao_envio.link_formulario_google %}
+                        Link atual disponibilizado aos joiners no painel <strong>Minha Caixinha</strong> para preenchimento de endereço e preferências de envio.
+                    {% else %}
+                        Configure o formulário do Google para onde os joiners serão direcionados para informar endereço e dados de entrega.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-end sm:self-center">
+            {% if configuracao_envio.link_formulario_google %}
+                <a href="{{ configuracao_envio.link_formulario_google }}" target="_blank" rel="noopener noreferrer"
+                   class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                    <span>Abrir Forms</span>
+                    <span class="text-[10px]">↗</span>
+                </a>
+            {% endif %}
+            <button type="button" @click="configModalOpen = true"
+                    class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                <span>⚙️</span>
+                <span>Configurar Link</span>
+            </button>
+        </div>
+    </div>
+
     <!-- CARDS DE MÉTRICAS GLOBAIS DE LOGÍSTICA -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         <!-- Total de Pacotes -->
         <div class="bg-white dark:bg-[#131B2E] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Total de Pacotes</div>
+            <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Total Geral</div>
             <div class="text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_pacotes }}</div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400">Todos os envios gerados</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">Todos os envios</div>
         </div>
+
+        <!-- Solicitados pelo Joiner -->
+        <a href="{% url 'envios_nacionais' %}?status=SOLICITADO"
+           class="bg-pink-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-pink-200 dark:border-pink-500/40 shadow-sm space-y-1 block hover:border-pink-400 transition">
+            <div class="text-[11px] font-bold text-pink-700 dark:text-pink-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Solicitados</span>
+                {% if stats.solicitados_count > 0 %}
+                    <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+                {% endif %}
+            </div>
+            <div class="text-2xl font-black text-pink-900 dark:text-pink-300">{{ stats.solicitados_count|default:0 }}</div>
+            <div class="text-[11px] text-pink-600 dark:text-slate-400">Aguardando cotação</div>
+        </a>
 
         <!-- Em Preparação -->
         <div class="bg-amber-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 shadow-sm space-y-1">
@@ -52,9 +109,9 @@
 
         <!-- Enviados em Trânsito -->
         <div class="bg-blue-50/70 dark:bg-[#131B2E] p-4 rounded-2xl border border-blue-200 dark:border-blue-500/40 shadow-sm space-y-1">
-            <div class="text-[11px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider">Enviados / Trânsito</div>
+            <div class="text-[11px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider">Enviados</div>
             <div class="text-2xl font-black text-blue-900 dark:text-blue-300">{{ stats.enviados_count }}</div>
-            <div class="text-[11px] text-blue-700 dark:text-slate-400">Com código de rastreio</div>
+            <div class="text-[11px] text-blue-700 dark:text-slate-400">Com código rastreio</div>
         </div>
 
         <!-- Entregues -->
@@ -121,6 +178,7 @@
                     <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Status do Pacote</label>
                     <select name="status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:bg-white">
                         <option value="">Todos os Status</option>
+                        <option value="SOLICITADO" {% if status_filter == 'SOLICITADO' %}selected{% endif %}>📥 Solicitados pelo Joiner</option>
                         <option value="EM_PREPARACAO" {% if status_filter == 'EM_PREPARACAO' %}selected{% endif %}>📦 Em Preparação / Embalando</option>
                         <option value="ENVIADO" {% if status_filter == 'ENVIADO' %}selected{% endif %}>🚀 Enviado Nacionalmente</option>
                         <option value="ENTREGUE" {% if status_filter == 'ENTREGUE' %}selected{% endif %}>🎉 Entregue</option>
@@ -198,7 +256,7 @@
                                 </div>
                             </div>
                             <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
-                                         {% if pacote.status == 'ENVIADO' %}bg-blue-100 text-blue-800 border border-blue-200{% elif pacote.status == 'ENTREGUE' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
+                                         {% if pacote.status == 'SOLICITADO' %}bg-pink-100 text-pink-800 border border-pink-200{% elif pacote.status == 'ENVIADO' %}bg-blue-100 text-blue-800 border border-blue-200{% elif pacote.status == 'ENTREGUE' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
                                 {{ pacote.get_status_display }}
                             </span>
                         </div>
@@ -230,6 +288,11 @@
                                 <p class="text-[11px] text-slate-600 pt-1 border-t border-slate-200/60 leading-tight">
                                     📍 <strong>Endereço / Notas:</strong> {{ pacote.participant.notes }}
                                 </p>
+                            {% endif %}
+                            {% if pacote.observacoes_joiner %}
+                                <div class="p-2 bg-pink-50 rounded-lg border border-pink-200/80 text-[11px] text-pink-900 mt-1">
+                                    💬 <strong>Recado do Joiner:</strong> {{ pacote.observacoes_joiner }}
+                                </div>
                             {% endif %}
                         </div>
 
@@ -470,6 +533,7 @@
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-700">Status</label>
                         <select name="status" x-model="editPacoteStatus" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800">
+                            <option value="SOLICITADO">📥 Solicitado pelo Joiner</option>
                             <option value="EM_PREPARACAO">📦 Em Preparação / Embalando</option>
                             <option value="ENVIADO">🚀 Enviado Nacionalmente</option>
                             <option value="ENTREGUE">🎉 Entregue</option>
@@ -517,11 +581,68 @@
         </div>
     </div>
 
+    <!-- MODAL 3: CONFIGURAR FORMULÁRIO GOOGLE DE ENVIO NACIONAL -->
+    <div x-show="configModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="configModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200" @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📋</span>
+                        <h3 class="text-base font-black text-slate-900">Configurar Formulário de Envio (Google Forms)</h3>
+                    </div>
+                    <button type="button" @click="configModalOpen = false" class="text-slate-400 hover:text-slate-600 text-xl leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <form method="post" action="{% url 'atualizar_configuracao_envio' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                    <div class="p-3.5 bg-pink-50/60 rounded-xl border border-pink-200/80 text-xs text-slate-700 leading-relaxed space-y-1">
+                        <p class="font-bold text-pink-900">📍 Coleta Externa de Endereço:</p>
+                        <p>
+                            Cole abaixo o link do Google Forms onde os joiners devem cadastrar o endereço de envio e CEP. Este link aparecerá como botão oficial na aba <strong>Minha Caixinha</strong> dos joiners.
+                        </p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700 block">Link do Google Forms</label>
+                        <input type="url" name="link_formulario_google" value="{{ configuracao_envio.link_formulario_google|default:'' }}"
+                               placeholder="https://forms.gle/..."
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:outline-none">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700 block">
+                            Orientações / Observações de Envio <span class="text-slate-400 font-normal">(Opcional)</span>
+                        </label>
+                        <textarea name="instrucoes_envio" rows="3"
+                                  placeholder="Ex: Envios despachados às quartas-feiras. Preencha seu @ ou apelido no formulário igual ao do site."
+                                  class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:outline-none">{{ configuracao_envio.instrucoes_envio|default:'' }}</textarea>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" @click="configModalOpen = false"
+                                class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5 cursor-pointer">
+                            <span>💾</span>
+                            <span>Salvar Configuração</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
 function enviosDashboardApp() {
     return {
+        configModalOpen: false,
         dispatchModalOpen: false,
         dispatchPacoteId: '',
         dispatchPacoteIdentificador: '',

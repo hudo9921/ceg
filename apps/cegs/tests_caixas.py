@@ -442,3 +442,40 @@ class CaixasViewsTests(TestCase):
         self.assertEqual(resp2.status_code, 302)
         self.ceg.refresh_from_db()
         self.assertIsNone(self.ceg.caixa)
+
+    def test_caixas_dashboard_partitioned_sections_and_status_labels(self):
+        """Valida que o dashboard de caixas separa Caixas em Vigência de Caixas que Chegaram na GOM."""
+        self.client.login(username='admin', password='adminpass123')
+
+        # Caixa 1 já está EM_CONSOLIDACAO (vigência)
+        # Caixa 2 entregue na GOM
+        caixa_entregue = Caixa.objects.create(
+            nome="Caixa KR Chegou na GOM",
+            origem=Caixa.Origem.KR,
+            status=Caixa.Status.ENTREGUE
+        )
+
+        response = self.client.get(reverse('caixas_dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        # Contexto particionado
+        self.assertIn('caixas_em_vigencia', response.context)
+        self.assertIn('caixas_chegaram_gom', response.context)
+
+        vigencia_nomes = [item['caixa'].nome for item in response.context['caixas_em_vigencia']]
+        gom_nomes = [item['caixa'].nome for item in response.context['caixas_chegaram_gom']]
+
+        self.assertIn("Caixa Mercari IVE #01", vigencia_nomes)
+        self.assertIn("Caixa KR Chegou na GOM", gom_nomes)
+
+        # Labels e seções no HTML
+        self.assertContains(response, "Caixas em Vigência")
+        self.assertContains(response, "Caixas que Chegaram na GOM")
+        self.assertContains(response, "Chegou na casa da GOM")
+        self.assertContains(response, "Etapa 6 de 6")
+
+        # Garante que FINALIZADA foi ocultada das escolhas ativas
+        choices_values = [val for val, _ in response.context['status_choices']]
+        self.assertNotIn(Caixa.Status.FINALIZADA, choices_values)
+        self.assertIn(Caixa.Status.ENTREGUE, choices_values)
+
