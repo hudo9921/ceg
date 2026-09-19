@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views import View
 
-from apps.groups.models import KpopGroup, Era
+from apps.groups.models import KpopGroup, Era, GroupMember
 from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, ItemIndividual, TipoItem
 from apps.cegs.services import ClaimService
 from .image_utils import process_image_upload
@@ -46,7 +46,7 @@ class CreationsHubView(StaffRequiredMixin, View):
     """Página principal de criações e gerenciamento para o Organizador."""
 
     def get(self, request):
-        groups = KpopGroup.objects.prefetch_related('eras').order_by('name')
+        groups = KpopGroup.objects.prefetch_related('eras', 'members').order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
         cegs = CEG.objects.select_related('era__group', 'caixa').prefetch_related('sets', 'item_definitions').order_by('-created_at')
         caixas = Caixa.objects.all().order_by('-created_at')
@@ -62,6 +62,11 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'image_url': g.image_url,
                 'color_hex': g.color_hex or '',
                 'description': g.description or '',
+                'members_count': g.members.count(),
+                'members': [
+                    {'id': m.id, 'name': m.name, 'order': m.order}
+                    for m in g.members.all()
+                ],
                 'eras': [
                     {
                         'id': e.id,
@@ -200,6 +205,56 @@ class CreationsHubView(StaffRequiredMixin, View):
         return render(request, 'cegs/creations.html', context)
 
 
+def extract_member_names(request):
+    """
+    Extrai lista de nomes de integrantes de várias possíveis fontes no POST:
+    - members_json (JSON string: '["Sakura", "Chaewon"]')
+    - members[] ou member_names[] (getlist)
+    - members_text (nomes separados por vírgula ou quebra de linha)
+    """
+    raw_names = []
+    members_json = request.POST.get('members_json', '').strip()
+    if members_json:
+        try:
+            parsed = json.loads(members_json)
+            if isinstance(parsed, list):
+                for item in parsed:
+                    if isinstance(item, dict):
+                        n = item.get('name', '').strip()
+                    else:
+                        n = str(item).strip()
+                    if n:
+                        raw_names.append(n)
+        except Exception:
+            pass
+
+    if not raw_names:
+        list_names = (
+            request.POST.getlist('member_names') or
+            request.POST.getlist('members[]') or
+            request.POST.getlist('members')
+        )
+        for n in list_names:
+            n_clean = str(n).strip()
+            if n_clean:
+                raw_names.append(n_clean)
+
+    if not raw_names:
+        text_names = request.POST.get('members_text', '').strip()
+        if text_names:
+            parts = [p.strip() for p in text_names.replace('\n', ',').replace(';', ',').split(',') if p.strip()]
+            raw_names.extend(parts)
+
+    seen = set()
+    unique_names = []
+    for n in raw_names:
+        n_norm = n.strip()
+        if n_norm and n_norm.lower() not in seen:
+            seen.add(n_norm.lower())
+            unique_names.append(n_norm)
+    return unique_names
+
+
 class CreateGroupView(StaffRequiredMixin, View):
     """Cadastra um novo Grupo ou Solista de K-pop."""
 
@@ -240,7 +295,13 @@ class CreateGroupView(StaffRequiredMixin, View):
                 color_hex=color_hex,
                 description=description
             )
-            messages.success(request, f"🎤 Grupo/Solista '{group.name}' cadastrado com sucesso! Agora você pode criar uma Era para ele.")
+
+            member_names = extract_member_names(request)
+            for idx, m_name in enumerate(member_names):
+                GroupMember.objects.create(group=group, name=m_name, order=idx)
+
+            members_msg = f" com {len(member_names)} integrante(s)" if member_names else ""
+            messages.success(request, f"🎤 Grupo/Solista '{group.name}' cadastrado{members_msg} com sucesso! Agora você pode criar uma Era para ele.")
             return redirect('/creations/?tab=era')
         except Exception as e:
             logger.error(f"Erro ao criar grupo: {e}")
@@ -298,6 +359,23 @@ class UpdateGroupView(StaffRequiredMixin, View):
             group.description = description
             group.image_url = image_url
             group.save()
+
+            if any(k in request.POST for k in ('members_json', 'members_text', 'member_names', 'members[]', 'members')):
+                member_names = extract_member_names(request)
+                existing_members = {m.name.lower(): m for m in group.members.all()}
+                kept_ids = []
+                for idx, m_name in enumerate(member_names):
+                    m_obj = existing_members.get(m_name.lower())
+                    if m_obj:
+                        m_obj.name = m_name
+                        m_obj.order = idx
+                        m_obj.save()
+                        kept_ids.append(m_obj.id)
+                    else:
+                        new_m = GroupMember.objects.create(group=group, name=m_name, order=idx)
+                        kept_ids.append(new_m.id)
+                group.members.exclude(id__in=kept_ids).delete()
+
             messages.success(request, f"🎤 Grupo '{group.name}' atualizado com sucesso!")
             return redirect('/creations/?tab=group')
         except Exception as e:

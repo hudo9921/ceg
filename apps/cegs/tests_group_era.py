@@ -35,28 +35,53 @@ class GroupAndEraCreationsTests(TestCase):
         self.assertContains(response, "CRAZY")
 
     def test_create_group(self):
+        import json
         response = self.client.post(reverse('create_group'), {
             'name': 'Stray Kids',
             'description': 'JYP Boy Group',
             'image_url': 'https://example.com/skz.jpg',
+            'members_json': json.dumps(['Bang Chan', 'Lee Know', 'Changbin', 'Hyunjin', 'Han', 'Felix', 'Seungmin', 'I.N'])
         })
         self.assertRedirects(response, '/creations/?tab=era')
         self.assertTrue(KpopGroup.objects.filter(name='Stray Kids').exists())
         skz = KpopGroup.objects.get(name='Stray Kids')
         self.assertEqual(skz.image_url, 'https://example.com/skz.jpg')
+        self.assertEqual(skz.members_count, 8)
+        self.assertEqual(skz.get_member_names(), ['Bang Chan', 'Lee Know', 'Changbin', 'Hyunjin', 'Han', 'Felix', 'Seungmin', 'I.N'])
 
-    def test_update_group(self):
+    def test_create_group_with_comma_separated_text(self):
+        response = self.client.post(reverse('create_group'), {
+            'name': 'aespa',
+            'description': 'SM Girl Group',
+            'members_text': 'Karina, Giselle, Winter, Ningning'
+        })
+        self.assertRedirects(response, '/creations/?tab=era')
+        aespa = KpopGroup.objects.get(name='aespa')
+        self.assertEqual(aespa.members_count, 4)
+        self.assertEqual(aespa.get_member_names(), ['Karina', 'Giselle', 'Winter', 'Ningning'])
+
+    def test_update_group_synchronizes_members(self):
+        import json
+        from apps.groups.models import GroupMember
+
+        GroupMember.objects.create(group=self.group, name='Sakura', order=0)
+        GroupMember.objects.create(group=self.group, name='Chaewon', order=1)
+        GroupMember.objects.create(group=self.group, name='Garam', order=2)
+        self.assertEqual(self.group.members_count, 3)
+
+        # Atualiza removendo Garam e adicionando Yunjin, Kazuha, Eunchae
         response = self.client.post(reverse('update_group'), {
             'group_id': self.group.id,
-            'name': 'LE SSERAFIM (Updated)',
+            'name': 'LE SSERAFIM (OT5)',
             'description': 'Updated description',
-            'image_url': 'https://example.com/lesserafim_v2.jpg',
+            'members_json': json.dumps(['Sakura', 'Chaewon', 'Yunjin', 'Kazuha', 'Eunchae'])
         })
         self.assertRedirects(response, '/creations/?tab=group')
         self.group.refresh_from_db()
-        self.assertEqual(self.group.name, 'LE SSERAFIM (Updated)')
-        self.assertEqual(self.group.description, 'Updated description')
-        self.assertEqual(self.group.image_url, 'https://example.com/lesserafim_v2.jpg')
+        self.assertEqual(self.group.name, 'LE SSERAFIM (OT5)')
+        self.assertEqual(self.group.members_count, 5)
+        self.assertEqual(self.group.get_member_names(), ['Sakura', 'Chaewon', 'Yunjin', 'Kazuha', 'Eunchae'])
+        self.assertFalse(self.group.members.filter(name='Garam').exists())
 
     def test_create_era(self):
         response = self.client.post(reverse('create_era'), {

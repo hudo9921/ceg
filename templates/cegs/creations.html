@@ -229,7 +229,7 @@
                         Grupos & Artistas
                     </h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                        Adicione ou edite grupos como TWICE, Stray Kids, aespa, LE SSERAFIM ou solistas com foto e descrição.
+                        Adicione ou edite grupos como TWICE, Stray Kids, aespa ou LE SSERAFIM com foto, integrantes e descrição.
                     </p>
                 </div>
 
@@ -734,6 +734,52 @@
                     </div>
                 </div>
 
+                <!-- Integrantes / Membros do Grupo -->
+                <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-800">
+                                👥 Integrantes do Grupo / Membros
+                            </label>
+                            <p class="text-[11px] text-slate-500">
+                                Digite os nomes e aperte <kbd class="px-1 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono">Enter</kbd> ou cole a lista separada por vírgula.
+                            </p>
+                        </div>
+                        <span class="text-xs font-black px-2.5 py-1 rounded-full bg-purple-100 text-purple-700"
+                              x-text="newGroupMembers.length + ' membro(s)'">
+                        </span>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" x-model="newGroupMemberInput"
+                               @keydown="handleMemberInputKeydown($event, false)"
+                               placeholder="Ex: Sakura, Chaewon, Yunjin... (aperte Enter)"
+                               class="flex-1 bg-white border border-purple-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500 transition">
+                        <button type="button" @click="addGroupMember(false)"
+                                class="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition shrink-0 cursor-pointer">
+                            + Adicionar
+                        </button>
+                    </div>
+
+                    <!-- Pills / Tags dos Integrantes -->
+                    <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-white/80 rounded-xl border border-purple-100"
+                         x-show="newGroupMembers.length > 0">
+                        <template x-for="(member, idx) in newGroupMembers" :key="idx">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100/80 text-purple-900 border border-purple-200 rounded-lg text-xs font-bold">
+                                <span class="text-[10px] text-purple-500 font-mono" x-text="(idx + 1) + '.'"></span>
+                                <span x-text="member"></span>
+                                <button type="button" @click="removeGroupMember(idx, false)"
+                                        class="text-purple-400 hover:text-rose-600 ml-0.5 text-xs font-bold cursor-pointer">
+                                    ✕
+                                </button>
+                            </span>
+                        </template>
+                    </div>
+
+                    <!-- Campo oculto para envio no POST -->
+                    <input type="hidden" name="members_json" :value="JSON.stringify(newGroupMembers)">
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Informações (opcional)</label>
                     <textarea name="description" rows="3"
@@ -986,6 +1032,52 @@
                             Auto
                         </button>
                     </div>
+                </div>
+
+                <!-- Integrantes / Membros do Grupo (Edição) -->
+                <div x-show="editingGroupId" class="bg-purple-50/50 p-4 rounded-xl border border-purple-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-800">
+                                👥 Integrantes do Grupo / Membros
+                            </label>
+                            <p class="text-[11px] text-slate-500">
+                                Digite ou cole nomes separados por vírgula. Remova ou adicione novos.
+                            </p>
+                        </div>
+                        <span class="text-xs font-black px-2.5 py-1 rounded-full bg-purple-100 text-purple-700"
+                              x-text="editGroupMembers.length + ' membro(s)'">
+                        </span>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" x-model="editGroupMemberInput"
+                               @keydown="handleMemberInputKeydown($event, true)"
+                               placeholder="Novo integrante... (aperte Enter ou vírgula)"
+                               class="flex-1 bg-white border border-purple-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500 transition">
+                        <button type="button" @click="addGroupMember(true)"
+                                class="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition shrink-0 cursor-pointer">
+                            + Adicionar
+                        </button>
+                    </div>
+
+                    <!-- Pills / Tags dos Integrantes -->
+                    <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-white/80 rounded-xl border border-purple-100"
+                         x-show="editGroupMembers.length > 0">
+                        <template x-for="(member, idx) in editGroupMembers" :key="idx">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100/80 text-purple-900 border border-purple-200 rounded-lg text-xs font-bold">
+                                <span class="text-[10px] text-purple-500 font-mono" x-text="(idx + 1) + '.'"></span>
+                                <span x-text="member"></span>
+                                <button type="button" @click="removeGroupMember(idx, true)"
+                                        class="text-purple-400 hover:text-rose-600 ml-0.5 text-xs font-bold cursor-pointer">
+                                    ✕
+                                </button>
+                            </span>
+                        </template>
+                    </div>
+
+                    <!-- Campo oculto para envio no POST -->
+                    <input type="hidden" name="members_json" :value="JSON.stringify(editGroupMembers)">
                 </div>
 
                 <div x-show="editingGroupId">
@@ -2410,12 +2502,14 @@ document.addEventListener('alpine:init', () => {
         batchDefaultPrice: '45.00',
         initialSetsCount: 1,
 
-        // Estado do Grupo (criação com foto/logo)
+        // Estado do Grupo (criação com foto/logo e membros)
         groupImagePreview: '',
         groupImageBase64: '',
         groupImageUrl: '',
         groupColorHex: '',
         groupDragOver: false,
+        newGroupMembers: [],
+        newGroupMemberInput: '',
 
         // Estado de Edição de Grupo
         editingGroupId: '',
@@ -2426,6 +2520,8 @@ document.addEventListener('alpine:init', () => {
         editGroupImageUrl: '',
         editGroupColorHex: '',
         editGroupDragOver: false,
+        editGroupMembers: [],
+        editGroupMemberInput: '',
 
         // Estado da Era (criação com banner)
         eraBannerPreview: '',
@@ -2626,7 +2722,10 @@ document.addEventListener('alpine:init', () => {
 
         openModal(name) {
             this.activeModal = name;
-            if (name === 'edit-group' || name === 'edit_group') {
+            if (name === 'group') {
+                this.newGroupMembers = [];
+                this.newGroupMemberInput = '';
+            } else if (name === 'edit-group' || name === 'edit_group') {
                 if (this.groups && this.groups.length > 0 && !this.editingGroupId) {
                     this.onSelectEditGroup(this.groups[0].id);
                 }
@@ -2662,6 +2761,8 @@ document.addEventListener('alpine:init', () => {
             this.groupImageBase64 = '';
             this.groupImageUrl = '';
             this.groupColorHex = '';
+            this.newGroupMembers = [];
+            this.newGroupMemberInput = '';
             this.eraBannerPreview = '';
             this.eraBannerBase64 = '';
             this.eraBannerUrl = '';
@@ -2673,6 +2774,8 @@ document.addEventListener('alpine:init', () => {
             this.editGroupImageBase64 = '';
             this.editGroupImageUrl = '';
             this.editGroupColorHex = '';
+            this.editGroupMembers = [];
+            this.editGroupMemberInput = '';
             this.editEraBannerPreview = '';
             this.editEraBannerBase64 = '';
             this.editEraBannerUrl = '';
@@ -2688,6 +2791,8 @@ document.addEventListener('alpine:init', () => {
                 this.editGroupImageBase64 = '';
                 this.editGroupImageUrl = '';
                 this.editGroupColorHex = '';
+                this.editGroupMembers = [];
+                this.editGroupMemberInput = '';
                 return;
             }
             const g = this.groups.find(item => String(item.id) === String(groupId));
@@ -2698,6 +2803,37 @@ document.addEventListener('alpine:init', () => {
                 this.editGroupImageUrl = g.image_url || '';
                 this.editGroupImageBase64 = '';
                 this.editGroupColorHex = g.color_hex || '';
+                this.editGroupMembers = (g.members || []).map(m => typeof m === 'object' ? m.name : m);
+                this.editGroupMemberInput = '';
+            }
+        },
+
+        addGroupMember(isEdit = false) {
+            const inputKey = isEdit ? 'editGroupMemberInput' : 'newGroupMemberInput';
+            const listKey = isEdit ? 'editGroupMembers' : 'newGroupMembers';
+            const val = (this[inputKey] || '').trim();
+            if (!val) return;
+
+            // Permite colar múltiplos nomes separados por vírgula, barra ou quebra de linha
+            const parts = val.replace(/\n/g, ',').replace(/;/g, ',').replace(/\//g, ',').split(',');
+            for (let p of parts) {
+                p = p.trim();
+                if (p && !this[listKey].some(m => m.toLowerCase() === p.toLowerCase())) {
+                    this[listKey].push(p);
+                }
+            }
+            this[inputKey] = '';
+        },
+
+        removeGroupMember(index, isEdit = false) {
+            const listKey = isEdit ? 'editGroupMembers' : 'newGroupMembers';
+            this[listKey].splice(index, 1);
+        },
+
+        handleMemberInputKeydown(event, isEdit = false) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                this.addGroupMember(isEdit);
             }
         },
         handleEditGroupImageFile(file) {

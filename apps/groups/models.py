@@ -24,6 +24,13 @@ class KpopGroup(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def members_count(self):
+        return self.members.count()
+
+    def get_member_names(self):
+        return list(self.members.values_list('name', flat=True))
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
@@ -39,6 +46,22 @@ class KpopGroup(models.Model):
             palette = ['#EC4899', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#84CC16']
             self.color_hex = palette[sum(ord(c) for c in (self.name or '')) % len(palette)]
         super().save(*args, **kwargs)
+
+
+class GroupMember(models.Model):
+    group = models.ForeignKey(KpopGroup, on_delete=models.CASCADE, related_name='members', verbose_name='Grupo')
+    name = models.CharField('Nome do Integrante', max_length=100)
+    order = models.PositiveIntegerField('Ordem', default=0)
+    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Integrante / Membro'
+        verbose_name_plural = 'Integrantes / Membros'
+        ordering = ['order', 'id']
+        unique_together = ('group', 'name')
+
+    def __str__(self):
+        return f"{self.group.name} - {self.name}"
 
 
 class Era(models.Model):
