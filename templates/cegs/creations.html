@@ -1626,17 +1626,16 @@
                                     <span class="w-6 h-6 rounded-md bg-pink-100 text-pink-700 font-bold text-xs flex items-center justify-center shrink-0"
                                           x-text="index + 1"></span>
 
-                                    <!-- Nome do Photocard -->
+                                    <!-- Nome do Item (Tipo de item ou Subtipo por padrão) -->
                                     <div class="flex-1 w-full sm:w-auto">
                                         <input type="text" x-model="item.name" required
-                                               placeholder="Nome do Item (Ex: Photocard POB Nayeon)"
+                                               placeholder="Nome do Item (Ex: LD, Pob, Álbum...)"
                                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900">
                                     </div>
 
                                     <!-- Integrante -->
                                     <div class="w-full sm:w-28">
                                         <input type="text" x-model="item.member_name"
-                                               @input="onItemMemberInput(item, index)"
                                                placeholder="Integrante"
                                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
                                     </div>
@@ -3267,15 +3266,27 @@ document.addEventListener('alpine:init', () => {
             return 'OTHER';
         },
 
-        formatPhotocardName(subCat, memberName, index = null) {
-            const cleanSub = subCat || 'Pob';
-            const subLabel = cleanSub === 'Regulares' ? 'Regular' : cleanSub.toUpperCase();
-            const cleanMember = (memberName || '').trim();
-            if (cleanMember) {
-                return `Photocard ${subLabel} ${cleanMember}`;
+        getCleanSubCategoryName(subCat) {
+            const clean = (subCat || 'Pob').trim();
+            if (clean.toLowerCase() === 'pob') return 'Pob';
+            if (clean.toLowerCase() === 'ld') return 'LD';
+            if (clean.toLowerCase() === 'vce') return 'VCE';
+            if (clean.toLowerCase() === 'broadcast') return 'Broadcast';
+            if (clean.toLowerCase() === 'regulares') return 'Regulares';
+            return clean;
+        },
+
+        getTipoItemNome(tipoId) {
+            const t = (this.tiposItem || []).find(item => String(item.id) === String(tipoId));
+            return t ? t.nome : 'Item';
+        },
+
+        getDefaultItemName(tipoId, subCat) {
+            const isPc = this.isPhotocardTipo(tipoId);
+            if (isPc) {
+                return this.getCleanSubCategoryName(subCat || this.batchSubCategory || 'Pob');
             }
-            const idxStr = (index !== null && index !== undefined) ? ` #${index + 1}` : '';
-            return `Photocard ${subLabel}${idxStr}`;
+            return this.getTipoItemNome(tipoId);
         },
 
         populateItemsFromGroup(groupId) {
@@ -3289,12 +3300,13 @@ document.addEventListener('alpine:init', () => {
             const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
             const isPc = this.isPhotocardTipo(tipoId);
             const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const defaultName = this.getDefaultItemName(tipoId, subCat);
 
             if (g.members && g.members.length > 0) {
                 this.items = g.members.map((m, idx) => {
                     const mName = typeof m === 'object' ? m.name : m;
                     return {
-                        name: isPc ? this.formatPhotocardName(subCat, mName, idx) : mName,
+                        name: defaultName,
                         member_name: mName,
                         item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
                         sub_category: subCat,
@@ -3306,7 +3318,7 @@ document.addEventListener('alpine:init', () => {
                 });
             } else {
                 this.items = [{
-                    name: isPc ? this.formatPhotocardName(subCat, '', 0) : 'Item 1',
+                    name: defaultName,
                     member_name: '',
                     item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
                     sub_category: subCat,
@@ -3363,6 +3375,7 @@ document.addEventListener('alpine:init', () => {
             const isPc = this.isPhotocardTipo(tipoId);
             const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
             const price = this.batchDefaultPrice || '45.00';
+            const defaultName = this.getDefaultItemName(tipoId, subCat);
 
             this.items.forEach((item, idx) => {
                 if (price) {
@@ -3374,14 +3387,10 @@ document.addEventListener('alpine:init', () => {
                 }
                 if (isPc) {
                     item.sub_category = subCat;
-                    if (item.member_name) {
-                        item.name = this.formatPhotocardName(subCat, item.member_name, idx);
-                    } else if (!item.name || item.name.toLowerCase().includes('photocard') || item.name.toLowerCase().includes('novo item')) {
-                        item.name = this.formatPhotocardName(subCat, '', idx);
-                    }
                 } else {
                     item.sub_category = '';
                 }
+                item.name = defaultName;
             });
         },
 
@@ -3390,27 +3399,14 @@ document.addEventListener('alpine:init', () => {
             item.item_type = isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(item.tipo_item_id);
             if (isPc) {
                 if (!item.sub_category) item.sub_category = this.batchSubCategory || 'Pob';
-                if (item.member_name) {
-                    item.name = this.formatPhotocardName(item.sub_category, item.member_name, index);
-                }
             } else {
                 item.sub_category = '';
             }
+            item.name = this.getDefaultItemName(item.tipo_item_id, item.sub_category);
         },
 
         onItemSubCategoryChange(item, index) {
-            if (item.member_name) {
-                item.name = this.formatPhotocardName(item.sub_category, item.member_name, index);
-            } else if (!item.name || item.name.toLowerCase().includes('photocard')) {
-                item.name = this.formatPhotocardName(item.sub_category, '', index);
-            }
-        },
-
-        onItemMemberInput(item, index) {
-            if (this.isPhotocardTipo(item.tipo_item_id)) {
-                const subCat = item.sub_category || this.batchSubCategory || 'Pob';
-                item.name = this.formatPhotocardName(subCat, item.member_name, index);
-            }
+            item.name = this.getDefaultItemName(item.tipo_item_id, item.sub_category);
         },
 
         addItem() {
@@ -3420,9 +3416,8 @@ document.addEventListener('alpine:init', () => {
             const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
             const isPc = this.isPhotocardTipo(tipoId);
             const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
-            const idx = this.items.length;
             this.items.push({
-                name: isPc ? this.formatPhotocardName(subCat, '', idx) : ('Novo Item ' + (idx + 1)),
+                name: this.getDefaultItemName(tipoId, subCat),
                 member_name: '',
                 item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
                 sub_category: subCat,
@@ -3451,10 +3446,11 @@ document.addEventListener('alpine:init', () => {
             const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
             const isPc = this.isPhotocardTipo(tipoId);
             const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const defaultName = this.getDefaultItemName(tipoId, subCat);
 
             names.forEach((name) => {
                 this.items.push({
-                    name: isPc ? this.formatPhotocardName(subCat, name, this.items.length) : name,
+                    name: defaultName,
                     member_name: name,
                     item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
                     sub_category: subCat,
