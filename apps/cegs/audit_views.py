@@ -1,4 +1,5 @@
 import csv
+import json
 from datetime import datetime, time
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
@@ -202,11 +203,49 @@ class AuditDashboardView(StaffRequiredMixin, View):
         page_obj = paginator.get_page(page_number)
 
         # Dados auxiliares para filtros
-        cegs = CEG.objects.only('id', 'title', 'slug').order_by('-created_at')[:80]
-        caixas = Caixa.objects.only('id', 'nome').order_by('-created_at')[:80]
-        grupos = KpopGroup.objects.only('id', 'name').order_by('name')
-        eras = Era.objects.select_related('group').only('id', 'name', 'group__name', 'group_id').order_by('group__name', 'name')
+        cegs_qs = CEG.objects.select_related('era__group', 'caixa').only(
+            'id', 'title', 'slug', 'era_id', 'era__group_id', 'era__group__name', 'era__name', 'caixa_id'
+        ).order_by('title')
+        caixas_qs = Caixa.objects.only('id', 'nome').order_by('nome')
+        grupos_qs = KpopGroup.objects.only('id', 'name').order_by('name')
+        eras_qs = Era.objects.select_related('group').only('id', 'name', 'group__name', 'group_id').order_by('group__name', 'name')
         event_choices = AuditLog.EventType.choices
+
+        cegs_data = [
+            {
+                'id': c.id,
+                'title': c.title,
+                'caixa_id': c.caixa_id,
+                'era_id': c.era_id,
+                'group_id': c.era.group_id if c.era else None,
+                'group_name': c.era.group.name if (c.era and c.era.group) else '',
+                'era_name': c.era.name if c.era else '',
+            }
+            for c in cegs_qs
+        ]
+        eras_data = [
+            {
+                'id': e.id,
+                'name': e.name,
+                'group_id': e.group_id,
+                'group_name': e.group.name if e.group else '',
+            }
+            for e in eras_qs
+        ]
+        grupos_data = [
+            {
+                'id': g.id,
+                'name': g.name,
+            }
+            for g in grupos_qs
+        ]
+        caixas_data = [
+            {
+                'id': cx.id,
+                'name': cx.nome,
+            }
+            for cx in caixas_qs
+        ]
 
         # Preserva query string para paginação
         get_params = request.GET.copy()
@@ -222,10 +261,15 @@ class AuditDashboardView(StaffRequiredMixin, View):
             'total_accounts': total_accounts,
             'total_claims': total_claims,
             'total_payments': total_payments,
-            'cegs': cegs,
-            'caixas': caixas,
-            'grupos': grupos,
-            'eras': eras,
+            'cegs': cegs_qs,
+            'cegs_data': cegs_data,
+            'caixas': caixas_qs,
+            'grupos': grupos_qs,
+            'eras': eras_qs,
+            'cegs_json': json.dumps(cegs_data),
+            'eras_json': json.dumps(eras_data),
+            'grupos_json': json.dumps(grupos_data),
+            'caixas_json': json.dumps(caixas_data),
             'event_choices': event_choices,
             'q': q,
             'event_type': event_type,

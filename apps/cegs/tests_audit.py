@@ -205,6 +205,10 @@ class AuditLogSystemTests(TestCase):
         res_cx = self.client.get(f'/auditoria/?caixa_id={caixa.id}')
         self.assertEqual(res_cx.status_code, 200)
         self.assertEqual(res_cx.context['caixa_id'], str(caixa.id))
+        self.assertIn('cegs_json', res_cx.context)
+        self.assertIn('caixas_json', res_cx.context)
+        self.assertIn('eras_json', res_cx.context)
+        self.assertIn('grupos_json', res_cx.context)
 
         # 3. Filtro por grupo_id
         res_gp = self.client.get(f'/auditoria/?grupo_id={self.group.id}')

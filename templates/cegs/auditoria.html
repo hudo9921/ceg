@@ -148,10 +148,16 @@
                 <!-- 1. Grupo / Solista -->
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Grupo / Solista</label>
-                    <select name="grupo_id" x-model="selectedGroup" @change="onGroupChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="grupo_id" id="grupoSelect" x-model="selectedGroup" @change="onGroupChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todos os Grupos</option>
                         {% for g in grupos %}
-                            <option value="{{ g.id }}" {% if grupo_id == g.id|stringformat:"i" %}selected{% endif %}>{{ g.name }}</option>
+                            <option value="{{ g.id }}"
+                                    x-show="isGroupVisible({{ g.id }})"
+                                    :hidden="!isGroupVisible({{ g.id }})"
+                                    :disabled="!isGroupVisible({{ g.id }})"
+                                    {% if grupo_id == g.id|stringformat:"i" %}selected{% endif %}>
+                                {{ g.name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -159,12 +165,13 @@
                 <!-- 2. Era / Comeback -->
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Era / Comeback</label>
-                    <select name="era_id" id="eraSelect" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="era_id" id="eraSelect" x-model="selectedEra" @change="onEraChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todas as Eras</option>
                         {% for e in eras %}
                             <option value="{{ e.id }}"
-                                    data-group="{{ e.group_id }}"
-                                    x-show="!selectedGroup || selectedGroup == '{{ e.group_id }}'"
+                                    x-show="isEraVisible({{ e.id }})"
+                                    :hidden="!isEraVisible({{ e.id }})"
+                                    :disabled="!isEraVisible({{ e.id }})"
                                     {% if era_id == e.id|stringformat:"i" %}selected{% endif %}>
                                 {{ e.group.name }} — {{ e.name }}
                             </option>
@@ -175,10 +182,16 @@
                 <!-- 3. CEG Específica -->
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">CEG Específica</label>
-                    <select name="ceg_id" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="ceg_id" id="cegSelect" x-model="selectedCeg" @change="onCegChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todas as CEGs</option>
-                        {% for c in cegs %}
-                            <option value="{{ c.id }}" {% if ceg_id == c.id|stringformat:"i" %}selected{% endif %}>{{ c.title|truncatechars:38 }}</option>
+                        {% for c in cegs_data %}
+                            <option value="{{ c.id }}"
+                                    x-show="isCegVisible({{ c.id }})"
+                                    :hidden="!isCegVisible({{ c.id }})"
+                                    :disabled="!isCegVisible({{ c.id }})"
+                                    {% if ceg_id == c.id|stringformat:"i" %}selected{% endif %}>
+                                {{ c.title|truncatechars:38 }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -186,7 +199,7 @@
                 <!-- 4. Caixa / Remessa -->
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Caixa / Remessa</label>
-                    <select name="caixa_id" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="caixa_id" id="caixaSelect" x-model="selectedCaixa" @change="onCaixaChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todas as Caixas</option>
                         {% for cx in caixas %}
                             <option value="{{ cx.id }}" {% if caixa_id == cx.id|stringformat:"i" %}selected{% endif %}>{{ cx.nome|truncatechars:38 }}</option>
@@ -577,7 +590,14 @@ function auditoriaApp() {
         showModal: false,
         modalData: null,
         isLoading: false,
+        allCegs: JSON.parse('{{ cegs_json|escapejs }}'),
+        allEras: JSON.parse('{{ eras_json|escapejs }}'),
+        allGrupos: JSON.parse('{{ grupos_json|escapejs }}'),
+        allCaixas: JSON.parse('{{ caixas_json|escapejs }}'),
+        selectedCaixa: '{{ caixa_id|default:""|escapejs }}',
         selectedGroup: '{{ grupo_id|default:""|escapejs }}',
+        selectedEra: '{{ era_id|default:""|escapejs }}',
+        selectedCeg: '{{ ceg_id|default:""|escapejs }}',
         currentFetchController: null,
 
         init() {
@@ -592,14 +612,99 @@ function auditoriaApp() {
             this.showModal = true;
         },
 
-        onGroupChange() {
-            const eraSelect = document.getElementById('eraSelect');
-            if (eraSelect && eraSelect.value) {
-                const selectedOption = eraSelect.options[eraSelect.selectedIndex];
-                if (selectedOption && selectedOption.dataset.group && this.selectedGroup && selectedOption.dataset.group !== this.selectedGroup) {
-                    eraSelect.value = '';
-                }
+        isGroupVisible(groupId) {
+            if (!groupId) return true;
+            const gid = parseInt(groupId);
+            if (this.selectedCaixa) {
+                const cid = parseInt(this.selectedCaixa);
+                return this.allCegs.some(c => c.caixa_id === cid && c.group_id === gid);
             }
+            return true;
+        },
+
+        isEraVisible(eraId) {
+            if (!eraId) return true;
+            const eid = parseInt(eraId);
+            const era = this.allEras.find(e => e.id === eid);
+            if (!era) return false;
+
+            if (this.selectedGroup && era.group_id !== parseInt(this.selectedGroup)) {
+                return false;
+            }
+            if (this.selectedCaixa) {
+                const cid = parseInt(this.selectedCaixa);
+                return this.allCegs.some(c => c.caixa_id === cid && c.era_id === eid);
+            }
+            return true;
+        },
+
+        isCegVisible(cegId) {
+            if (!cegId) return true;
+            const cid = parseInt(cegId);
+            const ceg = this.allCegs.find(c => c.id === cid);
+            if (!ceg) return false;
+
+            if (this.selectedCaixa && ceg.caixa_id !== parseInt(this.selectedCaixa)) {
+                return false;
+            }
+            if (this.selectedGroup && ceg.group_id !== parseInt(this.selectedGroup)) {
+                return false;
+            }
+            if (this.selectedEra && ceg.era_id !== parseInt(this.selectedEra)) {
+                return false;
+            }
+            return true;
+        },
+
+        onCaixaChange() {
+            this.$nextTick(() => {
+                if (this.selectedGroup && !this.isGroupVisible(this.selectedGroup)) {
+                    this.selectedGroup = '';
+                    const groupEl = document.getElementById('grupoSelect');
+                    if (groupEl) groupEl.value = '';
+                }
+                if (this.selectedEra && !this.isEraVisible(this.selectedEra)) {
+                    this.selectedEra = '';
+                    const eraEl = document.getElementById('eraSelect');
+                    if (eraEl) eraEl.value = '';
+                }
+                if (this.selectedCeg && !this.isCegVisible(this.selectedCeg)) {
+                    this.selectedCeg = '';
+                    const cegEl = document.getElementById('cegSelect');
+                    if (cegEl) cegEl.value = '';
+                }
+                this.applyFilters(true);
+            });
+        },
+
+        onGroupChange() {
+            this.$nextTick(() => {
+                if (this.selectedEra && !this.isEraVisible(this.selectedEra)) {
+                    this.selectedEra = '';
+                    const eraEl = document.getElementById('eraSelect');
+                    if (eraEl) eraEl.value = '';
+                }
+                if (this.selectedCeg && !this.isCegVisible(this.selectedCeg)) {
+                    this.selectedCeg = '';
+                    const cegEl = document.getElementById('cegSelect');
+                    if (cegEl) cegEl.value = '';
+                }
+                this.applyFilters(true);
+            });
+        },
+
+        onEraChange() {
+            this.$nextTick(() => {
+                if (this.selectedCeg && !this.isCegVisible(this.selectedCeg)) {
+                    this.selectedCeg = '';
+                    const cegEl = document.getElementById('cegSelect');
+                    if (cegEl) cegEl.value = '';
+                }
+                this.applyFilters(true);
+            });
+        },
+
+        onCegChange() {
             this.applyFilters(true);
         },
 
@@ -635,7 +740,10 @@ function auditoriaApp() {
         },
 
         resetFilters() {
+            this.selectedCaixa = '';
             this.selectedGroup = '';
+            this.selectedEra = '';
+            this.selectedCeg = '';
             const form = this.$refs.filterForm;
             if (form) {
                 form.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
@@ -678,7 +786,10 @@ function auditoriaApp() {
                         el.value = url.searchParams.get(field) || '';
                     }
                 });
+                this.selectedCaixa = url.searchParams.get('caixa_id') || '';
                 this.selectedGroup = url.searchParams.get('grupo_id') || '';
+                this.selectedEra = url.searchParams.get('era_id') || '';
+                this.selectedCeg = url.searchParams.get('ceg_id') || '';
             } catch (err) {
                 console.error('Erro ao sincronizar formulário com URL:', err);
             }
