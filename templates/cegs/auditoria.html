@@ -83,40 +83,97 @@
     <!-- Painel de Filtros Avançados -->
     <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
         <form method="GET" action="{% url 'auditoria_logs' %}" class="space-y-4" id="filterForm" x-ref="filterForm" @submit.prevent="applyFilters(true)">
+            <!-- Linha 1: Filtros Principais -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
                 <!-- 1. Campo de Busca Geral -->
-                <div class="lg:col-span-4 space-y-1">
+                <div class="lg:col-span-5 space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Busca Rápida</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">🔍</span>
-                        <input type="text" name="q" value="{{ q }}" placeholder="Nome, WhatsApp, CEG, Slot..."
+                        <input type="text" name="q" value="{{ q }}" placeholder="Nome, WhatsApp, CEG, Slot, Pacote..."
                                @input.debounce.350ms="applyFilters(true)"
                                class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                     </div>
                 </div>
 
                 <!-- 2. Tipo de Evento -->
-                <div class="lg:col-span-3 space-y-1">
+                <div class="lg:col-span-4 space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Tipo de Evento</label>
                     <select name="event_type" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todos os Eventos</option>
                         <option value="ACCOUNT_CREATED" {% if event_type == 'ACCOUNT_CREATED' %}selected{% endif %}>👤 Cadastro de Participante</option>
-                        <option value="CLAIMS_ALL" {% if event_type == 'CLAIMS_ALL' %}selected{% endif %}>🎯 Todos os Claims & Tentativas</option>
-                        <option value="CLAIM_SUCCESS" {% if event_type == 'CLAIM_SUCCESS' %}selected{% endif %}>&nbsp;&nbsp;↳ 🎯 Claim Garantido (1º Lugar)</option>
-                        <option value="CLAIM_ATTEMPT" {% if event_type == 'CLAIM_ATTEMPT' %}selected{% endif %}>&nbsp;&nbsp;↳ ⏳ Tentativa de Claim / Espera</option>
-                        <option value="CLAIM_CANCELLED" {% if event_type == 'CLAIM_CANCELLED' %}selected{% endif %}>&nbsp;&nbsp;↳ ✕ Claim Cancelado / Liberado</option>
-                        <option value="PAYMENTS_ALL" {% if event_type == 'PAYMENTS_ALL' %}selected{% endif %}>💳 Todos os Pagamentos</option>
-                        <option value="PAYMENT_ITEM" {% if event_type == 'PAYMENT_ITEM' %}selected{% endif %}>&nbsp;&nbsp;↳ 📦 Pagamento do Item</option>
-                        <option value="PAYMENT_FRETE_INTER" {% if event_type == 'PAYMENT_FRETE_INTER' %}selected{% endif %}>&nbsp;&nbsp;↳ ✈️ Frete Internacional</option>
-                        <option value="PAYMENT_TAXA" {% if event_type == 'PAYMENT_TAXA' %}selected{% endif %}>&nbsp;&nbsp;↳ 🏛️ Taxa Aduaneira</option>
-                        <option value="PAYMENT_FRETE_NACIONAL" {% if event_type == 'PAYMENT_FRETE_NACIONAL' %}selected{% endif %}>&nbsp;&nbsp;↳ 🚚 Frete Nacional</option>
-                        <option value="SLOT_ASSIGNED" {% if event_type == 'SLOT_ASSIGNED' %}selected{% endif %}>🔗 Slot Vinculado Manualmente</option>
-                        <option value="SLOT_RELEASED" {% if event_type == 'SLOT_RELEASED' %}selected{% endif %}>🔓 Slot Liberado Manualmente</option>
+                        
+                        <optgroup label="🎯 Claims & Corridas">
+                            <option value="CLAIMS_ALL" {% if event_type == 'CLAIMS_ALL' %}selected{% endif %}>🎯 Todos os Claims & Tentativas</option>
+                            <option value="CLAIM_SUCCESS" {% if event_type == 'CLAIM_SUCCESS' %}selected{% endif %}>&nbsp;&nbsp;↳ 🎯 Claim Garantido (1º Lugar)</option>
+                            <option value="CLAIM_ATTEMPT" {% if event_type == 'CLAIM_ATTEMPT' %}selected{% endif %}>&nbsp;&nbsp;↳ ⏳ Tentativa de Claim / Espera</option>
+                            <option value="CLAIM_CANCELLED" {% if event_type == 'CLAIM_CANCELLED' %}selected{% endif %}>&nbsp;&nbsp;↳ ✕ Claim Cancelado / Liberado</option>
+                        </optgroup>
+
+                        <optgroup label="💳 Financeiro & Pagamentos">
+                            <option value="PAYMENTS_ALL" {% if event_type == 'PAYMENTS_ALL' %}selected{% endif %}>💳 Todos os Pagamentos</option>
+                            <option value="PAYMENT_ITEM" {% if event_type == 'PAYMENT_ITEM' %}selected{% endif %}>&nbsp;&nbsp;↳ 📦 Pagamento do Item</option>
+                            <option value="PAYMENT_FRETE_INTER" {% if event_type == 'PAYMENT_FRETE_INTER' %}selected{% endif %}>&nbsp;&nbsp;↳ ✈️ Frete Internacional</option>
+                            <option value="PAYMENT_TAXA" {% if event_type == 'PAYMENT_TAXA' %}selected{% endif %}>&nbsp;&nbsp;↳ 🏛️ Taxa Aduaneira</option>
+                            <option value="PAYMENT_FRETE_NACIONAL" {% if event_type == 'PAYMENT_FRETE_NACIONAL' %}selected{% endif %}>&nbsp;&nbsp;↳ 🚚 Frete Nacional (Financeiro)</option>
+                        </optgroup>
+
+                        <optgroup label="📦 Envios Nacionais / Caixinha">
+                            <option value="PACKAGES_ALL" {% if event_type == 'PACKAGES_ALL' %}selected{% endif %}>📦 Todos os Envios Nacionais</option>
+                            <option value="PACKAGE_REQUESTED" {% if event_type == 'PACKAGE_REQUESTED' %}selected{% endif %}>&nbsp;&nbsp;↳ 📬 Solicitação de Envio</option>
+                            <option value="PACKAGE_SENT" {% if event_type == 'PACKAGE_SENT' %}selected{% endif %}>&nbsp;&nbsp;↳ 🚚 Pacote Despachado / Enviado</option>
+                            <option value="PACKAGE_DELIVERED" {% if event_type == 'PACKAGE_DELIVERED' %}selected{% endif %}>&nbsp;&nbsp;↳ 🎁 Pacote Entregue / Feedback Registrado</option>
+                        </optgroup>
+
+                        <optgroup label="🔗 Operações em Slots">
+                            <option value="SLOT_ASSIGNED" {% if event_type == 'SLOT_ASSIGNED' %}selected{% endif %}>🔗 Slot Vinculado Manualmente</option>
+                            <option value="SLOT_RELEASED" {% if event_type == 'SLOT_RELEASED' %}selected{% endif %}>🔓 Slot Liberado Manualmente</option>
+                        </optgroup>
                     </select>
                 </div>
 
-                <!-- 3. CEG -->
+                <!-- 3. Status de Pagamento / Resultado -->
                 <div class="lg:col-span-3 space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Status / Valor</label>
+                    <select name="status" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                        <option value="">Todos os Status</option>
+                        <option value="pago" {% if status_filter == 'pago' %}selected{% endif %}>Apenas Pago ✔</option>
+                        <option value="pendente" {% if status_filter == 'pendente' %}selected{% endif %}>Apenas Pendente ⏳</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Linha 2: Segmentação de Escopo (Grupo, Era, CEG, Caixa) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
+                <!-- 1. Grupo / Solista -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Grupo / Solista</label>
+                    <select name="grupo_id" x-model="selectedGroup" @change="onGroupChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                        <option value="">Todos os Grupos</option>
+                        {% for g in grupos %}
+                            <option value="{{ g.id }}" {% if grupo_id == g.id|stringformat:"i" %}selected{% endif %}>{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 2. Era / Comeback -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Era / Comeback</label>
+                    <select name="era_id" id="eraSelect" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                        <option value="">Todas as Eras</option>
+                        {% for e in eras %}
+                            <option value="{{ e.id }}"
+                                    data-group="{{ e.group_id }}"
+                                    x-show="!selectedGroup || selectedGroup == '{{ e.group_id }}'"
+                                    {% if era_id == e.id|stringformat:"i" %}selected{% endif %}>
+                                {{ e.group.name }} — {{ e.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 3. CEG Específica -->
+                <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">CEG Específica</label>
                     <select name="ceg_id" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todas as CEGs</option>
@@ -126,13 +183,14 @@
                     </select>
                 </div>
 
-                <!-- 4. Status de Pagamento / Resultado -->
-                <div class="lg:col-span-2 space-y-1">
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Status / Valor</label>
-                    <select name="status" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
-                        <option value="">Todos</option>
-                        <option value="pago" {% if status_filter == 'pago' %}selected{% endif %}>Apenas Pago ✔</option>
-                        <option value="pendente" {% if status_filter == 'pendente' %}selected{% endif %}>Apenas Pendente ⏳</option>
+                <!-- 4. Caixa / Remessa -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Caixa / Remessa</label>
+                    <select name="caixa_id" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                        <option value="">Todas as Caixas</option>
+                        {% for cx in caixas %}
+                            <option value="{{ cx.id }}" {% if caixa_id == cx.id|stringformat:"i" %}selected{% endif %}>{{ cx.nome|truncatechars:38 }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -262,6 +320,21 @@
                                             <span>🚚</span>
                                             <span>Frete Nacional</span>
                                         </span>
+                                    {% elif log.event_type == 'PACKAGE_REQUESTED' %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                            <span>📬</span>
+                                            <span>Solicitação Envio</span>
+                                        </span>
+                                    {% elif log.event_type == 'PACKAGE_SENT' %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                            <span>🚚</span>
+                                            <span>Pacote Despachado</span>
+                                        </span>
+                                    {% elif log.event_type == 'PACKAGE_DELIVERED' %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <span>🎁</span>
+                                            <span>Pacote Entregue</span>
+                                        </span>
                                     {% elif log.event_type == 'SLOT_ASSIGNED' %}
                                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
                                             <span>🔗</span>
@@ -301,7 +374,7 @@
                                     {% endif %}
                                 </td>
 
-                                <!-- Alvo / CEG -->
+                                <!-- Alvo / CEG / Remessa / Pacote -->
                                 <td class="py-3 px-4">
                                     {% if log.ceg %}
                                         <a href="{% url 'ceg_detail' log.ceg.slug %}" class="font-semibold text-slate-800 hover:text-pink-600 line-clamp-1 block" title="{{ log.ceg.title }}">
@@ -317,6 +390,13 @@
                                         <span class="text-[11px] text-slate-500 block">
                                             Mercari #{{ log.item_individual.id }} · {{ log.item_individual.nome }}
                                         </span>
+                                    {% elif log.pacote_nacional %}
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 block w-max">
+                                            <span>📦</span>
+                                            <span>Pacote {{ log.pacote_nacional.identificador }}</span>
+                                        </span>
+                                    {% elif not log.ceg %}
+                                        <span class="text-slate-400 italic text-[11px]">—</span>
                                     {% endif %}
                                 </td>
 
@@ -497,6 +577,7 @@ function auditoriaApp() {
         showModal: false,
         modalData: null,
         isLoading: false,
+        selectedGroup: '{{ grupo_id|default:""|escapejs }}',
         currentFetchController: null,
 
         init() {
@@ -509,6 +590,17 @@ function auditoriaApp() {
         openDetails(data) {
             this.modalData = data;
             this.showModal = true;
+        },
+
+        onGroupChange() {
+            const eraSelect = document.getElementById('eraSelect');
+            if (eraSelect && eraSelect.value) {
+                const selectedOption = eraSelect.options[eraSelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.group && this.selectedGroup && selectedOption.dataset.group !== this.selectedGroup) {
+                    eraSelect.value = '';
+                }
+            }
+            this.applyFilters(true);
         },
 
         setDateToday() {
@@ -543,6 +635,7 @@ function auditoriaApp() {
         },
 
         resetFilters() {
+            this.selectedGroup = '';
             const form = this.$refs.filterForm;
             if (form) {
                 form.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
@@ -578,13 +671,14 @@ function auditoriaApp() {
                 const form = this.$refs.filterForm;
                 if (!form) return;
 
-                const fields = ['q', 'event_type', 'ceg_id', 'status', 'date_from', 'date_to'];
+                const fields = ['q', 'event_type', 'grupo_id', 'era_id', 'ceg_id', 'caixa_id', 'status', 'date_from', 'date_to'];
                 fields.forEach(field => {
                     const el = form.elements[field];
                     if (el) {
                         el.value = url.searchParams.get(field) || '';
                     }
                 });
+                this.selectedGroup = url.searchParams.get('grupo_id') || '';
             } catch (err) {
                 console.error('Erro ao sincronizar formulário com URL:', err);
             }

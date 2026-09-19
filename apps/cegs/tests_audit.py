@@ -170,6 +170,52 @@ class AuditLogSystemTests(TestCase):
         self.assertIn('Mina Myoui', content)
         self.assertIn('Pagamento do Item', content)
 
+    def test_dashboard_filters_packages_and_scopes(self):
+        """Testa filtros de Envios Nacionais (PACKAGES_ALL) e escopos por Caixa, Grupo e Era."""
+        from apps.cegs.models import Caixa, PacoteNacional
+        self.client.force_login(self.staff_user)
+
+        caixa = Caixa.objects.create(nome='Caixa KR 2026-01')
+        self.ceg.caixa = caixa
+        self.ceg.save()
+
+        p = Participant.objects.create(name='Chaeyoung Son', whatsapp='5511944443333')
+        pacote = PacoteNacional.objects.create(
+            identificador='PAC-KR-001',
+            participant=p,
+            status=PacoteNacional.Status.SOLICITADO
+        )
+        AuditLog.objects.create(
+            event_type=AuditLog.EventType.PACKAGE_REQUESTED,
+            participant=p,
+            participant_name=p.name,
+            participant_phone=p.whatsapp,
+            pacote_nacional=pacote,
+            action_label=f"Solicitação de envio nacional via Minha Caixinha",
+            new_value=pacote.identificador,
+        )
+
+        # 1. Filtro PACKAGES_ALL
+        res_pkg = self.client.get('/auditoria/?event_type=PACKAGES_ALL')
+        self.assertEqual(res_pkg.status_code, 200)
+        self.assertContains(res_pkg, 'PAC-KR-001')
+        self.assertContains(res_pkg, 'Solicitação Envio')
+
+        # 2. Filtro por caixa_id
+        res_cx = self.client.get(f'/auditoria/?caixa_id={caixa.id}')
+        self.assertEqual(res_cx.status_code, 200)
+        self.assertEqual(res_cx.context['caixa_id'], str(caixa.id))
+
+        # 3. Filtro por grupo_id
+        res_gp = self.client.get(f'/auditoria/?grupo_id={self.group.id}')
+        self.assertEqual(res_gp.status_code, 200)
+        self.assertEqual(res_gp.context['grupo_id'], str(self.group.id))
+
+        # 4. Filtro por era_id
+        res_era = self.client.get(f'/auditoria/?era_id={self.era.id}')
+        self.assertEqual(res_era.status_code, 200)
+        self.assertEqual(res_era.context['era_id'], str(self.era.id))
+
     def test_backfill_comprehensive(self):
         """Testa o backfill histórico completo de participantes, claims, slots quitados e pacotes."""
         from apps.participants.models import Claim
