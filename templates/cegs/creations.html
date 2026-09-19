@@ -669,7 +669,8 @@
                 </button>
             </div>
 
-            <form action="{% url 'create_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="create_group_form" action="{% url 'create_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto"
+                  @submit="if (newGroupMemberInput && newGroupMemberInput.trim()) addGroupMember(false); if ($refs.newGroupMembersJson) $refs.newGroupMembersJson.value = JSON.stringify(newGroupMembers);">
                 {% csrf_token %}
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Grupo / Solista *</label>
@@ -751,7 +752,7 @@
                     </div>
 
                     <div class="flex gap-2">
-                        <input type="text" x-model="newGroupMemberInput"
+                        <input type="text" name="newGroupMemberInput" x-model="newGroupMemberInput"
                                @keydown="handleMemberInputKeydown($event, false)"
                                placeholder="Ex: Sakura, Chaewon, Yunjin... (aperte Enter)"
                                class="flex-1 bg-white border border-purple-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500 transition">
@@ -777,7 +778,7 @@
                     </div>
 
                     <!-- Campo oculto para envio no POST -->
-                    <input type="hidden" name="members_json" :value="JSON.stringify(newGroupMembers)">
+                    <input type="hidden" name="members_json" x-ref="newGroupMembersJson" :value="JSON.stringify(newGroupMembers)">
                 </div>
 
                 <div>
@@ -946,7 +947,8 @@
                 </button>
             </div>
 
-            <form action="{% url 'update_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="edit_group_form" action="{% url 'update_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto"
+                  @submit="if (editGroupMemberInput && editGroupMemberInput.trim()) addGroupMember(true); if ($refs.editGroupMembersJson) $refs.editGroupMembersJson.value = JSON.stringify(editGroupMembers);">
                 {% csrf_token %}
                 <input type="hidden" name="group_id" :value="editingGroupId">
 
@@ -997,7 +999,8 @@
 
                     <input type="file" x-ref="editGroupFileInput" name="image_file" accept="image/*" class="hidden"
                            @change="if ($event.target.files[0]) handleEditGroupImageFile($event.target.files[0])">
-                    <input type="hidden" name="image_url" :value="editGroupImageUrl">
+                    <input type="hidden" name="image_base64" x-ref="editGroupImageBase64Input" :value="editGroupImageBase64">
+                    <input type="hidden" name="image_url" x-ref="editGroupImageUrlInput" :value="editGroupImageUrl">
 
                     <div class="mt-1">
                         <div class="flex items-center gap-2 mb-1" x-show="editGroupImageUrl && (editGroupImageUrl.startsWith('/media/') || editGroupImageUrl.startsWith('data:'))">
@@ -1051,7 +1054,7 @@
                     </div>
 
                     <div class="flex gap-2">
-                        <input type="text" x-model="editGroupMemberInput"
+                        <input type="text" name="editGroupMemberInput" x-model="editGroupMemberInput"
                                @keydown="handleMemberInputKeydown($event, true)"
                                placeholder="Novo integrante... (aperte Enter ou vírgula)"
                                class="flex-1 bg-white border border-purple-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500 transition">
@@ -1077,7 +1080,7 @@
                     </div>
 
                     <!-- Campo oculto para envio no POST -->
-                    <input type="hidden" name="members_json" :value="JSON.stringify(editGroupMembers)">
+                    <input type="hidden" name="members_json" x-ref="editGroupMembersJson" :value="JSON.stringify(editGroupMembers)">
                 </div>
 
                 <div x-show="editingGroupId">
@@ -1122,7 +1125,7 @@
                 </button>
             </div>
 
-            <form action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="edit_era_form" action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
                 {% csrf_token %}
                 <input type="hidden" name="era_id" :value="editingEraId">
 
@@ -1194,9 +1197,8 @@
 
                     <input type="file" x-ref="editEraFileInput" name="banner_file" accept="image/*" class="hidden"
                            @change="if ($event.target.files[0]) handleEditEraBannerFile($event.target.files[0])">
-                    <input type="hidden" name="banner_base64" :value="editEraBannerBase64">
-
-                    <input type="hidden" name="banner_url" :value="editEraBannerUrl">
+                    <input type="hidden" name="banner_base64" x-ref="editEraBannerBase64Input" :value="editEraBannerBase64">
+                    <input type="hidden" name="banner_url" x-ref="editEraBannerUrlInput" :value="editEraBannerUrl">
 
                     <div class="mt-1">
                         <div class="flex items-center gap-2 mb-1" x-show="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:'))">
@@ -2909,18 +2911,30 @@ document.addEventListener('alpine:init', () => {
 
             // Permite colar múltiplos nomes separados por vírgula, barra ou quebra de linha
             const parts = val.replace(/\n/g, ',').replace(/;/g, ',').replace(/\//g, ',').split(',');
+            const current = [...this[listKey]];
             for (let p of parts) {
                 p = p.trim();
-                if (p && !this[listKey].some(m => m.toLowerCase() === p.toLowerCase())) {
-                    this[listKey].push(p);
+                if (p && !current.some(m => m.toLowerCase() === p.toLowerCase())) {
+                    current.push(p);
                 }
             }
+            this[listKey] = current;
             this[inputKey] = '';
+            const refName = isEdit ? 'editGroupMembersJson' : 'newGroupMembersJson';
+            if (this.$refs[refName]) {
+                this.$refs[refName].value = JSON.stringify(current);
+            }
         },
 
         removeGroupMember(index, isEdit = false) {
             const listKey = isEdit ? 'editGroupMembers' : 'newGroupMembers';
-            this[listKey].splice(index, 1);
+            const current = [...this[listKey]];
+            current.splice(index, 1);
+            this[listKey] = current;
+            const refName = isEdit ? 'editGroupMembersJson' : 'newGroupMembersJson';
+            if (this.$refs[refName]) {
+                this.$refs[refName].value = JSON.stringify(current);
+            }
         },
 
         handleMemberInputKeydown(event, isEdit = false) {
@@ -2935,12 +2949,19 @@ document.addEventListener('alpine:init', () => {
             reader.onload = (e) => {
                 this.editGroupImagePreview = e.target.result;
                 this.editGroupImageBase64 = e.target.result;
+                if (this.$refs.editGroupImageBase64Input) {
+                    this.$refs.editGroupImageBase64Input.value = e.target.result;
+                }
             };
             reader.readAsDataURL(file);
+            this.editGroupImageUrl = '';
+            if (this.$refs.editGroupImageUrlInput) {
+                this.$refs.editGroupImageUrlInput.value = '';
+            }
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                const fileInput = document.querySelector('form[action*="update_group"] input[name="image_file"]');
+                const fileInput = this.$refs.editGroupFileInput || document.querySelector('#edit_group_form input[name="image_file"]');
                 if (fileInput) fileInput.files = dt.files;
             } catch(e) {}
         },
@@ -2948,7 +2969,9 @@ document.addEventListener('alpine:init', () => {
             this.editGroupImagePreview = '';
             this.editGroupImageBase64 = '';
             this.editGroupImageUrl = '';
-            const fileInput = document.querySelector('form[action*="update_group"] input[name="image_file"]');
+            if (this.$refs.editGroupImageBase64Input) this.$refs.editGroupImageBase64Input.value = '';
+            if (this.$refs.editGroupImageUrlInput) this.$refs.editGroupImageUrlInput.value = '';
+            const fileInput = this.$refs.editGroupFileInput || document.querySelector('#edit_group_form input[name="image_file"]');
             if (fileInput) fileInput.value = '';
         },
 
@@ -2991,12 +3014,19 @@ document.addEventListener('alpine:init', () => {
             reader.onload = (e) => {
                 this.editEraBannerPreview = e.target.result;
                 this.editEraBannerBase64 = e.target.result;
+                if (this.$refs.editEraBannerBase64Input) {
+                    this.$refs.editEraBannerBase64Input.value = e.target.result;
+                }
             };
             reader.readAsDataURL(file);
+            this.editEraBannerUrl = '';
+            if (this.$refs.editEraBannerUrlInput) {
+                this.$refs.editEraBannerUrlInput.value = '';
+            }
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                const fileInput = document.querySelector('form[action*="update_era"] input[name="banner_file"]');
+                const fileInput = this.$refs.editEraFileInput || document.querySelector('#edit_era_form input[name="banner_file"]');
                 if (fileInput) fileInput.files = dt.files;
             } catch(e) {}
         },
@@ -3004,7 +3034,9 @@ document.addEventListener('alpine:init', () => {
             this.editEraBannerPreview = '';
             this.editEraBannerBase64 = '';
             this.editEraBannerUrl = '';
-            const fileInput = document.querySelector('form[action*="update_era"] input[name="banner_file"]');
+            if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+            if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = '';
+            const fileInput = this.$refs.editEraFileInput || document.querySelector('#edit_era_form input[name="banner_file"]');
             if (fileInput) fileInput.value = '';
         },
 
