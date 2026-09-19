@@ -131,6 +131,10 @@ class Participant(models.Model):
         handle = f" ({self.social_handle})" if self.social_handle else ""
         return f"{self.name}{user}{handle} - {self.whatsapp}"
 
+    @property
+    def display_name(self) -> str:
+        return self.username or self.name or f"Participante #{self.id}"
+
     def save(self, *args, **kwargs):
         if self.whatsapp:
             self.whatsapp = clean_phone_number(self.whatsapp)

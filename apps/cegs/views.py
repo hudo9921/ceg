@@ -217,6 +217,34 @@ class CEGDetailView(View):
             except Participant.DoesNotExist:
                 request.session.pop('participant_id', None)
 
+        # Polling / Sondagem de Demanda data
+        polling_summary = None
+        user_voted_def_ids = []
+        polling_item_definitions = []
+        if ceg.is_polling:
+            from django.db.models import Prefetch
+            from apps.cegs.polling_service import PollingDemandService
+            from apps.cegs.models import CEGInterestVote
+            polling_summary = PollingDemandService.get_polling_summary(ceg)
+            polling_item_definitions = list(
+                ceg.item_definitions.prefetch_related(
+                    Prefetch(
+                        'interest_votes',
+                        queryset=CEGInterestVote.objects.select_related(
+                            'participant',
+                            'converted_slot__set'
+                        ).order_by('created_at')
+                    )
+                ).select_related('tipo_item').order_by('order_index', 'name')
+            )
+            if logged_participant:
+                user_voted_def_ids = list(
+                    CEGInterestVote.objects.filter(
+                        ceg=ceg,
+                        participant=logged_participant
+                    ).values_list('item_definition_id', flat=True)
+                )
+
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
             'sets': active_sets,
@@ -234,6 +262,11 @@ class CEGDetailView(View):
             'item_type_choices_json': json.dumps(item_type_choices),
             'logged_participant': logged_participant,
             'claim_logs_by_slot_json': claim_logs_by_slot_json,
+            'polling_summary': polling_summary,
+            'polling_summary_json': json.dumps(polling_summary, default=str),
+            'user_voted_def_ids': user_voted_def_ids,
+            'user_voted_def_ids_json': json.dumps(user_voted_def_ids),
+            'polling_item_definitions': polling_item_definitions,
         })
 
 
