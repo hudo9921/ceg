@@ -400,6 +400,7 @@ class CaixaItemRate(models.Model):
 class CEG(models.Model):
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Rascunho'
+        POLLING = 'POLLING', 'Em Enquete / Sondagem de Demanda'
         SCHEDULED = 'SCHEDULED', 'Agendada (Standby / Countdown)'
         OPEN = 'OPEN', 'Aberta para Reservas'
         CLOSED = 'CLOSED', 'Encerrada'
@@ -806,6 +807,22 @@ class CEG(models.Model):
     @property
     def max_taxa_aduaneira(self):
         return self.taxa_rates_summary['max']
+
+    @property
+    def is_polling(self) -> bool:
+        return self.status == self.Status.POLLING
+
+    @property
+    def interest_votes_count(self) -> int:
+        return self.interest_votes.count()
+
+    @property
+    def viable_sets_count(self) -> int:
+        item_defs = self.item_definitions.all()
+        if not item_defs.exists():
+            return 0
+        counts = [it.interest_votes.count() for it in item_defs]
+        return min(counts) if counts else 0
 
 
 
@@ -1402,6 +1419,66 @@ class ItemSlot(models.Model):
         return motivo
 
 
+class CEGInterestVote(models.Model):
+    """
+    Voto / Demonstração de interesse de um participante em um item/membro de uma CEG em fase de enquete.
+    O timestamp possui precisão de microssegundos para critério de desempate inquestionável.
+    """
+    ceg = models.ForeignKey(
+        'cegs.CEG',
+        on_delete=models.CASCADE,
+        related_name='interest_votes',
+        verbose_name='CEG'
+    )
+    item_definition = models.ForeignKey(
+        'cegs.CEGItemDefinition',
+        on_delete=models.CASCADE,
+        related_name='interest_votes',
+        verbose_name='Item / Integrante'
+    )
+    participant = models.ForeignKey(
+        'participants.Participant',
+        on_delete=models.CASCADE,
+        related_name='ceg_interest_votes',
+        verbose_name='Participante'
+    )
+    converted_slot = models.ForeignKey(
+        ItemSlot,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='converted_from_vote',
+        verbose_name='Slot Convertido'
+    )
+    is_converted = models.BooleanField('Convertido em Slot', default=False)
+    notes = models.TextField('Observações', blank=True)
+    created_at = models.DateTimeField('Votado em', auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Voto de Interesse em CEG'
+        verbose_name_plural = 'Votos de Interesse em CEG'
+        unique_together = ('ceg', 'item_definition', 'participant')
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.participant.name} -> {self.item_definition.name} ({self.ceg.title})"
+
+    @property
+    def formatted_created_at(self) -> str:
+        if self.created_at:
+            from django.utils import timezone
+            local_dt = timezone.localtime(self.created_at) if timezone.is_aware(self.created_at) else self.created_at
+            return local_dt.strftime('%d/%m/%Y às %H:%M:%S.%f')[:-3]
+        return ""
+
+    @property
+    def masked_whatsapp(self) -> str:
+        if self.participant and self.participant.whatsapp:
+            w = self.participant.whatsapp
+            return f"****-{w[-4:]}"
+        return ""
+
+
 class ClaimAttemptLog(models.Model):
     class Result(models.TextChoices):
         SUCCESS = 'SUCCESS', '1º Lugar (Reserva Garantida)'
@@ -1624,6 +1701,8 @@ class AuditLog(models.Model):
         PACKAGE_DELIVERED = 'PACKAGE_DELIVERED', 'Pacote Entregue / Feedback Registrado'
         SLOT_ASSIGNED = 'SLOT_ASSIGNED', 'Slot Vinculado Manualmente'
         SLOT_RELEASED = 'SLOT_RELEASED', 'Slot Desvinculado Manualmente'
+        POLLING_VOTE = 'POLLING_VOTE', 'Voto em Enquete de Demanda'
+        POLLING_CONVERTED = 'POLLING_CONVERTED', 'Conversão de Enquete em Set'
         OTHER = 'OTHER', 'Outra Operação'
 
     event_type = models.CharField('Tipo de Evento', max_length=40, choices=EventType.choices, db_index=True)

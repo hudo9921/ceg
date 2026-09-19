@@ -547,8 +547,11 @@ class CreateCEGView(StaffRequiredMixin, View):
         banner_url = request.POST.get('banner_url', '').strip()
         description = request.POST.get('description', '').strip()
 
-        initial_sets_count = int(request.POST.get('initial_sets_count', 1) or 1)
-        initial_sets_count = max(1, min(initial_sets_count, 10))
+        if status == CEG.Status.POLLING:
+            initial_sets_count = 0
+        else:
+            initial_sets_count = int(request.POST.get('initial_sets_count', 1) or 1)
+            initial_sets_count = max(1, min(initial_sets_count, 10))
 
         if not era_id or not title:
             messages.error(request, "Por favor, selecione a Era e preencha o Título da CEG.")
@@ -727,13 +730,20 @@ class CreateCEGView(StaffRequiredMixin, View):
                                 except (Participant.DoesNotExist, ValueError):
                                     pass
 
-            pre_info = f", com {pre_reserved_count} item(ns) pré-reservado(s)" if pre_reserved_count > 0 else ""
-            messages.success(
-                request,
-                f"🎉 CEG '{ceg.title}' criada com sucesso! "
-                f"{len(created_items_map)} itens definidos{pre_info} e {initial_sets_count} Set(s) gerados "
-                f"({generated_slots_count} slots prontos para reservas)."
-            )
+            if ceg.status == CEG.Status.POLLING:
+                messages.success(
+                    request,
+                    f"🗳️ CEG '{ceg.title}' criada em Modo de Enquete / Sondagem com {len(created_items_map)} item(ns) definidos! "
+                    f"Os participantes já podem votar e demonstrar interesse."
+                )
+            else:
+                pre_info = f", com {pre_reserved_count} item(ns) pré-reservado(s)" if pre_reserved_count > 0 else ""
+                messages.success(
+                    request,
+                    f"🎉 CEG '{ceg.title}' criada com sucesso! "
+                    f"{len(created_items_map)} itens definidos{pre_info} e {initial_sets_count} Set(s) gerados "
+                    f"({generated_slots_count} slots prontos para reservas)."
+                )
             return redirect('ceg_detail', slug=ceg.slug)
 
         except Exception as e:
