@@ -24,7 +24,7 @@
 
         <div class="flex flex-wrap items-center gap-2.5">
             <!-- Botão Exportar CSV -->
-            <a href="?{{ pagination_query }}&export=csv" class="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <a href="?{{ pagination_query }}&export=csv" id="csvExportBtn" class="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                 <span>📥</span>
                 <span>Exportar CSV (Planilha)</span>
             </a>
@@ -38,7 +38,7 @@
     </div>
 
     <!-- Cards de Resumo Rápido (KPIs) -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div id="kpisContainer" class="grid grid-cols-2 md:grid-cols-4 gap-4 transition-opacity duration-150" :class="isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'">
         <!-- 1. Total de Logs -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
             <div class="flex items-center justify-between text-slate-500">
@@ -82,7 +82,7 @@
 
     <!-- Painel de Filtros Avançados -->
     <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
-        <form method="GET" action="{% url 'auditoria_logs' %}" class="space-y-4" id="filterForm">
+        <form method="GET" action="{% url 'auditoria_logs' %}" class="space-y-4" id="filterForm" x-ref="filterForm" @submit.prevent="applyFilters(true)">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
                 <!-- 1. Campo de Busca Geral -->
                 <div class="lg:col-span-4 space-y-1">
@@ -90,6 +90,7 @@
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">🔍</span>
                         <input type="text" name="q" value="{{ q }}" placeholder="Nome, WhatsApp, CEG, Slot..."
+                               @input.debounce.350ms="applyFilters(true)"
                                class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                     </div>
                 </div>
@@ -97,7 +98,7 @@
                 <!-- 2. Tipo de Evento -->
                 <div class="lg:col-span-3 space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Tipo de Evento</label>
-                    <select name="event_type" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="event_type" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todos os Eventos</option>
                         <option value="ACCOUNT_CREATED" {% if event_type == 'ACCOUNT_CREATED' %}selected{% endif %}>👤 Cadastro de Participante</option>
                         <option value="CLAIMS_ALL" {% if event_type == 'CLAIMS_ALL' %}selected{% endif %}>🎯 Todos os Claims & Tentativas</option>
@@ -117,7 +118,7 @@
                 <!-- 3. CEG -->
                 <div class="lg:col-span-3 space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">CEG Específica</label>
-                    <select name="ceg_id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="ceg_id" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todas as CEGs</option>
                         {% for c in cegs %}
                             <option value="{{ c.id }}" {% if ceg_id == c.id|stringformat:"i" %}selected{% endif %}>{{ c.title|truncatechars:38 }}</option>
@@ -128,7 +129,7 @@
                 <!-- 4. Status de Pagamento / Resultado -->
                 <div class="lg:col-span-2 space-y-1">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Status / Valor</label>
-                    <select name="status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <select name="status" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
                         <option value="">Todos</option>
                         <option value="pago" {% if status_filter == 'pago' %}selected{% endif %}>Apenas Pago ✔</option>
                         <option value="pendente" {% if status_filter == 'pendente' %}selected{% endif %}>Apenas Pendente ⏳</option>
@@ -141,9 +142,11 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs font-bold text-slate-500">Período:</span>
                     <input type="date" name="date_from" id="date_from" value="{{ date_from }}"
+                           @change="applyFilters(true)"
                            class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-pink-500">
                     <span class="text-xs text-slate-400">até</span>
                     <input type="date" name="date_to" id="date_to" value="{{ date_to }}"
+                           @change="applyFilters(true)"
                            class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-pink-500">
 
                     <!-- Atalhos rápidos de data -->
@@ -155,12 +158,25 @@
                 </div>
 
                 <div class="flex items-center gap-2 self-end sm:self-auto">
-                    <a href="{% url 'auditoria_logs' %}" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition">
+                    <button type="button" @click="resetFilters()" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition">
                         Limpar Filtros
-                    </a>
-                    <button type="submit" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
-                        <span>🔍</span>
-                        <span>Filtrar Logs</span>
+                    </button>
+                    <button type="submit" :disabled="isLoading" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                        <template x-if="!isLoading">
+                            <span class="flex items-center gap-1.5">
+                                <span>🔍</span>
+                                <span>Filtrar Logs</span>
+                            </span>
+                        </template>
+                        <template x-if="isLoading">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                                <span>Filtrando...</span>
+                            </span>
+                        </template>
                     </button>
                 </div>
             </div>
@@ -168,7 +184,10 @@
     </div>
 
     <!-- Tabela Principal de Auditoria -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div id="auditTableContainer"
+         class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-opacity duration-150"
+         :class="isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'"
+         @click="handleContainerClick($event)">
         <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <h2 class="text-base font-bold text-slate-900">Histórico de Atividades</h2>
@@ -388,9 +407,9 @@
                     Não encontramos eventos com os filtros selecionados. Tente limpar os filtros ou realizar ações no sistema.
                 </p>
                 <div class="pt-2">
-                    <a href="{% url 'auditoria_logs' %}" class="px-4 py-2 bg-pink-50 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold hover:bg-pink-100 transition inline-block">
+                    <button type="button" @click="resetFilters()" class="px-4 py-2 bg-pink-50 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold hover:bg-pink-100 transition inline-block cursor-pointer">
                         Limpar Todos os Filtros
-                    </a>
+                    </button>
                 </div>
             </div>
         {% endif %}
@@ -477,6 +496,15 @@ function auditoriaApp() {
     return {
         showModal: false,
         modalData: null,
+        isLoading: false,
+        currentFetchController: null,
+
+        init() {
+            window.addEventListener('popstate', () => {
+                this.syncFormFromUrl(window.location.href);
+                this.loadUrl(window.location.href, false);
+            });
+        },
 
         openDetails(data) {
             this.modalData = data;
@@ -485,26 +513,164 @@ function auditoriaApp() {
 
         setDateToday() {
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('date_from').value = today;
-            document.getElementById('date_to').value = today;
+            const df = document.getElementById('date_from');
+            const dt = document.getElementById('date_to');
+            if (df) df.value = today;
+            if (dt) dt.value = today;
+            this.applyFilters(true);
         },
 
         setDateLast7Days() {
             const end = new Date();
             const start = new Date();
             start.setDate(end.getDate() - 7);
-            document.getElementById('date_from').value = start.toISOString().split('T')[0];
-            document.getElementById('date_to').value = end.toISOString().split('T')[0];
+            const df = document.getElementById('date_from');
+            const dt = document.getElementById('date_to');
+            if (df) df.value = start.toISOString().split('T')[0];
+            if (dt) dt.value = end.toISOString().split('T')[0];
+            this.applyFilters(true);
         },
 
         setDateLast30Days() {
             const end = new Date();
             const start = new Date();
             start.setDate(end.getDate() - 30);
-            document.getElementById('date_from').value = start.toISOString().split('T')[0];
-            document.getElementById('date_to').value = end.toISOString().split('T')[0];
+            const df = document.getElementById('date_from');
+            const dt = document.getElementById('date_to');
+            if (df) df.value = start.toISOString().split('T')[0];
+            if (dt) dt.value = end.toISOString().split('T')[0];
+            this.applyFilters(true);
+        },
+
+        resetFilters() {
+            const form = this.$refs.filterForm;
+            if (form) {
+                form.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
+                    el.value = '';
+                });
+            }
+            this.applyFilters(true);
+        },
+
+        handleContainerClick(event) {
+            const link = event.target.closest('a');
+            if (!link) return;
+
+            const href = link.getAttribute('href');
+            if (!href) return;
+
+            try {
+                const urlObj = new URL(link.href, window.location.origin);
+                // Intercept clicks on pagination links or relative filter links within table container
+                if (urlObj.pathname === window.location.pathname) {
+                    event.preventDefault();
+                    this.syncFormFromUrl(link.href);
+                    this.loadUrl(link.href, true);
+                }
+            } catch (e) {
+                // Let native click proceed if URL parsing fails
+            }
+        },
+
+        syncFormFromUrl(urlStr) {
+            try {
+                const url = new URL(urlStr, window.location.origin);
+                const form = this.$refs.filterForm;
+                if (!form) return;
+
+                const fields = ['q', 'event_type', 'ceg_id', 'status', 'date_from', 'date_to'];
+                fields.forEach(field => {
+                    const el = form.elements[field];
+                    if (el) {
+                        el.value = url.searchParams.get(field) || '';
+                    }
+                });
+            } catch (err) {
+                console.error('Erro ao sincronizar formulário com URL:', err);
+            }
+        },
+
+        applyFilters(resetPage = true) {
+            const form = this.$refs.filterForm;
+            if (!form) return;
+
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+
+            for (const [key, value] of formData.entries()) {
+                if (key === 'csrfmiddlewaretoken') continue;
+                if (value && value.toString().trim() !== '') {
+                    params.set(key, value.toString().trim());
+                }
+            }
+
+            if (!resetPage) {
+                const currentUrl = new URL(window.location.href);
+                const currentPage = currentUrl.searchParams.get('page');
+                if (currentPage) params.set('page', currentPage);
+            }
+
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            this.loadUrl(newUrl, true);
+        },
+
+        async loadUrl(url, pushHistory = true) {
+            if (this.currentFetchController) {
+                this.currentFetchController.abort();
+            }
+            this.currentFetchController = new AbortController();
+            this.isLoading = true;
+
+            try {
+                const response = await fetch(url, {
+                    signal: this.currentFetchController.signal,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+                const htmlText = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+
+                // Swap KPI cards
+                const newKpis = doc.getElementById('kpisContainer');
+                const curKpis = document.getElementById('kpisContainer');
+                if (newKpis && curKpis) {
+                    curKpis.innerHTML = newKpis.innerHTML;
+                }
+
+                // Swap CSV export button href
+                const newCsv = doc.getElementById('csvExportBtn');
+                const curCsv = document.getElementById('csvExportBtn');
+                if (newCsv && curCsv) {
+                    curCsv.setAttribute('href', newCsv.getAttribute('href'));
+                }
+
+                // Swap Table Container & re-init Alpine bindings
+                const newTable = doc.getElementById('auditTableContainer');
+                const curTable = document.getElementById('auditTableContainer');
+                if (newTable && curTable) {
+                    curTable.innerHTML = newTable.innerHTML;
+                    if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                        window.Alpine.initTree(curTable);
+                    }
+                }
+
+                if (pushHistory) {
+                    window.history.pushState({}, '', url);
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Falha ao atualizar logs dinamicamente:', err);
+                }
+            } finally {
+                this.isLoading = false;
+            }
         }
-    }
+    };
 }
 </script>
 {% endblock %}
