@@ -69,12 +69,20 @@ from .vitrine_views import (
     VitrineToggleStatusView,
     CaixaTransferUnclaimedToVitrineView,
 )
+from .polling_views import (
+    CEGVoteView,
+    ConsolidatePollingView,
+    CEGPollingSummaryAPIView,
+)
 from apps.participants.views import BulkParticipantCreateView
 
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
     path('cegs/alocar-joiners/', CEGBulkAllocatorView.as_view(), name='bulk_joiner_allocator_global'),
     path('ceg/<slug:slug>/', CEGDetailView.as_view(), name='ceg_detail'),
+    path('ceg/<slug:slug>/vote/', CEGVoteView.as_view(), name='ceg_vote'),
+    path('ceg/<slug:slug>/consolidate-polling/', ConsolidatePollingView.as_view(), name='consolidate_polling'),
+    path('ceg/<slug:slug>/polling-summary/', CEGPollingSummaryAPIView.as_view(), name='ceg_polling_summary_api'),
     path('ceg/<slug:slug>/edit/', UpdateCEGView.as_view(), name='update_ceg'),
     path('ceg/<slug:slug>/update-fees/', UpdateCEGFeesView.as_view(), name='update_ceg_fees'),
     path('ceg/<slug:slug>/logs-espera/', CEGLogsAndWaitingListView.as_view(), name='ceg_logs_espera'),

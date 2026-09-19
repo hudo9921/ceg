@@ -98,6 +98,112 @@
              }
          },
          // --- End Multi-Select Claim ---
+         // --- Polling / Sondagem de Demanda ---
+         selectedVoteDefIds: [],
+         userVotedDefIds: JSON.parse('{{ user_voted_def_ids_json|default:'[]'|escapejs }}'),
+         voteModalOpen: false,
+         voteLoading: false,
+         consolidateModalOpen: false,
+         consolidateLoading: false,
+         numSetsToOpen: {{ ceg.viable_sets_count|default:1 }},
+         expandedVotes: {},
+         toggleVotesAccordion(id) {
+             this.expandedVotes[id] = !this.expandedVotes[id];
+         },
+         isVotesAccordionOpen(id) {
+             return !!this.expandedVotes[id];
+         },
+         toggleVoteSelection(item) {
+             if (this.isStandby) return;
+             const idx = this.selectedVoteDefIds.findIndex(i => i.id === item.id);
+             if (idx === -1) {
+                 this.selectedVoteDefIds.push(item);
+             } else {
+                 this.selectedVoteDefIds.splice(idx, 1);
+             }
+         },
+         isVoteSelected(id) {
+             return this.selectedVoteDefIds.some(i => i.id === id);
+         },
+         clearVoteSelection() {
+             this.selectedVoteDefIds = [];
+         },
+         openVoteModal() {
+             if (this.isStandby || this.selectedVoteDefIds.length === 0) return;
+             this.voteModalOpen = true;
+         },
+         closeVoteModal() {
+             this.voteModalOpen = false;
+         },
+         async submitVotes() {
+             if (this.isStandby) {
+                 alert('A votação ainda não foi aberta!');
+                 return;
+             }
+             if (this.voteLoading || this.selectedVoteDefIds.length === 0) return;
+             this.voteLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/ceg/{{ ceg.slug }}/vote/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                     },
+                     body: JSON.stringify({
+                         item_definition_ids: this.selectedVoteDefIds.map(i => i.id),
+                         name: this.formName,
+                         whatsapp: this.formWhatsapp,
+                         social_handle: this.formSocial,
+                         username: this.formUsername,
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Voto(s) registrado(s) com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao registrar voto.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.voteLoading = false;
+             }
+         },
+         async submitConsolidate() {
+             if (this.consolidateLoading) return;
+             const setsNum = parseInt(this.numSetsToOpen) || 1;
+             if (!confirm(`Confirma a consolidação da enquete abrindo ${setsNum} set(s)?\n\nIsso criará os sets e slots físicos oficiais, alocará os primeiros colocados de cada integrante e enviará notificações para os contemplados.`)) {
+                 return;
+             }
+             this.consolidateLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/ceg/{{ ceg.slug }}/consolidate-polling/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                     },
+                     body: JSON.stringify({
+                         num_sets: setsNum,
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Enquete consolidada em sets com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao consolidar enquete.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.consolidateLoading = false;
+             }
+         },
+         // --- End Polling ---
          selectedSlotIds: [],
          selectedItemDefIds: [],
          bulkTypeModalOpen: false,
@@ -1025,6 +1131,111 @@
                 </div>
             </div>
 
+            {% if ceg.is_polling %}
+            <!-- Standby Countdown Alert Banner (Quando Enquete Agendada com Contagem Regressiva) -->
+            <div x-show="isStandby" x-cloak
+                class="bg-gradient-to-r from-amber-500 via-orange-500 to-purple-600 p-6 rounded-2xl text-white shadow-xl space-y-3 border border-amber-300/40 animate-fade-in">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/30 text-amber-200 border border-white/20">
+                                ⏳ Standby / Countdown
+                            </span>
+                            <span class="text-xs font-bold text-amber-100">
+                                Enquete Agendada
+                            </span>
+                        </div>
+                        <h3 class="text-lg font-black tracking-tight flex items-center gap-2">
+                            <span>🗳️</span>
+                            VOTAÇÃO DA ENQUETE EM CONTAGEM REGRESSIVA
+                        </h3>
+                        <p class="text-xs text-amber-100 max-w-xl">
+                            A seleção de integrantes e o envio de votos abrem oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y às H:i:s" }}</strong>.
+                            A grade abaixo está bloqueada e destravará em tempo real no segundo zero!
+                        </p>
+                    </div>
+                    <div class="flex space-x-2 text-center">
+                        <div class="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl min-w-[55px] border border-white/10 shadow-inner">
+                            <span class="block text-xl font-black" x-text="formatCountdown().d"></span>
+                            <span class="text-[10px] uppercase font-bold text-amber-200">Dias</span>
+                        </div>
+                        <div class="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl min-w-[55px] border border-white/10 shadow-inner">
+                            <span class="block text-xl font-black" x-text="formatCountdown().h"></span>
+                            <span class="text-[10px] uppercase font-bold text-amber-200">Horas</span>
+                        </div>
+                        <div class="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl min-w-[55px] border border-white/10 shadow-inner">
+                            <span class="block text-xl font-black" x-text="formatCountdown().m"></span>
+                            <span class="text-[10px] uppercase font-bold text-amber-200">Min</span>
+                        </div>
+                        <div class="bg-black/40 backdrop-blur-md px-3 py-2 rounded-xl min-w-[55px] border border-white/10 shadow-inner">
+                            <span class="block text-xl font-black text-yellow-300" x-text="formatCountdown().s"></span>
+                            <span class="text-[10px] uppercase font-bold text-amber-200">Seg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Polling Demand Banner -->
+            <div class="bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-xl space-y-4 border border-purple-500/40">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <template x-if="!isStandby">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 flex items-center gap-1">
+                                    <span>🗳️</span> Enquete de Demanda Ativa
+                                </span>
+                            </template>
+                            <template x-if="isStandby">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/30 text-amber-200 border border-amber-400/40 flex items-center gap-1">
+                                    <span>🔒</span> Enquete em Standby (Countdown)
+                                </span>
+                            </template>
+                            <span class="text-xs font-bold text-amber-300">
+                                {{ ceg.interest_votes_count }} voto(s) computado(s)
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-black text-white tracking-tight">
+                            Sondagem de Demanda de Sets
+                        </h3>
+                        <p class="text-xs text-purple-200 max-w-2xl leading-relaxed">
+                            <span x-show="!isStandby">Vote nos integrantes ou itens de seu interesse! É permitido selecionar <strong>múltiplos integrantes</strong> de uma só vez.</span>
+                            <span x-show="isStandby" x-cloak>Esta enquete está em contagem regressiva. Os cards destravarão automaticamente quando o cronômetro zerar para você selecionar seus membros.</span>
+                            Quando o organizador oficializar os sets, as vagas serão preenchidas prioritariamente por ordem cronológica exata de envio do voto (timestamp com auditoria de microssegundos).
+                        </p>
+                    </div>
+                    {% if user.is_staff %}
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="button" @click="consolidateModalOpen = true"
+                            class="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-lg hover:shadow-xl transition flex items-center gap-2 cursor-pointer">
+                            <span>🚀</span> Consolidar em Sets
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Indicador de Viabilidade de Sets -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-purple-800/60 text-xs">
+                    <div class="bg-white/5 rounded-xl p-3 border border-white/10">
+                        <span class="text-[10px] uppercase font-bold text-purple-300 block">Sets 100% Viáveis</span>
+                        <span class="text-lg font-black text-emerald-400">{{ ceg.viable_sets_count }} set(s)</span>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 border border-white/10">
+                        <span class="text-[10px] uppercase font-bold text-purple-300 block">Total de Votos</span>
+                        <span class="text-lg font-black text-white">{{ ceg.interest_votes_count }}</span>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 border border-white/10">
+                        <span class="text-[10px] uppercase font-bold text-purple-300 block">Itens Disponíveis</span>
+                        <span class="text-lg font-black text-white">{{ ceg.item_definitions.count }}</span>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 border border-white/10">
+                        <span class="text-[10px] uppercase font-bold text-purple-300 block">Prazo Pagto Item</span>
+                        <span class="text-xs font-bold text-pink-300 mt-1 block">
+                            {% if ceg.prazo_pagamento_item %}{{ ceg.prazo_pagamento_item|date:"d/m/Y H:i" }}{% else %}A definir{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% else %}
             <!-- Standby Countdown Alert Banner -->
             <div x-show="isStandby" x-cloak
                 class="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500 p-6 rounded-xl text-white shadow-lg space-y-3">
@@ -1071,6 +1282,7 @@
                 <span class="text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full font-bold">1 pessoa por
                     slot</span>
             </div>
+            {% endif %}
         </div>
 
         <!-- Sticky Bulk Actions Toolbar para o Organizador -->
@@ -1107,6 +1319,188 @@
         </div>
         {% endif %}
 
+        <!-- Sets & Slots List ou Grade de Enquete -->
+        {% if ceg.is_polling %}
+        <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#131B2E] p-5 rounded-2xl border border-purple-200/80 dark:border-purple-500/30 shadow-sm">
+                <div>
+                    <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>🗳️</span> Integrantes & Itens da Enquete
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <span x-show="!isStandby">Selecione todos os integrantes que você deseja. A votação múltipla permite votar em quantos membros quiser!</span>
+                        <span x-show="isStandby" x-cloak class="text-amber-700 dark:text-amber-400 font-bold">🔒 Votação bloqueada durante a contagem regressiva. Os cards destravarão automaticamente no segundo zero!</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span x-show="!isStandby" class="text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/60 px-3 py-1.5 rounded-xl">
+                        ✨ Votação Múltipla Habilitada
+                    </span>
+                    <span x-show="isStandby" x-cloak class="text-xs font-black text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/60 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
+                        <span class="animate-pulse">⏳</span>
+                        <span>Abre em <strong class="font-mono text-amber-900 dark:text-amber-200" x-text="(formatCountdown().d > 0 ? formatCountdown().d + 'd ' : '') + formatCountdown().h + ':' + formatCountdown().m + ':' + formatCountdown().s"></strong></span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 items-start">
+                {% for item_def in polling_item_definitions|default:ceg.item_definitions.all %}
+                <div @click="if (isStandby) return; toggleVoteSelection({ id: {{ item_def.id }}, name: '{{ item_def.name|escapejs }}', member: '{{ item_def.member_name|default:''|escapejs }}', type: '{{ item_def.tipo_item_nome|escapejs }}', price: '{{ item_def.base_price|floatformat:2 }}' })"
+                    class="relative rounded-2xl border p-4 transition flex flex-col justify-between select-none shadow-sm group"
+                    :class="isStandby
+                        ? 'cursor-not-allowed bg-white dark:bg-[#131B2E] border-slate-200 dark:border-slate-800'
+                        : (isVoteSelected({{ item_def.id }})
+                            ? 'bg-purple-50/90 dark:bg-purple-950/50 border-purple-500 dark:border-purple-500 ring-2 ring-purple-500 shadow-md cursor-pointer hover:-translate-y-0.5'
+                            : 'bg-white dark:bg-[#131B2E] border-slate-200 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-500/60 hover:shadow-md cursor-pointer hover:-translate-y-0.5')">
+                    
+                    <!-- Top Bar: Checkbox & Type -->
+                    <div class="flex items-center justify-between gap-1.5 mb-2.5">
+                        <input type="checkbox" :checked="isVoteSelected({{ item_def.id }})" :disabled="isStandby" @click.stop
+                            @change="if (isStandby) return; toggleVoteSelection({ id: {{ item_def.id }}, name: '{{ item_def.name|escapejs }}', member: '{{ item_def.member_name|default:''|escapejs }}', type: '{{ item_def.tipo_item_nome|escapejs }}', price: '{{ item_def.base_price|floatformat:2 }}' })"
+                            class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-purple-600 focus:ring-purple-500"
+                            :class="isStandby ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'">
+                        
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate">
+                            🏷️ {{ item_def.tipo_item_nome }}
+                        </span>
+                    </div>
+
+                    <!-- Member & Item Info -->
+                    <div class="space-y-1.5 mb-3 flex-1">
+                        {% if item_def.member_name %}
+                        <span class="text-xs font-black text-pink-600 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/70 px-2 py-0.5 rounded-lg border border-pink-100 dark:border-pink-800/60 inline-block shadow-2xs">
+                            {{ item_def.member_name }}
+                        </span>
+                        {% endif %}
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                            {{ item_def.name }}
+                        </h3>
+                        <div class="text-sm font-black text-slate-900 dark:text-purple-300 font-mono">
+                            R$ {{ item_def.base_price|floatformat:2 }}
+                        </div>
+                    </div>
+
+                    <!-- Rodapé: Votos e Status -->
+                    <div class="pt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="text-slate-500 dark:text-slate-400 font-bold">Demanda:</span>
+                            <span class="font-black text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/60">
+                                {{ item_def.interest_votes.count }} voto(s)
+                            </span>
+                        </div>
+
+                        <!-- Standby Lock Badge -->
+                        <div x-show="isStandby" x-cloak
+                            class="text-center py-1.5 px-2 bg-amber-500/10 dark:bg-amber-950/50 border border-amber-300/60 dark:border-amber-700/60 rounded-xl text-[11px] font-black text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5 shadow-2xs">
+                            <span>🔒</span> <span>Abre no segundo zero</span>
+                        </div>
+
+                        <template x-if="!isStandby && userVotedDefIds.includes({{ item_def.id }})">
+                            <div class="text-center py-1.5 px-2 bg-emerald-500/10 dark:bg-emerald-950/50 border border-emerald-300/60 dark:border-emerald-700/60 rounded-xl text-[11px] font-black text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1.5 shadow-2xs">
+                                <span>✔</span> <span>Você já votou</span>
+                            </div>
+                        </template>
+
+                        <!-- Botão Acordeão de Auditoria de Votos -->
+                        <button type="button" @click.stop="toggleVotesAccordion({{ item_def.id }})"
+                            class="w-full py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between border cursor-pointer select-none
+                                   bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border-slate-200 hover:border-purple-300
+                                   dark:bg-slate-800 dark:hover:bg-purple-950/60 dark:text-slate-200 dark:hover:text-purple-200 dark:border-slate-700 dark:hover:border-purple-500/50 shadow-2xs"
+                            title="Visualizar auditoria completa de quem votou e horário">
+                            <span class="flex items-center gap-1.5 truncate">
+                                <span>👁️</span>
+                                <span class="truncate">Ver Votos</span>
+                                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black
+                                             bg-purple-100 text-purple-800 border border-purple-200
+                                             dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50 shrink-0">
+                                    {{ item_def.interest_votes.count }}
+                                </span>
+                            </span>
+                            <span class="text-xs transition-transform duration-200 font-bold shrink-0 ml-1" :class="isVotesAccordionOpen({{ item_def.id }}) ? 'rotate-180 text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500'">
+                                ▾
+                            </span>
+                        </button>
+
+                        <!-- Painel Acordeão Expansível com Auditoria Cristalina de Votos -->
+                        <div x-show="isVotesAccordionOpen({{ item_def.id }})" x-cloak
+                            @click.stop
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-1"
+                            class="p-2.5 rounded-xl bg-slate-50/95 dark:bg-slate-900/95 border border-purple-200/80 dark:border-purple-900/60 space-y-2 text-xs shadow-inner">
+                            
+                            <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                <span>Fila / Votante</span>
+                                <span>Timestamp</span>
+                            </div>
+
+                            {% if item_def.interest_votes.all %}
+                            <div class="max-h-52 overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
+                                {% for vote in item_def.interest_votes.all %}
+                                <div class="p-2 rounded-lg bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 flex flex-col gap-1 shadow-2xs">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0
+                                                         {% if ceg.viable_sets_count > 0 and forloop.counter <= ceg.viable_sets_count %}
+                                                         bg-emerald-100 text-emerald-800 dark:bg-emerald-950/90 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700
+                                                         {% else %}
+                                                         bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600
+                                                         {% endif %}">
+                                                {{ forloop.counter }}º
+                                            </span>
+                                            <span class="font-bold text-slate-900 dark:text-white truncate text-xs" title="{{ vote.participant.name }}">
+                                                {{ vote.participant.name }}
+                                                {% if vote.participant.social_handle %}
+                                                <span class="text-[10px] font-normal text-pink-500 dark:text-pink-400 font-mono">({{ vote.participant.social_handle }})</span>
+                                                {% elif vote.participant.username and vote.participant.username != vote.participant.name %}
+                                                <span class="text-[10px] font-normal text-slate-500 dark:text-slate-400">({{ vote.participant.username }})</span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+
+                                        {% if vote.is_converted and vote.converted_slot %}
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shrink-0">
+                                            Set #{{ vote.converted_slot.set.set_number }}
+                                        </span>
+                                        {% elif ceg.sets.count > 0 %}
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-700 shrink-0">
+                                            Excedente
+                                        </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5 font-mono">
+                                        <span class="flex items-center gap-1 text-slate-600 dark:text-slate-300 font-semibold" title="Timestamp com precisão de microssegundos">
+                                            <span>🕒</span> {{ vote.formatted_created_at }}
+                                        </span>
+                                        {% if vote.masked_whatsapp %}
+                                        <span class="text-slate-400 dark:text-slate-500 text-[9px]">{{ vote.masked_whatsapp }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="py-3 text-center text-slate-400 dark:text-slate-500 text-[11px] italic">
+                                Nenhum voto registrado ainda.
+                            </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+
+                </div>
+                {% empty %}
+                <div class="col-span-full py-12 text-center text-slate-400 dark:text-slate-500 text-sm bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800">
+                    Nenhum integrante cadastrado nesta enquete.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
         <!-- Sets & Slots List -->
         <div class="space-y-8">
             {% for set in sets %}
@@ -1620,6 +2014,7 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
 
         <!-- Modal de Reserva (Claim Modal) -->
         <div x-show="modalOpen" x-cloak
@@ -3270,6 +3665,221 @@
 </div>
 {% endif %}
 
+{% if ceg.is_polling %}
+<!-- ===== BARRA FLUTUANTE DE VOTAÇÃO NA ENQUETE ===== -->
+<div x-show="!isStandby && selectedVoteDefIds.length > 0" x-cloak
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100"
+    x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100"
+    x-transition:leave-end="translate-y-full opacity-0"
+    class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-purple-500/40 shadow-2xl px-4 py-3 sm:px-6">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-black text-purple-300 shrink-0"
+                x-text="selectedVoteDefIds.length + ' item(ns) selecionado(s)'"></span>
+            <div class="flex items-center gap-1 flex-wrap">
+                <template x-for="item in selectedVoteDefIds" :key="item.id">
+                    <span class="text-[10px] font-bold text-white bg-purple-600/80 px-2 py-0.5 rounded-full border border-purple-500/50 flex items-center gap-1">
+                        <span x-text="(item.member ? item.member + ' · ' : '') + item.name"></span>
+                        <button type="button" @click.stop="toggleVoteSelection(item)" class="text-purple-200 hover:text-white ml-0.5 font-black text-xs cursor-pointer">✕</button>
+                    </span>
+                </template>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" @click="clearVoteSelection()" class="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer">
+                Limpar
+            </button>
+            <button type="button" @click="openVoteModal()"
+                class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-black rounded-xl transition shadow-lg flex items-center gap-2 cursor-pointer">
+                <span>🗳️</span>
+                <span x-text="'Votar em ' + selectedVoteDefIds.length + ' item(ns)'"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL DE REGISTRO DE VOTO NA ENQUETE ===== -->
+<div x-show="voteModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+    @keydown.escape.window="closeVoteModal()">
+    <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 transform transition-all border border-purple-100 dark:border-purple-900/60"
+        @click.away="closeVoteModal()">
+        
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-black border border-purple-100 dark:border-purple-800/60">
+                    🗳️
+                </span>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white">Registrar Voto na Enquete</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Sondagem de Demanda para Abertura de Sets</p>
+                </div>
+            </div>
+            <button type="button" @click="closeVoteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-sm cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-3">
+            <!-- Itens selecionados -->
+            <div class="p-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-900/50 space-y-2">
+                <span class="text-[11px] font-black uppercase text-purple-900 dark:text-purple-300 tracking-wider block">
+                    Itens Selecionados (<span x-text="selectedVoteDefIds.length"></span>):
+                </span>
+                <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+                    <template x-for="item in selectedVoteDefIds" :key="item.id">
+                        <div class="flex items-center justify-between text-xs py-1 px-2 bg-white dark:bg-slate-800/80 rounded-lg border border-purple-100 dark:border-purple-900/50">
+                            <span class="font-bold text-slate-800 dark:text-slate-200 truncate" x-text="(item.member ? item.member + ' · ' : '') + item.name"></span>
+                            <span class="font-black text-purple-700 dark:text-purple-300 ml-2 shrink-0 font-mono" x-text="'R$ ' + item.price"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Dados do participante -->
+            {% if logged_participant %}
+            <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">Identificado como:</div>
+                <div class="font-bold text-slate-900 dark:text-white">{{ logged_participant.name }}</div>
+                <div class="text-[11px] text-slate-600 dark:text-slate-300 font-mono">{{ logged_participant.whatsapp }}</div>
+            </div>
+            {% else %}
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Seu Nome Completo *</label>
+                    <input type="text" x-model="formName" required placeholder="Ex: Maria Eduarda"
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">WhatsApp com DDD (números) *</label>
+                    <input type="text" x-model="formWhatsapp" required placeholder="Ex: 11999998888"
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">@ da Rede Social (Twitter / Instagram)</label>
+                    <input type="text" x-model="formSocial" placeholder="@seuusuario"
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Regra de Notificação & Timestamp -->
+            <div class="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/50 text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+                <div class="font-black flex items-center gap-1 text-amber-800 dark:text-amber-300">
+                    <span>⚡</span> Auditoria de Timestamp & Prazos
+                </div>
+                <p class="leading-relaxed">
+                    Seu voto é registrado no instante exato do clique com precisão de microssegundos. Caso os sets abertos alcancem a sua colocação na fila, você receberá a claim oficial com prazo de pagamento pré-configurado. Participantes que ficarem de fora não recebem mensagens nem cobranças.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" @click="closeVoteModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+                Cancelar
+            </button>
+            <button type="button" @click="submitVotes()" :disabled="voteLoading"
+                class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50">
+                <span x-show="voteLoading" class="animate-spin">⏳</span>
+                <span>Confirmar Meu Voto</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+{% if user.is_staff %}
+<!-- ===== MODAL DE CONSOLIDAÇÃO DE ENQUETE (Staff) ===== -->
+<div x-show="consolidateModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+    @keydown.escape.window="consolidateModalOpen = false">
+    <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl space-y-5 transform transition-all border border-emerald-100 dark:border-emerald-900/60"
+        @click.away="consolidateModalOpen = false">
+        
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-black border border-emerald-100 dark:border-emerald-800/60">
+                    🚀
+                </span>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white">Consolidar Enquete em Sets Oficiais</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Defina a quantidade de sets a abrir com base nos votos registrados</p>
+                </div>
+            </div>
+            <button type="button" @click="consolidateModalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-sm cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-4">
+            <!-- Resumo de Demanda por Integrante -->
+            <div class="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div class="flex justify-between items-center text-xs font-black text-slate-800 dark:text-slate-200">
+                    <span>DEMANDA DE VOTOS POR ITEM</span>
+                    <span class="text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                        {{ ceg.viable_sets_count }} Set(s) 100% Viáveis
+                    </span>
+                </div>
+                <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                    {% for item in polling_summary.item_summaries %}
+                    <div class="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                        <div class="flex items-center gap-2 truncate">
+                            {% if item.member_name %}
+                            <span class="font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/60 px-1.5 py-0.5 rounded text-[10px] border border-pink-100 dark:border-pink-900/50">
+                                {{ item.member_name }}
+                            </span>
+                            {% endif %}
+                            <span class="font-bold text-slate-800 dark:text-white truncate">{{ item.name }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 font-mono text-xs">
+                            <span class="font-black text-purple-700 dark:text-purple-300">{{ item.votes_count }} voto(s)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Seleção da quantidade de sets -->
+            <div class="p-4 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/50 space-y-3">
+                <label class="block font-black text-slate-900 dark:text-white text-xs uppercase tracking-wider">
+                    Quantos Sets você deseja abrir para esta CEG? *
+                </label>
+                <div class="flex items-center gap-3">
+                    <input type="number" min="1" max="50" x-model="numSetsToOpen"
+                        class="w-28 px-3 py-2 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 rounded-xl font-black text-base text-emerald-900 dark:text-emerald-300 text-center focus:ring-2 focus:ring-emerald-500">
+                    <span class="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                        Abrirá <strong><span x-text="numSetsToOpen"></span> Set(s)</strong> oficiais. Os primeiros <strong><span x-text="numSetsToOpen"></span> votantes</strong> de cada integrante serão automaticamente convertidos em reservas (Claims).
+                    </span>
+                </div>
+            </div>
+
+            <!-- Alerta de Notificação Exclusiva para Contemplados -->
+            <div class="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-800/50 text-xs text-blue-950 dark:text-blue-200 space-y-1.5">
+                <div class="font-black flex items-center gap-1.5 text-blue-900 dark:text-blue-300">
+                    <span>📢</span> Regra de Notificações & Prazos
+                </div>
+                <ul class="text-[11px] space-y-1 text-blue-900 dark:text-blue-300">
+                    <li>• <strong>Apenas quem garantiu vaga será notificado</strong> no site e no WhatsApp com as instruções e prazos pré-configurados.</li>
+                    <li>• Participantes excedentes <strong>NÃO</strong> receberão mensagens para evitar spam/confusão.</li>
+                    <li>• O status da CEG mudará de <strong>Enquete</strong> para <strong>Aberta (OPEN)</strong> com sets físicos.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" @click="consolidateModalOpen = false"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+                Cancelar
+            </button>
+            <button type="button" @click="submitConsolidate()" :disabled="consolidateLoading"
+                class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50">
+                <span x-show="consolidateLoading" class="animate-spin">⏳</span>
+                <span>🚀 Abrir Sets & Notificar Vencedores</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+{% endif %}
 
 </div>
 
