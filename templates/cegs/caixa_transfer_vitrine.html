@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Transferir Itens Não Claimados para a Vitrine — {{ caixa.nome }}{% endblock %}
+
+{% block content %}
+<div x-data="transferVitrineApp()" class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Voltar para a Caixa -->
+    <div>
+        <a href="{% url 'caixa_detail' slug=caixa.slug %}"
+           class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition">
+            <span>←</span>
+            <span>Voltar para {{ caixa.nome }}</span>
+        </a>
+    </div>
+
+    <!-- Banner Principal -->
+    <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-purple-600/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider backdrop-blur-xs">
+                <span>📦 {{ caixa.nome }}</span>
+                <span>&bull;</span>
+                <span>{{ caixa.get_status_display }}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+                Transferir Itens para a Vitrine
+            </h1>
+            <p class="text-xs sm:text-sm text-pink-100/90 max-w-xl">
+                Esta remessa já chegou na sua casa! Selecione abaixo os itens das CEGs vinculadas que não foram claimados para colocá-los à venda a pronta entrega na Vitrine.
+            </p>
+        </div>
+
+        <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-center shrink-0">
+            <span class="text-3xl font-black block leading-none">{{ unclaimed_count }}</span>
+            <span class="text-[11px] font-bold text-pink-200 uppercase tracking-wider">Itens Disponíveis</span>
+        </div>
+    </div>
+
+    {% if unclaimed_count > 0 %}
+        <!-- Formulário de Seleção e Transferência -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                
+                <!-- Barra de Controle Superior: Marcar Todos -->
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <label class="inline-flex items-center gap-2 text-xs font-black text-slate-800 dark:text-slate-100 cursor-pointer">
+                        <input type="checkbox" x-model="selectAll" @change="toggleSelectAll()"
+                               class="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 cursor-pointer">
+                        <span>Selecionar Todos os Itens (<span x-text="selectedCount"></span> selecionados)</span>
+                    </label>
+
+                    <span class="text-[11px] font-bold text-slate-500">
+                        Você pode editar o preço de venda antes de publicar
+                    </span>
+                </div>
+
+                <!-- Tabela de Itens Não Claimados -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/20">
+                                <th class="py-3 px-4 w-10"></th>
+                                <th class="py-3 px-3 w-16">Foto</th>
+                                <th class="py-3 px-4">Item / Integrante</th>
+                                <th class="py-3 px-4">CEG & Grupo de Origem</th>
+                                <th class="py-3 px-4 w-36">Preço na Vitrine (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for slot in unclaimed_slots %}
+                                <tr class="hover:bg-pink-50/30 dark:hover:bg-slate-800/40 transition">
+                                    
+                                    <!-- Checkbox -->
+                                    <td class="py-3 px-4">
+                                        <input type="checkbox" name="selected_slots" value="{{ slot.id }}"
+                                               x-model="selectedSlots"
+                                               class="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 cursor-pointer">
+                                    </td>
+
+                                    <!-- Foto / Thumbnail -->
+                                    <td class="py-3 px-3">
+                                        {% if slot.item_definition.image_url %}
+                                            <img src="{{ slot.item_definition.image_url }}"
+                                                 alt="{{ slot.item_definition.name }}"
+                                                 class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                        {% else %}
+                                            <div class="w-12 h-12 rounded-xl bg-pink-100 dark:bg-slate-800 text-pink-600 flex items-center justify-center font-bold text-base">
+                                                🎴
+                                            </div>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Nome do Item & Integrante -->
+                                    <td class="py-3 px-4 space-y-0.5">
+                                        <div class="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+                                            {{ slot.item_definition.name }}
+                                        </div>
+                                        <div class="flex items-center gap-1.5 text-[11px] text-slate-500">
+                                            <span class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                                                {{ slot.item_definition.tipo_item_nome }}
+                                            </span>
+                                            {% if slot.item_definition.member_name %}
+                                                <span>&bull;</span>
+                                                <span class="text-pink-600 dark:text-pink-400 font-semibold">
+                                                    {{ slot.item_definition.member_name }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <!-- CEG & Grupo -->
+                                    <td class="py-3 px-4 space-y-0.5">
+                                        <div class="font-semibold text-slate-800 dark:text-slate-200">
+                                            {{ slot.item_definition.ceg.title }}
+                                        </div>
+                                        <div class="text-[11px] text-slate-400">
+                                            {{ slot.item_definition.ceg.era.group.name }} — {{ slot.item_definition.ceg.era.name }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Preço Editável -->
+                                    <td class="py-3 px-4">
+                                        <div class="relative">
+                                            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-xs text-slate-400 font-bold">
+                                                R$
+                                            </span>
+                                            <input type="text" name="preco_{{ slot.id }}"
+                                                   value="{{ slot.price|floatformat:2 }}"
+                                                   class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-black text-slate-900 dark:text-white font-mono focus:bg-white focus:ring-2 focus:ring-pink-500/30">
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Barra de Ações do Rodapé -->
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p class="text-[11px] text-slate-500">
+                        ℹ️ Os itens selecionados serão publicados na Vitrine com status <strong>Disponível</strong> e seus slots de origem serão marcados como transferidos.
+                    </p>
+
+                    <div class="flex items-center gap-3 shrink-0">
+                        <a href="{% url 'caixa_detail' slug=caixa.slug %}"
+                           class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            Cancelar
+                        </a>
+
+                        <button type="submit"
+                                :disabled="selectedCount === 0"
+                                :class="selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] cursor-pointer'"
+                                class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+                            <span>🛍️</span>
+                            <span>Transferir <span x-text="selectedCount"></span> Item(ns) para a Vitrine</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+
+    {% else %}
+        <!-- Sem Itens Livres -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-10 text-center border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 max-w-md mx-auto">
+            <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 text-3xl flex items-center justify-center mx-auto">
+                🎉
+            </div>
+            <div class="space-y-1">
+                <h3 class="text-lg font-black text-slate-900 dark:text-white">
+                    Nenhum item não claimado nesta caixa!
+                </h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Todos os itens das CEGs vinculadas a esta caixa já foram reservados pelos participantes ou já foram transferidos para a Vitrine.
+                </p>
+            </div>
+            <a href="{% url 'caixa_detail' slug=caixa.slug %}"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs shadow-sm transition">
+                ← Voltar para a Caixa
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+
+<script>
+function transferVitrineApp() {
+    const allSlotIds = [{% for slot in unclaimed_slots %}'{{ slot.id }}',{% endfor %}];
+
+    return {
+        selectedSlots: [...allSlotIds],
+        selectAll: true,
+
+        get selectedCount() {
+            return this.selectedSlots.length;
+        },
+
+        toggleSelectAll() {
+            if (this.selectAll) {
+                this.selectedSlots = [...allSlotIds];
+            } else {
+                this.selectedSlots = [];
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

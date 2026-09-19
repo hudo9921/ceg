@@ -1718,3 +1718,126 @@ class ConfiguracaoEnvio(models.Model):
         return config
 
 
+class ItemVitrine(models.Model):
+    """
+    Item para venda direta na Vitrine de Pronta Entrega da GOM.
+    Pode ser cadastrado diretamente pela GOM ou transferido a partir de
+    slots não claimados de Caixas internacionais que chegaram na casa da GOM.
+    """
+    class Status(models.TextChoices):
+        DISPONIVEL = 'DISPONIVEL', 'Disponível à Pronta Entrega'
+        RESERVADO = 'RESERVADO', 'Reservado'
+        VENDIDO = 'VENDIDO', 'Vendido'
+
+    class Condicao(models.TextChoices):
+        NOVO = 'NOVO', 'Novo / Impecável'
+        MINT = 'MINT', 'Excelente Estado (Mint)'
+        COM_DETALHE = 'COM_DETALHE', 'Com Detalhe / Marca de Fábrica'
+
+    titulo = models.CharField('Título / Nome do Item', max_length=200)
+    slug = models.SlugField('Slug', max_length=220, unique=True, blank=True)
+    descricao = models.TextField('Descrição / Detalhes', blank=True)
+    tipo_item = models.ForeignKey(
+        TipoItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_vitrine',
+        verbose_name='Tipo de Item'
+    )
+    group = models.ForeignKey(
+        'groups.KpopGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_vitrine',
+        verbose_name='Grupo / Solista'
+    )
+    era = models.ForeignKey(
+        'groups.Era',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_vitrine',
+        verbose_name='Era / Comeback'
+    )
+    integrante = models.CharField('Integrante', max_length=100, blank=True)
+    preco = models.DecimalField('Preço (R$)', max_digits=10, decimal_places=2)
+    quantidade = models.PositiveIntegerField('Quantidade em Estoque', default=1)
+    condicao = models.CharField(
+        'Condição do Item',
+        max_length=30,
+        choices=Condicao.choices,
+        default=Condicao.NOVO
+    )
+    status = models.CharField(
+        'Status do Item',
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DISPONIVEL,
+        db_index=True
+    )
+    image_url = models.URLField('URL da Foto / Imagem', max_length=600, blank=True)
+    foto_arquivo = models.FileField(
+        'Arquivo de Foto',
+        upload_to='vitrine/%Y/%m/',
+        blank=True,
+        null=True
+    )
+    origem_caixa = models.ForeignKey(
+        Caixa,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='itens_vitrine',
+        verbose_name='Caixa de Origem'
+    )
+    origem_slot = models.OneToOneField(
+        'ItemSlot',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='item_vitrine',
+        verbose_name='Slot de Origem da CEG'
+    )
+    destaque = models.BooleanField('Destaque na Vitrine', default=False)
+    views_count = models.PositiveIntegerField('Visualizações', default=0)
+    created_at = models.DateTimeField('Cadastrado em', auto_now_add=True)
+    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Item da Vitrine'
+        verbose_name_plural = 'Itens da Vitrine'
+        ordering = ['-destaque', '-created_at']
+
+    def __str__(self):
+        return f"{self.titulo} - R$ {self.preco:.2f} [{self.get_status_display()}]"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.titulo) or 'item-vitrine'
+            slug = base_slug
+            counter = 1
+            while ItemVitrine.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    @property
+    def display_image_url(self) -> str:
+        if self.foto_arquivo:
+            try:
+                return self.foto_arquivo.url
+            except Exception:
+                pass
+        if self.image_url:
+            return self.image_url
+        return ""
+
+    @property
+    def is_disponivel(self) -> bool:
+        return self.status == self.Status.DISPONIVEL and self.quantidade > 0
+
+
+

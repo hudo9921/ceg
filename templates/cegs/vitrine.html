@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+
+{% block title %}Vitrine de Pronta Entrega — ValCegs{% endblock %}
+
+{% block content %}
+<div x-data="vitrineApp()" class="space-y-6 sm:space-y-8">
+
+    <!-- Cabeçalho Hero da Vitrine -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 rounded-3xl p-6 sm:p-10 text-white shadow-xl shadow-pink-500/10">
+        <!-- Detalhes de Fundo / Estrelas / Y2K -->
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute right-12 top-6 text-4xl sm:text-6xl opacity-20 select-none pointer-events-none">✨</div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase tracking-wider text-pink-100 border border-white/20">
+                    <span>🛍️ Pronta Entrega</span>
+                    <span>&bull;</span>
+                    <span>Envio Imediato</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight drop-shadow-xs">
+                    Vitrine ValCegs
+                </h1>
+                <p class="text-sm sm:text-base text-pink-100/90 font-medium leading-relaxed">
+                    Photocards, álbuns e itens exclusivos a pronta entrega no Brasil. Garanta seus faves sem esperar o frete internacional!
+                </p>
+            </div>
+
+            <!-- Ações da GOM (Staff) e Resumo de Itens -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {% if is_staff_user %}
+                    <a href="{% url 'vitrine_create' %}"
+                       class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white text-pink-600 hover:bg-pink-50 font-black text-sm shadow-lg shadow-black/10 hover:scale-[1.02] active:scale-[0.98] transition">
+                        <span>➕ Adicionar Item</span>
+                    </a>
+                {% endif %}
+
+                <!-- Card Contador Rápido -->
+                <div class="bg-black/20 backdrop-blur-md rounded-2xl px-5 py-2.5 border border-white/15 flex items-center justify-around sm:justify-start gap-4 text-center">
+                    <div>
+                        <span class="text-xl sm:text-2xl font-black block leading-none">{{ total_disponiveis }}</span>
+                        <span class="text-[10px] font-bold text-pink-200 uppercase tracking-wider">Disponíveis</span>
+                    </div>
+                    <div class="h-6 w-px bg-white/20"></div>
+                    <div>
+                        <span class="text-xl sm:text-2xl font-black block leading-none">{{ total_vendidos }}</span>
+                        <span class="text-[10px] font-bold text-pink-200 uppercase tracking-wider">Vendidos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros & Busca -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        
+        <!-- Formulário de Filtros -->
+        <form method="get" action="{% url 'vitrine_list' %}" id="filterForm" class="space-y-4">
+            
+            <!-- Linha 1: Barra de Pesquisa e Ordenação -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div class="md:col-span-8 relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        🔍
+                    </span>
+                    <input type="text"
+                           name="q"
+                           value="{{ search_query }}"
+                           placeholder="Buscar por nome do item, integrante, grupo ou era..."
+                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+                </div>
+
+                <div class="md:col-span-4 flex items-center gap-2">
+                    <select name="sort" onchange="document.getElementById('filterForm').submit()"
+                            class="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30">
+                        <option value="destaque" {% if selected_sort == 'destaque' %}selected{% endif %}>⭐ Destaques Primeiro</option>
+                        <option value="recentes" {% if selected_sort == 'recentes' %}selected{% endif %}>🕒 Mais Recentes</option>
+                        <option value="menor_preco" {% if selected_sort == 'menor_preco' %}selected{% endif %}>💵 Menor Preço</option>
+                        <option value="maior_preco" {% if selected_sort == 'maior_preco' %}selected{% endif %}>💎 Maior Preço</option>
+                        <option value="nome" {% if selected_sort == 'nome' %}selected{% endif %}>🔤 Nome (A-Z)</option>
+                    </select>
+
+                    <button type="submit"
+                            class="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs shadow-sm transition shrink-0 cursor-pointer">
+                        Buscar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Linha 2: Dropdowns de Grupo, Era e Status -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <!-- Dropdown de Grupo -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Grupo / Solista</label>
+                    <select name="group" x-model="selectedGroup" @change="onGroupChange()"
+                            class="w-full py-2 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30">
+                        <option value="">Todos os Grupos</option>
+                        {% for g in groups %}
+                            <option value="{{ g.id }}" {% if selected_group == g.id|stringformat:"s" %}selected{% endif %}>{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Dropdown de Era -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Era / Comeback</label>
+                    <select name="era" x-model="selectedEra" @change="document.getElementById('filterForm').submit()"
+                            class="w-full py-2 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30">
+                        <option value="">Todas as Eras</option>
+                        <template x-for="e in filteredEras" :key="e.id">
+                            <option :value="e.id" x-text="e.name" :selected="e.id == '{{ selected_era }}'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Status dos Itens -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Status do Item</label>
+                    <select name="status" onchange="document.getElementById('filterForm').submit()"
+                            class="w-full py-2 px-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30">
+                        <option value="DISPONIVEL" {% if selected_status == 'DISPONIVEL' %}selected{% endif %}>🟢 Disponíveis (Pronta Entrega)</option>
+                        <option value="RESERVADO" {% if selected_status == 'RESERVADO' %}selected{% endif %}>🟡 Reservados</option>
+                        <option value="VENDIDO" {% if selected_status == 'VENDIDO' %}selected{% endif %}>🔴 Vendidos</option>
+                        <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>🌐 Todos os Status</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Linha 3: Categorias Rápidas (Pills) -->
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto pb-1">
+                <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 shrink-0">Categoria:</span>
+                
+                <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_group %}group={{ selected_group }}&{% endif %}{% if selected_era %}era={{ selected_era }}&{% endif %}status={{ selected_status }}&sort={{ selected_sort }}"
+                   class="px-3 py-1 rounded-xl text-xs font-bold transition shrink-0 {% if not selected_tipo %}bg-slate-900 text-white shadow-xs{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-pink-50 hover:text-pink-600{% endif %}">
+                    Todas
+                </a>
+
+                {% for tipo in tipos_item %}
+                    <a href="?tipo={{ tipo.id }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_group %}&group={{ selected_group }}{% endif %}{% if selected_era %}&era={{ selected_era }}{% endif %}&status={{ selected_status }}&sort={{ selected_sort }}"
+                       class="px-3 py-1 rounded-xl text-xs font-bold transition shrink-0 {% if selected_tipo == tipo.id|stringformat:'s' %}bg-pink-600 text-white shadow-xs{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-pink-50 hover:text-pink-600{% endif %}">
+                        {{ tipo.nome }}
+                    </a>
+                {% endfor %}
+
+                {% if search_query or selected_tipo or selected_group or selected_era or selected_status != 'DISPONIVEL' %}
+                    <a href="{% url 'vitrine_list' %}"
+                       class="ml-auto text-xs font-bold text-rose-500 hover:text-rose-700 hover:underline shrink-0">
+                        ✕ Limpar Filtros
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Resultados e Grid de Produtos -->
+    <div class="space-y-4">
+        
+        <!-- Barra de Contagem -->
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+            <span>
+                Mostrando <strong class="text-slate-900 dark:text-white font-black">{{ itens|length }}</strong> de <strong class="text-slate-900 dark:text-white font-black">{{ total_encontrados }}</strong> item(ns) encontrado(s)
+            </span>
+            {% if is_staff_user %}
+                <span class="inline-flex items-center gap-1.5 font-bold text-pink-600 dark:text-pink-400">
+                    <span>👑 Modo Administrador Ativo</span>
+                </span>
+            {% endif %}
+        </div>
+
+        {% if itens %}
+            <!-- GRID DE PRODUTOS -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                {% for item in itens %}
+                    <div class="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-pink-300 dark:hover:border-pink-500/50 transition duration-200 flex flex-col overflow-hidden">
+                        
+                        <!-- Badges Superiores Flutuantes -->
+                        <div class="absolute top-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
+                            <!-- Tipo de Item -->
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs
+                                {% if item.tipo_item and 'photocard' in item.tipo_item.nome|lower %}bg-pink-500/90 text-white
+                                {% elif item.tipo_item and 'álbum' in item.tipo_item.nome|lower or 'album' in item.tipo_item.nome|lower %}bg-purple-600/90 text-white
+                                {% elif item.tipo_item and 'pob' in item.tipo_item.nome|lower %}bg-amber-500/90 text-white
+                                {% else %}bg-slate-800/80 text-white{% endif %}">
+                                {{ item.tipo_item.nome|default:"Item" }}
+                            </span>
+
+                            <!-- Status Badge se não for Disponível -->
+                            {% if item.status == 'RESERVADO' %}
+                                <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500 text-white shadow-xs">
+                                    Reservado
+                                </span>
+                            {% elif item.status == 'VENDIDO' %}
+                                <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-red-600 text-white shadow-xs">
+                                    Vendido
+                                </span>
+                            {% elif item.destaque %}
+                                <span class="px-1.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-400 text-amber-950 shadow-xs" title="Destaque">
+                                    ⭐
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Área da Imagem / Foto do Photocard -->
+                        <div class="relative aspect-3/4 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer"
+                             @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.preco }}', '{{ item.status }}', '{{ item.get_condicao_display }}', '{{ item.descricao|escapejs }}')">
+                            
+                            {% if item.display_image_url %}
+                                <img src="{{ item.display_image_url }}"
+                                     alt="{{ item.titulo }}"
+                                     loading="lazy"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            {% else %}
+                                <div class="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-pink-100 to-purple-100 dark:from-slate-800 dark:to-slate-700">
+                                    <span class="text-3xl sm:text-4xl mb-1">🎴</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Sem foto</span>
+                                </div>
+                            {% endif %}
+
+                            <!-- Overlay Hover com Lupa -->
+                            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                <span>🔍</span>
+                                <span>Ver detalhes</span>
+                            </div>
+                        </div>
+
+                        <!-- Detalhes do Produto -->
+                        <div class="p-3 flex-1 flex flex-col justify-between space-y-2">
+                            
+                            <div class="space-y-1">
+                                <!-- Tags de Grupo & Integrante -->
+                                <div class="flex flex-wrap items-center gap-1 text-[11px]">
+                                    {% if item.group %}
+                                        <span class="font-bold text-pink-600 dark:text-pink-400 truncate max-w-[90px]">
+                                            {{ item.group.name }}
+                                        </span>
+                                    {% endif %}
+                                    {% if item.integrante %}
+                                        <span class="text-slate-400">&bull;</span>
+                                        <span class="font-medium text-slate-600 dark:text-slate-300 truncate max-w-[80px]">
+                                            {{ item.integrante }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Título do Item -->
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2"
+                                    title="{{ item.titulo }}">
+                                    {{ item.titulo }}
+                                </h3>
+
+                                {% if item.era %}
+                                    <p class="text-[10px] text-slate-400 truncate">
+                                        Era: {{ item.era.name }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Preço e Ação -->
+                            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono">
+                                        R$ {{ item.preco|floatformat:2 }}
+                                    </span>
+                                    {% if item.condicao %}
+                                        <span class="text-[9px] font-semibold text-slate-400 uppercase">
+                                            {{ item.get_condicao_display|slice:":10" }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Botão de Compra / Interesse -->
+                                {% if item.status == 'DISPONIVEL' %}
+                                    <button type="button"
+                                            @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.preco }}', '{{ item.status }}', '{{ item.get_condicao_display }}', '{{ item.descricao|escapejs }}')"
+                                            class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-xs font-black shadow-xs hover:shadow-pink-500/20 active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span>💬</span>
+                                        <span>Tenho Interesse</span>
+                                    </button>
+                                {% elif item.status == 'RESERVADO' %}
+                                    <button type="button" disabled
+                                            class="w-full py-1.5 px-3 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-bold cursor-not-allowed text-center">
+                                        Reservado
+                                    </button>
+                                {% else %}
+                                    <button type="button" disabled
+                                            class="w-full py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-bold cursor-not-allowed text-center">
+                                        Esgotado
+                                    </button>
+                                {% endif %}
+
+                                <!-- Ações Rápidas de Admin / GOM -->
+                                {% if is_staff_user %}
+                                    <div class="pt-1 flex items-center justify-between border-t border-dashed border-slate-200 dark:border-slate-800 text-[10px]">
+                                        <a href="{% url 'vitrine_edit' slug=item.slug %}"
+                                           class="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                                            ✏️ Editar
+                                        </a>
+
+                                        <!-- Formulário de Toggle Rápido de Status -->
+                                        <form method="post" action="{% url 'vitrine_toggle_status' slug=item.slug %}" class="inline">
+                                            {% csrf_token %}
+                                            {% if item.status == 'DISPONIVEL' %}
+                                                <input type="hidden" name="status" value="VENDIDO">
+                                                <button type="submit" class="text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer">
+                                                    ✓ Vender
+                                                </button>
+                                            {% else %}
+                                                <input type="hidden" name="status" value="DISPONIVEL">
+                                                <button type="submit" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer">
+                                                    ↺ Disponibilizar
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Paginação -->
+            {% if itens.has_other_pages %}
+                <div class="pt-6 flex items-center justify-center gap-2">
+                    {% if itens.has_previous %}
+                        <a href="?page={{ itens.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_tipo %}&tipo={{ selected_tipo }}{% endif %}{% if selected_group %}&group={{ selected_group }}{% endif %}{% if selected_era %}&era={{ selected_era }}{% endif %}&status={{ selected_status }}&sort={{ selected_sort }}"
+                           class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-pink-50 hover:text-pink-600 transition shadow-2xs">
+                            ← Anterior
+                        </a>
+                    {% endif %}
+
+                    <span class="px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                        Página {{ itens.number }} de {{ itens.paginator.num_pages }}
+                    </span>
+
+                    {% if itens.has_next %}
+                        <a href="?page={{ itens.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_tipo %}&tipo={{ selected_tipo }}{% endif %}{% if selected_group %}&group={{ selected_group }}{% endif %}{% if selected_era %}&era={{ selected_era }}{% endif %}&status={{ selected_status }}&sort={{ selected_sort }}"
+                           class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-pink-50 hover:text-pink-600 transition shadow-2xs">
+                            Próxima →
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+        {% else %}
+            <!-- Estado Vazio / Nenhum Item Encontrado -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 max-w-md mx-auto my-8">
+                <div class="w-16 h-16 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-600 text-3xl flex items-center justify-center mx-auto">
+                    🛍️
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white">
+                        Nenhum item encontrado
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Não encontramos itens com os filtros selecionados no momento. Tente buscar por outro termo ou limpar os filtros.
+                    </p>
+                </div>
+                <a href="{% url 'vitrine_list' %}"
+                   class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs shadow-sm transition">
+                    Ver todos os itens disponíveis
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- MODAL DE DETALHES DO ITEM E CONTATO WHATSAPP -->
+    <div x-show="modalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+         @keydown.escape.window="modalOpen = false">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl space-y-0"
+             @click.away="modalOpen = false">
+            
+            <!-- Foto e Header do Modal -->
+            <div class="relative aspect-4/3 w-full bg-slate-950 flex items-center justify-center overflow-hidden">
+                <template x-if="activeItem.imageUrl">
+                    <img :src="activeItem.imageUrl" :alt="activeItem.titulo" class="w-full h-full object-contain">
+                </template>
+                <template x-if="!activeItem.imageUrl">
+                    <div class="text-white text-5xl">🎴</div>
+                </template>
+
+                <button type="button" @click="modalOpen = false"
+                        class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center transition cursor-pointer text-lg leading-none">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Informações Detalhadas -->
+            <div class="p-6 space-y-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 text-xs font-bold text-pink-600 dark:text-pink-400">
+                        <span x-text="activeItem.group || 'K-pop'"></span>
+                        <span x-show="activeItem.era" class="text-slate-400">&bull;</span>
+                        <span x-show="activeItem.era" x-text="activeItem.era" class="text-slate-500"></span>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 dark:text-white" x-text="activeItem.titulo"></h2>
+                    <p x-show="activeItem.integrante" class="text-xs text-slate-500">
+                        Integrante: <strong class="text-slate-700 dark:text-slate-300" x-text="activeItem.integrante"></strong>
+                    </p>
+                </div>
+
+                <!-- Preço e Condição -->
+                <div class="p-3.5 rounded-2xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-100 dark:border-slate-700 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Valor do Item</span>
+                        <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                            R$ <span x-text="Number(activeItem.preco).toFixed(2).replace('.', ',')"></span>
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Condição</span>
+                        <span class="text-xs font-black text-slate-700 dark:text-slate-200" x-text="activeItem.condicao || 'Novo'"></span>
+                    </div>
+                </div>
+
+                <!-- Descrição se houver -->
+                <div x-show="activeItem.descricao" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <p x-text="activeItem.descricao"></p>
+                </div>
+
+                <!-- Botão de Ação / WhatsApp -->
+                <div class="pt-2 space-y-2">
+                    <a :href="whatsappUrl" target="_blank"
+                       class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md hover:shadow-emerald-600/20 active:scale-[0.98] transition flex items-center justify-center gap-2 cursor-pointer">
+                        <span class="text-lg">💬</span>
+                        <span>Falar com a GOM no WhatsApp</span>
+                    </a>
+                    <p class="text-[11px] text-center text-slate-400">
+                        A mensagem já vem preenchida com o nome do item e o valor para agilizar seu atendimento!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function vitrineApp() {
+    const erasMap = JSON.parse('{{ eras_by_group_json|escapejs }}' || '{}');
+
+    return {
+        selectedGroup: '{{ selected_group }}',
+        selectedEra: '{{ selected_era }}',
+        modalOpen: false,
+        activeItem: {},
+
+        get filteredEras() {
+            if (!this.selectedGroup || !erasMap[this.selectedGroup]) {
+                // Se nenhum grupo selecionado, exibe todas as eras
+                let all = [];
+                for (const gId in erasMap) {
+                    all = all.concat(erasMap[gId]);
+                }
+                return all;
+            }
+            return erasMap[this.selectedGroup] || [];
+        },
+
+        onGroupChange() {
+            this.selectedEra = '';
+            document.getElementById('filterForm').submit();
+        },
+
+        openModal(titulo, imageUrl, group, era, integrante, preco, status, condicao, descricao) {
+            this.activeItem = {
+                titulo: titulo,
+                imageUrl: imageUrl,
+                group: group,
+                era: era,
+                integrante: integrante,
+                preco: preco,
+                status: status,
+                condicao: condicao,
+                descricao: descricao,
+            };
+            this.modalOpen = true;
+        },
+
+        get whatsappUrl() {
+            const precoFmt = Number(this.activeItem.preco || 0).toFixed(2).replace('.', ',');
+            const msg = `Olá! Tenho interesse no item da Vitrine ValCegs:\n\n✨ *${this.activeItem.titulo}*\n💰 Valor: R$ ${precoFmt}\n\nAinda está disponível?`;
+            return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -61,6 +61,14 @@ from .allocator_views import (
     CEGBulkAllocatorAPIView,
 )
 from .audit_views import AuditDashboardView
+from .vitrine_views import (
+    VitrineListView,
+    VitrineItemCreateView,
+    VitrineItemUpdateView,
+    VitrineItemDeleteView,
+    VitrineToggleStatusView,
+    CaixaTransferUnclaimedToVitrineView,
+)
 from apps.participants.views import BulkParticipantCreateView
 
 urlpatterns = [
@@ -126,4 +134,12 @@ urlpatterns = [
     # Auditoria e Logs de Atividades
     path('auditoria/', AuditDashboardView.as_view(), name='auditoria_logs'),
     path('logs/', AuditDashboardView.as_view(), name='auditoria_logs_alias'),
+
+    # Vitrine de Pronta Entrega
+    path('vitrine/', VitrineListView.as_view(), name='vitrine_list'),
+    path('vitrine/novo/', VitrineItemCreateView.as_view(), name='vitrine_create'),
+    path('vitrine/<slug:slug>/editar/', VitrineItemUpdateView.as_view(), name='vitrine_edit'),
+    path('vitrine/<slug:slug>/excluir/', VitrineItemDeleteView.as_view(), name='vitrine_delete'),
+    path('vitrine/<slug:slug>/status/', VitrineToggleStatusView.as_view(), name='vitrine_toggle_status'),
+    path('caixas/<slug:slug>/transferir-vitrine/', CaixaTransferUnclaimedToVitrineView.as_view(), name='caixa_transfer_unclaimed_vitrine'),
 ]

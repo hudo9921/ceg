@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio, ItemVitrine
 
 
 @admin.register(TipoItem)
@@ -563,5 +563,15 @@ class ConfiguracaoEnvioAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'link_formulario_google', 'updated_at')
     fields = ('link_formulario_google', 'instrucoes_envio', 'updated_at')
     readonly_fields = ('updated_at',)
+
+
+@admin.register(ItemVitrine)
+class ItemVitrineAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'tipo_item', 'group', 'era', 'integrante', 'preco', 'quantidade', 'status', 'destaque', 'created_at')
+    list_filter = ('status', 'destaque', 'tipo_item', 'group', 'condicao')
+    search_fields = ('titulo', 'integrante', 'descricao', 'group__name', 'era__name')
+    prepopulated_fields = {'slug': ('titulo',)}
+    list_editable = ('status', 'destaque', 'preco', 'quantidade')
+
 
 
