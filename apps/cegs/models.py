@@ -1729,11 +1729,6 @@ class ItemVitrine(models.Model):
         RESERVADO = 'RESERVADO', 'Reservado'
         VENDIDO = 'VENDIDO', 'Vendido'
 
-    class Condicao(models.TextChoices):
-        NOVO = 'NOVO', 'Novo / Impecável'
-        MINT = 'MINT', 'Excelente Estado (Mint)'
-        COM_DETALHE = 'COM_DETALHE', 'Com Detalhe / Marca de Fábrica'
-
     titulo = models.CharField('Título / Nome do Item', max_length=200)
     slug = models.SlugField('Slug', max_length=220, unique=True, blank=True)
     descricao = models.TextField('Descrição / Detalhes', blank=True)
@@ -1764,12 +1759,6 @@ class ItemVitrine(models.Model):
     integrante = models.CharField('Integrante', max_length=100, blank=True)
     preco = models.DecimalField('Preço (R$)', max_digits=10, decimal_places=2)
     quantidade = models.PositiveIntegerField('Quantidade em Estoque', default=1)
-    condicao = models.CharField(
-        'Condição do Item',
-        max_length=30,
-        choices=Condicao.choices,
-        default=Condicao.NOVO
-    )
     status = models.CharField(
         'Status do Item',
         max_length=20,

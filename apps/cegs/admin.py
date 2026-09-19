@@ -568,7 +568,7 @@ class ConfiguracaoEnvioAdmin(admin.ModelAdmin):
 @admin.register(ItemVitrine)
 class ItemVitrineAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'tipo_item', 'group', 'era', 'integrante', 'preco', 'quantidade', 'status', 'destaque', 'created_at')
-    list_filter = ('status', 'destaque', 'tipo_item', 'group', 'condicao')
+    list_filter = ('status', 'destaque', 'tipo_item', 'group')
     search_fields = ('titulo', 'integrante', 'descricao', 'group__name', 'era__name')
     prepopulated_fields = {'slug': ('titulo',)}
     list_editable = ('status', 'destaque', 'preco', 'quantidade')

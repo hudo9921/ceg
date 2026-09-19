@@ -157,7 +157,6 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
             'eras': eras,
             'caixas': caixas,
             'eras_by_group_json': json.dumps(eras_by_group),
-            'condicoes': ItemVitrine.Condicao.choices,
             'status_choices': ItemVitrine.Status.choices,
         }
         return render(request, 'cegs/vitrine_form.html', context)
@@ -170,7 +169,6 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
 
         descricao = request.POST.get('descricao', '').strip()
         integrante = request.POST.get('integrante', '').strip()
-        condicao = request.POST.get('condicao', ItemVitrine.Condicao.NOVO)
         status = request.POST.get('status', ItemVitrine.Status.DISPONIVEL)
         destaque = request.POST.get('destaque') == 'on' or request.POST.get('destaque') == 'true'
 
@@ -224,7 +222,6 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
             integrante=integrante,
             preco=preco,
             quantidade=quantidade,
-            condicao=condicao,
             status=status,
             destaque=destaque,
             image_url=final_image_url,
@@ -260,7 +257,6 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
             'eras': eras,
             'caixas': caixas,
             'eras_by_group_json': json.dumps(eras_by_group),
-            'condicoes': ItemVitrine.Condicao.choices,
             'status_choices': ItemVitrine.Status.choices,
         }
         return render(request, 'cegs/vitrine_form.html', context)
@@ -276,7 +272,6 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
         item.titulo = titulo
         item.descricao = request.POST.get('descricao', '').strip()
         item.integrante = request.POST.get('integrante', '').strip()
-        item.condicao = request.POST.get('condicao', item.condicao)
         item.status = request.POST.get('status', item.status)
         item.destaque = request.POST.get('destaque') == 'on' or request.POST.get('destaque') == 'true'
 
@@ -452,7 +447,6 @@ class CaixaTransferUnclaimedToVitrineView(StaffRequiredMixin, View):
                     integrante=item_def.member_name or '',
                     preco=preco,
                     quantidade=1,
-                    condicao=ItemVitrine.Condicao.NOVO,
                     status=ItemVitrine.Status.DISPONIVEL,
                     image_url=item_def.image_url or '',
                     origem_caixa=caixa,

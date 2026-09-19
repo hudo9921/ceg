@@ -114,8 +114,8 @@
                 </div>
             </div>
 
-            <!-- Linha 3: Preço, Quantidade, Condição e Status -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <!-- Linha 3: Preço, Quantidade e Status -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                         Preço (R$) <span class="text-rose-500">*</span>
@@ -138,20 +138,6 @@
                     <input type="number" name="quantidade" min="0"
                            value="{% if item %}{{ item.quantidade }}{% else %}1{% endif %}"
                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/30">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                        Condição
-                    </label>
-                    <select name="condicao"
-                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30">
-                        {% for val, label in condicoes %}
-                            <option value="{{ val }}" {% if item and item.condicao == val %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
                 </div>
 
                 <div class="space-y-1">

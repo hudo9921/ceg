@@ -87,7 +87,6 @@ class VitrineTests(TestCase):
             'integrante': 'Winter',
             'preco': '49.90',
             'quantidade': '2',
-            'condicao': ItemVitrine.Condicao.NOVO,
             'status': ItemVitrine.Status.DISPONIVEL,
             'descricao': 'Photocard original de primeira tiragem',
             'destaque': 'on',
@@ -114,7 +113,6 @@ class VitrineTests(TestCase):
             'integrante': 'Karina',
             'preco': '60.00',
             'quantidade': '1',
-            'condicao': ItemVitrine.Condicao.MINT,
             'status': ItemVitrine.Status.DISPONIVEL,
         })
         self.assertRedirects(resp, reverse('vitrine_list'))

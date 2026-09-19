@@ -202,7 +202,7 @@
 
                         <!-- Área da Imagem / Foto do Photocard -->
                         <div class="relative aspect-3/4 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer"
-                             @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.preco }}', '{{ item.status }}', '{{ item.get_condicao_display }}', '{{ item.descricao|escapejs }}')">
+                             @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.preco|floatformat:2 }}', '{{ item.status }}', '{{ item.descricao|escapejs }}')">
                             
                             {% if item.display_image_url %}
                                 <img src="{{ item.display_image_url }}"
@@ -261,17 +261,12 @@
                                     <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono">
                                         R$ {{ item.preco|floatformat:2 }}
                                     </span>
-                                    {% if item.condicao %}
-                                        <span class="text-[9px] font-semibold text-slate-400 uppercase">
-                                            {{ item.get_condicao_display|slice:":10" }}
-                                        </span>
-                                    {% endif %}
                                 </div>
 
                                 <!-- Botão de Compra / Interesse -->
                                 {% if item.status == 'DISPONIVEL' %}
                                     <button type="button"
-                                            @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.preco }}', '{{ item.status }}', '{{ item.get_condicao_display }}', '{{ item.descricao|escapejs }}')"
+                                            @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.preco|floatformat:2 }}', '{{ item.status }}', '{{ item.descricao|escapejs }}')"
                                             class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-xs font-black shadow-xs hover:shadow-pink-500/20 active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer">
                                         <span>💬</span>
                                         <span>Tenho Interesse</span>
@@ -402,17 +397,19 @@
                     </p>
                 </div>
 
-                <!-- Preço e Condição -->
+                <!-- Preço e Status -->
                 <div class="p-3.5 rounded-2xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-100 dark:border-slate-700 flex items-center justify-between">
                     <div>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Valor do Item</span>
                         <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                            R$ <span x-text="Number(activeItem.preco).toFixed(2).replace('.', ',')"></span>
+                            R$ <span x-text="formatPreco(activeItem.preco)"></span>
                         </span>
                     </div>
                     <div class="text-right">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Condição</span>
-                        <span class="text-xs font-black text-slate-700 dark:text-slate-200" x-text="activeItem.condicao || 'Novo'"></span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status</span>
+                        <span class="text-xs font-black px-2.5 py-1 rounded-full inline-block"
+                              :class="activeItem.status === 'DISPONIVEL' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'"
+                              x-text="activeItem.status === 'DISPONIVEL' ? 'Pronta Entrega' : (activeItem.status === 'RESERVADO' ? 'Reservado' : 'Vendido')"></span>
                     </div>
                 </div>
 
@@ -465,7 +462,7 @@ function vitrineApp() {
             document.getElementById('filterForm').submit();
         },
 
-        openModal(titulo, imageUrl, group, era, integrante, preco, status, condicao, descricao) {
+        openModal(titulo, imageUrl, group, era, integrante, preco, status, descricao) {
             this.activeItem = {
                 titulo: titulo,
                 imageUrl: imageUrl,
@@ -474,14 +471,22 @@ function vitrineApp() {
                 integrante: integrante,
                 preco: preco,
                 status: status,
-                condicao: condicao,
                 descricao: descricao,
             };
             this.modalOpen = true;
         },
 
+        formatPreco(val) {
+            if (val === null || val === undefined || val === '') return '0,00';
+            if (typeof val === 'string') {
+                val = val.replace(',', '.');
+            }
+            const num = parseFloat(val);
+            return isNaN(num) ? '0,00' : num.toFixed(2).replace('.', ',');
+        },
+
         get whatsappUrl() {
-            const precoFmt = Number(this.activeItem.preco || 0).toFixed(2).replace('.', ',');
+            const precoFmt = this.formatPreco(this.activeItem.preco);
             const msg = `Olá! Tenho interesse no item da Vitrine ValCegs:\n\n✨ *${this.activeItem.titulo}*\n💰 Valor: R$ ${precoFmt}\n\nAinda está disponível?`;
             return `https://wa.me/?text=${encodeURIComponent(msg)}`;
         }
