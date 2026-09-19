@@ -1286,15 +1286,25 @@ class DeleteSetViewTests(TestCase):
         )
 
     def test_admin_can_delete_empty_set(self):
-        """Organizador pode excluir um set sem reservas."""
+        """Organizador pode excluir um set sem reservas com a senha correta."""
         self.client.force_login(self.admin_user)
-        res = self.client.post(f'/sets/{self.set_2.id}/delete/')
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/', data={'password': 'password123'})
         self.assertRedirects(res, f'/ceg/{self.ceg.slug}/')
 
         self.assertFalse(CEGSet.objects.filter(id=self.set_2.id).exists())
         self.assertFalse(ItemSlot.objects.filter(id=self.slot_2.id).exists())
         # Set 1 permanece intacto
         self.assertTrue(CEGSet.objects.filter(id=self.set_1.id).exists())
+
+    def test_delete_set_wrong_password_rejected(self):
+        """Tentar excluir set com senha incorreta é rejeitado com status 403."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/', data={'password': 'wrongpassword'})
+        self.assertEqual(res.status_code, 403)
+        data = res.json()
+        self.assertFalse(data['success'])
+        self.assertIn('Senha de administrador incorreta', data['message'])
+        self.assertTrue(CEGSet.objects.filter(id=self.set_2.id).exists())
 
     def test_admin_can_delete_set_with_claims(self):
         """Ao excluir um set que possuía reservas, os slots e claims são removidos em cascata."""
@@ -1305,11 +1315,10 @@ class DeleteSetViewTests(TestCase):
             status=Claim.Status.PENDING
         )
         self.slot_2.claimed_by = self.participant
-        self.slot_2.status = ItemSlot.Status.RESERVED
         self.slot_2.save()
 
         self.client.force_login(self.admin_user)
-        res = self.client.post(f'/sets/{self.set_2.id}/delete/')
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/', data={'password': 'password123'})
         self.assertRedirects(res, f'/ceg/{self.ceg.slug}/')
 
         self.assertFalse(CEGSet.objects.filter(id=self.set_2.id).exists())
@@ -1317,10 +1326,11 @@ class DeleteSetViewTests(TestCase):
         self.assertFalse(Claim.objects.filter(id=claim.id).exists())
 
     def test_ajax_delete_set(self):
-        """Endpoint suporta requisições JSON/AJAX."""
+        """Endpoint suporta requisições JSON/AJAX com senha."""
         self.client.force_login(self.admin_user)
         res = self.client.post(
             f'/sets/{self.set_2.id}/delete/',
+            data={'password': 'password123'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(res.status_code, 200)
@@ -1331,12 +1341,13 @@ class DeleteSetViewTests(TestCase):
     def test_non_staff_cannot_delete_set(self):
         """Usuário comum não tem permissão para excluir sets."""
         self.client.force_login(self.regular_user)
-        res = self.client.post(f'/sets/{self.set_2.id}/delete/')
+        res = self.client.post(f'/sets/{self.set_2.id}/delete/', data={'password': 'password123'})
         self.assertEqual(res.status_code, 302)
         self.assertTrue(CEGSet.objects.filter(id=self.set_2.id).exists())
 
         res_ajax = self.client.post(
             f'/sets/{self.set_2.id}/delete/',
+            data={'password': 'password123'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(res_ajax.status_code, 403)
@@ -1345,7 +1356,7 @@ class DeleteSetViewTests(TestCase):
     def test_delete_nonexistent_set_404(self):
         """Tentar excluir um set inexistente retorna 404."""
         self.client.force_login(self.admin_user)
-        res = self.client.post('/sets/99999/delete/')
+        res = self.client.post('/sets/99999/delete/', data={'password': 'password123'})
         self.assertEqual(res.status_code, 404)
 
     def test_delete_set_notifies_participants_via_whatsapp(self):
@@ -1363,6 +1374,7 @@ class DeleteSetViewTests(TestCase):
         res = self.client.post(
             f'/sets/{self.set_2.id}/delete/',
             data={
+                'password': 'password123',
                 'notify_participants': 'true',
                 'custom_message': 'Estorno será efetuado via Pix ainda hoje!'
             },
@@ -1410,6 +1422,7 @@ class DeleteSetViewTests(TestCase):
         res = self.client.post(
             f'/sets/{self.set_2.id}/delete/',
             data={
+                'password': 'password123',
                 'notify_participants': 'false',
                 'custom_message': 'Essa mensagem não deve ser enviada via whats'
             }
@@ -1419,6 +1432,61 @@ class DeleteSetViewTests(TestCase):
 
         # Notificação interna no painel deve ter sido gerada
         self.assertTrue(ParticipantNotification.objects.filter(participant=self.participant).exists())
+
+
+class DeleteCEGTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username='admin_ceg_del',
+            email='admin_ceg_del@test.com',
+            password='password123'
+        )
+        self.regular_user = User.objects.create_user(
+            username='user_ceg_del',
+            password='password123'
+        )
+        self.group = KpopGroup.objects.create(name='NewJeans', slug='newjeans')
+        self.era = Era.objects.create(group=self.group, name='Get Up', slug='get-up')
+        self.ceg = CEG.objects.create(era=self.era, title='CEG to Delete', slug='ceg-to-delete')
+        self.set = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+
+    def test_admin_can_delete_ceg_with_password(self):
+        """Admin com senha correta exclui permanentemente a CEG e seus sets."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/delete/',
+            data={'password': 'password123'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertFalse(CEG.objects.filter(id=self.ceg.id).exists())
+        self.assertFalse(CEGSet.objects.filter(id=self.set.id).exists())
+
+    def test_delete_ceg_wrong_password_rejected(self):
+        """Admin com senha incorreta é rejeitado com 403 e a CEG permanece intacta."""
+        self.client.force_login(self.admin_user)
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/delete/',
+            data={'password': 'wrongpassword'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 403)
+        data = res.json()
+        self.assertFalse(data['success'])
+        self.assertTrue(CEG.objects.filter(id=self.ceg.id).exists())
+
+    def test_non_staff_cannot_delete_ceg(self):
+        """Usuário não staff é bloqueado de deletar CEG."""
+        self.client.force_login(self.regular_user)
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/delete/',
+            data={'password': 'password123'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(CEG.objects.filter(id=self.ceg.id).exists())
 
 
 class CEGItemManagementTests(TestCase):

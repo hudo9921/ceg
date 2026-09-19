@@ -3,6 +3,7 @@ import logging
 import re
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.views import View
 from django.http import JsonResponse
 from django.contrib import messages
@@ -1196,8 +1197,25 @@ class DeleteSetView(View):
         ceg = ceg_set.ceg
         set_number = ceg_set.set_number
 
-        notify_participants = request.POST.get('notify_participants', 'true').lower() in ('true', '1', 'on', 'yes')
-        custom_message = request.POST.get('custom_message', '').strip()
+        # Suporte a FormData ou JSON
+        password = ''
+        if request.content_type == 'application/json':
+            try:
+                import json
+                body = json.loads(request.body.decode('utf-8'))
+                password = body.get('password', '')
+                notify_participants = bool(body.get('notify_participants', True))
+                custom_message = str(body.get('custom_message', '')).strip()
+            except Exception:
+                notify_participants = True
+                custom_message = ''
+        else:
+            password = request.POST.get('password', '')
+            notify_participants = request.POST.get('notify_participants', 'true').lower() in ('true', '1', 'on', 'yes')
+            custom_message = request.POST.get('custom_message', '').strip()
+
+        if not password or not request.user.check_password(password):
+            return JsonResponse({'success': False, 'message': 'Senha de administrador incorreta. Ação não autorizada.'}, status=403)
 
         # 1. Coleta participantes e itens reservados neste set ANTES de deletar
         claimed_slots = list(
@@ -1382,20 +1400,38 @@ class CEGLogsAndWaitingListView(View):
 class DeleteCEGView(StaffRequiredMixin, View):
     """
     Permite ao organizador (staff) excluir permanentemente uma CEG inteira,
-    incluindo todos os seus sets, slots, claims e fila de espera.
-    Requer confirmação digitando o título da CEG para evitar exclusão acidental.
+    incluindo todos os seus sets, slots, claims, fila de espera e votos.
+    Requer autenticação de segurança com a senha do administrador logado.
     """
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
-        confirm_title = request.POST.get('confirm_title', '').strip()
-        if confirm_title != ceg.title:
-            messages.error(request, f'Confirmação incorreta. Digite o título exato: "{ceg.title}"')
+        password = ''
+        if request.content_type == 'application/json':
+            try:
+                import json
+                body = json.loads(request.body.decode('utf-8'))
+                password = body.get('password', '')
+            except Exception:
+                pass
+        else:
+            password = request.POST.get('password', '')
+
+        if not password or not request.user.check_password(password):
+            error_msg = 'Senha de administrador incorreta. Ação de exclusão não autorizada.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': error_msg}, status=403)
+            messages.error(request, error_msg)
             return redirect('ceg_detail', slug=slug)
 
         ceg_title = ceg.title
         with transaction.atomic():
             ceg.delete()
 
-        messages.success(request, f'CEG "{ceg_title}" foi excluída permanentemente.')
+        success_msg = f'CEG "{ceg_title}" foi excluída permanentemente.'
+        if is_ajax:
+            return JsonResponse({'success': True, 'message': success_msg, 'redirect_url': reverse('home')})
+
+        messages.success(request, success_msg)
         return redirect('home')

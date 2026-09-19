@@ -234,9 +234,16 @@
          feeModalOpen: false,
          editCegModalOpen: false,
          deleteCegModalOpen: false,
-         deleteCegConfirmText: '',
+         deleteCegPassword: '',
+         deleteCegShowPassword: false,
+         deleteCegLoading: false,
+         deleteCegError: '',
          manageSlotModalOpen: false,
          deleteSetModalOpen: false,
+         deleteSetPassword: '',
+         deleteSetShowPassword: false,
+         deleteSetLoading: false,
+         deleteSetError: '',
          editPhotoPreview: '{{ ceg.banner_url|default:''|escapejs }}',
          editPhotoBase64: '',
          editPhotoUrl: '{{ ceg.banner_url|default:''|escapejs }}',
@@ -346,18 +353,103 @@
                  alert('Erro de conexão: ' + e);
              }
          },
+         openDeleteCegModal() {
+             this.deleteCegPassword = '';
+             this.deleteCegShowPassword = false;
+             this.deleteCegLoading = false;
+             this.deleteCegError = '';
+             this.deleteCegModalOpen = true;
+         },
+         closeDeleteCegModal() {
+             this.deleteCegModalOpen = false;
+             this.deleteCegPassword = '';
+             this.deleteCegError = '';
+             this.deleteCegLoading = false;
+         },
+         async submitDeleteCeg() {
+             if (!this.deleteCegPassword) {
+                 this.deleteCegError = 'Por favor, digite sua senha de administrador para autorizar a exclusão.';
+                 return;
+             }
+             this.deleteCegLoading = true;
+             this.deleteCegError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('{% url "delete_ceg" slug=ceg.slug %}', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: JSON.stringify({ password: this.deleteCegPassword })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.href = data.redirect_url || '{% url "home" %}';
+                 } else {
+                     this.deleteCegError = data.message || 'Senha de administrador incorreta.';
+                     this.deleteCegLoading = false;
+                 }
+             } catch(e) {
+                 this.deleteCegError = 'Erro de conexão: ' + e;
+                 this.deleteCegLoading = false;
+             }
+         },
          openDeleteSetModal(setObj) {
              this.setToDelete = setObj;
              this.deleteSetLoading = false;
              this.notifyParticipants = true;
              this.customCancelMessage = '';
+             this.deleteSetPassword = '';
+             this.deleteSetShowPassword = false;
+             this.deleteSetError = '';
              this.copySuccess = false;
              this.deleteSetModalOpen = true;
          },
          closeDeleteSetModal() {
              this.deleteSetModalOpen = false;
              this.setToDelete = null;
+             this.deleteSetPassword = '';
+             this.deleteSetError = '';
+             this.deleteSetLoading = false;
              this.copySuccess = false;
+         },
+         async submitDeleteSet() {
+             if (!this.setToDelete) return;
+             if (!this.deleteSetPassword) {
+                 this.deleteSetError = 'Por favor, digite sua senha de administrador para autorizar a exclusão.';
+                 return;
+             }
+             this.deleteSetLoading = true;
+             this.deleteSetError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/sets/' + this.setToDelete.id + '/delete/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: JSON.stringify({
+                         password: this.deleteSetPassword,
+                         notify_participants: this.notifyParticipants,
+                         custom_message: this.customCancelMessage || ''
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     this.closeDeleteSetModal();
+                     window.location.reload();
+                 } else {
+                     this.deleteSetError = data.message || 'Senha de administrador incorreta.';
+                     this.deleteSetLoading = false;
+                 }
+             } catch(e) {
+                 this.deleteSetError = 'Erro de conexão: ' + e;
+                 this.deleteSetLoading = false;
+             }
          },
          copyCancelMessage(slot) {
              let paymentNote = slot.isPaid
@@ -1032,7 +1124,7 @@
                             class="self-start sm:self-auto px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                             <span>⚙️</span> Editar CEG & Foto
                         </button>
-                        <button type="button" @click="deleteCegModalOpen = true"
+                        <button type="button" @click="openDeleteCegModal()"
                             class="self-start sm:self-auto px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer"
                             title="Excluir esta CEG permanentemente">
                             <span>🗑️</span> Excluir CEG
@@ -2994,7 +3086,7 @@
 
                     <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
                         <button type="button" @click="closeBulkPriceModal()"
-                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer">
                             Cancelar
                         </button>
                         <button type="submit" :disabled="bulkLoading"
@@ -3006,86 +3098,90 @@
                 </form>
             </div>
         </div>
-        </form>
-
-</div>
-</div>
 
 <!-- Modal de Confirmação para Excluir Set e Notificar Participantes -->
 <div x-show="deleteSetModalOpen" x-cloak
-    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
     @keydown.escape.window="closeDeleteSetModal()">
 
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-100 max-h-[90vh] flex flex-col"
+    <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-200 dark:border-rose-900/40 max-h-[90vh] flex flex-col"
         @click.away="closeDeleteSetModal()">
 
-        <div class="flex justify-between items-start border-b border-slate-100 pb-3 flex-shrink-0">
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
             <div class="flex items-center gap-2.5">
                 <span
-                    class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shadow-2xs">
+                    class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg shadow-2xs border border-rose-100 dark:border-rose-900/50">
                     🗑️
                 </span>
                 <div>
-                    <h3 class="text-base font-black text-slate-900">
-                        Excluir Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>Excluir Set</span>
+                        <span class="text-rose-600 dark:text-rose-400" x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span>
                     </h3>
-                    <p class="text-xs text-slate-500 truncate max-w-[280px]">{{ ceg.title }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[280px]">{{ ceg.title }}</p>
                 </div>
             </div>
             <button type="button" @click="closeDeleteSetModal()"
-                class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">
+                class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl font-bold cursor-pointer">
                 ✕
             </button>
         </div>
 
-        <div class="space-y-3.5 text-xs text-slate-600 overflow-y-auto pr-1">
-            <p>
-                Tem certeza que deseja excluir o <strong>Set <span
-                        x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> desta CEG?
-            </p>
+        <div class="space-y-3.5 text-xs text-slate-600 dark:text-slate-300 overflow-y-auto pr-1">
+            <!-- Explicação do que está acontecendo -->
+            <div class="p-3 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-xs space-y-1.5 text-rose-950 dark:text-rose-200">
+                <div class="font-black flex items-center gap-1.5 text-rose-900 dark:text-rose-300">
+                    <span>⚠️</span> O que acontece ao excluir este Set?
+                </div>
+                <ul class="text-[11px] space-y-1 text-rose-900/90 dark:text-rose-300/90 list-disc list-inside">
+                    <li>O <strong>Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> e todos os seus slots serão permanentemente apagados.</li>
+                    <li>Quaisquer reservas ativas neste set serão canceladas de imediato.</li>
+                    <li>Esta ação é <strong>definitiva e irreversível</strong>.</li>
+                </ul>
+            </div>
 
             <!-- Lista de Participantes Afetados se houver reservas -->
             <template x-if="setToDelete && setToDelete.claimedSlots && setToDelete.claimedSlots.length > 0">
                 <div class="space-y-2">
-                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-amber-900">
-                        <div class="font-bold flex items-center justify-between text-xs text-amber-900">
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-2xl space-y-2 text-amber-900 dark:text-amber-200">
+                        <div class="font-bold flex items-center justify-between text-xs text-amber-900 dark:text-amber-300">
                             <span class="flex items-center gap-1.5">
-                                <span>⚠️</span> Reservas ativas no set (<span
+                                <span>👥</span> Reservas ativas no set (<span
                                     x-text="setToDelete.claimedSlots.length"></span>)
                             </span>
-                            <span class="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded font-black">
+                            <span class="text-[10px] bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-black border border-amber-300 dark:border-amber-700">
                                 Serão Canceladas
                             </span>
                         </div>
-                        <p class="text-[11px] text-amber-800 leading-relaxed">
-                            Os seguintes participantes estão com itens neste set que não fechou:
+                        <p class="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                            Os seguintes participantes estão com vagas confirmadas neste set:
                         </p>
 
-                        <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                             <template x-for="slot in setToDelete.claimedSlots" :key="slot.id">
                                 <div
-                                    class="bg-white p-2 rounded-lg border border-amber-200 flex items-center justify-between gap-2 text-xs">
+                                    class="bg-white dark:bg-slate-800 p-2 rounded-xl border border-amber-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
                                     <div class="min-w-0">
-                                        <div class="font-bold text-slate-900 truncate">
+                                        <div class="font-bold text-slate-900 dark:text-white truncate">
                                             <span x-text="slot.participantName"></span>
                                             <template x-if="slot.socialHandle">
-                                                <span class="text-[10px] font-normal text-slate-400"
+                                                <span class="text-[10px] font-normal text-slate-400 dark:text-slate-400"
                                                     x-text="' (' + slot.socialHandle + ')'"></span>
                                             </template>
                                         </div>
-                                        <div class="text-[10px] text-slate-500 flex items-center gap-1">
-                                            <span class="font-medium text-purple-700 truncate"
+                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                            <span class="font-medium text-purple-700 dark:text-purple-300 truncate"
                                                 x-text="slot.name"></span>
                                             <span>•</span>
-                                            <span x-text="'R$ ' + slot.price"></span>
+                                            <span class="font-mono text-slate-800 dark:text-slate-200" x-text="'R$ ' + slot.price"></span>
                                             <template x-if="slot.isPaid">
                                                 <span
-                                                    class="text-emerald-700 bg-emerald-100 font-bold px-1 rounded text-[9px]">Pago
+                                                    class="text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 font-bold px-1.5 py-0.2 rounded text-[9px] border border-emerald-200 dark:border-emerald-800">Pago
                                                     ✔</span>
                                             </template>
                                             <template x-if="!slot.isPaid">
                                                 <span
-                                                    class="text-slate-500 bg-slate-100 font-semibold px-1 rounded text-[9px]">Pendente</span>
+                                                    class="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 font-semibold px-1.5 py-0.2 rounded text-[9px]">Pendente</span>
                                             </template>
                                         </div>
                                     </div>
@@ -3094,13 +3190,13 @@
                                         <template x-if="slot.whatsapp">
                                             <a :href="'https://wa.me/' + slot.whatsapp + '?text=' + encodeURIComponent('Olá, ' + slot.participantName + '! Informamos que o Set #' + setToDelete.setNumber + ' da compra em grupo \'{{ ceg.title|escapejs }}\' precisou ser cancelado por não atingir o fechamento. Seu item reservado era: ' + slot.name + ' (' + (slot.isPaid ? 'Pago' : 'Pendente') + ').')"
                                                 target="_blank"
-                                                class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                                class="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
                                                 title="Conversar com este participante no WhatsApp">
                                                 <span>📱</span> WhatsApp
                                             </a>
                                         </template>
                                         <button type="button" @click="copyCancelMessage(slot)"
-                                            class="p-1 hover:bg-slate-100 text-slate-600 rounded border border-slate-200 text-[10px] cursor-pointer transition shadow-2xs"
+                                            class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] cursor-pointer transition shadow-2xs"
                                             title="Copiar mensagem para este participante">
                                             📋
                                         </button>
@@ -3111,25 +3207,25 @@
                     </div>
 
                     <!-- Opção de Notificação Automática -->
-                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                        <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800">
+                    <div class="p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800 dark:text-slate-200">
                             <input type="checkbox" name="notify_participants_check" value="true"
                                 x-model="notifyParticipants"
-                                class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500 cursor-pointer">
+                                class="w-4 h-4 text-pink-600 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-pink-500 cursor-pointer">
                             <span>Enviar notificação automática via WhatsApp</span>
                         </label>
-                        <p class="text-[10px] text-slate-500 pl-6">
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 pl-6">
                             O sistema disparará mensagem via WhatsApp Gateway para cada participante com seus
                             respectivos itens cancelados e orientações de estorno/crédito.
                         </p>
 
                         <div x-show="notifyParticipants" class="pl-6 pt-1 space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-700">
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                                 Recado adicional do organizador (opcional):
                             </label>
                             <textarea x-model="customCancelMessage" rows="2"
                                 placeholder="Ex: Não atingimos o mínimo a tempo. Quem já efetuou o pagamento receberá o estorno via Pix ainda hoje!"
-                                class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                                class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
                         </div>
                     </div>
                 </div>
@@ -3138,59 +3234,52 @@
             <!-- Mensagem se não houver reservas -->
             <template x-if="setToDelete && (!setToDelete.claimedSlots || setToDelete.claimedSlots.length === 0)">
                 <div
-                    class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-[11px] leading-relaxed">
+                    class="p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
                     ℹ️ Este set não possui nenhuma reserva ativa. Todos os seus slots vagos serão removidos com
                     segurança sem afetar nenhum participante.
                 </div>
             </template>
 
             <div x-show="copySuccess" x-cloak
-                class="p-2 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg text-center">
+                class="p-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-xl text-center border border-emerald-200 dark:border-emerald-800">
                 ✓ Mensagem de aviso copiada para a área de transferência!
+            </div>
+
+            <!-- Campo de Senha do Administrador -->
+            <div class="p-3.5 bg-red-50/80 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-2xl space-y-2">
+                <label class="block font-black text-xs text-red-900 dark:text-red-200">
+                    🔒 Confirmação de Segurança: Digite sua Senha de Administrador *
+                </label>
+                <div class="relative">
+                    <input :type="deleteSetShowPassword ? 'text' : 'password'"
+                        x-model="deleteSetPassword"
+                        @keydown.enter="submitDeleteSet()"
+                        placeholder="Sua senha de login no sistema"
+                        class="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-red-300 dark:border-red-700/80 rounded-xl text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-red-500 pr-10">
+                    <button type="button" @click="deleteSetShowPassword = !deleteSetShowPassword"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs cursor-pointer select-none">
+                        <span x-text="deleteSetShowPassword ? '🙈' : '👁️'"></span>
+                    </button>
+                </div>
+                <div x-show="deleteSetError" x-cloak class="text-red-600 dark:text-red-400 text-[11px] font-bold" x-text="deleteSetError"></div>
             </div>
         </div>
 
-        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100 flex-shrink-0">
+        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
             <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
-                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-xs">
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
                 Cancelar
             </button>
-            <button type="button" :disabled="deleteSetLoading" @click="
-                                if (!setToDelete) return;
-                                deleteSetLoading = true;
-                                const form = new FormData();
-                                form.append('notify_participants', notifyParticipants ? 'true' : 'false');
-                                form.append('custom_message', customCancelMessage || '');
-                                form.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-                                fetch('/sets/' + setToDelete.id + '/delete/', {
-                                    method: 'POST',
-                                    body: form,
-                                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                                })
-                                .then(r => r.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        closeDeleteSetModal();
-                                        window.location.reload();
-                                    } else {
-                                        alert('Erro: ' + (data.message || 'Falha ao excluir.'));
-                                        deleteSetLoading = false;
-                                    }
-                                })
-                                .catch(e => {
-                                    alert('Erro de conexão: ' + e);
-                                    deleteSetLoading = false;
-                                });
-                            "
-                class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
-                <span x-show="deleteSetLoading" class="animate-spin">⌛</span>
-                <span>Sim, Excluir Set</span>
+            <button type="button" :disabled="deleteSetLoading || !deleteSetPassword" @click="submitDeleteSet()"
+                class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-40 disabled:cursor-not-allowed">
+                <span x-show="deleteSetLoading" class="animate-spin">⏳</span>
+                <span>🗑️ Excluir Set Definitivamente</span>
             </button>
         </div>
 
     </div>
-    </div>
-    {% endif %}
+</div>
+{% endif %}
 
 {% if not user.is_staff %}
 <!-- ===== BARRA FLUTUANTE DE CLAIM (Participantes) ===== -->
@@ -3881,70 +3970,93 @@
 {% endif %}
 {% endif %}
 
-</div>
-
 {% if user.is_staff %}
 <!-- ===================== MODAL: EXCLUIR CEG ===================== -->
-<div x-show="deleteCegModalOpen" x-cloak @keydown.escape.window="deleteCegModalOpen = false; deleteCegConfirmText = ''"
+<div x-show="deleteCegModalOpen" x-cloak
+    @keydown.escape.window="closeDeleteCegModal()"
     class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div @click.outside="deleteCegModalOpen = false; deleteCegConfirmText = ''"
-        class="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-red-200 overflow-hidden">
+    <div @click.outside="closeDeleteCegModal()"
+        class="bg-white dark:bg-[#131B2E] rounded-3xl shadow-2xl w-full max-w-lg border border-red-200 dark:border-red-900/60 overflow-hidden transform transition-all">
 
         <!-- Header -->
-        <div class="bg-red-600 px-6 py-4 flex items-center gap-3">
-            <span class="text-2xl">🗑️</span>
-            <div>
-                <h3 class="text-white font-black text-base">Excluir CEG Permanentemente</h3>
-                <p class="text-red-100 text-xs mt-0.5">Esta ação não pode ser desfeita</p>
+        <div class="bg-gradient-to-r from-red-600 to-rose-700 px-6 py-4 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-xl shadow-inner">
+                    🗑️
+                </span>
+                <div>
+                    <h3 class="font-black text-base text-white">Excluir CEG Permanentemente</h3>
+                    <p class="text-red-100 text-xs">Esta ação é irreversível e destruirá todos os dados</p>
+                </div>
             </div>
+            <button type="button" @click="closeDeleteCegModal()" class="text-white/80 hover:text-white text-xl font-bold cursor-pointer">
+                ✕
+            </button>
         </div>
 
         <!-- Body -->
-        <div class="p-6 space-y-4">
-            <div class="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-                <p class="text-red-800 text-sm font-bold">⚠️ Você está prestes a excluir:</p>
-                <p class="text-red-700 text-sm font-black">{{ ceg.title }}</p>
-                <ul class="text-red-700 text-xs space-y-1 mt-2">
-                    <li>• Todos os Sets e Slots desta CEG</li>
-                    <li>• Todas as reservas (claims) existentes</li>
-                    <li>• Toda a fila de espera</li>
-                    <li>• Todos os logs de reserva</li>
-                </ul>
+        <div class="p-6 space-y-4 text-xs">
+            <!-- Explicação do que está acontecendo -->
+            <div class="bg-red-50/90 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl p-4 space-y-2 text-red-950 dark:text-red-200">
+                <div class="font-black flex items-center gap-1.5 text-sm text-red-900 dark:text-red-300">
+                    <span>⚠️</span> Você está prestes a excluir definitivamente:
+                </div>
+                <p class="text-xs font-black text-slate-900 dark:text-white bg-white/70 dark:bg-slate-800/80 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800/50">
+                    {{ ceg.title }}
+                </p>
+                <div class="text-[11px] text-red-900/90 dark:text-red-300/90 space-y-1">
+                    <p class="font-bold">Ao confirmar, o sistema apagará permanentemente:</p>
+                    <ul class="list-disc list-inside space-y-0.5 pl-1">
+                        <li>Todos os <strong>{{ ceg.sets.count }} Sets</strong> e slots cadastrados nesta CEG</li>
+                        <li>Todas as reservas (claims) ativas e histórico de compradores</li>
+                        <li>Toda a fila de espera e logs de disputa</li>
+                        {% if ceg.is_polling %}
+                        <li>Todos os votos registrados na enquete de demanda</li>
+                        {% endif %}
+                    </ul>
+                </div>
             </div>
 
-            <div class="space-y-1.5">
-                <label class="block text-sm font-bold text-slate-700">
-                    Para confirmar, digite o título exato da CEG:
+            <!-- Campo de Senha do Administrador -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-2">
+                <label class="block font-black text-xs text-slate-900 dark:text-white">
+                    🔒 Confirmação de Segurança: Digite sua Senha de Administrador *
                 </label>
-                <p class="text-xs text-slate-500 font-mono bg-slate-100 px-3 py-1.5 rounded-lg select-all">{{ ceg.title }}</p>
-                <input type="text" x-model="deleteCegConfirmText" placeholder="Digite o título aqui..."
-                    class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    :class="deleteCegConfirmText && deleteCegConfirmText !== '{{ ceg.title|escapejs }}' ? 'border-red-400 bg-red-50' : ''">
-                <p class="text-xs text-red-500 font-semibold"
-                    x-show="deleteCegConfirmText && deleteCegConfirmText !== '{{ ceg.title|escapejs }}'">
-                    Título não confere. Digite exatamente como aparece acima.
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    Para garantir que esta ação não ocorra por engano, informe a sua senha de acesso ao painel admin:
                 </p>
+                <div class="relative">
+                    <input :type="deleteCegShowPassword ? 'text' : 'password'"
+                        x-model="deleteCegPassword"
+                        @keydown.enter="submitDeleteCeg()"
+                        placeholder="Sua senha de administrador"
+                        class="w-full px-3 py-2.5 text-xs bg-white dark:bg-slate-900 border border-red-300 dark:border-red-700/80 rounded-xl text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-red-500 pr-10">
+                    <button type="button" @click="deleteCegShowPassword = !deleteCegShowPassword"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs cursor-pointer select-none">
+                        <span x-text="deleteCegShowPassword ? '🙈' : '👁️'"></span>
+                    </button>
+                </div>
+                <div x-show="deleteCegError" x-cloak class="text-red-600 dark:text-red-400 text-xs font-bold pt-1" x-text="deleteCegError"></div>
             </div>
 
             <!-- Actions -->
             <div class="flex gap-3 pt-2">
-                <button type="button" @click="deleteCegModalOpen = false; deleteCegConfirmText = ''"
-                    class="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition">
+                <button type="button" @click="closeDeleteCegModal()" :disabled="deleteCegLoading"
+                    class="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer">
                     Cancelar
                 </button>
-                <form method="post" action="{% url 'delete_ceg' slug=ceg.slug %}" class="flex-1">
-                    {% csrf_token %}
-                    <input type="hidden" name="confirm_title" :value="deleteCegConfirmText">
-                    <button type="submit" :disabled="deleteCegConfirmText !== '{{ ceg.title|escapejs }}'" class="w-full px-4 py-2.5 bg-red-600 text-white text-sm font-black rounded-lg transition
-                                   disabled:opacity-40 disabled:cursor-not-allowed
-                                   enabled:hover:bg-red-700 enabled:active:scale-95">
-                        🗑️ Excluir Definitivamente
-                    </button>
-                </form>
+                <button type="button" @click="submitDeleteCeg()" :disabled="deleteCegLoading || !deleteCegPassword"
+                    class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-black rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span x-show="deleteCegLoading" class="animate-spin">⏳</span>
+                    <span>🗑️ Excluir CEG Definitivamente</span>
+                </button>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
+
+</div>
+
 
 {% endblock %}
