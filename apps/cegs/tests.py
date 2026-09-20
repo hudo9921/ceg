@@ -598,6 +598,80 @@ class CreationsHubIntegrationTests(TestCase):
         self.assertContains(response, 'Photocard POB Nayeon')
         self.assertContains(response, 'Photocard POB Momo')
 
+    def test_create_ceg_with_banner_image_and_detail_header(self):
+        self.client.force_login(self.admin_user)
+        import json
+        from django.urls import reverse
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        tiny_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+        uploaded_banner = SimpleUploadedFile("ceg_header.png", tiny_png, content_type="image/png")
+
+        post_data = {
+            'era_id': self.era.id,
+            'title': 'CEG TWICE Header Test',
+            'status': 'OPEN',
+            'initial_sets_count': '1',
+            'banner_file': uploaded_banner,
+            'items_json': json.dumps([
+                {'name': 'Photocard Nayeon', 'member_name': 'Nayeon', 'item_type': 'PHOTOCARD', 'default_price': '45.00'}
+            ]),
+        }
+
+        response = self.client.post('/creations/ceg/create/', data=post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        ceg = CEG.objects.get(title='CEG TWICE Header Test')
+        self.assertTrue('cegs/banners/' in ceg.banner_url)
+
+        # Acessa a página específica da CEG e valida que a foto aparece no header
+        detail_response = self.client.get(reverse('ceg_detail', kwargs={'slug': ceg.slug}))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, ceg.banner_url)
+
+    def test_create_ceg_with_base64_banner(self):
+        self.client.force_login(self.admin_user)
+        import json
+        from django.urls import reverse
+
+        dummy_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        post_data = {
+            'era_id': self.era.id,
+            'title': 'CEG TWICE Base64 Banner Test',
+            'status': 'OPEN',
+            'initial_sets_count': '1',
+            'banner_base64': dummy_b64,
+            'items_json': json.dumps([
+                {'name': 'Photocard Momo', 'member_name': 'Momo', 'item_type': 'PHOTOCARD', 'default_price': '45.00'}
+            ]),
+        }
+
+        response = self.client.post('/creations/ceg/create/', data=post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        ceg = CEG.objects.get(title='CEG TWICE Base64 Banner Test')
+        self.assertTrue('cegs/banners/' in ceg.banner_url)
+
+        detail_response = self.client.get(reverse('ceg_detail', kwargs={'slug': ceg.slug}))
+        self.assertContains(detail_response, ceg.banner_url)
+
+    def test_ceg_detail_falls_back_to_era_banner(self):
+        from django.urls import reverse
+        self.era.banner_url = "https://example.com/era_banner_default.jpg"
+        self.era.save()
+
+        ceg = CEG.objects.create(
+            era=self.era,
+            title='CEG Without Custom Banner',
+            slug='ceg-without-custom-banner',
+            status=CEG.Status.OPEN,
+            banner_url=''
+        )
+
+        detail_response = self.client.get(reverse('ceg_detail', kwargs={'slug': ceg.slug}))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "https://example.com/era_banner_default.jpg")
+
     def test_create_ceg_with_sub_categories_and_types(self):
         self.client.force_login(self.admin_user)
 

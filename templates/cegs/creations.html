@@ -1350,7 +1350,8 @@
 
                         <input type="file" x-ref="cegFileInput" name="banner_file" accept="image/*" class="hidden"
                                @change="if ($event.target.files[0]) handleCegBannerFile($event.target.files[0])">
-                        <input type="hidden" name="banner_base64" :value="cegBannerBase64">
+                        <input type="hidden" name="banner_base64" x-ref="cegBannerBase64Input" :value="cegBannerBase64">
+                        <input type="hidden" name="banner_url" x-ref="cegBannerUrlInput" :value="cegBannerUrl">
 
                         <div class="mt-1">
                             <div class="flex items-center gap-2 mb-1" x-show="cegBannerUrl && (cegBannerUrl.startsWith('/media/') || cegBannerUrl.startsWith('data:'))">
@@ -1362,7 +1363,7 @@
                             </div>
                             <input type="text"
                                    :value="cegBannerUrl && (cegBannerUrl.startsWith('/media/') || cegBannerUrl.startsWith('data:')) ? '' : cegBannerUrl"
-                                   @input="cegBannerUrl = $event.target.value; cegBannerPreview = $event.target.value; cegBannerBase64 = ''"
+                                   @input="cegBannerUrl = $event.target.value; cegBannerPreview = $event.target.value; cegBannerBase64 = ''; if ($refs.cegBannerUrlInput) $refs.cegBannerUrlInput.value = $event.target.value; if ($refs.cegBannerBase64Input) $refs.cegBannerBase64Input.value = ''"
                                    placeholder="Ou cole a URL direta do banner (https://...)"
                                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500 transition">
                         </div>
@@ -3092,12 +3093,19 @@ document.addEventListener('alpine:init', () => {
             reader.onload = (e) => {
                 this.cegBannerPreview = e.target.result;
                 this.cegBannerBase64 = e.target.result;
+                if (this.$refs.cegBannerBase64Input) {
+                    this.$refs.cegBannerBase64Input.value = e.target.result;
+                }
             };
             reader.readAsDataURL(file);
+            this.cegBannerUrl = '';
+            if (this.$refs.cegBannerUrlInput) {
+                this.$refs.cegBannerUrlInput.value = '';
+            }
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                const fileInput = document.querySelector('#create_ceg_form input[name="banner_file"]');
+                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
                 if (fileInput) fileInput.files = dt.files;
             } catch(e) {}
         },
@@ -3105,7 +3113,9 @@ document.addEventListener('alpine:init', () => {
             this.cegBannerPreview = '';
             this.cegBannerBase64 = '';
             this.cegBannerUrl = '';
-            const fileInput = document.querySelector('#create_ceg_form input[name="banner_file"]');
+            if (this.$refs.cegBannerBase64Input) this.$refs.cegBannerBase64Input.value = '';
+            if (this.$refs.cegBannerUrlInput) this.$refs.cegBannerUrlInput.value = '';
+            const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
             if (fileInput) fileInput.value = '';
         },
 

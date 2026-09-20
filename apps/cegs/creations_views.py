@@ -562,7 +562,9 @@ class CreateCEGView(StaffRequiredMixin, View):
         prazo_pagamento_taxa_aduaneira_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
         pix_key = request.POST.get('pix_key', '').strip()
         pix_instructions = request.POST.get('pix_instructions', '').strip()
-        banner_url = request.POST.get('banner_url', '').strip()
+        banner_file = request.FILES.get('banner_file')
+        banner_base64 = request.POST.get('banner_base64', '').strip()
+        banner_url_input = request.POST.get('banner_url', '').strip()
         description = request.POST.get('description', '').strip()
 
         if status == CEG.Status.POLLING:
@@ -576,6 +578,15 @@ class CreateCEGView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=ceg')
 
         era = get_object_or_404(Era, id=era_id)
+
+        # Processa upload de banner da CEG (arquivo, base64 ou URL)
+        banner_url = process_image_upload(
+            file_obj=banner_file,
+            base64_str=banner_base64,
+            folder='cegs/banners',
+            fallback_url=banner_url_input
+        )
+
         opens_at = parse_local_datetime(opens_at_str)
         closes_at = parse_local_datetime(closes_at_str)
         prazo_pagamento_item = parse_local_datetime(prazo_pagamento_item_str)
