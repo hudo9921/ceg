@@ -1110,141 +1110,157 @@
     <div x-show="activeModal === 'edit-era' || activeModal === 'edit_era'" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
          @keydown.escape.window="closeModal()">
-        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+        <div class="bg-white dark:bg-[#131B2E] w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]"
              @click.away="closeModal()">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-100/60">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-indigo-100/60 dark:bg-indigo-950/60">
                 <div class="flex items-center gap-2">
                     <span class="text-2xl">✏️</span>
                     <div>
-                        <h3 class="text-base font-black text-slate-900">Editar Era / Comeback</h3>
-                        <p class="text-[11px] text-slate-500">Altere o nome, grupo, data de lançamento ou banner da era.</p>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Editar Era / Comeback</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Altere o nome, grupo, data de lançamento ou banner da era.</p>
                     </div>
                 </div>
-                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-lg p-1">
                     ✕
                 </button>
             </div>
 
-            <form id="edit_era_form" action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="edit_era_form" action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5 overflow-y-auto">
                 {% csrf_token %}
                 <input type="hidden" name="era_id" :value="editingEraId">
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a Era para Editar *</label>
-                    <select x-model="editingEraId" @change="onSelectEditEra($event.target.value)" required
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                        <option value="">-- Escolha uma Era --</option>
-                        <template x-for="g in groups" :key="g.id">
-                            <optgroup :label="g.name">
-                                <template x-for="e in g.eras" :key="e.id">
-                                    <option :value="e.id" x-text="g.name + ' — ' + e.name" :selected="String(e.id) === String(editingEraId)"></option>
-                                </template>
-                            </optgroup>
-                        </template>
-                    </select>
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Grupo / Solista *</label>
-                    <select name="group_id" x-model="editingEraGroupId" required
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                        <option value="">-- Selecione o Grupo --</option>
-                        <template x-for="g in groups" :key="g.id">
-                            <option :value="g.id" x-text="g.name" :selected="String(g.id) === String(editingEraGroupId)"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Era / Comeback *</label>
-                    <input type="text" name="name" x-model="editingEraName" required
-                           placeholder="Ex: CRAZY, With YOU-th, Armageddon"
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
-                    <input type="date" name="release_date" x-model="editingEraReleaseDate"
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Banner Promocional da Era</label>
-
-                    <!-- Preview -->
-                    <div x-show="editEraBannerPreview" class="relative rounded-xl overflow-hidden border border-indigo-200 h-36 bg-slate-900 flex items-center justify-center group mb-2">
-                        <img :src="editEraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
-                        <img :src="editEraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
-                        <button type="button" @click="clearEditEraBanner()"
-                                class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
-                            ✕ Remover
-                        </button>
+                <!-- 1. SELEÇÃO: GRUPO (PRIMEIRO CAMPO) E ERA CORRESPONDENTE -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Grupo / Solista *</label>
+                        <select name="group_id" x-model="editingEraGroupId" @change="onSelectEditEraGroup($event.target.value)" required
+                                class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                            <option value="">-- Selecione o Grupo --</option>
+                            <template x-for="g in groups" :key="g.id">
+                                <option :value="g.id" x-text="g.name" :selected="String(g.id) === String(editingEraGroupId)"></option>
+                            </template>
+                        </select>
                     </div>
 
-                    <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
-                    <div @dragover.prevent="editEraDragOver = true"
-                         @dragleave.prevent="editEraDragOver = false"
-                         @drop.prevent="editEraDragOver = false; if ($event.dataTransfer.files[0]) handleEditEraBannerFile($event.dataTransfer.files[0])"
-                         @click="$refs.editEraFileInput.click()"
-                         :class="editEraDragOver ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-300' : 'border-slate-200 bg-slate-50 hover:bg-indigo-50/50 hover:border-indigo-300'"
-                         class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
-                        <span class="text-xl">📁</span>
-                        <p class="text-xs font-bold text-slate-800">
-                            Clique para alterar do PC ou dê <kbd class="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded font-black text-[10px]">Ctrl + V</kbd>
-                        </p>
-                        <p class="text-[10px] text-slate-400">Arraste o novo banner para cá</p>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Selecione a Era para Editar *</label>
+                        <select x-model="editingEraId" @change="onSelectEditEra($event.target.value)" required
+                                :disabled="!editingEraGroupId || currentGroupEras.length === 0"
+                                class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <option value="" x-show="!editingEraGroupId">-- Selecione o Grupo primeiro --</option>
+                            <option value="" x-show="editingEraGroupId && currentGroupEras.length === 0">-- Nenhuma era cadastrada para este grupo --</option>
+                            <option value="" x-show="editingEraGroupId && currentGroupEras.length > 0">-- Escolha uma Era --</option>
+                            <template x-for="e in currentGroupEras" :key="e.id">
+                                <option :value="e.id" x-text="e.name" :selected="String(e.id) === String(editingEraId)"></option>
+                            </template>
+                        </select>
                     </div>
+                </div>
 
-                    <input type="file" x-ref="editEraFileInput" name="banner_file" accept="image/*" class="hidden"
-                           @change="if ($event.target.files[0]) handleEditEraBannerFile($event.target.files[0])">
-                    <input type="hidden" name="banner_base64" x-ref="editEraBannerBase64Input" :value="editEraBannerBase64">
-                    <input type="hidden" name="banner_url" x-ref="editEraBannerUrlInput" :value="editEraBannerUrl">
+                <!-- Mensagem informativa quando grupo não possui eras -->
+                <div x-show="editingEraGroupId && currentGroupEras.length === 0" class="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                    <span class="text-3xl block mb-2">💿</span>
+                    <p class="font-bold text-slate-600 dark:text-slate-400">Nenhuma era cadastrada para este grupo ainda.</p>
+                    <p class="mt-1">Cadastre uma nova era no card "Nova Era" para poder editá-la aqui.</p>
+                </div>
 
-                    <div class="mt-1">
-                        <div class="flex items-center gap-2 mb-1" x-show="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:'))">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span>✓</span>
-                                <span>Banner do computador ativo</span>
-                            </span>
-                            <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                <!-- 2. FORMULÁRIO EM GRADE DE 2 COLUNAS (LAYOUT RETANGULAR AMPLO) -->
+                <div x-show="editingEraId" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <!-- Coluna Esquerda: Nome, Data, Cor e Descrição -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nome da Era / Comeback *</label>
+                            <input type="text" name="name" x-model="editingEraName" required
+                                   placeholder="Ex: CRAZY, With YOU-th, Armageddon"
+                                   class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
                         </div>
-                        <input type="text"
-                               :value="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:')) ? '' : editEraBannerUrl"
-                               @input="editEraBannerUrl = $event.target.value; editEraBannerPreview = $event.target.value; editEraBannerBase64 = ''"
-                               placeholder="Ou cole a URL direta do banner (https://...)"
-                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Data de Lançamento (opcional)</label>
+                            <input type="date" name="release_date" x-model="editingEraReleaseDate"
+                                   class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                        </div>
+
+                        <!-- Cor Tema da Era em Edição -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                                <span>🎨 Cor Tema da Era</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou personalizada</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" :value="editEraColorHex || '#6366F1'" @input="editEraColorHex = $event.target.value"
+                                       class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer p-0.5 bg-white dark:bg-[#0B101B] shrink-0">
+                                <input type="text" name="color_hex" x-model="editEraColorHex" placeholder="Ex: #EC4899 (ou vazio para auto)"
+                                       class="flex-1 bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                                <button type="button" x-show="editEraColorHex" @click="editEraColorHex = ''"
+                                        class="px-2.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                                        title="Redefinir para detecção automática da imagem/grupo">
+                                    Auto
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Descrição / Notas do Comeback (opcional)</label>
+                            <textarea name="description" x-model="editingEraDescription" rows="3"
+                                      placeholder="Ex: 4º Mini Álbum..."
+                                      class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Banner Promocional -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Banner Promocional da Era</label>
+
+                        <!-- Preview -->
+                        <div x-show="editEraBannerPreview" class="relative rounded-xl overflow-hidden border border-indigo-200 dark:border-indigo-500/40 h-36 bg-slate-900 flex items-center justify-center group mb-2">
+                            <img :src="editEraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                            <img :src="editEraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
+                            <button type="button" @click="clearEditEraBanner()"
+                                    class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                ✕ Remover
+                            </button>
+                        </div>
+
+                        <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                        <div @dragover.prevent="editEraDragOver = true"
+                             @dragleave.prevent="editEraDragOver = false"
+                             @drop.prevent="editEraDragOver = false; if ($event.dataTransfer.files[0]) handleEditEraBannerFile($event.dataTransfer.files[0])"
+                             @click="$refs.editEraFileInput.click()"
+                             :class="editEraDragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 ring-2 ring-indigo-300' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0B101B] hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:border-indigo-300'"
+                             class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                            <span class="text-xl">📁</span>
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Clique para alterar do PC ou dê <kbd class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700 rounded font-black text-[10px]">Ctrl + V</kbd>
+                            </p>
+                            <p class="text-[10px] text-slate-400">Arraste o novo banner para cá</p>
+                        </div>
+
+                        <input type="file" x-ref="editEraFileInput" name="banner_file" accept="image/*" class="hidden"
+                               @change="if ($event.target.files[0]) handleEditEraBannerFile($event.target.files[0])">
+                        <input type="hidden" name="banner_base64" x-ref="editEraBannerBase64Input" :value="editEraBannerBase64">
+                        <input type="hidden" name="banner_url" x-ref="editEraBannerUrlInput" :value="editEraBannerUrl">
+
+                        <div class="mt-1">
+                            <div class="flex items-center gap-2 mb-1" x-show="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:'))">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span>✓</span>
+                                    <span>Banner do computador ativo</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                            </div>
+                            <input type="text"
+                                   :value="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:')) ? '' : editEraBannerUrl"
+                                   @input="editEraBannerUrl = $event.target.value; editEraBannerPreview = $event.target.value; editEraBannerBase64 = ''"
+                                   placeholder="Ou cole a URL direta do banner (https://...)"
+                                   class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Cor Tema da Era em Edição -->
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                        <span>🎨 Cor Tema da Era</span>
-                        <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou personalizada</span>
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" :value="editEraColorHex || '#6366F1'" @input="editEraColorHex = $event.target.value"
-                               class="w-9 h-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0">
-                        <input type="text" name="color_hex" x-model="editEraColorHex" placeholder="Ex: #EC4899 (ou vazio para auto)"
-                               class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                        <button type="button" x-show="editEraColorHex" @click="editEraColorHex = ''"
-                                class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition"
-                                title="Redefinir para detecção automática da imagem/grupo">
-                            Auto
-                        </button>
-                    </div>
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Notas do Comeback (opcional)</label>
-                    <textarea name="description" x-model="editingEraDescription" rows="2"
-                              placeholder="Ex: 4º Mini Álbum..."
-                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                     <button type="button" @click="closeModal()"
-                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                            class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" :disabled="!editingEraId"
@@ -2819,12 +2835,18 @@ document.addEventListener('alpine:init', () => {
                     this.onSelectEditGroup(this.groups[0].id);
                 }
             } else if (name === 'edit-era' || name === 'edit_era') {
-                if (!this.editingEraId) {
-                    for (const g of this.groups) {
-                        if (g.eras && g.eras.length > 0) {
-                            this.onSelectEditEra(g.eras[0].id);
-                            break;
+                if (!this.editingEraGroupId) {
+                    const firstWithEras = this.groups.find(g => g.eras && g.eras.length > 0) || this.groups[0];
+                    if (firstWithEras) {
+                        this.editingEraGroupId = firstWithEras.id;
+                        if (firstWithEras.eras && firstWithEras.eras.length > 0) {
+                            this.onSelectEditEra(firstWithEras.eras[0].id);
                         }
+                    }
+                } else if (!this.editingEraId) {
+                    const eras = this.currentGroupEras;
+                    if (eras && eras.length > 0) {
+                        this.onSelectEditEra(eras[0].id);
                     }
                 }
             } else if (name === 'item_individual') {
@@ -2976,16 +2998,36 @@ document.addEventListener('alpine:init', () => {
             if (fileInput) fileInput.value = '';
         },
 
+        get currentGroupEras() {
+            if (!this.editingEraGroupId) return [];
+            const g = this.groups.find(item => String(item.id) === String(this.editingEraGroupId));
+            return (g && g.eras) ? g.eras : [];
+        },
+
+        onSelectEditEraGroup(groupId) {
+            this.editingEraGroupId = groupId || '';
+            const eras = this.currentGroupEras;
+            if (eras && eras.length > 0) {
+                if (!eras.some(e => String(e.id) === String(this.editingEraId))) {
+                    this.onSelectEditEra(eras[0].id);
+                }
+            } else {
+                this.onSelectEditEra('');
+            }
+        },
+
         onSelectEditEra(eraId) {
             this.editingEraId = eraId || '';
             if (!eraId) {
-                this.editingEraGroupId = '';
                 this.editingEraName = '';
                 this.editingEraReleaseDate = '';
                 this.editingEraDescription = '';
                 this.editEraBannerPreview = '';
                 this.editEraBannerBase64 = '';
                 this.editEraBannerUrl = '';
+                this.editEraColorHex = '';
+                if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+                if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = '';
                 return;
             }
             let foundEra = null;
@@ -2999,7 +3041,7 @@ document.addEventListener('alpine:init', () => {
                 }
             }
             if (foundEra) {
-                this.editingEraGroupId = foundEra.group_id || '';
+                this.editingEraGroupId = foundEra.group_id || this.editingEraGroupId;
                 this.editingEraName = foundEra.name || '';
                 this.editingEraReleaseDate = foundEra.release_date || '';
                 this.editingEraDescription = foundEra.description || '';
@@ -3007,6 +3049,8 @@ document.addEventListener('alpine:init', () => {
                 this.editEraBannerUrl = foundEra.banner_url || '';
                 this.editEraBannerBase64 = '';
                 this.editEraColorHex = foundEra.color_hex || '';
+                if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+                if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = foundEra.banner_url || '';
             }
         },
         handleEditEraBannerFile(file) {
