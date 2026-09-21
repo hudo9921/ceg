@@ -669,7 +669,8 @@
                 </button>
             </div>
 
-            <form action="{% url 'create_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="create_group_form" action="{% url 'create_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto"
+                  @submit="if (newGroupMemberInput && newGroupMemberInput.trim()) addGroupMember(false); if ($refs.newGroupMembersJson) $refs.newGroupMembersJson.value = JSON.stringify(newGroupMembers);">
                 {% csrf_token %}
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Grupo / Solista *</label>
@@ -751,7 +752,7 @@
                     </div>
 
                     <div class="flex gap-2">
-                        <input type="text" x-model="newGroupMemberInput"
+                        <input type="text" name="newGroupMemberInput" x-model="newGroupMemberInput"
                                @keydown="handleMemberInputKeydown($event, false)"
                                placeholder="Ex: Sakura, Chaewon, Yunjin... (aperte Enter)"
                                class="flex-1 bg-white border border-purple-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500 transition">
@@ -777,7 +778,7 @@
                     </div>
 
                     <!-- Campo oculto para envio no POST -->
-                    <input type="hidden" name="members_json" :value="JSON.stringify(newGroupMembers)">
+                    <input type="hidden" name="members_json" x-ref="newGroupMembersJson" :value="JSON.stringify(newGroupMembers)">
                 </div>
 
                 <div>
@@ -946,7 +947,8 @@
                 </button>
             </div>
 
-            <form action="{% url 'update_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="edit_group_form" action="{% url 'update_group' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto"
+                  @submit="if (editGroupMemberInput && editGroupMemberInput.trim()) addGroupMember(true); if ($refs.editGroupMembersJson) $refs.editGroupMembersJson.value = JSON.stringify(editGroupMembers);">
                 {% csrf_token %}
                 <input type="hidden" name="group_id" :value="editingGroupId">
 
@@ -997,7 +999,8 @@
 
                     <input type="file" x-ref="editGroupFileInput" name="image_file" accept="image/*" class="hidden"
                            @change="if ($event.target.files[0]) handleEditGroupImageFile($event.target.files[0])">
-                    <input type="hidden" name="image_url" :value="editGroupImageUrl">
+                    <input type="hidden" name="image_base64" x-ref="editGroupImageBase64Input" :value="editGroupImageBase64">
+                    <input type="hidden" name="image_url" x-ref="editGroupImageUrlInput" :value="editGroupImageUrl">
 
                     <div class="mt-1">
                         <div class="flex items-center gap-2 mb-1" x-show="editGroupImageUrl && (editGroupImageUrl.startsWith('/media/') || editGroupImageUrl.startsWith('data:'))">
@@ -1051,7 +1054,7 @@
                     </div>
 
                     <div class="flex gap-2">
-                        <input type="text" x-model="editGroupMemberInput"
+                        <input type="text" name="editGroupMemberInput" x-model="editGroupMemberInput"
                                @keydown="handleMemberInputKeydown($event, true)"
                                placeholder="Novo integrante... (aperte Enter ou vírgula)"
                                class="flex-1 bg-white border border-purple-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500 transition">
@@ -1077,7 +1080,7 @@
                     </div>
 
                     <!-- Campo oculto para envio no POST -->
-                    <input type="hidden" name="members_json" :value="JSON.stringify(editGroupMembers)">
+                    <input type="hidden" name="members_json" x-ref="editGroupMembersJson" :value="JSON.stringify(editGroupMembers)">
                 </div>
 
                 <div x-show="editingGroupId">
@@ -1107,142 +1110,157 @@
     <div x-show="activeModal === 'edit-era' || activeModal === 'edit_era'" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
          @keydown.escape.window="closeModal()">
-        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+        <div class="bg-white dark:bg-[#131B2E] w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]"
              @click.away="closeModal()">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-100/60">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-indigo-100/60 dark:bg-indigo-950/60">
                 <div class="flex items-center gap-2">
                     <span class="text-2xl">✏️</span>
                     <div>
-                        <h3 class="text-base font-black text-slate-900">Editar Era / Comeback</h3>
-                        <p class="text-[11px] text-slate-500">Altere o nome, grupo, data de lançamento ou banner da era.</p>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Editar Era / Comeback</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Altere o nome, grupo, data de lançamento ou banner da era.</p>
                     </div>
                 </div>
-                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg p-1">
+                <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold text-lg p-1">
                     ✕
                 </button>
             </div>
 
-            <form action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+            <form id="edit_era_form" action="{% url 'update_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-5 overflow-y-auto">
                 {% csrf_token %}
                 <input type="hidden" name="era_id" :value="editingEraId">
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Selecione a Era para Editar *</label>
-                    <select x-model="editingEraId" @change="onSelectEditEra($event.target.value)" required
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                        <option value="">-- Escolha uma Era --</option>
-                        <template x-for="g in groups" :key="g.id">
-                            <optgroup :label="g.name">
-                                <template x-for="e in g.eras" :key="e.id">
-                                    <option :value="e.id" x-text="g.name + ' — ' + e.name" :selected="String(e.id) === String(editingEraId)"></option>
-                                </template>
-                            </optgroup>
-                        </template>
-                    </select>
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Grupo / Solista *</label>
-                    <select name="group_id" x-model="editingEraGroupId" required
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                        <option value="">-- Selecione o Grupo --</option>
-                        <template x-for="g in groups" :key="g.id">
-                            <option :value="g.id" x-text="g.name" :selected="String(g.id) === String(editingEraGroupId)"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Era / Comeback *</label>
-                    <input type="text" name="name" x-model="editingEraName" required
-                           placeholder="Ex: CRAZY, With YOU-th, Armageddon"
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Data de Lançamento (opcional)</label>
-                    <input type="date" name="release_date" x-model="editingEraReleaseDate"
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Banner Promocional da Era</label>
-
-                    <!-- Preview -->
-                    <div x-show="editEraBannerPreview" class="relative rounded-xl overflow-hidden border border-indigo-200 h-36 bg-slate-900 flex items-center justify-center group mb-2">
-                        <img :src="editEraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
-                        <img :src="editEraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
-                        <button type="button" @click="clearEditEraBanner()"
-                                class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
-                            ✕ Remover
-                        </button>
+                <!-- 1. SELEÇÃO: GRUPO (PRIMEIRO CAMPO) E ERA CORRESPONDENTE -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Grupo / Solista *</label>
+                        <select name="group_id" x-model="editingEraGroupId" @change="onSelectEditEraGroup($event.target.value)" required
+                                class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                            <option value="">-- Selecione o Grupo --</option>
+                            <template x-for="g in groups" :key="g.id">
+                                <option :value="g.id" x-text="g.name" :selected="String(g.id) === String(editingEraGroupId)"></option>
+                            </template>
+                        </select>
                     </div>
 
-                    <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
-                    <div @dragover.prevent="editEraDragOver = true"
-                         @dragleave.prevent="editEraDragOver = false"
-                         @drop.prevent="editEraDragOver = false; if ($event.dataTransfer.files[0]) handleEditEraBannerFile($event.dataTransfer.files[0])"
-                         @click="$refs.editEraFileInput.click()"
-                         :class="editEraDragOver ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-300' : 'border-slate-200 bg-slate-50 hover:bg-indigo-50/50 hover:border-indigo-300'"
-                         class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
-                        <span class="text-xl">📁</span>
-                        <p class="text-xs font-bold text-slate-800">
-                            Clique para alterar do PC ou dê <kbd class="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded font-black text-[10px]">Ctrl + V</kbd>
-                        </p>
-                        <p class="text-[10px] text-slate-400">Arraste o novo banner para cá</p>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Selecione a Era para Editar *</label>
+                        <select x-model="editingEraId" @change="onSelectEditEra($event.target.value)" required
+                                :disabled="!editingEraGroupId || currentGroupEras.length === 0"
+                                class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <option value="" x-show="!editingEraGroupId">-- Selecione o Grupo primeiro --</option>
+                            <option value="" x-show="editingEraGroupId && currentGroupEras.length === 0">-- Nenhuma era cadastrada para este grupo --</option>
+                            <option value="" x-show="editingEraGroupId && currentGroupEras.length > 0">-- Escolha uma Era --</option>
+                            <template x-for="e in currentGroupEras" :key="e.id">
+                                <option :value="e.id" x-text="e.name" :selected="String(e.id) === String(editingEraId)"></option>
+                            </template>
+                        </select>
                     </div>
+                </div>
 
-                    <input type="file" x-ref="editEraFileInput" name="banner_file" accept="image/*" class="hidden"
-                           @change="if ($event.target.files[0]) handleEditEraBannerFile($event.target.files[0])">
-                    <input type="hidden" name="banner_base64" :value="editEraBannerBase64">
+                <!-- Mensagem informativa quando grupo não possui eras -->
+                <div x-show="editingEraGroupId && currentGroupEras.length === 0" class="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                    <span class="text-3xl block mb-2">💿</span>
+                    <p class="font-bold text-slate-600 dark:text-slate-400">Nenhuma era cadastrada para este grupo ainda.</p>
+                    <p class="mt-1">Cadastre uma nova era no card "Nova Era" para poder editá-la aqui.</p>
+                </div>
 
-                    <input type="hidden" name="banner_url" :value="editEraBannerUrl">
-
-                    <div class="mt-1">
-                        <div class="flex items-center gap-2 mb-1" x-show="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:'))">
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span>✓</span>
-                                <span>Banner do computador ativo</span>
-                            </span>
-                            <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                <!-- 2. FORMULÁRIO EM GRADE DE 2 COLUNAS (LAYOUT RETANGULAR AMPLO) -->
+                <div x-show="editingEraId" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <!-- Coluna Esquerda: Nome, Data, Cor e Descrição -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nome da Era / Comeback *</label>
+                            <input type="text" name="name" x-model="editingEraName" required
+                                   placeholder="Ex: CRAZY, With YOU-th, Armageddon"
+                                   class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
                         </div>
-                        <input type="text"
-                               :value="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:')) ? '' : editEraBannerUrl"
-                               @input="editEraBannerUrl = $event.target.value; editEraBannerPreview = $event.target.value; editEraBannerBase64 = ''"
-                               placeholder="Ou cole a URL direta do banner (https://...)"
-                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Data de Lançamento (opcional)</label>
+                            <input type="date" name="release_date" x-model="editingEraReleaseDate"
+                                   class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                        </div>
+
+                        <!-- Cor Tema da Era em Edição -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                                <span>🎨 Cor Tema da Era</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou personalizada</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" :value="editEraColorHex || '#6366F1'" @input="editEraColorHex = $event.target.value"
+                                       class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer p-0.5 bg-white dark:bg-[#0B101B] shrink-0">
+                                <input type="text" name="color_hex" x-model="editEraColorHex" placeholder="Ex: #EC4899 (ou vazio para auto)"
+                                       class="flex-1 bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                                <button type="button" x-show="editEraColorHex" @click="editEraColorHex = ''"
+                                        class="px-2.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                                        title="Redefinir para detecção automática da imagem/grupo">
+                                    Auto
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Descrição / Notas do Comeback (opcional)</label>
+                            <textarea name="description" x-model="editingEraDescription" rows="3"
+                                      placeholder="Ex: 4º Mini Álbum..."
+                                      class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Banner Promocional -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Banner Promocional da Era</label>
+
+                        <!-- Preview -->
+                        <div x-show="editEraBannerPreview" class="relative rounded-xl overflow-hidden border border-indigo-200 dark:border-indigo-500/40 h-36 bg-slate-900 flex items-center justify-center group mb-2">
+                            <img :src="editEraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
+                            <img :src="editEraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
+                            <button type="button" @click="clearEditEraBanner()"
+                                    class="absolute top-2 right-2 z-20 px-2 py-0.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                ✕ Remover
+                            </button>
+                        </div>
+
+                        <!-- Dropzone Interativa: PC, Arrastar ou Ctrl+V -->
+                        <div @dragover.prevent="editEraDragOver = true"
+                             @dragleave.prevent="editEraDragOver = false"
+                             @drop.prevent="editEraDragOver = false; if ($event.dataTransfer.files[0]) handleEditEraBannerFile($event.dataTransfer.files[0])"
+                             @click="$refs.editEraFileInput.click()"
+                             :class="editEraDragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 ring-2 ring-indigo-300' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0B101B] hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:border-indigo-300'"
+                             class="border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1 mb-2 select-none">
+                            <span class="text-xl">📁</span>
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Clique para alterar do PC ou dê <kbd class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700 rounded font-black text-[10px]">Ctrl + V</kbd>
+                            </p>
+                            <p class="text-[10px] text-slate-400">Arraste o novo banner para cá</p>
+                        </div>
+
+                        <input type="file" x-ref="editEraFileInput" name="banner_file" accept="image/*" class="hidden"
+                               @change="if ($event.target.files[0]) handleEditEraBannerFile($event.target.files[0])">
+                        <input type="hidden" name="banner_base64" x-ref="editEraBannerBase64Input" :value="editEraBannerBase64">
+                        <input type="hidden" name="banner_url" x-ref="editEraBannerUrlInput" :value="editEraBannerUrl">
+
+                        <div class="mt-1">
+                            <div class="flex items-center gap-2 mb-1" x-show="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:'))">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span>✓</span>
+                                    <span>Banner do computador ativo</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400">Para trocar por link da web, digite abaixo:</span>
+                            </div>
+                            <input type="text"
+                                   :value="editEraBannerUrl && (editEraBannerUrl.startsWith('/media/') || editEraBannerUrl.startsWith('data:')) ? '' : editEraBannerUrl"
+                                   @input="editEraBannerUrl = $event.target.value; editEraBannerPreview = $event.target.value; editEraBannerBase64 = ''"
+                                   placeholder="Ou cole a URL direta do banner (https://...)"
+                                   class="w-full bg-slate-50 dark:bg-[#0B101B] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-[#0B101B] transition">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Cor Tema da Era em Edição -->
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                        <span>🎨 Cor Tema da Era</span>
-                        <span class="text-[10px] text-slate-400 font-normal">Detectada da foto ou personalizada</span>
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" :value="editEraColorHex || '#6366F1'" @input="editEraColorHex = $event.target.value"
-                               class="w-9 h-9 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0">
-                        <input type="text" name="color_hex" x-model="editEraColorHex" placeholder="Ex: #EC4899 (ou vazio para auto)"
-                               class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                        <button type="button" x-show="editEraColorHex" @click="editEraColorHex = ''"
-                                class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition"
-                                title="Redefinir para detecção automática da imagem/grupo">
-                            Auto
-                        </button>
-                    </div>
-                </div>
-
-                <div x-show="editingEraId">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Notas do Comeback (opcional)</label>
-                    <textarea name="description" x-model="editingEraDescription" rows="2"
-                              placeholder="Ex: 4º Mini Álbum..."
-                              class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                     <button type="button" @click="closeModal()"
-                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                            class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" :disabled="!editingEraId"
@@ -1348,7 +1366,8 @@
 
                         <input type="file" x-ref="cegFileInput" name="banner_file" accept="image/*" class="hidden"
                                @change="if ($event.target.files[0]) handleCegBannerFile($event.target.files[0])">
-                        <input type="hidden" name="banner_base64" :value="cegBannerBase64">
+                        <input type="hidden" name="banner_base64" x-ref="cegBannerBase64Input" :value="cegBannerBase64">
+                        <input type="hidden" name="banner_url" x-ref="cegBannerUrlInput" :value="cegBannerUrl">
 
                         <div class="mt-1">
                             <div class="flex items-center gap-2 mb-1" x-show="cegBannerUrl && (cegBannerUrl.startsWith('/media/') || cegBannerUrl.startsWith('data:'))">
@@ -1360,7 +1379,7 @@
                             </div>
                             <input type="text"
                                    :value="cegBannerUrl && (cegBannerUrl.startsWith('/media/') || cegBannerUrl.startsWith('data:')) ? '' : cegBannerUrl"
-                                   @input="cegBannerUrl = $event.target.value; cegBannerPreview = $event.target.value; cegBannerBase64 = ''"
+                                   @input="cegBannerUrl = $event.target.value; cegBannerPreview = $event.target.value; cegBannerBase64 = ''; if ($refs.cegBannerUrlInput) $refs.cegBannerUrlInput.value = $event.target.value; if ($refs.cegBannerBase64Input) $refs.cegBannerBase64Input.value = ''"
                                    placeholder="Ou cole a URL direta do banner (https://...)"
                                    class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-pink-500 transition">
                         </div>
@@ -2504,7 +2523,8 @@
     <!-- MODAL: CADASTRAR NOVO TIPO DE ITEM (AJAX DINÂMICO) -->
     <!-- ========================================================================= -->
     <div x-show="showNewTipoModal" x-cloak
-         class="fixed inset-0 z-60 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+         class="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4"
+         style="z-index: 99999;"
          @keydown.escape.window="showNewTipoModal = false">
         <div @click.outside="showNewTipoModal = false"
              class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200">
@@ -2816,12 +2836,18 @@ document.addEventListener('alpine:init', () => {
                     this.onSelectEditGroup(this.groups[0].id);
                 }
             } else if (name === 'edit-era' || name === 'edit_era') {
-                if (!this.editingEraId) {
-                    for (const g of this.groups) {
-                        if (g.eras && g.eras.length > 0) {
-                            this.onSelectEditEra(g.eras[0].id);
-                            break;
+                if (!this.editingEraGroupId) {
+                    const firstWithEras = this.groups.find(g => g.eras && g.eras.length > 0) || this.groups[0];
+                    if (firstWithEras) {
+                        this.editingEraGroupId = firstWithEras.id;
+                        if (firstWithEras.eras && firstWithEras.eras.length > 0) {
+                            this.onSelectEditEra(firstWithEras.eras[0].id);
                         }
+                    }
+                } else if (!this.editingEraId) {
+                    const eras = this.currentGroupEras;
+                    if (eras && eras.length > 0) {
+                        this.onSelectEditEra(eras[0].id);
                     }
                 }
             } else if (name === 'item_individual') {
@@ -2909,18 +2935,30 @@ document.addEventListener('alpine:init', () => {
 
             // Permite colar múltiplos nomes separados por vírgula, barra ou quebra de linha
             const parts = val.replace(/\n/g, ',').replace(/;/g, ',').replace(/\//g, ',').split(',');
+            const current = [...this[listKey]];
             for (let p of parts) {
                 p = p.trim();
-                if (p && !this[listKey].some(m => m.toLowerCase() === p.toLowerCase())) {
-                    this[listKey].push(p);
+                if (p && !current.some(m => m.toLowerCase() === p.toLowerCase())) {
+                    current.push(p);
                 }
             }
+            this[listKey] = current;
             this[inputKey] = '';
+            const refName = isEdit ? 'editGroupMembersJson' : 'newGroupMembersJson';
+            if (this.$refs[refName]) {
+                this.$refs[refName].value = JSON.stringify(current);
+            }
         },
 
         removeGroupMember(index, isEdit = false) {
             const listKey = isEdit ? 'editGroupMembers' : 'newGroupMembers';
-            this[listKey].splice(index, 1);
+            const current = [...this[listKey]];
+            current.splice(index, 1);
+            this[listKey] = current;
+            const refName = isEdit ? 'editGroupMembersJson' : 'newGroupMembersJson';
+            if (this.$refs[refName]) {
+                this.$refs[refName].value = JSON.stringify(current);
+            }
         },
 
         handleMemberInputKeydown(event, isEdit = false) {
@@ -2935,12 +2973,19 @@ document.addEventListener('alpine:init', () => {
             reader.onload = (e) => {
                 this.editGroupImagePreview = e.target.result;
                 this.editGroupImageBase64 = e.target.result;
+                if (this.$refs.editGroupImageBase64Input) {
+                    this.$refs.editGroupImageBase64Input.value = e.target.result;
+                }
             };
             reader.readAsDataURL(file);
+            this.editGroupImageUrl = '';
+            if (this.$refs.editGroupImageUrlInput) {
+                this.$refs.editGroupImageUrlInput.value = '';
+            }
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                const fileInput = document.querySelector('form[action*="update_group"] input[name="image_file"]');
+                const fileInput = this.$refs.editGroupFileInput || document.querySelector('#edit_group_form input[name="image_file"]');
                 if (fileInput) fileInput.files = dt.files;
             } catch(e) {}
         },
@@ -2948,20 +2993,42 @@ document.addEventListener('alpine:init', () => {
             this.editGroupImagePreview = '';
             this.editGroupImageBase64 = '';
             this.editGroupImageUrl = '';
-            const fileInput = document.querySelector('form[action*="update_group"] input[name="image_file"]');
+            if (this.$refs.editGroupImageBase64Input) this.$refs.editGroupImageBase64Input.value = '';
+            if (this.$refs.editGroupImageUrlInput) this.$refs.editGroupImageUrlInput.value = '';
+            const fileInput = this.$refs.editGroupFileInput || document.querySelector('#edit_group_form input[name="image_file"]');
             if (fileInput) fileInput.value = '';
+        },
+
+        get currentGroupEras() {
+            if (!this.editingEraGroupId) return [];
+            const g = this.groups.find(item => String(item.id) === String(this.editingEraGroupId));
+            return (g && g.eras) ? g.eras : [];
+        },
+
+        onSelectEditEraGroup(groupId) {
+            this.editingEraGroupId = groupId || '';
+            const eras = this.currentGroupEras;
+            if (eras && eras.length > 0) {
+                if (!eras.some(e => String(e.id) === String(this.editingEraId))) {
+                    this.onSelectEditEra(eras[0].id);
+                }
+            } else {
+                this.onSelectEditEra('');
+            }
         },
 
         onSelectEditEra(eraId) {
             this.editingEraId = eraId || '';
             if (!eraId) {
-                this.editingEraGroupId = '';
                 this.editingEraName = '';
                 this.editingEraReleaseDate = '';
                 this.editingEraDescription = '';
                 this.editEraBannerPreview = '';
                 this.editEraBannerBase64 = '';
                 this.editEraBannerUrl = '';
+                this.editEraColorHex = '';
+                if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+                if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = '';
                 return;
             }
             let foundEra = null;
@@ -2975,7 +3042,7 @@ document.addEventListener('alpine:init', () => {
                 }
             }
             if (foundEra) {
-                this.editingEraGroupId = foundEra.group_id || '';
+                this.editingEraGroupId = foundEra.group_id || this.editingEraGroupId;
                 this.editingEraName = foundEra.name || '';
                 this.editingEraReleaseDate = foundEra.release_date || '';
                 this.editingEraDescription = foundEra.description || '';
@@ -2983,6 +3050,8 @@ document.addEventListener('alpine:init', () => {
                 this.editEraBannerUrl = foundEra.banner_url || '';
                 this.editEraBannerBase64 = '';
                 this.editEraColorHex = foundEra.color_hex || '';
+                if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+                if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = foundEra.banner_url || '';
             }
         },
         handleEditEraBannerFile(file) {
@@ -2991,12 +3060,19 @@ document.addEventListener('alpine:init', () => {
             reader.onload = (e) => {
                 this.editEraBannerPreview = e.target.result;
                 this.editEraBannerBase64 = e.target.result;
+                if (this.$refs.editEraBannerBase64Input) {
+                    this.$refs.editEraBannerBase64Input.value = e.target.result;
+                }
             };
             reader.readAsDataURL(file);
+            this.editEraBannerUrl = '';
+            if (this.$refs.editEraBannerUrlInput) {
+                this.$refs.editEraBannerUrlInput.value = '';
+            }
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                const fileInput = document.querySelector('form[action*="update_era"] input[name="banner_file"]');
+                const fileInput = this.$refs.editEraFileInput || document.querySelector('#edit_era_form input[name="banner_file"]');
                 if (fileInput) fileInput.files = dt.files;
             } catch(e) {}
         },
@@ -3004,7 +3080,9 @@ document.addEventListener('alpine:init', () => {
             this.editEraBannerPreview = '';
             this.editEraBannerBase64 = '';
             this.editEraBannerUrl = '';
-            const fileInput = document.querySelector('form[action*="update_era"] input[name="banner_file"]');
+            if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+            if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = '';
+            const fileInput = this.$refs.editEraFileInput || document.querySelector('#edit_era_form input[name="banner_file"]');
             if (fileInput) fileInput.value = '';
         },
 
@@ -3060,12 +3138,19 @@ document.addEventListener('alpine:init', () => {
             reader.onload = (e) => {
                 this.cegBannerPreview = e.target.result;
                 this.cegBannerBase64 = e.target.result;
+                if (this.$refs.cegBannerBase64Input) {
+                    this.$refs.cegBannerBase64Input.value = e.target.result;
+                }
             };
             reader.readAsDataURL(file);
+            this.cegBannerUrl = '';
+            if (this.$refs.cegBannerUrlInput) {
+                this.$refs.cegBannerUrlInput.value = '';
+            }
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                const fileInput = document.querySelector('#create_ceg_form input[name="banner_file"]');
+                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
                 if (fileInput) fileInput.files = dt.files;
             } catch(e) {}
         },
@@ -3073,7 +3158,9 @@ document.addEventListener('alpine:init', () => {
             this.cegBannerPreview = '';
             this.cegBannerBase64 = '';
             this.cegBannerUrl = '';
-            const fileInput = document.querySelector('#create_ceg_form input[name="banner_file"]');
+            if (this.$refs.cegBannerBase64Input) this.$refs.cegBannerBase64Input.value = '';
+            if (this.$refs.cegBannerUrlInput) this.$refs.cegBannerUrlInput.value = '';
+            const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
             if (fileInput) fileInput.value = '';
         },
 

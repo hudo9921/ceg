@@ -1,3 +1,4 @@
+import re
 import json
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
@@ -29,14 +30,16 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
     """
     Visão 360º dedicada de um Joiner (Participante):
     - Dados cadastrais (Nome, WhatsApp, redes sociais, endereço/anotações)
-    - Resumo financeiro de pendências (itens, frete inter, taxas)
+    - Busca inteligente por nome, telefone (WhatsApp) ou forma que quer ser chamado (@user)
+    - Resumo financeiro de pendências em R$ (itens, frete inter, taxas, nacional) e histórico pago
     - Todos os slots de CEGs e itens individuais Mercari / JP
-    - Alternância rápida de pagamento (Item, Inter, Taxa) com 1 clique
+    - Alternância rápida de pagamento (Item, Inter, Taxa) com 1 clique e recálculo reativo em R$
     - Lista de todos os pacotes nacionais enviados/preparados para ele e feedbacks recebidos
     - Ferramenta de empacotamento de novos itens do participante
     """
 
     def get(self, request):
+        q = request.GET.get('q', '').strip()
         participant_id = request.GET.get('participant_id', '').strip()
 
         # Participantes ativos que têm slots ou compras avulsas
@@ -47,7 +50,53 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
             unpacked_mercari=Count('itens_individuais', filter=Q(itens_individuais__pacote_nacional__isnull=True), distinct=True),
         ).filter(Q(total_slots__gt=0) | Q(total_mercari__gt=0)).order_by('name')
 
-        all_participants = Participant.objects.all().order_by('name')
+        all_participants_qs = Participant.objects.prefetch_related(
+            'reserved_slots__set__ceg',
+            'itens_individuais',
+            'pacotes_nacionais'
+        ).order_by('name')
+
+        q_filter = None
+        if q:
+            clean_digits = re.sub(r'\D', '', q)
+            q_filter = Q(name__icontains=q) | Q(username__icontains=q) | Q(social_handle__icontains=q)
+            if clean_digits:
+                q_filter |= Q(whatsapp__icontains=clean_digits)
+
+        # Se passou 'q' e não passou 'participant_id', verifica se há 1 match único para auto-selecionar
+        if q and not participant_id and q_filter:
+            matches = list(all_participants_qs.filter(q_filter)[:2])
+            if len(matches) == 1:
+                participant_id = str(matches[0].id)
+
+        all_participants = list(all_participants_qs)
+
+        # Pré-computa resumo financeiro de todos os participantes para busca e cards rápidos
+        participants_search_data = []
+        for p in all_participants:
+            fin = p.get_financial_summary()
+            p.fin_summary = fin
+            participants_search_data.append({
+                'id': p.id,
+                'name': p.name,
+                'username': p.username or '',
+                'social_handle': p.social_handle or '',
+                'whatsapp': p.whatsapp or '',
+                'formatted_phone': p.formatted_phone,
+                'display_name': p.display_name,
+                'deve_itens': float(fin['deve_itens']),
+                'deve_frete': float(fin['deve_frete']),
+                'deve_taxa': float(fin['deve_taxa']),
+                'deve_frete_nacional': float(fin['deve_frete_nacional']),
+                'total_devido': float(fin['total_devido']),
+                'pago_itens': float(fin['pago_itens']),
+                'pago_frete': float(fin['pago_frete']),
+                'pago_taxa': float(fin['pago_taxa']),
+                'pago_frete_nacional': float(fin['pago_frete_nacional']),
+                'total_pago_historico': float(fin['total_pago_historico']),
+                'total_itens': fin['total_itens_count'],
+                'unpaid_itens': fin['unpaid_itens_count'],
+            })
 
         selected_participant = None
         items_data = []
@@ -67,6 +116,17 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
             'item_unpaid_count': 0,
             'inter_unpaid_count': 0,
             'taxa_unpaid_count': 0,
+            # Valores monetários em R$
+            'deve_itens': 0.0,
+            'deve_frete': 0.0,
+            'deve_taxa': 0.0,
+            'deve_frete_nacional': 0.0,
+            'total_devido': 0.0,
+            'pago_itens': 0.0,
+            'pago_frete': 0.0,
+            'pago_taxa': 0.0,
+            'pago_frete_nacional': 0.0,
+            'total_pago_historico': 0.0,
         }
 
         if participant_id:
@@ -133,16 +193,27 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                     else:
                         stats['unpacked_count'] += 1
 
+                    preco_val = float(slot.price or 0)
                     if is_item_paid:
                         stats['item_paid_count'] += 1
+                        stats['pago_itens'] += preco_val
                     else:
                         stats['item_unpaid_count'] += 1
+                        stats['deve_itens'] += preco_val
 
-                    if frete_inter_val > 0 and not is_frete_inter_paid:
-                        stats['inter_unpaid_count'] += 1
+                    if frete_inter_val > 0:
+                        if is_frete_inter_paid:
+                            stats['pago_frete'] += frete_inter_val
+                        else:
+                            stats['inter_unpaid_count'] += 1
+                            stats['deve_frete'] += frete_inter_val
 
-                    if taxa_aduaneira_val > 0 and not is_taxa_aduaneira_paid:
-                        stats['taxa_unpaid_count'] += 1
+                    if taxa_aduaneira_val > 0:
+                        if is_taxa_aduaneira_paid:
+                            stats['pago_taxa'] += taxa_aduaneira_val
+                        else:
+                            stats['taxa_unpaid_count'] += 1
+                            stats['deve_taxa'] += taxa_aduaneira_val
 
                     pode_empacotar, motivo_bloqueio = slot.check_packaging_eligibility()
                     if pode_empacotar:
@@ -213,16 +284,27 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                     else:
                         stats['unpacked_count'] += 1
 
+                    preco_val = float(item.preco_produto or 0)
                     if is_item_paid:
                         stats['item_paid_count'] += 1
+                        stats['pago_itens'] += preco_val
                     else:
                         stats['item_unpaid_count'] += 1
+                        stats['deve_itens'] += preco_val
 
-                    if frete_inter_val > 0 and not is_frete_inter_paid:
-                        stats['inter_unpaid_count'] += 1
+                    if frete_inter_val > 0:
+                        if is_frete_inter_paid:
+                            stats['pago_frete'] += frete_inter_val
+                        else:
+                            stats['inter_unpaid_count'] += 1
+                            stats['deve_frete'] += frete_inter_val
 
-                    if taxa_aduaneira_val > 0 and not is_taxa_aduaneira_paid:
-                        stats['taxa_unpaid_count'] += 1
+                    if taxa_aduaneira_val > 0:
+                        if is_taxa_aduaneira_paid:
+                            stats['pago_taxa'] += taxa_aduaneira_val
+                        else:
+                            stats['taxa_unpaid_count'] += 1
+                            stats['deve_taxa'] += taxa_aduaneira_val
 
                     pode_empacotar, motivo_bloqueio = item.check_packaging_eligibility()
                     if pode_empacotar:
@@ -263,6 +345,27 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                         'pacote_rastreio': item.pacote_nacional.codigo_rastreio if item.pacote_nacional else '',
                     })
 
+                for pac in pacotes:
+                    fn_val = float(pac.valor_frete_nacional or 0)
+                    if fn_val > 0:
+                        if pac.is_frete_pago:
+                            stats['pago_frete_nacional'] += fn_val
+                        else:
+                            stats['deve_frete_nacional'] += fn_val
+
+                stats['total_devido'] = (
+                    stats['deve_itens'] +
+                    stats['deve_frete'] +
+                    stats['deve_taxa'] +
+                    stats['deve_frete_nacional']
+                )
+                stats['total_pago_historico'] = (
+                    stats['pago_itens'] +
+                    stats['pago_frete'] +
+                    stats['pago_taxa'] +
+                    stats['pago_frete_nacional']
+                )
+
                 groups_list = sorted(groups_map.values(), key=lambda x: str(x['nome']))
                 eras_list = sorted(eras_map.values(), key=lambda x: str(x['nome']))
                 caixas_list = sorted(caixas_map.values(), key=lambda x: str(x['nome']))
@@ -271,6 +374,7 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
             'selected_participant': selected_participant,
             'participants_with_counts': participants_with_counts,
             'all_participants': all_participants,
+            'participants_search_data_json': json.dumps(participants_search_data),
             'items_data': items_data,
             'items_data_json': json.dumps(items_data),
             'pacotes': pacotes,
@@ -278,6 +382,7 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
             'eras_list': eras_list,
             'caixas_list': caixas_list,
             'stats': stats,
+            'search_q': q,
         })
 
 

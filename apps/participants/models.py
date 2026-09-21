@@ -184,6 +184,134 @@ class Participant(models.Model):
         """Retorna a contagem de notificações não lidas deste participante."""
         return self.notifications.filter(is_read=False).count()
 
+    def get_financial_summary(self) -> dict:
+        """
+        Retorna o resumo financeiro detalhado deste participante:
+        - deve_itens: R$ pendente de itens/produtos
+        - deve_frete: R$ pendente de frete internacional
+        - deve_taxa: R$ pendente de taxa aduaneira
+        - deve_frete_nacional: R$ pendente de frete nacional de pacotes
+        - total_devido: soma das pendências (itens + frete + taxa + nacional)
+        - pago_itens: R$ já pago em itens
+        - pago_frete: R$ já pago em frete inter
+        - pago_taxa: R$ já pago em taxa aduaneira
+        - pago_frete_nacional: R$ já pago em frete nacional
+        - total_pago_historico: soma de tudo que já quitou historicamente
+        - total_itens_count: contagem de itens sob custódia/reserva
+        - unpaid_itens_count: contagem de itens com pendência financeira
+        """
+        from decimal import Decimal
+
+        deve_itens = Decimal('0.00')
+        deve_frete = Decimal('0.00')
+        deve_taxa = Decimal('0.00')
+        deve_frete_nacional = Decimal('0.00')
+
+        pago_itens = Decimal('0.00')
+        pago_frete = Decimal('0.00')
+        pago_taxa = Decimal('0.00')
+        pago_frete_nacional = Decimal('0.00')
+
+        total_itens_count = 0
+        unpaid_itens_count = 0
+
+        # 1. Slots de CEGs
+        slots = [s for s in self.reserved_slots.all() if getattr(s, 'status', None) != 'CANCELLED']
+        for slot in slots:
+            total_itens_count += 1
+            has_debt = False
+
+            # Item / Preço
+            price = slot.price or Decimal('0.00')
+            is_item_paid = slot.is_item_paid or (slot.status == 'PAID')
+            if is_item_paid:
+                pago_itens += price
+            else:
+                deve_itens += price
+                has_debt = True
+
+            # Frete Inter
+            frete = slot.frete_inter or Decimal('0.00')
+            if frete > Decimal('0.00'):
+                if slot.is_frete_inter_paid:
+                    pago_frete += frete
+                else:
+                    deve_frete += frete
+                    has_debt = True
+
+            # Taxa Aduaneira
+            taxa = slot.taxa_aduaneira or Decimal('0.00')
+            if taxa > Decimal('0.00'):
+                if slot.is_taxa_aduaneira_paid:
+                    pago_taxa += taxa
+                else:
+                    deve_taxa += taxa
+                    has_debt = True
+
+            if has_debt:
+                unpaid_itens_count += 1
+
+        # 2. Itens Individuais Mercari / JP
+        itens_ind = self.itens_individuais.all()
+        for item in itens_ind:
+            total_itens_count += 1
+            has_debt = False
+
+            preco = item.preco_produto or Decimal('0.00')
+            if item.produto_pago:
+                pago_itens += preco
+            else:
+                deve_itens += preco
+                has_debt = True
+
+            frete = item.frete_inter or Decimal('0.00')
+            if frete > Decimal('0.00'):
+                if item.frete_inter_pago:
+                    pago_frete += frete
+                else:
+                    deve_frete += frete
+                    has_debt = True
+
+            taxa = item.taxa_aduaneira or Decimal('0.00')
+            if taxa > Decimal('0.00'):
+                if item.taxa_aduaneira_paga:
+                    pago_taxa += taxa
+                else:
+                    deve_taxa += taxa
+                    has_debt = True
+
+            if has_debt:
+                unpaid_itens_count += 1
+
+        # 3. Pacotes Nacionais (Frete Nacional)
+        pacotes = self.pacotes_nacionais.all()
+        for pac in pacotes:
+            fn = pac.valor_frete_nacional or Decimal('0.00')
+            if fn > Decimal('0.00'):
+                if pac.is_frete_pago:
+                    pago_frete_nacional += fn
+                else:
+                    deve_frete_nacional += fn
+
+        total_devido = deve_itens + deve_frete + deve_taxa + deve_frete_nacional
+        total_pago_historico = pago_itens + pago_frete + pago_taxa + pago_frete_nacional
+
+        return {
+            'deve_itens': deve_itens,
+            'deve_frete': deve_frete,
+            'deve_taxa': deve_taxa,
+            'deve_frete_nacional': deve_frete_nacional,
+            'total_devido': total_devido,
+            'pago_itens': pago_itens,
+            'pago_frete': pago_frete,
+            'pago_taxa': pago_taxa,
+            'pago_frete_nacional': pago_frete_nacional,
+            'total_pago_historico': total_pago_historico,
+            'total_itens_count': total_itens_count,
+            'unpaid_itens_count': unpaid_itens_count,
+        }
+
+
 
 class Claim(models.Model):
     class Status(models.TextChoices):

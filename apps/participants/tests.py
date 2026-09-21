@@ -433,3 +433,85 @@ class ParticipantNotificationTests(TestCase):
 
         self.assertEqual(self.participant.unread_notifications_count, 0)
 
+
+class ParticipantPrazosProximosTests(TestCase):
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.groups.models import KpopGroup, Era
+        from apps.cegs.models import CEG, CEGItemDefinition, ItemSlot, CEGSet, Caixa
+        from apps.participants.models import Claim
+
+        self.client = Client()
+        self.participant, _ = Participant.objects.get_or_create(
+            whatsapp='5581999998888',
+            defaults={'name': 'Test Joiner'}
+        )
+        self.participant.claims.all().delete()
+        self.group, _ = KpopGroup.objects.get_or_create(name='Prazos Test Group')
+        self.era, _ = Era.objects.get_or_create(group=self.group, name='Prazos Era')
+
+        now = timezone.now()
+        self.ceg = CEG.objects.create(
+            title='LE SSERAFIM - CRAZY POB',
+            era=self.era,
+            status=CEG.Status.OPEN,
+            prazo_pagamento_item=now + timedelta(hours=12),
+            pix_key='lessera@pix.com'
+        )
+        self.item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Chaewon'
+        )
+        self.set_obj = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.slot = ItemSlot.objects.create(
+            set=self.set_obj,
+            item_definition=self.item_def,
+            status=ItemSlot.Status.RESERVED,
+            price=50.00
+        )
+        self.claim = Claim.objects.create(
+            participant=self.participant,
+            slot=self.slot,
+            total_price=50.00,
+            status=Claim.Status.PENDING
+        )
+
+    def test_prazos_proximos_appears_when_pending(self):
+        from django.urls import reverse
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.get(reverse('my_claims'))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('prazos_proximos', res.context)
+        prazos = res.context['prazos_proximos']
+        self.assertEqual(len(prazos), 1)
+        self.assertEqual(prazos[0]['tipo'], 'ITEM')
+        self.assertEqual(prazos[0]['ceg_id'], str(self.ceg.id))
+        self.assertEqual(prazos[0]['valor'], 50.00)
+        self.assertContains(res, 'Prazos Próximos de Pagamento')
+        self.assertContains(res, 'LE SSERAFIM - CRAZY POB')
+
+    def test_prazos_proximos_disappears_when_paid(self):
+        from django.urls import reverse
+        from apps.participants.models import Claim
+        from apps.cegs.models import ItemSlot
+        self.claim.status = Claim.Status.PAID
+        self.claim.save()
+        self.slot.status = ItemSlot.Status.PAID
+        self.slot.is_item_paid = True
+        self.slot.save()
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.get(reverse('my_claims'))
+        self.assertEqual(res.status_code, 200)
+        prazos = res.context['prazos_proximos']
+        self.assertEqual(len(prazos), 0)
+        self.assertNotContains(res, 'Prazos Próximos de Pagamento')
+
+

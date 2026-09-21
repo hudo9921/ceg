@@ -1176,6 +1176,71 @@ class BulkManageCEGItemsView(View):
                     'message': f"{count} vaga(s) selecionada(s) foram excluídas com sucesso!"
                 })
 
+            elif action == 'bulk_payment':
+                field = str(data.get('field', '')).strip()
+                val_raw = data.get('value', True)
+                if isinstance(val_raw, str):
+                    value = val_raw.lower() in ('true', '1', 'yes', 'on')
+                elif val_raw is None:
+                    value = True
+                else:
+                    value = bool(val_raw)
+
+                if not field:
+                    return JsonResponse({'success': False, 'message': 'Informe a etapa de pagamento (item, inter, taxa).'}, status=400)
+
+                valid_fields = [
+                    'item', 'is_item_paid',
+                    'inter', 'frete_inter', 'is_frete_inter_paid',
+                    'taxa', 'taxa_aduaneira', 'is_taxa_aduaneira_paid',
+                    'nacional', 'frete_nacional', 'is_frete_nacional_paid'
+                ]
+                if field not in valid_fields:
+                    return JsonResponse({'success': False, 'message': f'Campo de pagamento "{field}" inválido.'}, status=400)
+
+                if not slot_ids:
+                    return JsonResponse({'success': False, 'message': 'Nenhuma vaga foi selecionada.'}, status=400)
+
+                slots = ItemSlot.objects.filter(id__in=slot_ids, set__ceg=ceg).select_related('set', 'item_definition', 'claimed_by')
+                count = 0
+                slots_data = []
+                for slot in slots:
+                    slot.toggle_payment(field, value=value, actor=request.user)
+                    count += 1
+                    slots_data.append({
+                        'id': slot.id,
+                        'status': slot.status,
+                        'is_item_paid': slot.is_item_paid,
+                        'is_frete_inter_paid': slot.is_frete_inter_paid,
+                        'is_taxa_aduaneira_paid': slot.is_taxa_aduaneira_paid,
+                        'is_frete_nacional_paid': slot.is_frete_nacional_paid,
+                    })
+
+                field_labels = {
+                    'item': 'Item',
+                    'is_item_paid': 'Item',
+                    'inter': 'Frete Internacional',
+                    'frete_inter': 'Frete Internacional',
+                    'is_frete_inter_paid': 'Frete Internacional',
+                    'taxa': 'Taxa Aduaneira',
+                    'taxa_aduaneira': 'Taxa Aduaneira',
+                    'is_taxa_aduaneira_paid': 'Taxa Aduaneira',
+                    'nacional': 'Frete Nacional',
+                    'frete_nacional': 'Frete Nacional',
+                    'is_frete_nacional_paid': 'Frete Nacional',
+                }
+                label = field_labels.get(field, field)
+                status_label = "Pago ✔" if value else "Pendente"
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f"{count} vaga(s) marcada(s) com {label} como {status_label}!",
+                    'count': count,
+                    'field': field,
+                    'value': value,
+                    'slots': slots_data,
+                })
+
             else:
                 return JsonResponse({'success': False, 'message': 'Ação em massa não reconhecida.'}, status=400)
 

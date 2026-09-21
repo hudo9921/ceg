@@ -59,14 +59,14 @@
                     👤
                 </div>
                 <div>
-                    <h2 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">Selecione o Joiner (Participante)</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Busque por nome, apelido, WhatsApp ou @ do Twitter/Instagram</p>
+                    <h2 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">Pesquisa & Auditoria de Joiner (Participante)</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Pesquise por <strong>Nome</strong>, <strong>Telefone (WhatsApp)</strong> ou <strong>Forma que quer ser chamado (Apelido / @)</strong></p>
                 </div>
             </div>
 
             {% if selected_participant %}
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-500 dark:text-slate-400">Visualizando:</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Selecionado:</span>
                     <span class="px-3 py-1 bg-white dark:bg-[#0F172A] border border-pink-300 dark:border-pink-500/40 rounded-lg text-xs font-black text-pink-700 dark:text-pink-300 shadow-2xs">
                         {{ selected_participant.display_name }}
                     </span>
@@ -77,23 +77,108 @@
             {% endif %}
         </div>
 
+        <!-- BARRA DE BUSCA RÁPIDA COM AUTOCOMPLETE / FILTRO INSTANTÂNEO -->
+        <div class="relative" @click.outside="isSearchFocused = false">
+            <form method="get" action="{% url 'consulta_joiner' %}" class="relative flex items-center gap-2">
+                <div class="relative flex-1">
+                    <input type="text"
+                           name="q"
+                           x-model="participantSearchQuery"
+                           @focus="isSearchFocused = true"
+                           placeholder="🔍 Pesquise por Nome, Telefone (WhatsApp) ou Forma que quer ser chamado (@user, apelido)..."
+                           autocomplete="off"
+                           class="w-full bg-white dark:bg-[#0F172A] border border-pink-300 dark:border-pink-500/40 rounded-xl pl-10 pr-10 py-3 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder-slate-400">
+                    <span class="absolute left-3.5 top-3.5 text-slate-400 text-sm">🔍</span>
+                    <button type="button"
+                            x-show="participantSearchQuery"
+                            @click="participantSearchQuery = ''; isSearchFocused = false;"
+                            class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs px-1.5 py-0.5 rounded-md hover:bg-slate-100 transition">
+                        ✕
+                    </button>
+                </div>
+                <button type="submit"
+                        class="px-4 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-sm flex items-center gap-1.5 shrink-0">
+                    <span>Buscar</span>
+                </button>
+            </form>
+
+            <!-- Menu Suspenso de Sugestões / Resultados da Busca Instantânea -->
+            <div x-show="isSearchFocused && participantSearchQuery.trim().length > 0"
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-[#0F172A] rounded-2xl border border-pink-200 dark:border-pink-500/30 shadow-2xl overflow-hidden max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                <template x-for="p in filteredParticipants" :key="p.id">
+                    <a :href="'{% url 'consulta_joiner' %}?participant_id=' + p.id"
+                       class="p-3.5 hover:bg-pink-50/60 dark:hover:bg-slate-800/60 transition flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 block cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 font-black text-sm flex items-center justify-center shrink-0">
+                                <span x-text="p.name.charAt(0).toUpperCase()"></span>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white" x-text="p.name"></span>
+                                    <template x-if="p.username">
+                                        <span class="px-2 py-0.5 bg-pink-50 text-pink-600 text-[10px] font-bold rounded-md border border-pink-200"
+                                              x-text="'@' + p.username" title="Forma que quer ser chamado"></span>
+                                    </template>
+                                    <template x-if="p.social_handle">
+                                        <span class="text-[11px] text-slate-400" x-text="p.social_handle"></span>
+                                    </template>
+                                </div>
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                    <span>📱 <span x-text="p.formatted_phone || p.whatsapp"></span></span>
+                                    <span>•</span>
+                                    <span x-text="p.total_itens + ' item(ns) sob custódia'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumo Financeiro Rápido do Joiner -->
+                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <template x-if="p.total_devido > 0">
+                                <div class="text-right">
+                                    <span class="px-2.5 py-1 bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 rounded-lg text-xs font-black">
+                                        ⚠️ Deve <span x-text="formatMoney(p.total_devido)"></span>
+                                    </span>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">
+                                        Itens: <span x-text="formatMoney(p.deve_itens)"></span> | Frete: <span x-text="formatMoney(p.deve_frete)"></span> | Taxa: <span x-text="formatMoney(p.deve_taxa)"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="p.total_devido <= 0">
+                                <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg text-xs font-black">
+                                    ✅ Quitado (R$ 0,00)
+                                </span>
+                            </template>
+                            <span class="text-xs text-slate-300 hover:text-pink-600 font-bold ml-1">Abrir →</span>
+                        </div>
+                    </a>
+                </template>
+                <div x-show="filteredParticipants.length === 0" class="p-6 text-center text-slate-400 text-xs">
+                    Nenhum joiner encontrado para esta pesquisa. Tente buscar por outro nome, telefone ou @.
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            <!-- Dropdown / Select Direto -->
+            <!-- Dropdown / Select Direto Tradicional -->
             <div class="md:col-span-8">
                 <form method="get" action="{% url 'consulta_joiner' %}" id="form-select-participant">
                     <div class="relative">
                         <select name="participant_id" id="select-participant" onchange="this.form.submit()"
                                 class="w-full bg-white dark:bg-[#0F172A] border border-slate-300 dark:border-slate-700 rounded-xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-2xs focus:ring-2 focus:ring-pink-500 focus:border-pink-500 cursor-pointer">
-                            <option value="">-- Escolha um participante com itens pendentes de envio --</option>
+                            <option value="">-- Ou selecione na lista geral de participantes --</option>
                             {% for p in participants_with_counts %}
                                 <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
-                                    {{ p.name }}{% if p.username %} [{{ p.username }}]{% endif %}{% if p.social_handle %} ({{ p.social_handle }}){% endif %} — {{ p.unpacked_slots|add:p.unpacked_mercari }} item(ns) livres para empacotar / {{ p.total_slots|add:p.total_mercari }} total
+                                    {{ p.name }}{% if p.username %} [{{ p.username }}]{% endif %}{% if p.social_handle %} ({{ p.social_handle }}){% endif %} — {{ p.unpacked_slots|add:p.unpacked_mercari }} item(ns) livres / {{ p.total_slots|add:p.total_mercari }} total
                                 </option>
                             {% endfor %}
                             <optgroup label="Todos os Participantes Cadastrados">
                                 {% for p in all_participants %}
                                     <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
-                                        {{ p.name }} ({{ p.formatted_phone }})
+                                        {{ p.name }}{% if p.username %} (@{{ p.username }}){% endif %} ({{ p.formatted_phone }})
                                     </option>
                                 {% endfor %}
                             </optgroup>
@@ -104,7 +189,7 @@
 
             <!-- Dica Rápida -->
             <div class="md:col-span-4 text-xs text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-[#0F172A] p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                💡 <strong class="text-slate-700 dark:text-slate-200">Dica:</strong> Clique nos botões de <span class="font-bold text-slate-700 dark:text-slate-200">Item, Inter e Taxa</span> de cada card para alternar rapidamente entre Pago e Pendente.
+                💡 <strong class="text-slate-700 dark:text-slate-200">Dica:</strong> Clique nos botões <span class="font-bold text-slate-700 dark:text-slate-200">Item, Inter e Taxa</span> de cada card para alternar o status e atualizar os valores em R$ na hora!
             </div>
         </div>
 
@@ -127,16 +212,127 @@
     </div>
 
     {% if not selected_participant %}
-        <!-- Estado Inicial: Nenhum Participante Selecionado -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm space-y-4">
-            <div class="w-16 h-16 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center text-3xl mx-auto">
-                📦
+        <!-- Estado Inicial: Nenhum Participante Selecionado -> Exibe Tabela / Visão Geral de Todos os Joiners e suas Dívidas -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Visão Geral dos Participantes</span>
+                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 font-black text-[10px] rounded-full"
+                              x-text="filteredParticipants.length + ' participante(s)'">
+                            {{ all_participants|length }} participante(s)
+                        </span>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        Auditoria Financeira Geral de Joiners
+                    </h2>
+                    <p class="text-xs text-slate-500">
+                        Consulte o saldo devedor de itens, fretes e taxas aduaneiras e quanto cada joiner já quitou na loja.
+                    </p>
+                </div>
+
+                <!-- Filtros de Tabela -->
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="initialTableFilter = 'ALL'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition"
+                            :class="initialTableFilter === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        Todos
+                    </button>
+                    <button type="button" @click="initialTableFilter = 'DEBT'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                            :class="initialTableFilter === 'DEBT' ? 'bg-rose-600 text-white shadow-2xs' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'">
+                        <span>⚠️ Com Dívida Aberta</span>
+                    </button>
+                    <button type="button" @click="initialTableFilter = 'PAID'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                            :class="initialTableFilter === 'PAID' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'">
+                        <span>✅ 100% Quitados</span>
+                    </button>
+                </div>
             </div>
-            <div class="max-w-md mx-auto space-y-1">
-                <h3 class="text-lg font-black text-slate-800">Selecione um Participante para Iniciar</h3>
-                <p class="text-xs sm:text-sm text-slate-500">
-                    Escolha um joiner no menu acima para auditar pagamentos, filtrar cards por era/grupo/caixa, alterar status de pagamento e montar os pacotes de envio físico.
-                </p>
+
+            <!-- Tabela Responsiva de Joiners -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200 text-[10px]">
+                        <tr>
+                            <th class="py-3 px-4">Joiner / Participante</th>
+                            <th class="py-3 px-4">Forma que quer ser chamado</th>
+                            <th class="py-3 px-4">WhatsApp / Telefone</th>
+                            <th class="py-3 px-3 text-right">Deve Itens</th>
+                            <th class="py-3 px-3 text-right">Deve Frete</th>
+                            <th class="py-3 px-3 text-right">Deve Taxa</th>
+                            <th class="py-3 px-4 text-right">Dívida Total</th>
+                            <th class="py-3 px-4 text-right">Total Já Pago</th>
+                            <th class="py-3 px-4 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium">
+                        <template x-for="p in filteredParticipants.filter(p => {
+                            if (initialTableFilter === 'DEBT') return p.total_devido > 0;
+                            if (initialTableFilter === 'PAID') return p.total_devido <= 0;
+                            return true;
+                        })" :key="p.id">
+                            <tr class="hover:bg-slate-50/80 transition">
+                                <td class="py-3 px-4 font-bold text-slate-900">
+                                    <a :href="'{% url 'consulta_joiner' %}?participant_id=' + p.id"
+                                       class="hover:text-pink-600 transition flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-lg bg-pink-100 text-pink-700 font-black text-xs flex items-center justify-center shrink-0"
+                                             x-text="p.name.charAt(0).toUpperCase()"></div>
+                                        <span x-text="p.name"></span>
+                                    </a>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <template x-if="p.username">
+                                        <span class="px-2 py-0.5 bg-pink-50 text-pink-700 border border-pink-200 rounded-md font-bold text-[11px]"
+                                              x-text="'@' + p.username"></span>
+                                    </template>
+                                    <template x-if="!p.username && p.social_handle">
+                                        <span class="text-slate-600 font-semibold" x-text="p.social_handle"></span>
+                                    </template>
+                                    <template x-if="!p.username && !p.social_handle">
+                                        <span class="text-slate-400 italic">Mesmo do nome</span>
+                                    </template>
+                                </td>
+                                <td class="py-3 px-4 text-slate-600">
+                                    <a :href="'https://wa.me/' + p.whatsapp" target="_blank"
+                                       class="text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1">
+                                        <span>💬</span>
+                                        <span x-text="p.formatted_phone || p.whatsapp"></span>
+                                    </a>
+                                </td>
+                                <td class="py-3 px-3 text-right font-bold"
+                                    :class="p.deve_itens > 0 ? 'text-rose-600' : 'text-slate-400'"
+                                    x-text="formatMoney(p.deve_itens)"></td>
+                                <td class="py-3 px-3 text-right font-bold"
+                                    :class="p.deve_frete > 0 ? 'text-indigo-600' : 'text-slate-400'"
+                                    x-text="formatMoney(p.deve_frete)"></td>
+                                <td class="py-3 px-3 text-right font-bold"
+                                    :class="p.deve_taxa > 0 ? 'text-amber-600' : 'text-slate-400'"
+                                    x-text="formatMoney(p.deve_taxa)"></td>
+                                <td class="py-3 px-4 text-right">
+                                    <template x-if="p.total_devido > 0">
+                                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 font-black rounded-lg text-xs"
+                                              x-text="formatMoney(p.total_devido)"></span>
+                                    </template>
+                                    <template x-if="p.total_devido <= 0">
+                                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-lg text-xs">
+                                            R$ 0,00
+                                        </span>
+                                    </template>
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-emerald-700"
+                                    x-text="formatMoney(p.total_pago_historico)"></td>
+                                <td class="py-3 px-4 text-center">
+                                    <a :href="'{% url 'consulta_joiner' %}?participant_id=' + p.id"
+                                       class="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs">
+                                        <span>🔍 Auditar</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
     {% else %}
@@ -162,7 +358,7 @@
                     <h2 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                         <span>{{ selected_participant.name }}</span>
                         {% if selected_participant.username %}
-                            <span class="text-sm font-semibold text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-200">
+                            <span class="text-sm font-semibold text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-200" title="Forma como prefere ser chamado">
                                 @{{ selected_participant.username }}
                             </span>
                         {% endif %}
@@ -178,7 +374,7 @@
                     </div>
                     {% if selected_participant.notes %}
                         <div class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 mt-2">
-                            📍 <strong>Anotações / Endereço:</strong> {{ selected_participant.notes }}
+                            📍 <strong>Anotações / Observações:</strong> {{ selected_participant.notes }}
                         </div>
                     {% endif %}
                 </div>
@@ -192,8 +388,159 @@
                 </div>
             </div>
 
-            <!-- CARDS DE RESUMO FINANCEIRO E EMPACOTAMENTO (REATIVOS) -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            <!-- PAINEL DE AUDITORIA FINANCEIRA: QUANTO DEVE & HISTÓRICO PAGO (REATIVO) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- BLOCO 1: DÍVIDA ATUAL EM ABERTO -->
+                <div class="bg-gradient-to-br from-rose-50/80 via-white to-amber-50/50 rounded-2xl border border-rose-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-sm font-bold">
+                                ⚠️
+                            </span>
+                            <div>
+                                <h3 class="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider">
+                                    Quanto Deve Atualmente (Dívida em Aberto)
+                                </h3>
+                                <p class="text-[11px] text-slate-500">Valores pendentes de pagamento deste joiner</p>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="px-3 py-1 rounded-xl font-black text-sm sm:text-base transition"
+                                  :class="statsData.total_devido > 0 ? 'bg-rose-600 text-white shadow-2xs' : 'bg-emerald-100 text-emerald-800'"
+                                  x-text="statsData.total_devido > 0 ? formatMoney(statsData.total_devido) : '100% Quitado 🎉'">
+                                R$ {{ stats.total_devido|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2.5 pt-1">
+                        <!-- Deve Itens -->
+                        <div class="bg-white/90 p-3 rounded-xl border border-rose-100 shadow-2xs space-y-0.5">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                                🎴 Itens / Cards
+                            </div>
+                            <div class="text-base sm:text-lg font-black"
+                                 :class="statsData.deve_itens > 0 ? 'text-rose-600' : 'text-slate-400'"
+                                 x-text="formatMoney(statsData.deve_itens)">
+                                R$ {{ stats.deve_itens|floatformat:2 }}
+                            </div>
+                            <div class="text-[10px] text-slate-400" x-text="statsData.item_unpaid_count + ' pendente(s)'">
+                                {{ stats.item_unpaid_count }} pendente(s)
+                            </div>
+                        </div>
+
+                        <!-- Deve Frete Inter -->
+                        <div class="bg-white/90 p-3 rounded-xl border border-indigo-100 shadow-2xs space-y-0.5">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                                ✈️ Frete Inter
+                            </div>
+                            <div class="text-base sm:text-lg font-black"
+                                 :class="statsData.deve_frete > 0 ? 'text-indigo-600' : 'text-slate-400'"
+                                 x-text="formatMoney(statsData.deve_frete)">
+                                R$ {{ stats.deve_frete|floatformat:2 }}
+                            </div>
+                            <div class="text-[10px] text-slate-400" x-text="statsData.inter_unpaid_count + ' frete(s)'">
+                                {{ stats.inter_unpaid_count }} frete(s)
+                            </div>
+                        </div>
+
+                        <!-- Deve Taxa Aduaneira -->
+                        <div class="bg-white/90 p-3 rounded-xl border border-amber-100 shadow-2xs space-y-0.5">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                                🏛️ Taxa Aduana
+                            </div>
+                            <div class="text-base sm:text-lg font-black"
+                                 :class="statsData.deve_taxa > 0 ? 'text-amber-600' : 'text-slate-400'"
+                                 x-text="formatMoney(statsData.deve_taxa)">
+                                R$ {{ stats.deve_taxa|floatformat:2 }}
+                            </div>
+                            <div class="text-[10px] text-slate-400" x-text="statsData.taxa_unpaid_count + ' taxa(s)'">
+                                {{ stats.taxa_unpaid_count }} taxa(s)
+                            </div>
+                        </div>
+                    </div>
+
+                    <template x-if="statsData.deve_frete_nacional > 0">
+                        <div class="text-[11px] text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 flex items-center justify-between">
+                            <span>🚚 Frete Nacional de Pacotes Pendente:</span>
+                            <span class="font-black" x-text="formatMoney(statsData.deve_frete_nacional)"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- BLOCO 2: TOTAL PAGO HISTORICAMENTE -->
+                <div class="bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 rounded-2xl border border-emerald-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                                💰
+                            </span>
+                            <div>
+                                <h3 class="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider">
+                                    Quanto Já Pagou Historicamente
+                                </h3>
+                                <p class="text-[11px] text-slate-500">Total acumulado já quitado em toda a trajetória</p>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-black text-sm sm:text-base shadow-2xs"
+                                  x-text="formatMoney(statsData.total_pago_historico)">
+                                R$ {{ stats.total_pago_historico|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2.5 pt-1">
+                        <!-- Pago Itens -->
+                        <div class="bg-white/90 p-3 rounded-xl border border-emerald-100 shadow-2xs space-y-0.5">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                                ✅ Itens Pagos
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-emerald-700"
+                                 x-text="formatMoney(statsData.pago_itens)">
+                                R$ {{ stats.pago_itens|floatformat:2 }}
+                            </div>
+                            <div class="text-[10px] text-slate-400" x-text="statsData.item_paid_count + ' pagos'">
+                                {{ stats.item_paid_count }} pagos
+                            </div>
+                        </div>
+
+                        <!-- Pago Frete Inter -->
+                        <div class="bg-white/90 p-3 rounded-xl border border-emerald-100 shadow-2xs space-y-0.5">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                                ✅ Fretes Pagos
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-emerald-700"
+                                 x-text="formatMoney(statsData.pago_frete)">
+                                R$ {{ stats.pago_frete|floatformat:2 }}
+                            </div>
+                            <div class="text-[10px] text-slate-400">Fretes internacionais</div>
+                        </div>
+
+                        <!-- Pago Taxa Aduaneira -->
+                        <div class="bg-white/90 p-3 rounded-xl border border-emerald-100 shadow-2xs space-y-0.5">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                                ✅ Taxas Pagas
+                            </div>
+                            <div class="text-base sm:text-lg font-black text-emerald-700"
+                                 x-text="formatMoney(statsData.pago_taxa)">
+                                R$ {{ stats.pago_taxa|floatformat:2 }}
+                            </div>
+                            <div class="text-[10px] text-slate-400">Taxas aduaneiras</div>
+                        </div>
+                    </div>
+
+                    <template x-if="statsData.pago_frete_nacional > 0">
+                        <div class="text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center justify-between">
+                            <span>🚚 Fretes Nacionais de Pacotes Pagos:</span>
+                            <span class="font-black" x-text="formatMoney(statsData.pago_frete_nacional)"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- CARDS DE RESUMO OPERACIONAL E EMPACOTAMENTO (REATIVOS) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                 <!-- Total Itens -->
                 <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 cursor-pointer hover:bg-slate-100 transition"
                      @click="filterPacote = 'ALL'" title="Ver todos os itens">
@@ -1151,6 +1498,11 @@
 
 </div>
 
+<!-- Serialização de dados dos participantes para Alpine.js -->
+<script id="participants-search-data-json" type="application/json">
+    {{ participants_search_data_json|safe }}
+</script>
+
 <!-- Serialização de dados dos itens para Alpine.js -->
 <script id="items-data-json" type="application/json">
     {{ items_data_json|safe }}
@@ -1168,8 +1520,23 @@ function enviosNacionaisApp() {
         console.error('Erro ao ler items_data_json:', e);
     }
 
+    let allParticipants = [];
+    try {
+        const elP = document.getElementById('participants-search-data-json');
+        if (elP && elP.textContent) {
+            allParticipants = JSON.parse(elP.textContent);
+        }
+    } catch (e) {
+        console.error('Erro ao ler participants_search_data_json:', e);
+    }
+
     return {
         items: rawItems,
+        allParticipants: allParticipants,
+        participantSearchQuery: '{{ search_q|escapejs }}',
+        isSearchFocused: false,
+        initialTableFilter: 'ALL',
+
         filterGrupo: 'ALL',
         filterEra: 'ALL',
         filterCaixa: 'ALL',
@@ -1178,6 +1545,28 @@ function enviosNacionaisApp() {
         filterTaxaPaid: 'ALL',
         filterPacote: 'ALL',
         searchQuery: '',
+
+        formatMoney(val) {
+            const num = parseFloat(val || 0);
+            return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        get filteredParticipants() {
+            if (!this.participantSearchQuery || !this.participantSearchQuery.trim()) {
+                return this.allParticipants;
+            }
+            const q = this.participantSearchQuery.trim().toLowerCase();
+            const cleanDigits = q.replace(/\D/g, '');
+
+            return this.allParticipants.filter(p => {
+                const nameMatch = p.name && p.name.toLowerCase().includes(q);
+                const usernameMatch = p.username && p.username.toLowerCase().includes(q);
+                const handleMatch = p.social_handle && p.social_handle.toLowerCase().includes(q);
+                const phoneMatch = cleanDigits && p.whatsapp && p.whatsapp.includes(cleanDigits);
+                const formattedPhoneMatch = p.formatted_phone && p.formatted_phone.toLowerCase().includes(q);
+                return nameMatch || usernameMatch || handleMatch || phoneMatch || formattedPhoneMatch;
+            });
+        },
 
         selectedUids: [],
         packagingModalOpen: false,
@@ -1266,6 +1655,16 @@ function enviosNacionaisApp() {
             item_unpaid_count: {{ stats.item_unpaid_count|default:0 }},
             inter_unpaid_count: {{ stats.inter_unpaid_count|default:0 }},
             taxa_unpaid_count: {{ stats.taxa_unpaid_count|default:0 }},
+            deve_itens: {{ stats.deve_itens|stringformat:".2f"|default:"0.00" }},
+            deve_frete: {{ stats.deve_frete|stringformat:".2f"|default:"0.00" }},
+            deve_taxa: {{ stats.deve_taxa|stringformat:".2f"|default:"0.00" }},
+            deve_frete_nacional: {{ stats.deve_frete_nacional|stringformat:".2f"|default:"0.00" }},
+            total_devido: {{ stats.total_devido|stringformat:".2f"|default:"0.00" }},
+            pago_itens: {{ stats.pago_itens|stringformat:".2f"|default:"0.00" }},
+            pago_frete: {{ stats.pago_frete|stringformat:".2f"|default:"0.00" }},
+            pago_taxa: {{ stats.pago_taxa|stringformat:".2f"|default:"0.00" }},
+            pago_frete_nacional: {{ stats.pago_frete_nacional|stringformat:".2f"|default:"0.00" }},
+            total_pago_historico: {{ stats.total_pago_historico|stringformat:".2f"|default:"0.00" }},
         },
 
         showToast(msg) {
@@ -1278,27 +1677,63 @@ function enviosNacionaisApp() {
 
         recalcStats() {
             let itemPaid = 0, itemUnpaid = 0, interUnpaid = 0, taxaUnpaid = 0, readyCount = 0;
+            let deveItens = 0, deveFrete = 0, deveTaxa = 0;
+            let pagoItens = 0, pagoFrete = 0, pagoTaxa = 0;
+
             this.items.forEach(it => {
+                const preco = parseFloat(it.preco || 0);
+                const frete = parseFloat(it.frete_inter_valor || 0);
+                const taxa = parseFloat(it.taxa_aduaneira_valor || 0);
+
                 if (it.is_item_paid) {
                     itemPaid++;
+                    pagoItens += preco;
                 } else {
                     itemUnpaid++;
+                    deveItens += preco;
                 }
-                if (it.frete_inter_valor > 0 && !it.is_frete_inter_paid) {
-                    interUnpaid++;
+
+                if (frete > 0) {
+                    if (it.is_frete_inter_paid) {
+                        pagoFrete += frete;
+                    } else {
+                        interUnpaid++;
+                        deveFrete += frete;
+                    }
                 }
-                if (it.taxa_aduaneira_valor > 0 && !it.is_taxa_aduaneira_paid) {
-                    taxaUnpaid++;
+
+                if (taxa > 0) {
+                    if (it.is_taxa_aduaneira_paid) {
+                        pagoTaxa += taxa;
+                    } else {
+                        taxaUnpaid++;
+                        deveTaxa += taxa;
+                    }
                 }
+
                 if (it.pode_empacotar) {
                     readyCount++;
                 }
             });
+
+            const fnDevido = parseFloat(this.statsData.deve_frete_nacional || 0);
+            const fnPago = parseFloat(this.statsData.pago_frete_nacional || 0);
+
             this.statsData.item_paid_count = itemPaid;
             this.statsData.item_unpaid_count = itemUnpaid;
             this.statsData.inter_unpaid_count = interUnpaid;
             this.statsData.taxa_unpaid_count = taxaUnpaid;
             this.statsData.ready_to_pack_count = readyCount;
+
+            this.statsData.deve_itens = deveItens;
+            this.statsData.deve_frete = deveFrete;
+            this.statsData.deve_taxa = deveTaxa;
+            this.statsData.total_devido = deveItens + deveFrete + deveTaxa + fnDevido;
+
+            this.statsData.pago_itens = pagoItens;
+            this.statsData.pago_frete = pagoFrete;
+            this.statsData.pago_taxa = pagoTaxa;
+            this.statsData.total_pago_historico = pagoItens + pagoFrete + pagoTaxa + fnPago;
         },
 
         async togglePayment(item, field) {

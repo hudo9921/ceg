@@ -245,6 +245,14 @@ def extract_member_names(request):
             parts = [p.strip() for p in text_names.replace('\n', ',').replace(';', ',').split(',') if p.strip()]
             raw_names.extend(parts)
 
+    # Se houver nome digitado pendente no input (caso o usuário aperte Atualizar diretamente)
+    uncommitted = request.POST.get('editGroupMemberInput', '').strip() or request.POST.get('newGroupMemberInput', '').strip()
+    if uncommitted:
+        parts = [p.strip() for p in uncommitted.replace('\n', ',').replace(';', ',').split(',') if p.strip()]
+        for p in parts:
+            if p:
+                raw_names.append(p)
+
     seen = set()
     unique_names = []
     for n in raw_names:
@@ -332,12 +340,17 @@ class UpdateGroupView(StaffRequiredMixin, View):
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
 
-        image_url = process_image_upload(
-            file_obj=image_file,
-            base64_str=image_base64,
-            folder='groups',
-            fallback_url=image_url_input or group.image_url
-        )
+        if image_file or image_base64:
+            image_url = process_image_upload(
+                file_obj=image_file,
+                base64_str=image_base64,
+                folder='groups',
+                fallback_url=''
+            )
+        elif 'image_url' in request.POST:
+            image_url = image_url_input
+        else:
+            image_url = group.image_url
 
         if color_hex:
             if not color_hex.startswith('#') and len(color_hex) in (3, 6):
@@ -360,7 +373,7 @@ class UpdateGroupView(StaffRequiredMixin, View):
             group.image_url = image_url
             group.save()
 
-            if any(k in request.POST for k in ('members_json', 'members_text', 'member_names', 'members[]', 'members')):
+            if any(k in request.POST for k in ('members_json', 'members_text', 'member_names', 'members[]', 'members', 'editGroupMemberInput', 'newGroupMemberInput')):
                 member_names = extract_member_names(request)
                 existing_members = {m.name.lower(): m for m in group.members.all()}
                 kept_ids = []
@@ -474,12 +487,17 @@ class UpdateEraView(StaffRequiredMixin, View):
 
         group = get_object_or_404(KpopGroup, id=group_id)
 
-        banner_url = process_image_upload(
-            file_obj=banner_file,
-            base64_str=banner_base64,
-            folder='eras',
-            fallback_url=banner_url_input or era.banner_url
-        )
+        if banner_file or banner_base64:
+            banner_url = process_image_upload(
+                file_obj=banner_file,
+                base64_str=banner_base64,
+                folder='eras',
+                fallback_url=''
+            )
+        elif 'banner_url' in request.POST:
+            banner_url = banner_url_input
+        else:
+            banner_url = era.banner_url
 
         if color_hex:
             if not color_hex.startswith('#') and len(color_hex) in (3, 6):
@@ -544,7 +562,9 @@ class CreateCEGView(StaffRequiredMixin, View):
         prazo_pagamento_taxa_aduaneira_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
         pix_key = request.POST.get('pix_key', '').strip()
         pix_instructions = request.POST.get('pix_instructions', '').strip()
-        banner_url = request.POST.get('banner_url', '').strip()
+        banner_file = request.FILES.get('banner_file')
+        banner_base64 = request.POST.get('banner_base64', '').strip()
+        banner_url_input = request.POST.get('banner_url', '').strip()
         description = request.POST.get('description', '').strip()
 
         if status == CEG.Status.POLLING:
@@ -558,6 +578,15 @@ class CreateCEGView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=ceg')
 
         era = get_object_or_404(Era, id=era_id)
+
+        # Processa upload de banner da CEG (arquivo, base64 ou URL)
+        banner_url = process_image_upload(
+            file_obj=banner_file,
+            base64_str=banner_base64,
+            folder='cegs/banners',
+            fallback_url=banner_url_input
+        )
+
         opens_at = parse_local_datetime(opens_at_str)
         closes_at = parse_local_datetime(closes_at_str)
         prazo_pagamento_item = parse_local_datetime(prazo_pagamento_item_str)

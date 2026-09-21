@@ -503,3 +503,104 @@ class EnviosNacionaisTests(TestCase):
         self.assertContains(resp_claims, 'Sua Avaliação:')
         self.assertContains(resp_claims, 'Chegou super rápido e os cards vieram com toploader!')
 
+    def test_consulta_joiner_search_by_name(self):
+        """Testa busca de joiner por nome (parcial ou completo)."""
+        self.client.login(username='admin_staff', password='password123')
+        resp = self.client.get(f"{reverse('consulta_joiner')}?q=Maria")
+        self.assertEqual(resp.status_code, 200)
+        # Se 1 único resultado, auto-seleciona a Maria
+        self.assertIsNotNone(resp.context['selected_participant'])
+        self.assertEqual(resp.context['selected_participant'].id, self.participant.id)
+        self.assertContains(resp, 'Maria Silva')
+
+    def test_consulta_joiner_search_by_phone(self):
+        """Testa busca de joiner por telefone (com ou sem formatação)."""
+        self.client.login(username='admin_staff', password='password123')
+        # Busca por dígitos
+        resp = self.client.get(f"{reverse('consulta_joiner')}?q=999887766")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNotNone(resp.context['selected_participant'])
+        self.assertEqual(resp.context['selected_participant'].id, self.participant.id)
+
+        # Busca por formato com parênteses e hífen
+        resp2 = self.client.get(f"{reverse('consulta_joiner')}?q=(11) 99988-7766")
+        self.assertEqual(resp2.status_code, 200)
+        self.assertIsNotNone(resp2.context['selected_participant'])
+        self.assertEqual(resp2.context['selected_participant'].id, self.participant.id)
+
+    def test_consulta_joiner_search_by_forma_que_quer_ser_chamado(self):
+        """Testa busca de joiner pela forma que quer ser chamado (username ou rede social @)."""
+        self.client.login(username='admin_staff', password='password123')
+        # Busca por username (como quer ser chamado)
+        resp = self.client.get(f"{reverse('consulta_joiner')}?q=mariakpop")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNotNone(resp.context['selected_participant'])
+        self.assertEqual(resp.context['selected_participant'].id, self.participant.id)
+
+        # Busca por @social
+        resp2 = self.client.get(f"{reverse('consulta_joiner')}?q=@mariakpop")
+        self.assertEqual(resp2.status_code, 200)
+        self.assertIsNotNone(resp2.context['selected_participant'])
+        self.assertEqual(resp2.context['selected_participant'].id, self.participant.id)
+
+    def test_consulta_joiner_financial_debt_and_historical_paid(self):
+        """Testa o cálculo preciso de itens, frete, taxa devidos e total pago historicamente."""
+        self.client.login(username='admin_staff', password='password123')
+
+        # Cria um terceiro slot com item NÃO pago para Maria
+        slot3 = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Chaeyoung POB Soundwave',
+            member_name='Chaeyoung',
+            tipo_item=self.tipo_pc,
+            default_price=Decimal('50.00')
+        )
+        item_slot3 = ItemSlot.objects.create(
+            set=self.set1,
+            item_definition=slot3,
+            price=Decimal('50.00'),
+            claimed_by=self.participant,
+            status=ItemSlot.Status.RESERVED,
+            is_item_paid=False,
+            is_frete_inter_paid=False,
+            is_taxa_aduaneira_paid=False
+        )
+
+        # 1. Verifica método no modelo Participant
+        summary = self.participant.get_financial_summary()
+        self.assertEqual(summary['deve_itens'], Decimal('50.00'))
+        # frete inter não pago: slot2 (5.00) + slot3 (5.00) = 10.00
+        self.assertEqual(summary['deve_frete'], Decimal('10.00'))
+        # taxa aduaneira não paga: slot2 (2.50) + slot3 (2.50) = 5.00
+        self.assertEqual(summary['deve_taxa'], Decimal('5.00'))
+        self.assertEqual(summary['total_devido'], Decimal('65.00'))
+
+        # Itens pagos: slot1 (45.00) + slot2 (48.00) + mercari (60.00) = 153.00
+        self.assertEqual(summary['pago_itens'], Decimal('153.00'))
+        # Fretes pagos: slot1 (5.00) + mercari (10.00) = 15.00
+        self.assertEqual(summary['pago_frete'], Decimal('15.00'))
+        # Taxas pagas: slot1 (2.50) + mercari (4.00) = 6.50
+        self.assertEqual(summary['pago_taxa'], Decimal('6.50'))
+        # Total pago historico = 153 + 15 + 6.50 = 174.50
+        self.assertEqual(summary['total_pago_historico'], Decimal('174.50'))
+
+        # 2. Verifica a view Consulta Joiner
+        resp = self.client.get(f"{reverse('consulta_joiner')}?participant_id={self.participant.id}")
+        self.assertEqual(resp.status_code, 200)
+        stats = resp.context['stats']
+        self.assertEqual(stats['deve_itens'], 50.00)
+        self.assertEqual(stats['deve_frete'], 10.00)
+        self.assertEqual(stats['deve_taxa'], 5.00)
+        self.assertEqual(stats['total_devido'], 65.00)
+        self.assertEqual(stats['pago_itens'], 153.00)
+        self.assertEqual(stats['pago_frete'], 15.00)
+        self.assertEqual(stats['pago_taxa'], 6.50)
+        self.assertEqual(stats['total_pago_historico'], 174.50)
+
+        # Confirma presença no HTML renderizado
+        self.assertContains(resp, 'Quanto Deve Atualmente')
+        self.assertContains(resp, 'Quanto Já Pagou Historicamente')
+        self.assertContains(resp, 'R$ 65,00')
+        self.assertContains(resp, 'R$ 174,50')
+
+

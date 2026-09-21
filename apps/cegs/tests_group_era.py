@@ -109,3 +109,59 @@ class GroupAndEraCreationsTests(TestCase):
         self.assertEqual(self.era.name, 'CRAZY (Remix)')
         self.assertEqual(self.era.group, new_group)
         self.assertEqual(self.era.banner_url, 'https://example.com/crazy_remix.jpg')
+
+    def test_update_group_photo_base64(self):
+        import base64
+        # 1x1 transparent PNG base64
+        dummy_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        response = self.client.post(reverse('update_group'), {
+            'group_id': self.group.id,
+            'name': self.group.name,
+            'image_base64': dummy_b64,
+            'image_url': '',
+        })
+        self.assertRedirects(response, '/creations/?tab=group')
+        self.group.refresh_from_db()
+        self.assertTrue('group_' in self.group.image_url)
+        self.assertNotEqual(self.group.image_url, "https://example.com/lesserafim.jpg")
+
+    def test_update_group_photo_file_upload(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        tiny_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+        uploaded = SimpleUploadedFile("new_logo.png", tiny_png, content_type="image/png")
+        response = self.client.post(reverse('update_group'), {
+            'group_id': self.group.id,
+            'name': self.group.name,
+            'image_file': uploaded,
+            'image_url': '',
+        })
+        self.assertRedirects(response, '/creations/?tab=group')
+        self.group.refresh_from_db()
+        self.assertTrue('group_' in self.group.image_url)
+
+    def test_update_group_clearing_photo(self):
+        response = self.client.post(reverse('update_group'), {
+            'group_id': self.group.id,
+            'name': self.group.name,
+            'image_url': '',
+        })
+        self.assertRedirects(response, '/creations/?tab=group')
+        self.group.refresh_from_db()
+        self.assertEqual(self.group.image_url, '')
+
+    def test_update_group_with_uncommitted_member_input(self):
+        import json
+        from apps.groups.models import GroupMember
+
+        GroupMember.objects.create(group=self.group, name='Sakura', order=0)
+        # O usuário já tinha Sakura no JSON e digitou "Chaewon, Kazuha" no input antes de enviar
+        response = self.client.post(reverse('update_group'), {
+            'group_id': self.group.id,
+            'name': self.group.name,
+            'members_json': json.dumps(['Sakura']),
+            'editGroupMemberInput': 'Chaewon, Kazuha',
+        })
+        self.assertRedirects(response, '/creations/?tab=group')
+        self.group.refresh_from_db()
+        self.assertEqual(self.group.members_count, 3)
+        self.assertEqual(self.group.get_member_names(), ['Sakura', 'Chaewon', 'Kazuha'])

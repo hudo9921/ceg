@@ -277,3 +277,58 @@ class BulkJoinerAllocatorTestCase(TestCase):
         res_mat = self.client.post(api_url, json.dumps({'action': 'get_matrix'}), content_type='application/json')
         self.assertEqual(res_mat.status_code, 200)
         self.assertTrue(res_mat.json()['success'])
+
+    def test_save_matrix_assign_marked_as_paid(self):
+        """
+        Valida o cenário onde slots são atribuídos na matriz e marcados como pagos antes de salvar.
+        Garante que tanto a atribuição (claimed_by) quanto o Claim e o status de pagamento são gravados.
+        """
+        updates = [
+            {
+                'slot_id': self.slot_s1_seoyeon.id,
+                'action': 'assign',
+                'participant_id': self.participant1.id,
+                'is_paid': True
+            }
+        ]
+        res = BulkJoinerAllocatorService.save_matrix_allocations(self.ceg, updates)
+        self.assertTrue(res['success'])
+        self.assertEqual(res['updated_count'], 1)
+
+        self.slot_s1_seoyeon.refresh_from_db()
+        self.assertEqual(self.slot_s1_seoyeon.claimed_by, self.participant1)
+        self.assertTrue(self.slot_s1_seoyeon.is_item_paid)
+        self.assertEqual(self.slot_s1_seoyeon.status, ItemSlot.Status.PAID)
+
+        # Claim deve ter sido criado com status PAID
+        claim = Claim.objects.get(slot=self.slot_s1_seoyeon)
+        self.assertEqual(claim.participant, self.participant1)
+        self.assertEqual(claim.status, Claim.Status.PAID)
+        self.assertIsNotNone(claim.paid_at)
+
+    def test_save_matrix_toggle_payment_with_participant_id_heals_unassigned_slot(self):
+        """
+        Valida que se toggle_payment for enviado com participant_id para um slot que ainda não
+        estava salvo no banco, a atribuição é realizada e o Claim é criado como PAID.
+        """
+        updates = [
+            {
+                'slot_id': self.slot_s2_seoyeon.id,
+                'action': 'toggle_payment',
+                'participant_id': self.participant1.id,
+                'is_paid': True
+            }
+        ]
+        res = BulkJoinerAllocatorService.save_matrix_allocations(self.ceg, updates)
+        self.assertTrue(res['success'])
+        self.assertEqual(res['updated_count'], 1)
+
+        self.slot_s2_seoyeon.refresh_from_db()
+        self.assertEqual(self.slot_s2_seoyeon.claimed_by, self.participant1)
+        self.assertTrue(self.slot_s2_seoyeon.is_item_paid)
+        self.assertEqual(self.slot_s2_seoyeon.status, ItemSlot.Status.PAID)
+
+        claim = Claim.objects.get(slot=self.slot_s2_seoyeon)
+        self.assertEqual(claim.participant, self.participant1)
+        self.assertEqual(claim.status, Claim.Status.PAID)
+

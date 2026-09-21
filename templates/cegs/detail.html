@@ -214,6 +214,8 @@
          bulkUpdatePrefix: true,
          bulkApplyAllSets: true,
          bulkLoading: false,
+         bulkFeedbackMsg: '',
+         bulkFeedbackTimer: null,
          manageName: '',
          manageMember: '',
          manageItemType: 'PHOTOCARD',
@@ -244,7 +246,7 @@
          deleteSetShowPassword: false,
          deleteSetLoading: false,
          deleteSetError: '',
-         editPhotoPreview: '{{ ceg.banner_url|default:''|escapejs }}',
+         editPhotoPreview: '{{ ceg.display_image_url|default:''|escapejs }}',
          editPhotoBase64: '',
          editPhotoUrl: '{{ ceg.banner_url|default:''|escapejs }}',
          editPhotoDragOver: false,
@@ -811,6 +813,39 @@
     this.bulkLoading = false;
     }
     },
+    async bulkSetPayment(field, value = true) {
+        if (this.selectedSlotIds.length === 0 || this.bulkLoading) return;
+        this.bulkLoading = true;
+        try {
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify({
+                    action: 'bulk_payment',
+                    slot_ids: this.selectedSlotIds,
+                    field: field,
+                    value: value
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.dispatchEvent(new CustomEvent('slot-payment-updated', { detail: data }));
+                this.bulkFeedbackMsg = data.message;
+                if (this.bulkFeedbackTimer) clearTimeout(this.bulkFeedbackTimer);
+                this.bulkFeedbackTimer = setTimeout(() => { this.bulkFeedbackMsg = ''; }, 4000);
+            } else {
+                alert(data.message || 'Erro ao atualizar pagamentos em massa.');
+            }
+        } catch(e) {
+            alert('Erro de conexão: ' + e);
+        } finally {
+            this.bulkLoading = false;
+        }
+    },
     selectParticipantForClaim(pId) {
     if (!pId) {
     this.formName = '';
@@ -926,17 +961,17 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 overflow-hidden">
 
             <!-- Foto / Banner de Capa da CEG -->
-            {% if ceg.banner_url %}
+            {% if ceg.display_image_url %}
             <div
                 class="relative w-full rounded-2xl overflow-hidden border border-slate-200/90 shadow-sm bg-slate-950 flex items-center justify-center group min-h-[220px] max-h-[580px]">
                 <!-- Camada de Fundo com Blur Ambiente -->
-                <img src="{{ ceg.banner_url }}" alt=""
+                <img src="{{ ceg.display_image_url }}" alt=""
                     class="absolute inset-0 w-full h-full object-cover blur-2xl opacity-45 scale-110 pointer-events-none select-none"
                     aria-hidden="true">
                 <div class="absolute inset-0 bg-black/25 pointer-events-none"></div>
 
                 <!-- Imagem Principal Nítida e Sem Cortes (Adaptação Perfeita) -->
-                <img src="{{ ceg.banner_url }}" alt="{{ ceg.title }}"
+                <img src="{{ ceg.display_image_url }}" alt="{{ ceg.title }}"
                     class="relative z-10 max-h-[580px] w-auto max-w-full object-contain mx-auto select-none shadow-xl">
 
                 <!-- Gradiente Inferior para Alto Contraste dos Textos e Botão -->
@@ -1383,14 +1418,69 @@
             class="sticky top-20 z-40 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-xl border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
             <div class="flex items-center gap-3">
                 <span class="w-8 h-8 rounded-lg bg-purple-500/30 flex items-center justify-center text-base">⚡</span>
-                <div>
-                    <span class="font-extrabold text-sm"
-                        x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></span>
-                    <p class="text-[11px] text-purple-200">Escolha uma ação em lote para aplicar aos itens selecionados
-                    </p>
-                </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-extrabold text-sm"
+                            x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></span>
+                        <span x-show="bulkFeedbackMsg" x-cloak
+                            class="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 rounded-md text-[11px] font-bold animate-pulse flex items-center gap-1">
+                            <span>✔</span> <span x-text="bulkFeedbackMsg"></span>
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-purple-200">Escolha uma ação em lote para aplicar aos itens selecionados</p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
+                <!-- Ações Rápidas de Pagamento em Massa (Item, Inter, Taxa) -->
+                <div class="flex items-center gap-1.5 bg-black/25 p-1 rounded-xl border border-white/10 shadow-inner">
+                    <span class="text-[11px] text-purple-200 font-bold px-1.5 hidden sm:inline flex items-center gap-1">
+                        <span>💳</span> Pagar:
+                    </span>
+                    <button type="button" @click="bulkSetPayment('item', true)" :disabled="bulkLoading"
+                        class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Marcar Item Pago para as vagas selecionadas">
+                        <span>✔</span> Item Pago
+                    </button>
+                    <button type="button" @click="bulkSetPayment('inter', true)" :disabled="bulkLoading"
+                        class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Marcar Frete Inter Pago para as vagas selecionadas">
+                        <span>✔</span> Inter Pago
+                    </button>
+                    <button type="button" @click="bulkSetPayment('taxa', true)" :disabled="bulkLoading"
+                        class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Marcar Taxa Aduaneira Paga para as vagas selecionadas">
+                        <span>✔</span> Taxa Paga
+                    </button>
+
+                    <!-- Menu de Opções Auxiliares (Marcar como Pendente) -->
+                    <div class="relative" x-data="{ openPayOptions: false }" @click.outside="openPayOptions = false">
+                        <button type="button" @click="openPayOptions = !openPayOptions"
+                            class="px-2 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer"
+                            title="Reverter para Pendente / Mais opções">
+                            ⚙️ ▾
+                        </button>
+                        <div x-show="openPayOptions" x-cloak
+                            class="absolute right-0 mt-2 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 text-xs text-white space-y-1 animate-fade-in">
+                            <div class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 px-2 py-1 border-b border-slate-800">
+                                Reverter para Pendente
+                            </div>
+                            <button type="button" @click="bulkSetPayment('item', false); openPayOptions = false;"
+                                class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 hover:text-emerald-300 flex items-center justify-between text-slate-200 transition">
+                                <span>○ Item Pendente</span>
+                                <span class="text-[10px] text-slate-400">Desmarcar</span>
+                            </button>
+                            <button type="button" @click="bulkSetPayment('inter', false); openPayOptions = false;"
+                                class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-blue-950/60 hover:text-blue-300 flex items-center justify-between text-slate-200 transition">
+                                <span>○ Inter Pendente</span>
+                                <span class="text-[10px] text-slate-400">Desmarcar</span>
+                            </button>
+                            <button type="button" @click="bulkSetPayment('taxa', false); openPayOptions = false;"
+                                class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 hover:text-purple-300 flex items-center justify-between text-slate-200 transition">
+                                <span>○ Taxa Pendente</span>
+                                <span class="text-[10px] text-slate-400">Desmarcar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="button" @click="openBulkTypeModal()"
                     class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                     <span>🏷️</span> Alterar Tipo em Massa
@@ -1693,6 +1783,16 @@
                                  isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
                                  isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
                                  loading: false,
+                                 onBulkPaymentUpdated(detail) {
+                                     if (!detail || !detail.slots) return;
+                                     const s = detail.slots.find(item => item.id === this.slotId);
+                                     if (s) {
+                                         this.status = s.status;
+                                         this.isItemPaid = s.is_item_paid;
+                                         this.isInterPaid = s.is_frete_inter_paid;
+                                         this.isTaxaPaid = s.is_taxa_aduaneira_paid;
+                                     }
+                                 },
                                  async toggle(field) {
                                      if (this.loading) return;
                                      this.loading = true;
@@ -1731,6 +1831,7 @@
                                 }"
                                 @standby-ended.window="isStandby = false"
                                 @claim-selection-cleared.window="isSelected = false"
+                                @slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"
                                 {% if not user.is_staff and logged_participant %}
                                 @click="if (!isStandby && status === 'AVAILABLE') {
                                     $store.claimSelection.toggle({
@@ -3712,7 +3813,8 @@
 
 <!-- Modal Inline para Criar Novo Tipo de Item (Pool Compartilhada) -->
 <div x-show="showNewTipoModal" x-cloak
-    class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+    class="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4"
+    style="z-index: 99999;"
     @keydown.escape.window="showNewTipoModal = false">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-100 transform transition-all"
         @click.away="showNewTipoModal = false">
@@ -3974,7 +4076,7 @@
 <!-- ===================== MODAL: EXCLUIR CEG ===================== -->
 <div x-show="deleteCegModalOpen" x-cloak
     @keydown.escape.window="closeDeleteCegModal()"
-    class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    class="fixed inset-0 z-[70] overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div @click.outside="closeDeleteCegModal()"
         class="bg-white dark:bg-[#131B2E] rounded-3xl shadow-2xl w-full max-w-lg border border-red-200 dark:border-red-900/60 overflow-hidden transform transition-all">
 

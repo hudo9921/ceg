@@ -20,12 +20,7 @@ class CEGStatusView(StaffRequiredMixin, View):
         search = request.GET.get('search', '').strip()
 
         filter_options = AnalyticsService.get_filter_options()
-        status_data = AnalyticsService.get_cegs_operational_status(
-            group_id=group_id,
-            era_id=era_id,
-            category=category,
-            search=search
-        )
+        status_data = AnalyticsService.get_cegs_operational_status()
 
         selected_group_name = None
         if group_id:
