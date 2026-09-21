@@ -514,6 +514,147 @@ class MyClaimsView(View):
         cegs_frete_unpaid_total = sum(c['total_frete_inter_pendente'] for c in cegs_dict.values())
         cegs_taxa_unpaid_total = sum(c['total_taxa_aduaneira_pendente'] for c in cegs_dict.values())
 
+        # ----------------------------------------------------
+        # Acompanhamento de Prazos Próximos (Semáforo de Pagamentos)
+        # ----------------------------------------------------
+        now = timezone.now()
+        prazos_proximos = []
+
+        def get_urgencia_info(prazo):
+            delta = prazo - now
+            dias = delta.days
+            horas = int(delta.total_seconds() // 3600)
+            if delta.total_seconds() < 0:
+                return ('VENCIDO', '🔴 Vencido', 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800/60', dias, horas)
+            elif delta.total_seconds() <= 86400:
+                return ('HOJE', '🔴 Vence Hoje / Em 24h', 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60', dias, horas)
+            elif dias <= 3:
+                return ('EM_BREVE', f'🟡 Vence em {dias}d', 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60', dias, horas)
+            else:
+                return ('NORMAL', f'🟢 Vence em {dias}d', 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800/60', dias, horas)
+
+        for c_data in cegs_dict.values():
+            ceg = c_data['ceg']
+            caixa = c_data.get('caixa')
+
+            # a) Prazo de Pagamento de Item
+            if c_data['count_pending'] > 0 and ceg.prazo_pagamento_item:
+                urg, badge, u_cls, d_rest, h_rest = get_urgencia_info(ceg.prazo_pagamento_item)
+                prazos_proximos.append({
+                    'tipo': 'ITEM',
+                    'tipo_label': 'Item',
+                    'origem': ceg.title,
+                    'ceg_id': str(ceg.id),
+                    'ceg_slug': ceg.slug,
+                    'remessa_nome': caixa.nome if caixa else None,
+                    'valor': c_data['total_pending'],
+                    'itens_count': c_data['count_pending'],
+                    'prazo': ceg.prazo_pagamento_item,
+                    'pix_key': ceg.pix_key,
+                    'urgencia': urg,
+                    'urgencia_badge': badge,
+                    'urgencia_class': u_cls,
+                    'horas_restantes': h_rest,
+                    'dias_restantes': d_rest,
+                })
+
+            # b) Prazo de Frete Internacional
+            prazo_frete = (caixa.prazo_frete if caixa and caixa.prazo_frete else ceg.prazo_pagamento_frete_inter)
+            if c_data['total_frete_inter_pendente'] > 0 and prazo_frete:
+                urg, badge, u_cls, d_rest, h_rest = get_urgencia_info(prazo_frete)
+                prazos_proximos.append({
+                    'tipo': 'FRETE',
+                    'tipo_label': 'Frete Inter',
+                    'origem': ceg.title,
+                    'ceg_id': str(ceg.id),
+                    'ceg_slug': ceg.slug,
+                    'remessa_nome': caixa.nome if caixa else None,
+                    'valor': c_data['total_frete_inter_pendente'],
+                    'itens_count': c_data['count_inter_unpaid'],
+                    'prazo': prazo_frete,
+                    'pix_key': ceg.pix_key,
+                    'urgencia': urg,
+                    'urgencia_badge': badge,
+                    'urgencia_class': u_cls,
+                    'horas_restantes': h_rest,
+                    'dias_restantes': d_rest,
+                })
+
+            # c) Prazo de Taxa Aduaneira
+            prazo_taxa = (caixa.prazo_taxa if caixa and caixa.prazo_taxa else ceg.prazo_pagamento_taxa_aduaneira)
+            if c_data['total_taxa_aduaneira_pendente'] > 0 and prazo_taxa:
+                urg, badge, u_cls, d_rest, h_rest = get_urgencia_info(prazo_taxa)
+                prazos_proximos.append({
+                    'tipo': 'TAXA',
+                    'tipo_label': 'Taxa Aduaneira',
+                    'origem': ceg.title,
+                    'ceg_id': str(ceg.id),
+                    'ceg_slug': ceg.slug,
+                    'remessa_nome': caixa.nome if caixa else None,
+                    'valor': c_data['total_taxa_aduaneira_pendente'],
+                    'itens_count': c_data['count_taxa_unpaid'],
+                    'prazo': prazo_taxa,
+                    'pix_key': ceg.pix_key,
+                    'urgencia': urg,
+                    'urgencia_badge': badge,
+                    'urgencia_class': u_cls,
+                    'horas_restantes': h_rest,
+                    'dias_restantes': d_rest,
+                })
+
+        for item in itens_individuais_list:
+            if item.frete_inter and not item.frete_inter_pago:
+                p_frete = item.prazo_frete_inter or (item.caixa.prazo_frete if item.caixa else None)
+                if p_frete:
+                    urg, badge, u_cls, d_rest, h_rest = get_urgencia_info(p_frete)
+                    prazos_proximos.append({
+                        'tipo': 'FRETE',
+                        'tipo_label': 'Frete Inter (Mercari)',
+                        'origem': item.nome,
+                        'ceg_id': None,
+                        'ceg_slug': None,
+                        'remessa_nome': item.caixa.nome if item.caixa else None,
+                        'valor': item.frete_inter,
+                        'itens_count': 1,
+                        'prazo': p_frete,
+                        'pix_key': None,
+                        'urgencia': urg,
+                        'urgencia_badge': badge,
+                        'urgencia_class': u_cls,
+                        'horas_restantes': h_rest,
+                        'dias_restantes': d_rest,
+                    })
+
+            if item.taxa_aduaneira and not item.taxa_aduaneira_paga:
+                p_taxa = item.prazo_taxa_aduaneira or (item.caixa.prazo_taxa if item.caixa else None)
+                if p_taxa:
+                    urg, badge, u_cls, d_rest, h_rest = get_urgencia_info(p_taxa)
+                    prazos_proximos.append({
+                        'tipo': 'TAXA',
+                        'tipo_label': 'Taxa Aduaneira (Mercari)',
+                        'origem': item.nome,
+                        'ceg_id': None,
+                        'ceg_slug': None,
+                        'remessa_nome': item.caixa.nome if item.caixa else None,
+                        'valor': item.taxa_aduaneira,
+                        'itens_count': 1,
+                        'prazo': p_taxa,
+                        'pix_key': None,
+                        'urgencia': urg,
+                        'urgencia_badge': badge,
+                        'urgencia_class': u_cls,
+                        'horas_restantes': h_rest,
+                        'dias_restantes': d_rest,
+                    })
+
+        prazos_proximos.sort(key=lambda x: x['prazo'])
+        prazos_urgentes_count = sum(1 for p in prazos_proximos if p['urgencia'] in ['VENCIDO', 'HOJE', 'EM_BREVE'])
+
+        for c_data in cegs_dict.values():
+            ceg_id_str = str(c_data['ceg'].id)
+            ceg_prazos = [p for p in prazos_proximos if p.get('ceg_id') == ceg_id_str]
+            c_data['prazo_destaque'] = ceg_prazos[0] if ceg_prazos else None
+
         from apps.cegs.models import PacoteNacional, ConfiguracaoEnvio, AuditLog
 
         itens_caixinha_prontos = []
@@ -599,6 +740,8 @@ class MyClaimsView(View):
             'itens_caixinha_bloqueados': itens_caixinha_bloqueados,
             'total_caixinha_disponivel': len(itens_caixinha_prontos),
             'configuracao_envio': ConfiguracaoEnvio.get_solo(),
+            'prazos_proximos': prazos_proximos,
+            'prazos_urgentes_count': prazos_urgentes_count,
         })
 
 

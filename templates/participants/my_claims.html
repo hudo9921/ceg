@@ -334,22 +334,113 @@
         </div>
     </div>
 
+    {% if prazos_proximos %}
+    <!-- Semáforo de Prazos Próximos de Pagamento -->
+    <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-base">
+                    ⏱️
+                </div>
+                <div>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>Prazos Próximos de Pagamento</span>
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full {% if prazos_urgentes_count > 0 %}bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 animate-pulse{% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                            {{ prazos_proximos|length }} {% if prazos_proximos|length == 1 %}prazo pendente{% else %}prazos pendentes{% endif %}
+                        </span>
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Acompanhe seus prazos de pagamento de item, frete internacional e taxa aduaneira para não perder suas reservas.
+                    </p>
+                </div>
+            </div>
+
+            {% if prazos_urgentes_count > 0 %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 self-start sm:self-auto">
+                <span>⚠️</span>
+                <span>{{ prazos_urgentes_count }} {% if prazos_urgentes_count == 1 %}prazo requer atenção{% else %}prazos requerem atenção{% endif %}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Grid de Cards de Prazos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {% for p in prazos_proximos %}
+            <div class="p-3.5 rounded-xl border {{ p.urgencia_class }} flex flex-col justify-between gap-3 shadow-2xs transition">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-white/80 dark:bg-black/30 shadow-2xs">
+                            {% if p.tipo == 'ITEM' %}📦{% elif p.tipo == 'FRETE' %}✈️{% else %}🏛️{% endif %}
+                            <span>{{ p.tipo_label }}</span>
+                        </span>
+                        <span class="text-xs font-black">
+                            {{ p.urgencia_badge }}
+                        </span>
+                    </div>
+
+                    <div class="pt-0.5">
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-1" title="{{ p.origem }}">
+                            {{ p.origem }}
+                        </h4>
+                        {% if p.remessa_nome %}
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400 block">
+                            Remessa: {{ p.remessa_nome }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-2">
+                    <div>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">A pagar:</span>
+                        <strong class="text-sm font-black text-slate-900 dark:text-white font-mono">
+                            R$ {{ p.valor|floatformat:2 }}
+                        </strong>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 block">
+                            Até {{ p.prazo|date:"d/m H:i" }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        {% if p.pix_key %}
+                        <button type="button" @click="copyPix('{{ p.pix_key }}', '{% if p.ceg_id %}{{ p.ceg_id }}{% endif %}')"
+                            class="px-2.5 py-1.5 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer"
+                            title="Copiar Chave Pix">
+                            <span>📋</span>
+                            <span class="text-[11px]">Pix</span>
+                        </button>
+                        {% endif %}
+                        {% if p.ceg_slug %}
+                        <a href="{% url 'ceg_detail' slug=p.ceg_slug %}"
+                            class="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 text-xs transition shadow-xs"
+                            title="Ver detalhes da CEG">
+                            ↗
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Filtro por Caixa / Remessa Internacional -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+    <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div class="flex items-center gap-2.5">
                 <div
-                    class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base">
+                    class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800/60 flex items-center justify-center text-base">
                     📦
                 </div>
                 <div>
-                    <h3 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <span>Filtrar por Caixa / Remessa</span>
-                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                             {{ caixas_list|length }} {% if caixas_list|length == 1 %}caixa{% else %}caixas{% endif %}
                         </span>
                     </h3>
-                    <p class="text-xs text-slate-500">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
                         Selecione uma caixa para acompanhar seus itens em trânsito, ou veja itens que ainda não têm
                         remessa vinculada.
                     </p>
@@ -359,7 +450,7 @@
             <!-- Indicador e botão para limpar filtro de caixa -->
             <div x-show="selectedCaixa !== 'ALL'" class="flex items-center gap-2 self-start sm:self-auto">
                 <button type="button" @click="selectedCaixa = 'ALL'; onCaixaChange();"
-                    class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition border border-indigo-200 flex items-center gap-1 shadow-xs">
+                    class="text-[11px] font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 px-2.5 py-1 rounded-lg transition border border-indigo-200 dark:border-indigo-800/70 flex items-center gap-1 shadow-xs cursor-pointer">
                     <span>✕</span> Ver Todas as Caixas
                 </button>
             </div>
@@ -369,11 +460,11 @@
         <div class="flex flex-wrap items-center gap-2 pt-1">
             <!-- Opção 1: Todas as Caixas -->
             <button type="button" @click="selectedCaixa = 'ALL'; onCaixaChange();"
-                :class="selectedCaixa === 'ALL' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium'"
-                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none">
+                :class="selectedCaixa === 'ALL' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300 dark:ring-indigo-500' : 'bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 font-medium'"
+                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none cursor-pointer">
                 <span>🌐 Todas as Caixas</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                    :class="selectedCaixa === 'ALL' ? 'bg-indigo-700 text-white' : 'bg-slate-200 text-slate-700'">
+                    :class="selectedCaixa === 'ALL' ? 'bg-indigo-700 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'">
                     {{ total_claims_count|add:itens_individuais_count }}
                 </span>
             </button>
@@ -381,14 +472,14 @@
             <!-- Opção 2: Cada Caixa que o participante tem itens -->
             {% for c in caixas_list %}
             <button type="button" @click="selectedCaixa = '{{ c.id }}'; onCaixaChange();"
-                :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-medium'"
-                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none">
+                :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300 dark:ring-indigo-500' : 'bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 font-medium'"
+                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none cursor-pointer">
                 <span class="text-sm">
                     {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% elif c.origem == 'CN' %}🇨🇳{% elif c.origem == 'US' %}🇺🇸{% else %}📦{% endif %}
                 </span>
                 <span>{{ c.nome }}</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                    :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-700 text-white' : 'bg-slate-200 text-slate-700'">
+                    :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-700 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'">
                     {{ c.items_count }}
                 </span>
             </button>
@@ -396,11 +487,11 @@
 
             <!-- Opção 3: Fora de Caixas / Sem Remessa -->
             <button type="button" @click="selectedCaixa = 'NONE'; onCaixaChange();"
-                :class="selectedCaixa === 'NONE' ? 'bg-amber-600 text-white font-bold shadow-sm ring-2 ring-amber-300' : 'bg-amber-50/50 hover:bg-amber-50 text-amber-900 border border-amber-200 font-medium'"
-                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none">
+                :class="selectedCaixa === 'NONE' ? 'bg-amber-600 text-white font-bold shadow-sm ring-2 ring-amber-300 dark:ring-amber-500' : 'bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-medium'"
+                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none cursor-pointer">
                 <span>⏳ Itens Fora de Caixas (Sem Remessa)</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                    :class="selectedCaixa === 'NONE' ? 'bg-amber-700 text-white' : 'bg-amber-200 text-amber-900'">
+                    :class="selectedCaixa === 'NONE' ? 'bg-amber-700 text-white' : 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'">
                     {{ itens_sem_caixa_count }}
                 </span>
             </button>
@@ -409,45 +500,45 @@
         <!-- Painel informativo quando uma Caixa específica está selecionada -->
         {% for c in caixas_list %}
         <div x-show="selectedCaixa === '{{ c.id }}'"
-            class="mt-2 p-3.5 bg-indigo-50/60 border border-indigo-200/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-            <div class="space-y-1">
+            class="mt-2 p-3.5 bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/90 dark:border-indigo-500/40 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+            <div class="space-y-1.5">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="font-bold text-indigo-950 text-sm flex items-center gap-1">
+                    <span class="font-black text-indigo-950 dark:text-white text-sm flex items-center gap-1.5">
                         <span>{% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% elif c.origem == 'CN' %}🇨🇳{% elif c.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
                         <span>{{ c.nome }}</span>
                     </span>
-                    <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-indigo-200/70 text-indigo-900">
+                    <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-900 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/60">
                         {{ c.status_display }}
                     </span>
-                    <span class="text-slate-500 font-medium">
+                    <span class="text-slate-500 dark:text-slate-400 font-medium">
                         ({{ c.items_count }} {% if c.items_count == 1 %}item seu nesta caixa{% else %}itens seus nesta
                         caixa{% endif %})
                     </span>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600 text-[11px]">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600 dark:text-slate-300 text-[11px]">
                     {% if c.codigo_rastreio %}
                     <div class="flex items-center gap-1">
-                        <span class="text-slate-400">Rastreio:</span>
+                        <span class="text-slate-400 dark:text-slate-400">Rastreio:</span>
                         {% if c.tracking_url %}
                         <a href="{{ c.tracking_url }}" target="_blank" rel="noopener noreferrer"
-                            class="font-mono font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                            class="font-mono font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline">
                             {{ c.codigo_rastreio }} ↗
                         </a>
                         {% else %}
-                        <span class="font-mono font-bold text-slate-700">{{ c.codigo_rastreio }}</span>
+                        <span class="font-mono font-bold text-slate-700 dark:text-slate-200">{{ c.codigo_rastreio }}</span>
                         {% endif %}
                     </div>
                     {% endif %}
                     {% if c.prazo_frete %}
                     <div class="flex items-center gap-1">
-                        <span class="text-slate-400">Prazo Frete:</span>
-                        <span class="font-bold text-slate-700">{{ c.prazo_frete|date:"d/m/Y H:i" }}</span>
+                        <span class="text-slate-400 dark:text-slate-400">Prazo Frete:</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">{{ c.prazo_frete|date:"d/m/Y H:i" }}</span>
                     </div>
                     {% endif %}
                     {% if c.prazo_taxa %}
                     <div class="flex items-center gap-1">
-                        <span class="text-slate-400">Prazo Taxa:</span>
-                        <span class="font-bold text-slate-700">{{ c.prazo_taxa|date:"d/m/Y H:i" }}</span>
+                        <span class="text-slate-400 dark:text-slate-400">Prazo Taxa:</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">{{ c.prazo_taxa|date:"d/m/Y H:i" }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -455,7 +546,7 @@
 
             <div class="flex items-center gap-2 flex-shrink-0">
                 <a href="{% url 'caixa_detail' slug=c.slug %}"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition">
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition cursor-pointer">
                     <span>Ver Página da Caixa</span>
                     <span>↗</span>
                 </a>
@@ -465,7 +556,7 @@
 
         <!-- Painel informativo quando "Itens Fora de Caixas" está selecionado -->
         <div x-show="selectedCaixa === 'NONE'"
-            class="mt-2 p-3 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900">
+            class="mt-2 p-3 bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
             <div class="flex items-center gap-2">
                 <span class="text-base">⏳</span>
                 <span>Exibindo <strong>{{ itens_sem_caixa_count }} {% if itens_sem_caixa_count == 1 %}item{% else %}itens{% endif %}</strong> que ainda não foram alocados em nenhuma remessa internacional
@@ -476,14 +567,14 @@
 
     <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->
     <div x-show="categoryFilter === 'ALL'" class="space-y-6">
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+                    <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <span>📦</span>
                         <span>Minhas Reservas por CEG</span>
                     </h2>
-                    <p class="text-xs text-slate-500 pt-0.5">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 pt-0.5">
                         Filtre e visualize suas reservas por Grupo e por CEG.
                     </p>
                 </div>
@@ -492,9 +583,9 @@
                 <div class="flex flex-wrap items-center gap-3">
                     <!-- 1. Filtro de Grupos -->
                     <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-slate-700 whitespace-nowrap">Grupo:</label>
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Grupo:</label>
                         <select x-model="selectedGroup" @change="onGroupChange()"
-                            class="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition cursor-pointer">
+                            class="px-3 py-2 bg-slate-50 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-slate-900 transition cursor-pointer">
                             <option value="">Todos os Grupos ({{ groups_filter_list|length }})</option>
                             {% for g in groups_filter_list %}
                             <option value="{{ g.id }}">{{ g.name }} ({{ g.total_items }} {% if g.total_items == 1 %}item{% else %}itens{% endif %})</option>
@@ -504,9 +595,9 @@
 
                     <!-- 2. Filtro de CEGs -->
                     <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-slate-700 whitespace-nowrap">CEG:</label>
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">CEG:</label>
                         <select x-model="selectedCeg"
-                            class="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition cursor-pointer max-w-[260px] truncate">
+                            class="px-3 py-2 bg-slate-50 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-slate-900 transition cursor-pointer max-w-[260px] truncate">
                             <option value="">Todas as CEGs</option>
                             <template x-for="c in filteredCegsOptions" :key="c.id">
                                 <option :value="c.id"
@@ -519,7 +610,7 @@
                     <button type="button"
                         x-show="selectedGroup || selectedCeg || statusFilter !== 'ALL' || selectedCaixa !== 'ALL'"
                         @click="clearFilters()"
-                        class="px-3 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                        class="px-3 py-2 bg-pink-50 dark:bg-pink-950/60 hover:bg-pink-100 dark:hover:bg-pink-900 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/80 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer">
                         <span>✕</span>
                         <span>Limpar Filtros</span>
                     </button>
@@ -585,138 +676,215 @@
             </div>
         </div>
 
-        {% for group in cegs_groups %}
-        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }})"
-            class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm space-y-4">
-
-            <!-- CEG Header -->
-            <div
-                class="bg-slate-100 dark:bg-slate-900/80 p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                    <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase">
-                        {{ group.ceg.era.group.name }} • {{ group.ceg.era.name }}
+        <!-- Barra de Controle de Visualização das CEGs -->
+        {% if cegs_groups %}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+            <div class="flex items-center gap-2">
+                <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Suas CEGs e Pedidos</span>
+                    <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-pink-100 dark:bg-pink-950/70 text-pink-700 dark:text-pink-300">
+                        {{ cegs_groups|length }}
                     </span>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                        <a href="{% url 'ceg_detail' slug=group.ceg.slug %}" class="hover:text-pink-600 transition">
-                            {{ group.ceg.title }} ↗
-                        </a>
-                    </h3>
-                    {% if group.ceg.caixa %}
-                    <div class="mt-1 flex flex-wrap items-center gap-2">
-                        <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}"
-                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">
-                            <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
-                            <span>Remessa: {{ group.ceg.caixa.nome }}</span>
-                        </a>
-                        <span
-                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                            <span>✈️ {{ group.ceg.get_shipping_status_display }}</span>
-                        </span>
-                        {% if group.ceg.caixa.codigo_rastreio %}
-                        <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank"
-                            class="inline-flex items-center gap-1 text-xs font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                            <span>🔗 Rastreio: {{ group.ceg.caixa.codigo_rastreio }}</span>
-                        </a>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Resumo Financeiro da CEG no Cabeçalho -->
-                <div class="text-right flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3">
-                    {% if group.total_pending > 0 %}
-                    <div class="text-xs" x-show="statusFilter === 'ALL' || statusFilter === 'PENDING'">
-                        <span class="text-slate-500 dark:text-slate-400">Itens Pendentes:</span>
-                        <strong class="text-amber-600 dark:text-amber-400 font-bold block text-sm">
-                            {{ group.count_pending }} {% if group.count_pending == 1 %}item{% else %}itens{% endif %}
-                            (R$ {{ group.total_pending|floatformat:2 }})
-                        </strong>
-                    </div>
-                    {% endif %}
-
-                    {% if group.total_frete_inter_pendente > 0 %}
-                    <div class="text-xs" x-show="statusFilter === 'ALL' || statusFilter === 'INTER_UNPAID'">
-                        <span class="text-slate-500 dark:text-slate-400">Frete a Pagar:</span>
-                        <strong class="text-blue-600 dark:text-blue-400 font-bold block text-sm">
-                            R$ {{ group.total_frete_inter_pendente|floatformat:2 }}
-                        </strong>
-                    </div>
-                    {% elif group.total_frete_inter > 0 and group.total_frete_inter_pendente == 0 %}
-                    <div class="text-xs hidden md:block" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
-                        <span class="text-slate-500 dark:text-slate-400">Frete Inter:</span>
-                        <strong class="text-emerald-600 dark:text-emerald-400 font-bold block text-sm">
-                            ✔ Quitado
-                        </strong>
-                    </div>
-                    {% endif %}
-
-                    {% if group.total_taxa_aduaneira_pendente > 0 %}
-                    <div class="text-xs" x-show="statusFilter === 'ALL' || statusFilter === 'TAXA_UNPAID'">
-                        <span class="text-slate-500 dark:text-slate-400">Taxa a Pagar:</span>
-                        <strong class="text-purple-600 dark:text-purple-400 font-bold block text-sm">
-                            R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}
-                        </strong>
-                    </div>
-                    {% elif group.total_taxa_aduaneira > 0 and group.total_taxa_aduaneira_pendente == 0 %}
-                    <div class="text-xs hidden md:block" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
-                        <span class="text-slate-500 dark:text-slate-400">Taxa Aduaneira:</span>
-                        <strong class="text-emerald-600 dark:text-emerald-400 font-bold block text-sm">
-                            ✔ Quitada
-                        </strong>
-                    </div>
-                    {% endif %}
-
-                    {% if group.total_paid > 0 and group.total_pending == 0 and group.total_devido_frete_taxa == 0 %}
-                    <div class="text-xs" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
-                        <span class="text-slate-500 dark:text-slate-400">Status Geral:</span>
-                        <strong class="text-emerald-600 dark:text-emerald-400 font-bold block text-sm">
-                            ✔ 100% Quitado
-                        </strong>
-                    </div>
-                    {% endif %}
-
-                    {% if group.total_geral_pendente > 0 %}
-                    <div class="text-xs pl-2 border-l border-slate-200 dark:border-slate-700"
-                        x-show="statusFilter === 'ALL'">
-                        <span class="text-slate-500 dark:text-slate-400 font-semibold">Total a Pagar nesta CEG:</span>
-                        <strong class="text-pink-600 dark:text-pink-400 font-black block text-sm sm:text-base">
-                            R$ {{ group.total_geral_pendente|floatformat:2 }}
-                        </strong>
-                    </div>
-                    {% endif %}
-                </div>
+                </h2>
+                <span class="text-xs text-slate-400 dark:text-slate-500 hidden sm:inline">• Clique para expandir os itens de cada CEG</span>
             </div>
 
-            <!-- Chave Pix da CEG (se houver pendente) -->
-            {% if group.ceg.pix_key %}
-            {% if group.count_pending > 0 or group.count_inter_unpaid > 0 or group.count_taxa_unpaid > 0 or group.total_devido_frete_taxa > 0 %}
-            <div x-show="statusFilter === 'ALL' || (statusFilter === 'PENDING' && {{ group.count_pending }} > 0) || (statusFilter === 'INTER_UNPAID' && {{ group.count_inter_unpaid }} > 0) || (statusFilter === 'TAXA_UNPAID' && {{ group.count_taxa_unpaid }} > 0)"
-                class="mx-5 p-4 bg-gradient-to-r from-amber-50 to-pink-50 dark:from-[#0F172A] dark:to-[#0F172A] dark:bg-[#0F172A] dark:bg-none border border-amber-200 dark:border-amber-500/30 rounded-xl flex flex-col md:flex-row justify-between items-center gap-3">
-                <div class="space-y-1 text-center md:text-left">
-                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        🔑 Chave Pix para Pagamento desta CEG:
-                    </div>
-                    <div class="font-mono text-xs font-bold text-pink-700 dark:text-pink-400 select-all">
-                        {{ group.ceg.pix_key }}
-                    </div>
-                    {% if group.ceg.pix_instructions %}
-                    <div class="text-[11px] text-slate-600 dark:text-slate-400">
-                        {{ group.ceg.pix_instructions }}
-                    </div>
-                    {% endif %}
-                </div>
-
-                <button type="button" @click="copyPix('{{ group.ceg.pix_key }}')"
-                    class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg transition shadow-sm flex-shrink-0 cursor-pointer">
-                    📋 Copiar Chave Pix
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+                <button type="button" @click="expandAllCegs()"
+                    class="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                    <span>▾</span>
+                    <span>Expandir Todas</span>
+                </button>
+                <button type="button" @click="collapseAllCegs()"
+                    class="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                    <span>▴</span>
+                    <span>Recolher Todas</span>
                 </button>
             </div>
-            {% endif %}
-            {% endif %}
+        </div>
+        {% endif %}
 
-            <!-- Tabela de Itens -->
-            <div class="px-5 pb-5 overflow-x-auto">
-                <table class="w-full text-left text-xs">
+        {% for group in cegs_groups %}
+        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }})"
+            data-ceg-id="{{ group.ceg.id }}"
+            class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition">
+
+            <!-- CEG Header Compacto -->
+            <div class="p-4 sm:p-5 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                <!-- Linha 1: Título, Grupo, Caixa e Resumo Financeiro -->
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase tracking-wide">
+                                {{ group.ceg.era.group.name }} • {{ group.ceg.era.name }}
+                            </span>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                            <a href="{% url 'ceg_detail' slug=group.ceg.slug %}" class="hover:text-pink-600 transition inline-flex items-center gap-1">
+                                <span>{{ group.ceg.title }}</span>
+                                <span class="text-xs text-pink-500">↗</span>
+                            </a>
+                        </h3>
+                        {% if group.ceg.caixa %}
+                        <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                            <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}"
+                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">
+                                <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                                <span>Remessa: {{ group.ceg.caixa.nome }}</span>
+                            </a>
+                            <span
+                                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                <span>✈️ {{ group.ceg.get_shipping_status_display }}</span>
+                            </span>
+                            {% if group.ceg.caixa.codigo_rastreio %}
+                            <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank"
+                                class="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                <span>🔗 Rastreio: {{ group.ceg.caixa.codigo_rastreio }}</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if group.prazo_destaque %}
+                        <div class="pt-0.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold {{ group.prazo_destaque.urgencia_class }}">
+                                <span>⏱️</span>
+                                <span>{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }} (até {{ group.prazo_destaque.prazo|date:"d/m H:i" }})</span>
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Resumo Financeiro Compacto da CEG -->
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
+                        {% if group.total_pending > 0 %}
+                        <div class="text-left sm:text-right" x-show="statusFilter === 'ALL' || statusFilter === 'PENDING'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Itens Pendentes:</span>
+                            <span class="text-amber-600 dark:text-amber-400 font-bold text-xs sm:text-sm">
+                                {{ group.count_pending }} {% if group.count_pending == 1 %}item{% else %}itens{% endif %}
+                                (R$ {{ group.total_pending|floatformat:2 }})
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_frete_inter_pendente > 0 %}
+                        <div class="text-left sm:text-right" x-show="statusFilter === 'ALL' || statusFilter === 'INTER_UNPAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Frete a Pagar:</span>
+                            <span class="text-blue-600 dark:text-blue-400 font-bold text-xs sm:text-sm">
+                                R$ {{ group.total_frete_inter_pendente|floatformat:2 }}
+                            </span>
+                        </div>
+                        {% elif group.total_frete_inter > 0 and group.total_frete_inter_pendente == 0 %}
+                        <div class="text-left sm:text-right hidden md:block" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Frete Inter:</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                ✔ Quitado
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_taxa_aduaneira_pendente > 0 %}
+                        <div class="text-left sm:text-right" x-show="statusFilter === 'ALL' || statusFilter === 'TAXA_UNPAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Taxa a Pagar:</span>
+                            <span class="text-purple-600 dark:text-purple-400 font-bold text-xs sm:text-sm">
+                                R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}
+                            </span>
+                        </div>
+                        {% elif group.total_taxa_aduaneira > 0 and group.total_taxa_aduaneira_pendente == 0 %}
+                        <div class="text-left sm:text-right hidden md:block" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Taxa:</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                ✔ Quitada
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_paid > 0 and group.total_pending == 0 and group.total_devido_frete_taxa == 0 %}
+                        <div class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-xs font-bold"
+                            x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
+                            <span>✔</span>
+                            <span>100% Quitado</span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_geral_pendente > 0 %}
+                        <div class="pl-3 border-l border-slate-200 dark:border-slate-700 text-left sm:text-right"
+                            x-show="statusFilter === 'ALL'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block">Total a Pagar nesta CEG:</span>
+                            <span class="text-pink-600 dark:text-pink-400 font-black text-base sm:text-lg">
+                                R$ {{ group.total_geral_pendente|floatformat:2 }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Linha 2: Barra Integrada de Pix & Botão Expandir -->
+                <div class="pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <!-- Chave Pix da CEG (se houver pendente e se tiver chave) -->
+                    {% if group.ceg.pix_key and group.total_geral_pendente > 0 %}
+                    <div class="flex flex-wrap items-center gap-2 text-xs w-full sm:w-auto">
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-slate-800 border border-amber-200 dark:border-amber-500/30 rounded-xl flex-wrap">
+                            <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <span>🔑</span>
+                                <span class="hidden xs:inline">Chave Pix:</span>
+                            </span>
+                            <span class="font-mono font-bold text-pink-600 dark:text-pink-400 select-all">
+                                {{ group.ceg.pix_key }}
+                            </span>
+                        </div>
+                        <button type="button" @click="copyPix('{{ group.ceg.pix_key }}', '{{ group.ceg.id }}')"
+                            class="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? '✔' : '📋'"></span>
+                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Chave Pix'"></span>
+                        </button>
+                    </div>
+                    {% elif group.ceg.pix_key %}
+                    <div class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                        <span>✨</span>
+                        <span>Nenhum pagamento pendente nesta CEG</span>
+                    </div>
+                    {% else %}
+                    <div class="text-xs text-slate-400 dark:text-slate-500">
+                        <span>CEG sem chave Pix cadastrada</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Botão Toggle de Expansão dos Itens -->
+                    <div class="ml-auto flex items-center gap-2">
+                        <button type="button"
+                            @click="toggleCeg('{{ group.ceg.id }}')"
+                            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer select-none"
+                            :class="isCegExpanded('{{ group.ceg.id }}') ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700' : 'bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 hover:bg-pink-100 dark:hover:bg-pink-900/60 border border-pink-200 dark:border-pink-800/50 shadow-xs'">
+                            <span x-text="isCegExpanded('{{ group.ceg.id }}') ? 'Ocultar Itens' : 'Ver {{ group.claims|length }} {% if group.claims|length == 1 %}item{% else %}itens{% endif %}'"></span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="isCegExpanded('{{ group.ceg.id }}') ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gaveta Expansível de Detalhes dos Itens -->
+            <div x-show="isCegExpanded('{{ group.ceg.id }}')"
+                x-cloak
+                class="border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20">
+
+                {% if group.ceg.pix_instructions and group.total_geral_pendente > 0 %}
+                <div class="px-5 pt-3.5 pb-1">
+                    <div class="p-3 bg-amber-50/70 dark:bg-slate-900/60 border border-amber-200/70 dark:border-amber-500/20 rounded-xl text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
+                        <span class="text-base flex-shrink-0">📌</span>
+                        <div class="space-y-0.5">
+                            <span class="font-bold text-amber-900 dark:text-amber-300">Instruções do Organizador desta CEG:</span>
+                            <p class="text-slate-600 dark:text-slate-400">{{ group.ceg.pix_instructions }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tabela de Itens -->
+                <div class="px-5 py-4 overflow-x-auto">
+                    <table class="w-full text-left text-xs">
                     <thead>
                         <tr
                             class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
@@ -858,6 +1026,8 @@
                     </tbody>
                 </table>
             </div>
+            </div>
+            <!-- Fim da Gaveta Expansível -->
 
         </div>
         {% empty %}
@@ -1942,6 +2112,46 @@
                                     countInterUnpaid: c.count_inter_unpaid || 0,
                                     countTaxaUnpaid: c.count_taxa_unpaid || 0
                                 })),
+                                expandedCegs: {},
+                                copiedPixCegId: null,
+                                init() {
+                                    const map = {};
+                                    this.allCegs.forEach(c => {
+                                        const hasPending = (c.countPending > 0) || (c.countInterUnpaid > 0) || (c.countTaxaUnpaid > 0);
+                                        map[c.id] = hasPending;
+                                    });
+                                    this.expandedCegs = map;
+                                },
+                                toggleCeg(cegId) {
+                                    const id = String(cegId);
+                                    this.expandedCegs[id] = !this.isCegExpanded(id);
+                                },
+                                isCegExpanded(cegId) {
+                                    const id = String(cegId);
+                                    if (this.expandedCegs[id] === undefined) {
+                                        const found = this.allCegs.find(c => c.id === id);
+                                        return found ? (found.countPending > 0 || found.countInterUnpaid > 0 || found.countTaxaUnpaid > 0) : true;
+                                    }
+                                    return !!this.expandedCegs[id];
+                                },
+                                expandAllCegs() {
+                                    const map = {};
+                                    this.allCegs.forEach(c => { map[c.id] = true; });
+                                    document.querySelectorAll('[data-ceg-id]').forEach(el => {
+                                        const id = el.getAttribute('data-ceg-id');
+                                        if (id) map[id] = true;
+                                    });
+                                    this.expandedCegs = map;
+                                },
+                                collapseAllCegs() {
+                                    const map = {};
+                                    this.allCegs.forEach(c => { map[c.id] = false; });
+                                    document.querySelectorAll('[data-ceg-id]').forEach(el => {
+                                        const id = el.getAttribute('data-ceg-id');
+                                        if (id) map[id] = false;
+                                    });
+                                    this.expandedCegs = map;
+                                },
                                     get filteredCegsOptions() {
             let list = this.allCegs;
             if (this.selectedGroup) {
@@ -2042,9 +2252,25 @@
             if (filter === 'TAXA_UNPAID') return isTaxaUnpaid;
             return true;
         },
-        copyPix(key) {
-            navigator.clipboard.writeText(key);
-            alert('Chave Pix copiada com sucesso! ' + key);
+        copyPix(key, cegId = null) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(key).then(() => {
+                    if (cegId) {
+                        this.copiedPixCegId = String(cegId);
+                        setTimeout(() => {
+                            if (this.copiedPixCegId === String(cegId)) {
+                                this.copiedPixCegId = null;
+                            }
+                        }, 2500);
+                    } else {
+                        alert('Chave Pix copiada com sucesso! ' + key);
+                    }
+                }).catch(() => {
+                    alert('Chave Pix copiada: ' + key);
+                });
+            } else {
+                alert('Chave Pix: ' + key);
+            }
         },
         notificationsOpen: {% if unread_notifications_count > 0 %}true{% else %}false{% endif %},
         unreadNotificationsCount: {{ unread_notifications_count|default:0 }},
