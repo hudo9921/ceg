@@ -214,6 +214,8 @@
          bulkUpdatePrefix: true,
          bulkApplyAllSets: true,
          bulkLoading: false,
+         bulkFeedbackMsg: '',
+         bulkFeedbackTimer: null,
          manageName: '',
          manageMember: '',
          manageItemType: 'PHOTOCARD',
@@ -831,7 +833,10 @@
             });
             const data = await res.json();
             if (data.success) {
-                window.location.reload();
+                window.dispatchEvent(new CustomEvent('slot-payment-updated', { detail: data }));
+                this.bulkFeedbackMsg = data.message;
+                if (this.bulkFeedbackTimer) clearTimeout(this.bulkFeedbackTimer);
+                this.bulkFeedbackTimer = setTimeout(() => { this.bulkFeedbackMsg = ''; }, 4000);
             } else {
                 alert(data.message || 'Erro ao atualizar pagamentos em massa.');
             }
@@ -1413,12 +1418,15 @@
             class="sticky top-20 z-40 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-xl border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
             <div class="flex items-center gap-3">
                 <span class="w-8 h-8 rounded-lg bg-purple-500/30 flex items-center justify-center text-base">⚡</span>
-                <div>
-                    <span class="font-extrabold text-sm"
-                        x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></span>
-                    <p class="text-[11px] text-purple-200">Escolha uma ação em lote para aplicar aos itens selecionados
-                    </p>
-                </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-extrabold text-sm"
+                            x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'"></span>
+                        <span x-show="bulkFeedbackMsg" x-cloak
+                            class="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 rounded-md text-[11px] font-bold animate-pulse flex items-center gap-1">
+                            <span>✔</span> <span x-text="bulkFeedbackMsg"></span>
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-purple-200">Escolha uma ação em lote para aplicar aos itens selecionados</p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
                 <!-- Ações Rápidas de Pagamento em Massa (Item, Inter, Taxa) -->
@@ -1775,6 +1783,16 @@
                                  isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
                                  isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
                                  loading: false,
+                                 onBulkPaymentUpdated(detail) {
+                                     if (!detail || !detail.slots) return;
+                                     const s = detail.slots.find(item => item.id === this.slotId);
+                                     if (s) {
+                                         this.status = s.status;
+                                         this.isItemPaid = s.is_item_paid;
+                                         this.isInterPaid = s.is_frete_inter_paid;
+                                         this.isTaxaPaid = s.is_taxa_aduaneira_paid;
+                                     }
+                                 },
                                  async toggle(field) {
                                      if (this.loading) return;
                                      this.loading = true;
@@ -1813,6 +1831,7 @@
                                 }"
                                 @standby-ended.window="isStandby = false"
                                 @claim-selection-cleared.window="isSelected = false"
+                                @slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"
                                 {% if not user.is_staff and logged_participant %}
                                 @click="if (!isStandby && status === 'AVAILABLE') {
                                     $store.claimSelection.toggle({

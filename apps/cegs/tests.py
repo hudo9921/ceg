@@ -2178,6 +2178,11 @@ class CEGBulkPaymentTests(TestCase):
         data = res.json()
         self.assertTrue(data['success'])
         self.assertEqual(data['count'], 2)
+        self.assertIn('slots', data)
+        self.assertEqual(len(data['slots']), 2)
+        slot1_data = next(s for s in data['slots'] if s['id'] == self.slot1.id)
+        self.assertTrue(slot1_data['is_item_paid'])
+        self.assertEqual(slot1_data['status'], ItemSlot.Status.PAID)
 
         self.slot1.refresh_from_db()
         self.slot2.refresh_from_db()
@@ -2230,7 +2235,7 @@ class CEGBulkPaymentTests(TestCase):
         self.assertEqual(self.slot2.status, ItemSlot.Status.AVAILABLE)
 
     def test_bulk_payment_template_buttons(self):
-        """Verifica se a página da CEG renderiza os botões de ação em lote para pagamentos"""
+        """Verifica se a página da CEG renderiza os botões de ação em lote para pagamentos e eventos reativos"""
         client = Client()
         client.login(username='staff_user', password='password123')
         res = client.get(f'/ceg/{self.ceg.slug}/')
@@ -2243,6 +2248,8 @@ class CEGBulkPaymentTests(TestCase):
         self.assertIn("Item Pago", content)
         self.assertIn("Inter Pago", content)
         self.assertIn("Taxa Paga", content)
+        self.assertIn("slot-payment-updated", content)
+        self.assertIn("@slot-payment-updated.window", content)
 
 
 

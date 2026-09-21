@@ -1203,9 +1203,18 @@ class BulkManageCEGItemsView(View):
 
                 slots = ItemSlot.objects.filter(id__in=slot_ids, set__ceg=ceg).select_related('set', 'item_definition', 'claimed_by')
                 count = 0
+                slots_data = []
                 for slot in slots:
                     slot.toggle_payment(field, value=value, actor=request.user)
                     count += 1
+                    slots_data.append({
+                        'id': slot.id,
+                        'status': slot.status,
+                        'is_item_paid': slot.is_item_paid,
+                        'is_frete_inter_paid': slot.is_frete_inter_paid,
+                        'is_taxa_aduaneira_paid': slot.is_taxa_aduaneira_paid,
+                        'is_frete_nacional_paid': slot.is_frete_nacional_paid,
+                    })
 
                 field_labels = {
                     'item': 'Item',
@@ -1229,6 +1238,7 @@ class BulkManageCEGItemsView(View):
                     'count': count,
                     'field': field,
                     'value': value,
+                    'slots': slots_data,
                 })
 
             else:
