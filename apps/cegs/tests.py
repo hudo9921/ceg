@@ -2090,6 +2090,162 @@ class CEGProgrammedClaimUnlockTests(TestCase):
         self.assertNotIn("status: 'AVAILABLE',\r\n                                 isStandby:", content)
 
 
+class CEGBulkPaymentTests(TestCase):
+    def setUp(self):
+        self.staff_user = User.objects.create_superuser('staff_user', 'staff@test.com', 'password123')
+        self.normal_user = User.objects.create_user('normal_user', 'user@test.com', 'password123')
+        self.group = KpopGroup.objects.create(name='LE SSERAFIM', slug='le-sserafim')
+        self.era = Era.objects.create(group=self.group, name='EASY', slug='easy')
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='CEG Bulk Payment Test',
+            slug='ceg-bulk-payment-test',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='pix@test.com'
+        )
+        self.item_def1 = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Chaewon',
+            member_name='Chaewon',
+            default_price=45.00
+        )
+        self.item_def2 = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Sakura',
+            member_name='Sakura',
+            default_price=45.00
+        )
+        self.cset = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.cset.generate_slots()
+        self.slot1 = self.cset.slots.get(item_definition=self.item_def1)
+        self.slot2 = self.cset.slots.get(item_definition=self.item_def2)
+
+        # Reserva o slot1 para um participante
+        self.participant = Participant.objects.create(
+            name='Fearnot Teste',
+            whatsapp='5511999991111',
+            username='fearnot'
+        )
+        self.claim = Claim.objects.create(
+            slot=self.slot1,
+            participant=self.participant,
+            total_price=Decimal('45.00'),
+            status=Claim.Status.PENDING
+        )
+        self.slot1.claimed_by = self.participant
+        self.slot1.status = ItemSlot.Status.RESERVED
+        self.slot1.save()
+
+    def test_bulk_payment_requires_staff(self):
+        """Usuário comum ou anônimo não pode executar bulk_payment"""
+        client = Client()
+        url = f'/ceg/{self.ceg.slug}/bulk-manage-items/'
+
+        # Anônimo
+        res = client.post(url, json.dumps({
+            'action': 'bulk_payment',
+            'slot_ids': [self.slot1.id, self.slot2.id],
+            'field': 'item',
+            'value': True
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+
+        # Não-staff
+        client.login(username='normal_user', password='password123')
+        res = client.post(url, json.dumps({
+            'action': 'bulk_payment',
+            'slot_ids': [self.slot1.id, self.slot2.id],
+            'field': 'item',
+            'value': True
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+
+    def test_bulk_payment_success_item_inter_taxa(self):
+        """Staff marca slots selecionados como Item Pago, Inter Pago e Taxa Paga"""
+        client = Client()
+        client.login(username='staff_user', password='password123')
+        url = f'/ceg/{self.ceg.slug}/bulk-manage-items/'
+
+        # 1. Item Pago
+        res = client.post(url, json.dumps({
+            'action': 'bulk_payment',
+            'slot_ids': [self.slot1.id, self.slot2.id],
+            'field': 'item',
+            'value': True
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['count'], 2)
+
+        self.slot1.refresh_from_db()
+        self.slot2.refresh_from_db()
+        self.assertTrue(self.slot1.is_item_paid)
+        self.assertEqual(self.slot1.status, ItemSlot.Status.PAID)
+        self.assertTrue(self.slot2.is_item_paid)
+        self.assertEqual(self.slot2.status, ItemSlot.Status.PAID)
+
+        # 2. Inter Pago
+        res = client.post(url, json.dumps({
+            'action': 'bulk_payment',
+            'slot_ids': [self.slot1.id, self.slot2.id],
+            'field': 'inter',
+            'value': True
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.slot1.refresh_from_db()
+        self.slot2.refresh_from_db()
+        self.assertTrue(self.slot1.is_frete_inter_paid)
+        self.assertTrue(self.slot2.is_frete_inter_paid)
+
+        # 3. Taxa Paga
+        res = client.post(url, json.dumps({
+            'action': 'bulk_payment',
+            'slot_ids': [self.slot1.id, self.slot2.id],
+            'field': 'taxa',
+            'value': True
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.slot1.refresh_from_db()
+        self.slot2.refresh_from_db()
+        self.assertTrue(self.slot1.is_taxa_aduaneira_paid)
+        self.assertTrue(self.slot2.is_taxa_aduaneira_paid)
+
+        # 4. Reverte Item para Pendente (value=False)
+        res = client.post(url, json.dumps({
+            'action': 'bulk_payment',
+            'slot_ids': [self.slot1.id, self.slot2.id],
+            'field': 'item',
+            'value': False
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.slot1.refresh_from_db()
+        self.slot2.refresh_from_db()
+        self.assertFalse(self.slot1.is_item_paid)
+        # Slot 1 tem claim -> RESERVED
+        self.assertEqual(self.slot1.status, ItemSlot.Status.RESERVED)
+        self.assertFalse(self.slot2.is_item_paid)
+        # Slot 2 não tem claim -> AVAILABLE
+        self.assertEqual(self.slot2.status, ItemSlot.Status.AVAILABLE)
+
+    def test_bulk_payment_template_buttons(self):
+        """Verifica se a página da CEG renderiza os botões de ação em lote para pagamentos"""
+        client = Client()
+        client.login(username='staff_user', password='password123')
+        res = client.get(f'/ceg/{self.ceg.slug}/')
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+
+        self.assertIn("bulkSetPayment('item', true)", content)
+        self.assertIn("bulkSetPayment('inter', true)", content)
+        self.assertIn("bulkSetPayment('taxa', true)", content)
+        self.assertIn("Item Pago", content)
+        self.assertIn("Inter Pago", content)
+        self.assertIn("Taxa Paga", content)
+
+
+
 
 
 

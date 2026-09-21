@@ -811,6 +811,36 @@
     this.bulkLoading = false;
     }
     },
+    async bulkSetPayment(field, value = true) {
+        if (this.selectedSlotIds.length === 0 || this.bulkLoading) return;
+        this.bulkLoading = true;
+        try {
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify({
+                    action: 'bulk_payment',
+                    slot_ids: this.selectedSlotIds,
+                    field: field,
+                    value: value
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Erro ao atualizar pagamentos em massa.');
+            }
+        } catch(e) {
+            alert('Erro de conexão: ' + e);
+        } finally {
+            this.bulkLoading = false;
+        }
+    },
     selectParticipantForClaim(pId) {
     if (!pId) {
     this.formName = '';
@@ -1391,6 +1421,58 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
+                <!-- Ações Rápidas de Pagamento em Massa (Item, Inter, Taxa) -->
+                <div class="flex items-center gap-1.5 bg-black/25 p-1 rounded-xl border border-white/10 shadow-inner">
+                    <span class="text-[11px] text-purple-200 font-bold px-1.5 hidden sm:inline flex items-center gap-1">
+                        <span>💳</span> Pagar:
+                    </span>
+                    <button type="button" @click="bulkSetPayment('item', true)" :disabled="bulkLoading"
+                        class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Marcar Item Pago para as vagas selecionadas">
+                        <span>✔</span> Item Pago
+                    </button>
+                    <button type="button" @click="bulkSetPayment('inter', true)" :disabled="bulkLoading"
+                        class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Marcar Frete Inter Pago para as vagas selecionadas">
+                        <span>✔</span> Inter Pago
+                    </button>
+                    <button type="button" @click="bulkSetPayment('taxa', true)" :disabled="bulkLoading"
+                        class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Marcar Taxa Aduaneira Paga para as vagas selecionadas">
+                        <span>✔</span> Taxa Paga
+                    </button>
+
+                    <!-- Menu de Opções Auxiliares (Marcar como Pendente) -->
+                    <div class="relative" x-data="{ openPayOptions: false }" @click.outside="openPayOptions = false">
+                        <button type="button" @click="openPayOptions = !openPayOptions"
+                            class="px-2 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer"
+                            title="Reverter para Pendente / Mais opções">
+                            ⚙️ ▾
+                        </button>
+                        <div x-show="openPayOptions" x-cloak
+                            class="absolute right-0 mt-2 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 text-xs text-white space-y-1 animate-fade-in">
+                            <div class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 px-2 py-1 border-b border-slate-800">
+                                Reverter para Pendente
+                            </div>
+                            <button type="button" @click="bulkSetPayment('item', false); openPayOptions = false;"
+                                class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 hover:text-emerald-300 flex items-center justify-between text-slate-200 transition">
+                                <span>○ Item Pendente</span>
+                                <span class="text-[10px] text-slate-400">Desmarcar</span>
+                            </button>
+                            <button type="button" @click="bulkSetPayment('inter', false); openPayOptions = false;"
+                                class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-blue-950/60 hover:text-blue-300 flex items-center justify-between text-slate-200 transition">
+                                <span>○ Inter Pendente</span>
+                                <span class="text-[10px] text-slate-400">Desmarcar</span>
+                            </button>
+                            <button type="button" @click="bulkSetPayment('taxa', false); openPayOptions = false;"
+                                class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 hover:text-purple-300 flex items-center justify-between text-slate-200 transition">
+                                <span>○ Taxa Pendente</span>
+                                <span class="text-[10px] text-slate-400">Desmarcar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="button" @click="openBulkTypeModal()"
                     class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                     <span>🏷️</span> Alterar Tipo em Massa
