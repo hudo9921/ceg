@@ -296,6 +296,62 @@
              this.editPhotoUrl = e.target.value;
              this.editPhotoBase64 = '';
          },
+         // --- Gerador de Texto de Divulgação (Twitter / WhatsApp / Telegram) ---
+         shareModalOpen: false,
+         shareCopied: false,
+         shareEmoji: '🟢',
+         shareShowSoldOut: false,
+         shareIncludePrice: false,
+         shareItems: JSON.parse('{{ share_items_json|default:'[]'|escapejs }}'),
+         cegPriceDisplay: '{{ ceg_price_display|default:''|escapejs }}',
+         openShareModal() {
+             this.shareCopied = false;
+             this.shareModalOpen = true;
+         },
+         closeShareModal() {
+             this.shareModalOpen = false;
+         },
+         get shareText() {
+             const groupName = '{{ ceg.era.group.name|escapejs }}';
+             const cegTitle = '{{ ceg.title|escapejs }}';
+             const title = `✨ CEG ${groupName} - ${cegTitle} ✨`;
+             const lines = [];
+
+             this.shareItems.forEach(item => {
+                 const name = item.member_name || item.name;
+                 if (item.available_count > 0) {
+                     const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
+                     lines.push(`${name} ${emojis}`);
+                 } else if (this.shareShowSoldOut) {
+                     lines.push(`${name} ❌`);
+                 }
+             });
+
+             let body = lines.join('\n');
+             if (!body) {
+                 body = '🎉 Todas as vagas foram preenchidas!';
+             }
+
+             let priceSection = '';
+             if (this.shareIncludePrice && this.cegPriceDisplay) {
+                 priceSection = `\n\n💵 Valor: ${this.cegPriceDisplay} cada`;
+             }
+
+             const url = window.location.origin + window.location.pathname;
+             const footer = `\n\n🔗 Link: ${url}`;
+
+             return `${title}\n\n${body}${priceSection}${footer}`;
+         },
+         async copyShareText() {
+             try {
+                 await navigator.clipboard.writeText(this.shareText);
+                 this.shareCopied = true;
+                 setTimeout(() => { this.shareCopied = false; }, 2500);
+             } catch (e) {
+                 alert('Erro ao copiar: ' + e);
+             }
+         },
+         // --- Fim Gerador de Texto de Divulgação ---
          selectedSlot: null,
          managedSlot: null,
          setToDelete: null,
@@ -1041,12 +1097,19 @@
                         </span>
                         {% endif %}
 
-                        {% if user.is_staff %}
-                        <button type="button" @click="editCegModalOpen = true"
-                            class="px-3 py-1 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-md transition shadow flex items-center gap-1.5 cursor-pointer ml-auto">
-                            <span>✏️</span> Editar CEG
-                        </button>
-                        {% endif %}
+                        <div class="flex items-center gap-2 ml-auto flex-wrap">
+                            <button type="button" @click="openShareModal()"
+                                class="px-3.5 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-black rounded-md transition shadow-md flex items-center gap-1.5 cursor-pointer select-none"
+                                title="Copiar texto de divulgação com vagas abertas para Twitter, WhatsApp e Telegram">
+                                <span>📢</span> Copiar Vagas Abertas
+                            </button>
+                            {% if user.is_staff %}
+                            <button type="button" @click="editCegModalOpen = true"
+                                class="px-3 py-1 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-md transition shadow flex items-center gap-1.5 cursor-pointer">
+                                <span>✏️</span> Editar CEG
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
@@ -1143,6 +1206,10 @@
                     </div>
                     {% if user.is_staff %}
                     <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" @click="openShareModal()"
+                            class="self-start sm:self-auto px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <span>📢</span> Divulgar Vagas
+                        </button>
                         <a href="{% url 'ceg_bulk_allocator' slug=ceg.slug %}"
                             class="self-start sm:self-auto px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                             <span>🎯</span> Alocar Joiners em Massa
@@ -2437,6 +2504,119 @@
                         <span x-text="claimLoading ? 'Processando...' : 'Confirmar Reserva Única'"></span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal: Gerador de Texto de Divulgação em 1 Clique (Twitter / WhatsApp / Telegram) -->
+        <div x-show="shareModalOpen" x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+            @keydown.escape.window="closeShareModal()">
+            <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200 dark:border-slate-800 transform transition-all"
+                @click.away="closeShareModal()">
+
+                <!-- Cabeçalho do Modal -->
+                <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-xl shadow-md">
+                            📢
+                        </span>
+                        <div>
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                <span>Divulgação de Vagas Abertas</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Texto formatado em tempo real pronto para Twitter, WhatsApp e Telegram.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeShareModal()"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-1 transition cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Barra de Personalização Rápida -->
+                <div class="space-y-3 bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <!-- Seletor de Emoji de Vaga -->
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-700 dark:text-slate-300">Emoji de Vaga:</span>
+                            <div class="inline-flex items-center rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 gap-1 shadow-2xs">
+                                <button type="button" @click="shareEmoji = '🟢'"
+                                    :class="shareEmoji === '🟢' ? 'bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 font-black' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                    class="px-2 py-1 rounded-lg text-xs transition cursor-pointer" title="Círculo Verde">
+                                    🟢
+                                </button>
+                                <button type="button" @click="shareEmoji = '⭕'"
+                                    :class="shareEmoji === '⭕' ? 'bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 font-black' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                    class="px-2 py-1 rounded-lg text-xs transition cursor-pointer" title="Círculo Vermelho / K-pop">
+                                    ⭕
+                                </button>
+                                <button type="button" @click="shareEmoji = '✅'"
+                                    :class="shareEmoji === '✅' ? 'bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 font-black' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                    class="px-2 py-1 rounded-lg text-xs transition cursor-pointer" title="Check">
+                                    ✅
+                                </button>
+                                <button type="button" @click="shareEmoji = '🪪'"
+                                    :class="shareEmoji === '🪪' ? 'bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 font-black' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+                                    class="px-2 py-1 rounded-lg text-xs transition cursor-pointer" title="Photocard">
+                                    🪪
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Opções: Mostrar Esgotados e Preço -->
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none font-medium text-slate-700 dark:text-slate-300">
+                                <input type="checkbox" x-model="shareShowSoldOut"
+                                    class="rounded text-violet-600 focus:ring-violet-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700">
+                                <span>Mostrar esgotados (❌)</span>
+                            </label>
+
+                            <template x-if="cegPriceDisplay">
+                                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none font-medium text-slate-700 dark:text-slate-300">
+                                    <input type="checkbox" x-model="shareIncludePrice"
+                                        class="rounded text-violet-600 focus:ring-violet-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700">
+                                    <span>Incluir valor</span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Caixa de Pré-Visualização do Texto -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+                        <span class="font-bold">Pré-visualização da mensagem:</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-[11px]"
+                                  :class="shareText.length <= 280 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'"
+                                  x-text="shareText.length + ' caracteres'"></span>
+                            <span x-show="shareText.length <= 280" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">
+                                Cabe no Twitter/X
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <textarea readonly
+                            class="w-full h-52 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 font-mono text-xs text-slate-800 dark:text-slate-200 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 select-all shadow-inner"
+                            :value="shareText"></textarea>
+                    </div>
+                </div>
+
+                <!-- Botão Copiar Principal -->
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                    <button type="button" @click="copyShareText()"
+                        class="w-full sm:w-auto px-6 py-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer select-none"
+                        :class="shareCopied
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                            : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-indigo-500/20'">
+                        <span x-text="shareCopied ? '✔' : '📋'"></span>
+                        <span x-text="shareCopied ? 'Copiado para o Clipboard!' : 'Copiar Texto Completo'"></span>
+                    </button>
+                </div>
+
             </div>
         </div>
 

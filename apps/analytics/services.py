@@ -413,6 +413,7 @@ class AnalyticsService:
         sets_completed_pending = []
         sets_incomplete = []
         cegs_overview = []
+        ceg_share_map = {}
         total_sets_count = 0
         total_slots_count = 0
         total_reserved_slots_count = 0
@@ -629,6 +630,42 @@ class AnalyticsService:
 
                 # Estatísticas da CEG individual em memória (0 queries adicionais!)
                 ceg_slots = slots_by_ceg.get(ceg.id, [])
+
+                # Agrupamento de itens e vagas para o Gerador de Divulgação
+                ceg_share_items = {}
+                slot_prices = set()
+                for slot in ceg_slots:
+                    def_id = slot.item_definition_id
+                    if def_id not in ceg_share_items:
+                        ceg_share_items[def_id] = {
+                            'id': def_id,
+                            'name': slot.item_definition.name,
+                            'member_name': slot.item_definition.member_name or slot.item_definition.name,
+                            'available_count': 0,
+                            'total_count': 0,
+                        }
+                    ceg_share_items[def_id]['total_count'] += 1
+                    if slot.status == ItemSlot.Status.AVAILABLE:
+                        ceg_share_items[def_id]['available_count'] += 1
+                    if slot.price and slot.price > 0:
+                        slot_prices.add(float(slot.price))
+
+                if len(slot_prices) == 1:
+                    ceg_price_disp = f"R$ {list(slot_prices)[0]:.2f}"
+                elif len(slot_prices) > 1:
+                    ceg_price_disp = f"R$ {min(slot_prices):.2f} ~ R$ {max(slot_prices):.2f}"
+                else:
+                    ceg_price_disp = ""
+
+                ceg_share_map[ceg.id] = {
+                    'ceg_id': ceg.id,
+                    'title': ceg.title,
+                    'group_name': ceg.era.group.name if (ceg.era and ceg.era.group) else '',
+                    'slug': ceg.slug,
+                    'price_display': ceg_price_disp,
+                    'items': list(ceg_share_items.values()),
+                }
+
                 ceg_total_slots_cnt = len(ceg_slots)
                 ceg_sold_slots_cnt = sum(1 for s in ceg_slots if s.status in [ItemSlot.Status.RESERVED, ItemSlot.Status.PAID])
                 ceg_avail_slots_cnt = sum(1 for s in ceg_slots if s.status == ItemSlot.Status.AVAILABLE)
@@ -817,6 +854,7 @@ class AnalyticsService:
             'sets_completed_pending': sets_completed_pending,
             'sets_incomplete': sets_incomplete,
             'cegs_overview': cegs_overview,
+            'ceg_share_map': ceg_share_map,
             'mercari_status': mercari_status,
             'summary': {
                 'total_cegs': cegs_qs.count() if category in ['all', 'ceg'] else 0,

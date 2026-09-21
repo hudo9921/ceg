@@ -743,5 +743,40 @@ def enrich_cegs_with_availability(cegs_list):
         grouped_items.sort(key=lambda x: x['display_name'].lower())
         ceg.grouped_available_items = grouped_items
 
+        # Dados consolidados para o Gerador de Divulgação (Twitter / WhatsApp / Telegram)
+        ceg_share_items = {}
+        slot_prices = set()
+        for slot in ceg_slots:
+            def_id = slot.item_definition_id
+            if def_id not in ceg_share_items:
+                ceg_share_items[def_id] = {
+                    'id': def_id,
+                    'name': slot.item_definition.name,
+                    'member_name': slot.item_definition.member_name or slot.item_definition.name,
+                    'available_count': 0,
+                    'total_count': 0,
+                }
+            ceg_share_items[def_id]['total_count'] += 1
+            if slot.status == ItemSlot.Status.AVAILABLE:
+                ceg_share_items[def_id]['available_count'] += 1
+            if slot.price and slot.price > 0:
+                slot_prices.add(float(slot.price))
+
+        if len(slot_prices) == 1:
+            ceg_price_disp = f"R$ {list(slot_prices)[0]:.2f}"
+        elif len(slot_prices) > 1:
+            ceg_price_disp = f"R$ {min(slot_prices):.2f} ~ R$ {max(slot_prices):.2f}"
+        else:
+            ceg_price_disp = ""
+
+        ceg.share_data = {
+            'ceg_id': ceg.id,
+            'title': ceg.title,
+            'group_name': ceg.era.group.name if (ceg.era and ceg.era.group) else '',
+            'slug': ceg.slug,
+            'price_display': ceg_price_disp,
+            'items': list(ceg_share_items.values()),
+        }
+
     return cegs_list
 
