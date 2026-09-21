@@ -3813,7 +3813,8 @@
 
 <!-- Modal Inline para Criar Novo Tipo de Item (Pool Compartilhada) -->
 <div x-show="showNewTipoModal" x-cloak
-    class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+    class="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4"
+    style="z-index: 99999;"
     @keydown.escape.window="showNewTipoModal = false">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-100 transform transition-all"
         @click.away="showNewTipoModal = false">
@@ -4075,7 +4076,7 @@
 <!-- ===================== MODAL: EXCLUIR CEG ===================== -->
 <div x-show="deleteCegModalOpen" x-cloak
     @keydown.escape.window="closeDeleteCegModal()"
-    class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    class="fixed inset-0 z-[70] overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div @click.outside="closeDeleteCegModal()"
         class="bg-white dark:bg-[#131B2E] rounded-3xl shadow-2xl w-full max-w-lg border border-red-200 dark:border-red-900/60 overflow-hidden transform transition-all">
 

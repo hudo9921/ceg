@@ -1503,7 +1503,8 @@
 
     <!-- Modal Rápido de Novo Tipo de Item -->
     <div x-show="newTipoModalOpen" x-cloak
-         class="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+         style="z-index: 99999;"
          @keydown.escape.window="newTipoModalOpen = false">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4"
              @click.away="newTipoModalOpen = false">

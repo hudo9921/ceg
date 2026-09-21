@@ -1528,7 +1528,8 @@
     <!-- Modal para Cadastrar Novo Tipo de Item (Alpine.js) -->
     {% if is_staff_user %}
         <div x-show="addTipoModalOpen" x-cloak
-             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+             style="z-index: 99999;"
              @keydown.escape.window="addTipoModalOpen = false">
             <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4"
                  @click.away="addTipoModalOpen = false">
