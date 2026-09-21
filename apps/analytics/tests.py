@@ -467,5 +467,36 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertContains(response, 'https://exemplo.com/twice-banner.jpg')
         self.assertContains(response, 'https://exemplo.com/triples-era-banner.jpg')
 
+    def test_ceg_operational_status_share_generator(self):
+        # 1. Verifica no AnalyticsService
+        data = AnalyticsService.get_cegs_operational_status()
+        self.assertIn('ceg_share_map', data)
+        share_map = data['ceg_share_map']
+        self.assertIn(self.ceg_twice.id, share_map)
+
+        twice_share = share_map[self.ceg_twice.id]
+        self.assertEqual(twice_share['title'], self.ceg_twice.title)
+        self.assertEqual(twice_share['group_name'], 'TWICE')
+        self.assertEqual(twice_share['slug'], self.ceg_twice.slug)
+        self.assertIn('R$', twice_share['price_display'])
+        self.assertTrue(len(twice_share['items']) > 0)
+
+        # 2. Verifica no HTML renderizado da view
+        self.client.force_login(self.staff_user)
+        response = self.client.get('/analytics/cegs/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # Verifica json_script com dados de compartilhamento
+        self.assertIn('ceg-share-map-data', content)
+        # Verifica botão 'Gerar Texto'
+        self.assertIn('Gerar Texto', content)
+        self.assertIn('openShareModal(', content)
+        # Verifica Modal de Divulgação
+        self.assertIn('shareModalOpen', content)
+        self.assertIn('copyShareText()', content)
+        self.assertIn('Gerador de Divulgação de Vagas', content)
+
+
 
 

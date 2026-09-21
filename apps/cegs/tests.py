@@ -2252,6 +2252,140 @@ class CEGBulkPaymentTests(TestCase):
         self.assertIn("@slot-payment-updated.window", content)
 
 
+class CEGShareGeneratorTests(TestCase):
+    def setUp(self):
+        self.group = KpopGroup.objects.create(name='IVE', slug='ive')
+        self.era = Era.objects.create(group=self.group, name='MINE', slug='mine')
+        self.ceg = CEG.objects.create(
+            era=self.era,
+            title='MINE Soundwave',
+            slug='ive-mine-sw',
+            status=CEG.Status.OPEN,
+            opens_at=timezone.now() - timedelta(hours=1),
+            pix_key='pix@test.com'
+        )
+        self.wonyoung_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Wonyoung',
+            member_name='Wonyoung',
+            order_index=1,
+            default_price=Decimal('50.00')
+        )
+        self.gaeul_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Gaeul',
+            member_name='Gaeul',
+            order_index=2,
+            default_price=Decimal('50.00')
+        )
+        self.rei_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Rei',
+            member_name='Rei',
+            order_index=3,
+            default_price=Decimal('50.00')
+        )
+
+        # Criamos 2 sets
+        self.set1 = CEGSet.objects.create(ceg=self.ceg, set_number=1)
+        self.set1.generate_slots()
+        self.set2 = CEGSet.objects.create(ceg=self.ceg, set_number=2)
+        self.set2.generate_slots()
+
+        # No Set 1: Wonyoung reservada, Gaeul e Rei livres
+        slot_wonyoung_1 = self.set1.slots.get(item_definition=self.wonyoung_def)
+        slot_wonyoung_1.status = ItemSlot.Status.RESERVED
+        slot_wonyoung_1.save()
+
+        # No Set 2: Wonyoung reservada, Gaeul reservada, Rei livre
+        slot_wonyoung_2 = self.set2.slots.get(item_definition=self.wonyoung_def)
+        slot_wonyoung_2.status = ItemSlot.Status.PAID
+        slot_wonyoung_2.save()
+
+        slot_gaeul_2 = self.set2.slots.get(item_definition=self.gaeul_def)
+        slot_gaeul_2.status = ItemSlot.Status.RESERVED
+        slot_gaeul_2.save()
+
+    def test_share_items_aggregation_in_context(self):
+        """Verifica se o backend agrega corretamente as vagas abertas por idol para divulgação"""
+        client = Client()
+        response = client.get(f'/ceg/{self.ceg.slug}/')
+        self.assertEqual(response.status_code, 200)
+
+        share_items = response.context['share_items']
+        self.assertIsNotNone(share_items)
+
+        items_by_member = {item['member_name']: item for item in share_items}
+
+        # Wonyoung: 0 disponíveis de 2
+        self.assertEqual(items_by_member['Wonyoung']['available_count'], 0)
+        self.assertEqual(items_by_member['Wonyoung']['total_count'], 2)
+
+        # Gaeul: 1 disponível de 2
+        self.assertEqual(items_by_member['Gaeul']['available_count'], 1)
+        self.assertEqual(items_by_member['Gaeul']['total_count'], 2)
+
+        # Rei: 2 disponíveis de 2
+        self.assertEqual(items_by_member['Rei']['available_count'], 2)
+        self.assertEqual(items_by_member['Rei']['total_count'], 2)
+
+        # Preço exibido
+        self.assertEqual(response.context['ceg_price_display'], 'R$ 50.00')
+
+    def test_share_modal_elements_rendered_in_template(self):
+        """Verifica se os elementos e botões de compartilhamento estão no HTML"""
+        client = Client()
+        response = client.get(f'/ceg/{self.ceg.slug}/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        self.assertIn('Copiar Vagas Abertas', content)
+        self.assertIn('openShareModal()', content)
+        self.assertIn('shareModalOpen', content)
+        self.assertIn('shareEmoji', content)
+        self.assertIn('copyShareText()', content)
+        self.assertNotIn('shareWhatsApp()', content)
+
+    def test_home_view_share_generator_for_admin(self):
+        """Verifica se o botão Divulgar e o modal estão disponíveis na Home para admin/staff"""
+        admin_user = User.objects.create_user(
+            username='admin_home_share',
+            email='admin_home_share@example.com',
+            password='secretpassword',
+            is_staff=True
+        )
+        self.client.force_login(admin_user)
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        # Contexto deve conter o ceg_share_map com dados da CEG
+        self.assertIn('ceg_share_map', response.context)
+        self.assertIn(self.ceg.id, response.context['ceg_share_map'])
+
+        content = response.content.decode('utf-8')
+        # Script com os dados
+        self.assertIn('<script id="ceg-share-map-data"', content)
+        # Botão Divulgar e chamada Alpine
+        self.assertIn('Divulgar', content)
+        self.assertIn(f"openShareModal('{self.ceg.id}')", content)
+        # Modal e métodos
+        self.assertIn('shareModalOpen', content)
+        self.assertIn('copyShareText()', content)
+
+    def test_home_view_share_generator_hidden_for_anonymous(self):
+        """Verifica que o botão Divulgar e dados de compartilhamento ficam ocultos para usuários comuns"""
+        client = Client()
+        response = client.get('/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # Não deve conter os botões nem o script de dados de staff
+        self.assertNotIn('<script id="ceg-share-map-data"', content)
+        self.assertNotIn('Divulgar', content)
+        self.assertNotIn(f"openShareModal('{self.ceg.id}')", content)
+
+
+
 
 
 

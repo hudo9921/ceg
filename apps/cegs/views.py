@@ -128,6 +128,12 @@ class HomeView(View):
             t.count_contem = sum(1 for c in active_cegs if t.id in getattr(c, 'tipo_ids_list', []))
             pool_tipos_item.append(t)
 
+        ceg_share_map = {}
+        if request.user.is_authenticated and request.user.is_staff:
+            for c in list(active_cegs) + list(full_cegs) + list(scheduled_cegs):
+                if hasattr(c, 'share_data'):
+                    ceg_share_map[c.id] = c.share_data
+
         return render(request, 'home.html', {
             'active_cegs': active_cegs,
             'full_cegs': full_cegs,
@@ -138,6 +144,8 @@ class HomeView(View):
             'count_mistas': count_mistas,
             'scheduled_cegs': scheduled_cegs,
             'closed_cegs': closed_cegs,
+            'ceg_share_map': ceg_share_map,
+            'ceg_share_map_json': json.dumps(ceg_share_map),
             'now': now,
         })
 
@@ -246,6 +254,41 @@ class CEGDetailView(View):
                     ).values_list('item_definition_id', flat=True)
                 )
 
+        # Agrupamento de vagas disponíveis por integrante/item para divulgação em redes sociais
+        item_defs_dict = {}
+        for item_def in ceg.item_definitions.all().order_by('order_index', 'name'):
+            item_defs_dict[item_def.id] = {
+                'id': item_def.id,
+                'name': item_def.name,
+                'member_name': item_def.member_name or '',
+                'available_count': 0,
+                'total_count': 0,
+                'price': None,
+            }
+
+        slot_prices = set()
+        for s_set in active_sets:
+            for slot in s_set.slots.all():
+                def_id = slot.item_definition_id
+                if def_id in item_defs_dict:
+                    item_defs_dict[def_id]['total_count'] += 1
+                    if slot.status == ItemSlot.Status.AVAILABLE:
+                        item_defs_dict[def_id]['available_count'] += 1
+                    if item_defs_dict[def_id]['price'] is None and slot.price:
+                        item_defs_dict[def_id]['price'] = float(slot.price)
+                if slot.price and slot.price > 0:
+                    slot_prices.add(slot.price)
+
+        share_items = list(item_defs_dict.values())
+        share_items_json = json.dumps(share_items)
+
+        if len(slot_prices) == 1:
+            ceg_price_display = f"R$ {list(slot_prices)[0]:.2f}"
+        elif len(slot_prices) > 1:
+            ceg_price_display = f"R$ {min(slot_prices):.2f} ~ R$ {max(slot_prices):.2f}"
+        else:
+            ceg_price_display = ""
+
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
             'sets': active_sets,
@@ -268,6 +311,9 @@ class CEGDetailView(View):
             'user_voted_def_ids': user_voted_def_ids,
             'user_voted_def_ids_json': json.dumps(user_voted_def_ids),
             'polling_item_definitions': polling_item_definitions,
+            'share_items': share_items,
+            'share_items_json': share_items_json,
+            'ceg_price_display': ceg_price_display,
         })
 
 

@@ -11,6 +11,7 @@
 {{ sets_pagos|default:"[]"|json_script:"sets-pagos-data" }}
 {{ sets_terminados|default:"[]"|json_script:"sets-terminados-data" }}
 {{ cegs_overview|default:"[]"|json_script:"cegs-overview-data" }}
+{{ ceg_share_map|default:"{}"|json_script:"ceg-share-map-data" }}
 
 <div class="space-y-8" x-data="cegStatusApp()">
 
@@ -421,10 +422,18 @@
                                 </div>
                             </div>
 
-                            <a href="/ceg/{{ s.ceg_slug }}/"
-                               class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg text-xs border border-pink-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
-                                <span>Abrir CEG</span> ↗
-                            </a>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <button type="button"
+                                        @click="openShareModal('{{ s.ceg_id }}')"
+                                        class="px-2.5 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        title="Gerar texto formatado de vagas abertas">
+                                    <span>📢</span> Gerar Texto
+                                </button>
+                                <a href="/ceg/{{ s.ceg_slug }}/"
+                                   class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg text-xs border border-pink-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                    <span>Abrir CEG</span> ↗
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Barra de Progresso do Set -->
@@ -986,11 +995,19 @@
                                     <span class="text-[10px] text-slate-400 font-semibold">—</span>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-4 text-center">
-                                <a href="/ceg/{{ c.slug }}/"
-                                   class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-xs transition border border-purple-200">
-                                    Acessar
-                                </a>
+                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button type="button"
+                                            @click="openShareModal('{{ c.ceg_id }}')"
+                                            class="px-2 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                            title="Gerar texto formatado de vagas abertas">
+                                        <span>📢</span> Gerar Texto
+                                    </button>
+                                    <a href="/ceg/{{ c.slug }}/"
+                                       class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-xs transition border border-purple-200">
+                                        Acessar
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -1271,6 +1288,107 @@
                     class="absolute -top-3 -right-3 w-8 h-8 bg-white text-slate-900 rounded-full font-black text-sm shadow-lg flex items-center justify-center cursor-pointer hover:bg-slate-100">
                 ✕
             </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL DE DIVULGAÇÃO DE VAGAS ABERTAS (CEG) -->
+    <!-- ========================================================================= -->
+    <div x-show="shareModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+         @keydown.escape.window="closeShareModal()">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200 transition-all transform my-auto"
+             @click.away="closeShareModal()">
+
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20">
+                        📢
+                    </div>
+                    <div>
+                        <h3 class="font-black text-slate-900 text-base leading-tight">
+                            Gerador de Divulgação de Vagas
+                        </h3>
+                        <p class="text-xs text-slate-500 font-medium">
+                            Texto pronto para redes sociais da CEG <span class="font-bold text-slate-800" x-text="currentShareCeg ? currentShareCeg.title : ''"></span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="closeShareModal()"
+                    class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold text-sm transition cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Customização: Emoji e Opções -->
+            <div class="space-y-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <!-- Escolha do Emoji de Vaga -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-600">Emoji de vaga:</span>
+                        <div class="inline-flex rounded-xl bg-white p-1 border border-slate-200 shadow-2xs gap-1">
+                            <button type="button" @click="shareEmoji = '🟢'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '🟢' ? 'bg-indigo-100 text-indigo-900 font-black' : 'hover:bg-slate-100'">🟢</button>
+                            <button type="button" @click="shareEmoji = '⭕'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '⭕' ? 'bg-indigo-100 text-indigo-900 font-black' : 'hover:bg-slate-100'">⭕</button>
+                            <button type="button" @click="shareEmoji = '✅'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '✅' ? 'bg-indigo-100 text-indigo-900 font-black' : 'hover:bg-slate-100'">✅</button>
+                            <button type="button" @click="shareEmoji = '🪪'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '🪪' ? 'bg-indigo-100 text-indigo-900 font-black' : 'hover:bg-slate-100'">🪪</button>
+                        </div>
+                    </div>
+
+                    <!-- Toggles -->
+                    <div class="flex items-center gap-4 text-xs font-bold text-slate-600">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" x-model="shareShowSoldOut" class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <span>Mostrar esgotados (❌)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer" x-show="currentShareCeg && currentShareCeg.price_display">
+                            <input type="checkbox" x-model="shareIncludePrice" class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <span>Incluir valor</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview do Texto -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                        <span>📝</span> Prévia do Texto:
+                    </span>
+                    <span class="text-[11px] font-semibold text-slate-400">
+                        <span x-text="shareText.length"></span> caracteres
+                        <span x-show="shareText.length <= 280" class="text-emerald-600 font-bold ml-1">✓ Cabe no Twitter/X</span>
+                    </span>
+                </div>
+                <textarea
+                    readonly
+                    :value="shareText"
+                    @click="$event.target.select()"
+                    rows="9"
+                    class="w-full text-xs font-mono bg-slate-900 text-slate-100 p-3.5 rounded-2xl border border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 leading-relaxed resize-y select-all shadow-inner"
+                    title="Clique para selecionar tudo"></textarea>
+            </div>
+
+            <!-- Botão Copiar Principal -->
+            <div class="pt-2 border-t border-slate-100 flex justify-end">
+                <button type="button" @click="copyShareText()"
+                    class="w-full sm:w-auto px-6 py-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer select-none"
+                    :class="shareCopied
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                        : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-indigo-500/20'">
+                    <span x-text="shareCopied ? '✔' : '📋'"></span>
+                    <span x-text="shareCopied ? 'Copiado para o Clipboard!' : 'Copiar Texto Completo'"></span>
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -1571,6 +1689,63 @@ function cegStatusApp() {
         setsPagos: JSON.parse(document.getElementById('sets-pagos-data')?.textContent || '[]'),
         setsTerminados: JSON.parse(document.getElementById('sets-terminados-data')?.textContent || '[]'),
         cegsOverview: JSON.parse(document.getElementById('cegs-overview-data')?.textContent || '[]'),
+        cegShareMap: JSON.parse(document.getElementById('ceg-share-map-data')?.textContent || '{}'),
+        shareModalOpen: false,
+        shareCopied: false,
+        shareEmoji: '🟢',
+        shareShowSoldOut: false,
+        shareIncludePrice: false,
+        currentShareCeg: null,
+        openShareModal(cegId) {
+            const data = this.cegShareMap[cegId];
+            if (!data) return;
+            this.currentShareCeg = data;
+            this.shareCopied = false;
+            this.shareModalOpen = true;
+        },
+        closeShareModal() {
+            this.shareModalOpen = false;
+        },
+        get shareText() {
+            if (!this.currentShareCeg) return '';
+            const groupName = this.currentShareCeg.group_name || '';
+            const title = `✨ CEG ${groupName} - ${this.currentShareCeg.title} ✨`;
+            const lines = [];
+
+            (this.currentShareCeg.items || []).forEach(item => {
+                const name = item.member_name || item.name;
+                if (item.available_count > 0) {
+                    const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
+                    lines.push(`${name} ${emojis}`);
+                } else if (this.shareShowSoldOut) {
+                    lines.push(`${name} ❌`);
+                }
+            });
+
+            let body = lines.join('\n');
+            if (!body) {
+                body = '🎉 Todas as vagas foram preenchidas!';
+            }
+
+            let priceSection = '';
+            if (this.shareIncludePrice && this.currentShareCeg.price_display) {
+                priceSection = `\n\n💵 Valor: ${this.currentShareCeg.price_display} cada`;
+            }
+
+            const url = window.location.origin + '/ceg/' + this.currentShareCeg.slug + '/';
+            const footer = `\n\n🔗 Link: ${url}`;
+
+            return `${title}\n\n${body}${priceSection}${footer}`;
+        },
+        async copyShareText() {
+            try {
+                await navigator.clipboard.writeText(this.shareText);
+                this.shareCopied = true;
+                setTimeout(() => { this.shareCopied = false; }, 2500);
+            } catch (e) {
+                alert('Erro ao copiar: ' + e);
+            }
+        },
         get availableEras() {
             if (!this.selectedGroup) return this.filterOptions.eras;
             return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));

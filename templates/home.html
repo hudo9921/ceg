@@ -15,7 +15,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-10">
+{% if user.is_staff %}
+{{ ceg_share_map|default:"{}"|json_script:"ceg-share-map-data" }}
+{% endif %}
+<div class="space-y-10" x-data="homeApp()">
 
     <!-- Hero Banner Oficial ValCegs MASTERLIST (Estilo Pastel Y2K K-Pop) -->
     <div class="relative overflow-hidden rounded-3xl shadow-md border border-pink-200/80 dark:border-slate-800 bg-pink-100 dark:bg-slate-900 transition-all duration-300">
@@ -51,51 +54,7 @@
     </div>
 
     <!-- Seção: CEGs Abertas para Reserva -->
-    <section id="cegs-abertas" class="space-y-6"
-             x-data="{
-                 searchQuery: '',
-                 selectedGroup: '',
-                 selectedEra: '',
-                 selectedMember: '',
-                 selectedTipo: '',
-                 sortBy: 'recentes',
-                 checkSearch(cegData) {
-                     if (!this.searchQuery || !this.searchQuery.trim()) return true;
-                     const q = this.searchQuery.toLowerCase().trim();
-                     return (cegData || '').toLowerCase().includes(q);
-                 },
-                 checkTipo(isMista, exclusiveTipo, tipoIds) {
-                     if (!this.selectedTipo) return true;
-                     if (this.selectedTipo === 'mista') return isMista === 'True';
-                     if (this.selectedTipo.startsWith('apenas_')) {
-                         return this.selectedTipo === 'apenas_' + exclusiveTipo;
-                     }
-                     if (this.selectedTipo.startsWith('contem_')) {
-                         const targetId = this.selectedTipo.replace('contem_', '');
-                         return (' ' + tipoIds + ' ').indexOf(' ' + targetId + ' ') !== -1;
-                     }
-                     return true;
-                 },
-                 sortCards() {
-                     const container = this.$refs.cegsContainer;
-                     if (!container) return;
-                     const cards = Array.from(container.querySelectorAll('.ceg-card'));
-                     cards.sort((a, b) => {
-                         if (this.sortBy === 'preco_asc') {
-                             return parseFloat(a.dataset.price || 0) - parseFloat(b.dataset.price || 0);
-                         } else if (this.sortBy === 'preco_desc') {
-                             return parseFloat(b.dataset.price || 0) - parseFloat(a.dataset.price || 0);
-                         } else if (this.sortBy === 'vagas_desc') {
-                             return parseInt(b.dataset.vagas || 0) - parseInt(a.dataset.vagas || 0);
-                         } else if (this.sortBy === 'vagas_asc') {
-                             return parseInt(a.dataset.vagas || 0) - parseInt(b.dataset.vagas || 0);
-                         } else {
-                             return parseInt(a.dataset.index || 0) - parseInt(b.dataset.index || 0);
-                         }
-                     });
-                     cards.forEach(c => container.appendChild(c));
-                 }
-             }">
+    <section id="cegs-abertas" class="space-y-6">
         <!-- Cabeçalho da Seção -->
         <div class="space-y-1">
             <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -398,7 +357,16 @@
                                 </div>
 
                                 <!-- Botão de Claim / Ir para CEG estilo Spotify Action Button -->
-                                <div class="shrink-0">
+                                <div class="shrink-0 flex items-center gap-2">
+                                    {% if user.is_staff %}
+                                        <button type="button"
+                                                @click="openShareModal('{{ ceg.id }}')"
+                                                class="px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                                                title="Gerar texto de divulgação de vagas">
+                                            <span>📢</span>
+                                            <span class="hidden sm:inline">Divulgar</span>
+                                        </button>
+                                    {% endif %}
                                     <a href="{% url 'ceg_detail' slug=ceg.slug %}"
                                        class="px-4 py-2 text-white font-black text-xs rounded-xl shadow transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap group hover:scale-[1.03] hover:brightness-110"
                                        style="{% if ceg.theme_color %}background: linear-gradient(135deg, {{ ceg.theme_color }}, {{ ceg.theme_color }}dd); box-shadow: 0 4px 14px -2px {{ ceg.theme_color }}60;{% else %}background-color: #0f172a;{% endif %}">
@@ -550,6 +518,15 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
+                                {% if user.is_staff %}
+                                    <button type="button"
+                                            @click="openShareModal('{{ ceg.id }}')"
+                                            class="px-2.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                                            title="Gerar texto de divulgação">
+                                        <span>📢</span>
+                                        <span class="hidden sm:inline">Divulgar</span>
+                                    </button>
+                                {% endif %}
                                 <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300">
                                     ✨ 100% preenchida
                                 </span>
@@ -704,8 +681,17 @@
                         </div>
                     </div>
 
-                    <div class="p-5 pt-0">
-                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="block w-full text-center py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl transition shadow">
+                    <div class="p-5 pt-0 flex items-center gap-2">
+                        {% if user.is_staff %}
+                            <button type="button"
+                                    @click="openShareModal('{{ ceg.id }}')"
+                                    class="py-2.5 px-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                                    title="Gerar texto de divulgação">
+                                <span>📢</span>
+                                <span class="hidden sm:inline">Divulgar</span>
+                            </button>
+                        {% endif %}
+                        <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="block flex-1 text-center py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl transition shadow">
                             Ver Prévia & Regras ↗
                         </a>
                     </div>
@@ -737,5 +723,216 @@
     </section>
     {% endif %}
 
+    <!-- ========================================================================= -->
+    <!-- MODAL DE DIVULGAÇÃO DE VAGAS ABERTAS (CEG) - STAFF / ADMIN -->
+    <!-- ========================================================================= -->
+    {% if user.is_staff %}
+    <div x-show="shareModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+         @keydown.escape.window="closeShareModal()">
+        <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200 dark:border-slate-800 transition-all transform my-auto"
+             @click.away="closeShareModal()">
+
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20">
+                        📢
+                    </div>
+                    <div>
+                        <h3 class="font-black text-slate-900 dark:text-slate-100 text-base leading-tight">
+                            Gerador de Divulgação de Vagas
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            Texto pronto para redes sociais da CEG <span class="font-bold text-slate-800 dark:text-slate-200" x-text="currentShareCeg ? currentShareCeg.title : ''"></span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="closeShareModal()"
+                    class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center font-bold text-sm transition cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Customização: Emoji e Opções -->
+            <div class="space-y-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700/60">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <!-- Escolha do Emoji de Vaga -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Emoji de vaga:</span>
+                        <div class="inline-flex rounded-xl bg-white dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-700 shadow-2xs gap-1">
+                            <button type="button" @click="shareEmoji = '🟢'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '🟢' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-800'">🟢</button>
+                            <button type="button" @click="shareEmoji = '⭕'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '⭕' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-800'">⭕</button>
+                            <button type="button" @click="shareEmoji = '✅'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '✅' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-800'">✅</button>
+                            <button type="button" @click="shareEmoji = '🪪'"
+                                class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                                :class="shareEmoji === '🪪' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-800'">🪪</button>
+                        </div>
+                    </div>
+
+                    <!-- Toggles -->
+                    <div class="flex items-center gap-4 text-xs font-bold text-slate-600 dark:text-slate-300">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" x-model="shareShowSoldOut" class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <span>Mostrar esgotados (❌)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer" x-show="currentShareCeg && currentShareCeg.price_display">
+                            <input type="checkbox" x-model="shareIncludePrice" class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <span>Incluir valor</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview do Texto -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                        <span>📝</span> Prévia do Texto:
+                    </span>
+                    <span class="text-[11px] font-semibold text-slate-400">
+                        <span x-text="shareText.length"></span> caracteres
+                        <span x-show="shareText.length <= 280" class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">✓ Cabe no Twitter/X</span>
+                    </span>
+                </div>
+                <textarea
+                    readonly
+                    :value="shareText"
+                    @click="$event.target.select()"
+                    rows="9"
+                    class="w-full text-xs font-mono bg-slate-900 text-slate-100 p-3.5 rounded-2xl border border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 leading-relaxed resize-y select-all shadow-inner"
+                    title="Clique para selecionar tudo"></textarea>
+            </div>
+
+            <!-- Botão Copiar Principal -->
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button type="button" @click="copyShareText()"
+                    class="w-full sm:w-auto px-6 py-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer select-none"
+                    :class="shareCopied
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                        : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-indigo-500/20'">
+                    <span x-text="shareCopied ? '✔' : '📋'"></span>
+                    <span x-text="shareCopied ? 'Copiado para o Clipboard!' : 'Copiar Texto Completo'"></span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
 </div>
+
+<script>
+function homeApp() {
+    return {
+        // Filtros da home
+        searchQuery: '',
+        selectedGroup: '',
+        selectedEra: '',
+        selectedMember: '',
+        selectedTipo: '',
+        sortBy: 'recentes',
+        checkSearch(cegData) {
+            if (!this.searchQuery || !this.searchQuery.trim()) return true;
+            const q = this.searchQuery.toLowerCase().trim();
+            return (cegData || '').toLowerCase().includes(q);
+        },
+        checkTipo(isMista, exclusiveTipo, tipoIds) {
+            if (!this.selectedTipo) return true;
+            if (this.selectedTipo === 'mista') return isMista === 'True';
+            if (this.selectedTipo.startsWith('apenas_')) {
+                return this.selectedTipo === 'apenas_' + exclusiveTipo;
+            }
+            if (this.selectedTipo.startsWith('contem_')) {
+                const targetId = this.selectedTipo.replace('contem_', '');
+                return (' ' + tipoIds + ' ').indexOf(' ' + targetId + ' ') !== -1;
+            }
+            return true;
+        },
+        sortCards() {
+            const container = this.$refs.cegsContainer;
+            if (!container) return;
+            const cards = Array.from(container.querySelectorAll('.ceg-card'));
+            cards.sort((a, b) => {
+                if (this.sortBy === 'preco_asc') {
+                    return parseFloat(a.dataset.price || 0) - parseFloat(b.dataset.price || 0);
+                } else if (this.sortBy === 'preco_desc') {
+                    return parseFloat(b.dataset.price || 0) - parseFloat(a.dataset.price || 0);
+                } else if (this.sortBy === 'vagas_desc') {
+                    return parseInt(b.dataset.vagas || 0) - parseInt(a.dataset.vagas || 0);
+                } else if (this.sortBy === 'vagas_asc') {
+                    return parseInt(a.dataset.vagas || 0) - parseInt(b.dataset.vagas || 0);
+                } else {
+                    return parseInt(a.dataset.index || 0) - parseInt(b.dataset.index || 0);
+                }
+            });
+            cards.forEach(c => container.appendChild(c));
+        },
+        // Gerador de Divulgação (Admin)
+        cegShareMap: JSON.parse(document.getElementById('ceg-share-map-data')?.textContent || '{}'),
+        shareModalOpen: false,
+        shareCopied: false,
+        shareEmoji: '🟢',
+        shareShowSoldOut: false,
+        shareIncludePrice: false,
+        currentShareCeg: null,
+        openShareModal(cegId) {
+            const data = this.cegShareMap[cegId];
+            if (!data) return;
+            this.currentShareCeg = data;
+            this.shareCopied = false;
+            this.shareModalOpen = true;
+        },
+        closeShareModal() {
+            this.shareModalOpen = false;
+        },
+        get shareText() {
+            if (!this.currentShareCeg) return '';
+            const groupName = this.currentShareCeg.group_name || '';
+            const title = `✨ CEG ${groupName} - ${this.currentShareCeg.title} ✨`;
+            const lines = [];
+
+            (this.currentShareCeg.items || []).forEach(item => {
+                const name = item.member_name || item.name;
+                if (item.available_count > 0) {
+                    const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
+                    lines.push(`${name} ${emojis}`);
+                } else if (this.shareShowSoldOut) {
+                    lines.push(`${name} ❌`);
+                }
+            });
+
+            let body = lines.join('\n');
+            if (!body) {
+                body = '🎉 Todas as vagas foram preenchidas!';
+            }
+
+            let priceSection = '';
+            if (this.shareIncludePrice && this.currentShareCeg.price_display) {
+                priceSection = `\n\n💵 Valor: ${this.currentShareCeg.price_display} cada`;
+            }
+
+            const url = window.location.origin + '/ceg/' + this.currentShareCeg.slug + '/';
+            const footer = `\n\n🔗 Link: ${url}`;
+
+            return `${title}\n\n${body}${priceSection}${footer}`;
+        },
+        async copyShareText() {
+            try {
+                await navigator.clipboard.writeText(this.shareText);
+                this.shareCopied = true;
+                setTimeout(() => { this.shareCopied = false; }, 2500);
+            } catch (e) {
+                alert('Erro ao copiar: ' + e);
+            }
+        }
+    };
+}
+</script>
 {% endblock %}

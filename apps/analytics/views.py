@@ -60,6 +60,8 @@ class CEGStatusView(StaffRequiredMixin, View):
             'tipos_item_json': json.dumps(tipos_item),
             'caixas': caixas,
             'item_individual_statuses': ItemIndividual.Status.choices,
+            'ceg_share_map': status_data.get('ceg_share_map', {}),
+            'ceg_share_map_json': json.dumps(status_data.get('ceg_share_map', {})),
             'is_staff_user': request.user.is_authenticated and request.user.is_staff,
         })
 
