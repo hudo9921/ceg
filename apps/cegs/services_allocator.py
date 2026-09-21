@@ -536,15 +536,31 @@ class BulkJoinerAllocatorService:
                 elif action == 'toggle_payment':
                     old_paid = slot.is_item_paid
                     new_paid = bool(up.get('is_paid', not slot.is_item_paid))
+                    p_id = up.get('participant_id')
+
+                    # Se o slot ainda não tinha comprador salvo no banco mas veio participant_id, realiza a atribuição
+                    if not slot.claimed_by and p_id:
+                        participant = Participant.objects.filter(id=p_id).first()
+                        if participant:
+                            slot.claimed_by = participant
+                            slot.claimed_at = timezone.now()
+
                     slot.is_item_paid = new_paid
                     if slot.claimed_by:
                         slot.status = ItemSlot.Status.PAID if new_paid else ItemSlot.Status.RESERVED
-                    slot.save(update_fields=['is_item_paid', 'status'])
+                        slot.save(update_fields=['claimed_by', 'claimed_at', 'is_item_paid', 'status'])
 
-                    if hasattr(slot, 'claim') and slot.claim:
-                        slot.claim.status = Claim.Status.PAID if new_paid else Claim.Status.PENDING
-                        slot.claim.paid_at = timezone.now() if new_paid else None
-                        slot.claim.save(update_fields=['status', 'paid_at'])
+                        Claim.objects.update_or_create(
+                            slot=slot,
+                            defaults={
+                                'participant': slot.claimed_by,
+                                'total_price': slot.price,
+                                'status': Claim.Status.PAID if new_paid else Claim.Status.PENDING,
+                                'paid_at': timezone.now() if new_paid else None,
+                            }
+                        )
+                    else:
+                        slot.save(update_fields=['is_item_paid', 'status'])
 
                     try:
                         from apps.cegs.audit_service import AuditService

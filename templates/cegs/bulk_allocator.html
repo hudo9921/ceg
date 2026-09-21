@@ -648,11 +648,16 @@ function bulkAllocatorApp() {
                         slot.is_item_paid = !slot.is_item_paid;
                         slot.status = slot.is_item_paid ? 'PAID' : 'RESERVED';
 
-                        this.pendingMatrixUpdates[slotId] = {
-                            slot_id: slotId,
-                            action: 'toggle_payment',
-                            is_paid: slot.is_item_paid
-                        };
+                        if (this.pendingMatrixUpdates[slotId] && this.pendingMatrixUpdates[slotId].action === 'assign') {
+                            this.pendingMatrixUpdates[slotId].is_paid = slot.is_item_paid;
+                        } else {
+                            this.pendingMatrixUpdates[slotId] = {
+                                slot_id: slotId,
+                                action: 'toggle_payment',
+                                participant_id: slot.claimed_by ? slot.claimed_by.id : null,
+                                is_paid: slot.is_item_paid
+                            };
+                        }
                         break;
                     }
                 }
@@ -668,11 +673,17 @@ function bulkAllocatorApp() {
                     if (slot && slot.claimed_by && !slot.is_item_paid) {
                         slot.is_item_paid = true;
                         slot.status = 'PAID';
-                        this.pendingMatrixUpdates[slot.slot_id] = {
-                            slot_id: slot.slot_id,
-                            action: 'toggle_payment',
-                            is_paid: true
-                        };
+
+                        if (this.pendingMatrixUpdates[slot.slot_id] && this.pendingMatrixUpdates[slot.slot_id].action === 'assign') {
+                            this.pendingMatrixUpdates[slot.slot_id].is_paid = true;
+                        } else {
+                            this.pendingMatrixUpdates[slot.slot_id] = {
+                                slot_id: slot.slot_id,
+                                action: 'toggle_payment',
+                                participant_id: slot.claimed_by ? slot.claimed_by.id : null,
+                                is_paid: true
+                            };
+                        }
                         count++;
                     }
                 }
