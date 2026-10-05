@@ -1,6 +1,7 @@
 import math
 import re
 from django.db import models
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.text import slugify
 from apps.groups.models import Era
@@ -736,22 +737,21 @@ class CEG(models.Model):
 
     @property
     def frete_rates_summary(self):
-        """Retorna resumo das taxas de frete internacional configuradas para os slots desta CEG."""
+        """Retorna resumo das taxas de frete internacional configuradas para os slots desta CEG via agregação direta."""
         if not hasattr(self, '_frete_rates_summary'):
-            slots = ItemSlot.objects.filter(set__ceg=self, set__is_active=True).select_related('item_definition')
-            fretes = [s.frete_inter for s in slots if s.frete_inter is not None and s.frete_inter > 0]
-            if fretes:
-                min_f = min(fretes)
-                max_f = max(fretes)
-                has_multiple = (min_f != max_f)
-            elif self.frete_inter is not None and self.frete_inter > 0:
-                min_f = self.frete_inter
-                max_f = self.frete_inter
-                has_multiple = False
-            else:
-                min_f = None
-                max_f = None
-                has_multiple = False
+            default_val = models.Value(self.frete_inter, output_field=models.DecimalField()) if self.frete_inter is not None else models.Value(None, output_field=models.DecimalField())
+            agg = ItemSlot.objects.filter(
+                set__ceg=self,
+                set__is_active=True
+            ).annotate(
+                effective_frete=Coalesce('frete_inter_valor', default_val)
+            ).filter(effective_frete__gt=0).aggregate(
+                min_val=models.Min('effective_frete'),
+                max_val=models.Max('effective_frete')
+            )
+            min_f = agg['min_val']
+            max_f = agg['max_val']
+            has_multiple = (min_f is not None and max_f is not None and min_f != max_f)
             self._frete_rates_summary = {
                 'min': min_f,
                 'max': max_f,
@@ -773,22 +773,21 @@ class CEG(models.Model):
 
     @property
     def taxa_rates_summary(self):
-        """Retorna resumo das taxas alfandegárias configuradas para os slots desta CEG."""
+        """Retorna resumo das taxas alfandegárias configuradas para os slots desta CEG via agregação direta."""
         if not hasattr(self, '_taxa_rates_summary'):
-            slots = ItemSlot.objects.filter(set__ceg=self, set__is_active=True).select_related('item_definition')
-            taxas = [s.taxa_aduaneira for s in slots if s.taxa_aduaneira is not None and s.taxa_aduaneira > 0]
-            if taxas:
-                min_t = min(taxas)
-                max_t = max(taxas)
-                has_multiple = (min_t != max_t)
-            elif self.taxa_aduaneira is not None and self.taxa_aduaneira > 0:
-                min_t = self.taxa_aduaneira
-                max_t = self.taxa_aduaneira
-                has_multiple = False
-            else:
-                min_t = None
-                max_t = None
-                has_multiple = False
+            default_val = models.Value(self.taxa_aduaneira, output_field=models.DecimalField()) if self.taxa_aduaneira is not None else models.Value(None, output_field=models.DecimalField())
+            agg = ItemSlot.objects.filter(
+                set__ceg=self,
+                set__is_active=True
+            ).annotate(
+                effective_taxa=Coalesce('taxa_aduaneira_valor', default_val)
+            ).filter(effective_taxa__gt=0).aggregate(
+                min_val=models.Min('effective_taxa'),
+                max_val=models.Max('effective_taxa')
+            )
+            min_t = agg['min_val']
+            max_t = agg['max_val']
+            has_multiple = (min_t is not None and max_t is not None and min_t != max_t)
             self._taxa_rates_summary = {
                 'min': min_t,
                 'max': max_t,
@@ -818,11 +817,14 @@ class CEG(models.Model):
 
     @property
     def viable_sets_count(self) -> int:
-        item_defs = self.item_definitions.all()
-        if not item_defs.exists():
+        counts = list(
+            self.item_definitions.annotate(
+                vcount=models.Count('interest_votes')
+            ).values_list('vcount', flat=True)
+        )
+        if not counts:
             return 0
-        counts = [it.interest_votes.count() for it in item_defs]
-        return min(counts) if counts else 0
+        return min(counts)
 
 
 

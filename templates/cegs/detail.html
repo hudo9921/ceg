@@ -14,6 +14,22 @@
          tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
          claimLogsBySlot: JSON.parse('{{ claim_logs_by_slot_json|default:'{}'|escapejs }}'),
          expandedSlotLogs: {},
+         activeSetTab: 'ALL',
+         onlyAvailableSlots: false,
+         slotLogsModalOpen: false,
+         activeLogSlotId: null,
+         activeLogSlotName: '',
+         activeLogSetNumber: '',
+         openSlotLogsModal(slotId, name, setNumber) {
+             this.activeLogSlotId = slotId;
+             this.activeLogSlotName = name;
+             this.activeLogSetNumber = setNumber;
+             this.slotLogsModalOpen = true;
+         },
+         closeSlotLogsModal() {
+             this.slotLogsModalOpen = false;
+             this.activeLogSlotId = null;
+         },
          // --- Participant Multi-Select Claim ---
          participantSelectedSlots: [],   // [{id, name, setNumber, price, frete, taxa}, ...]
          bulkClaimModalOpen: false,
@@ -251,21 +267,37 @@
          editPhotoUrl: '{{ ceg.banner_url|default:''|escapejs }}',
          editPhotoDragOver: false,
          removeBannerFlag: false,
+         editPhotoError: '',
          handleBannerFile(file) {
              if (!file || file.type.indexOf('image') === -1) return;
+             this.editPhotoError = '';
+             const MAX_MB = 5;
+             if (file.size > MAX_MB * 1024 * 1024) {
+                 const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                 this.editPhotoError = `O arquivo selecionado possui ${sizeMb} MB. O limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve.`;
+                 const fileInput = document.getElementById('ceg_banner_file_input');
+                 if (fileInput) fileInput.value = '';
+                 return;
+             }
              this.removeBannerFlag = false;
-             const reader = new FileReader();
-             reader.onload = (event) => {
-                 this.editPhotoPreview = event.target.result;
-                 this.editPhotoBase64 = event.target.result;
-             };
-             reader.readAsDataURL(file);
+             let fileAttached = false;
              try {
                  const dt = new DataTransfer();
                  dt.items.add(file);
                  const fileInput = document.getElementById('ceg_banner_file_input');
-                 if (fileInput) fileInput.files = dt.files;
-             } catch(e) {}
+                 if (fileInput) {
+                     fileInput.files = dt.files;
+                     fileAttached = true;
+                 }
+             } catch(e) {
+                 fileAttached = false;
+             }
+             const reader = new FileReader();
+             reader.onload = (event) => {
+                 this.editPhotoPreview = event.target.result;
+                 this.editPhotoBase64 = fileAttached ? '' : event.target.result;
+             };
+             reader.readAsDataURL(file);
          },
          onPhotoSelected(e) {
              const file = e.target.files && e.target.files[0];
@@ -284,6 +316,7 @@
              this.editPhotoPreview = '';
              this.editPhotoBase64 = '';
              this.editPhotoUrl = '';
+             this.editPhotoError = '';
              this.removeBannerFlag = true;
              const fileInput = document.getElementById('ceg_banner_file_input');
              if (fileInput) fileInput.value = '';
@@ -295,6 +328,7 @@
              this.editPhotoPreview = e.target.value;
              this.editPhotoUrl = e.target.value;
              this.editPhotoBase64 = '';
+             this.editPhotoError = '';
          },
          // --- Gerador de Texto de Divulgação (Twitter / WhatsApp / Telegram) ---
          shareModalOpen: false,
@@ -1000,7 +1034,8 @@
                  }
              }, 1000);
          }
-    " @slot-toggle.window="toggleParticipantSlot($event.detail)"
+    " @standby-ended.window="isStandby = false"
+    @slot-toggle.window="toggleParticipantSlot($event.detail)"
     @open-bulk-claim.window="participantSelectedSlots = $store.claimSelection.slots; openBulkClaimModal()"
     @sync-claim-selection.window="participantSelectedSlots = $store.claimSelection.slots">
 
@@ -1750,10 +1785,56 @@
             </div>
         </div>
         {% else %}
+        <!-- Sets Header / Controls & Tabs -->
+        <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <!-- Navigation Tabs -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 max-w-full text-xs font-bold scrollbar-thin">
+                    <button type="button"
+                        @click="activeSetTab = 'ALL'"
+                        class="px-3 py-1.5 rounded-xl transition whitespace-nowrap cursor-pointer"
+                        :class="activeSetTab === 'ALL'
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
+                        Todos os Sets ({{ sets|length }})
+                    </button>
+                    {% for s_tab in sets %}
+                    <button type="button"
+                        @click="activeSetTab = {{ s_tab.set_number }}"
+                        class="px-3 py-1.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
+                        :class="activeSetTab === {{ s_tab.set_number }}
+                            ? 'bg-pink-600 text-white shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
+                        <span>Set {{ s_tab.set_number }}</span>
+                        {% if s_tab.is_full %}
+                        <span class="w-2 h-2 rounded-full bg-emerald-400" title="100% Fechado"></span>
+                        {% else %}
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full"
+                            :class="activeSetTab === {{ s_tab.set_number }} ? 'bg-pink-700 text-pink-100' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
+                            {{ s_tab.reserved_count }}/{{ s_tab.slots_count }}
+                        </span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <!-- Filter: Apenas Vagas Abertas -->
+                <div class="flex items-center gap-3">
+                    <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition">
+                        <input type="checkbox" x-model="onlyAvailableSlots" class="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-slate-300 dark:border-slate-600 cursor-pointer">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500" :class="onlyAvailableSlots ? 'animate-pulse' : ''"></span>
+                            Apenas Vagas Abertas
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <!-- Sets & Slots List -->
         <div class="space-y-8">
             {% for set in sets %}
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div x-show="activeSetTab === 'ALL' || activeSetTab === {{ set.set_number }}" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <!-- Set Header -->
                 <div
                     class="bg-slate-100 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
@@ -1842,10 +1923,11 @@
                                 border-blue-200 bg-blue-50/40
                             {% else %}
                                 border-slate-200 bg-slate-50 opacity-60
-                            {% endif %}" x-data="{
+                            {% endif %}"
+                         x-show="!onlyAvailableSlots || status === 'AVAILABLE'"
+                         x-data="{
                                  slotId: {{ slot.id }},
                                  status: '{{ slot.status }}',
-                                 isSelected: false,
                                  isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
                                  isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
                                  isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
@@ -1889,16 +1971,14 @@
                                      }
                                  }
                              }" :class="{
-                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE' && !isSelected,
-                                 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/60 shadow-md scale-[1.01]': status === 'AVAILABLE' && isSelected,
+                                 'border-slate-200 hover:border-pink-300 hover:shadow bg-white': status === 'AVAILABLE' && !$store.claimSelection.slots.some(s => s.id === slotId),
+                                 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/60 shadow-md scale-[1.01]': status === 'AVAILABLE' && $store.claimSelection.slots.some(s => s.id === slotId),
                                  'border-amber-300 bg-amber-50/50 shadow-2xs': status === 'RESERVED',
                                  'border-blue-300 bg-blue-50/40 shadow-2xs': status === 'PAID',
                                  'border-slate-200 bg-slate-50 opacity-60': status === 'CANCELLED',
                                  {% if not user.is_staff %}'cursor-pointer': status === 'AVAILABLE' && !isStandby,{% endif %}
                                 }"
-                                @standby-ended.window="isStandby = false"
-                                @claim-selection-cleared.window="isSelected = false"
-                                @slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"
+                                {% if user.is_staff %}@slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"{% endif %}
                                 {% if not user.is_staff and logged_participant %}
                                 @click="if (!isStandby && status === 'AVAILABLE') {
                                     $store.claimSelection.toggle({
@@ -1910,7 +1990,6 @@
                                         frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
                                         taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
                                     });
-                                    isSelected = !isSelected;
                                 }"
                                 {% endif %}>
 
@@ -2126,13 +2205,13 @@
                                             price: '{{ slot.price|floatformat:2 }}',
                                             frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
                                             taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                                        }); isSelected = !isSelected; }"
+                                        }); }"
                                         class="w-full py-2 rounded-lg text-xs font-black text-center transition flex items-center justify-center gap-1.5 cursor-pointer select-none"
-                                        :class="isSelected
-                                                         ? 'bg-pink-600 text-white'
-                                                         : 'bg-slate-100 text-slate-500 border border-dashed border-slate-300'">
-                                        <span x-text="isSelected ? '✔' : '○'"></span>
-                                        <span x-text="isSelected ? 'Selecionado' : 'Clique para selecionar'"></span>
+                                        :class="$store.claimSelection.slots.some(s => s.id === slotId)
+                                                         ? 'bg-pink-600 text-white shadow-xs'
+                                                         : 'bg-slate-100 text-slate-500 border border-dashed border-slate-300 hover:border-pink-300 hover:text-pink-600'">
+                                        <span x-text="$store.claimSelection.slots.some(s => s.id === slotId) ? '✔' : '○'"></span>
+                                        <span x-text="$store.claimSelection.slots.some(s => s.id === slotId) ? 'Selecionado' : 'Clique para selecionar'"></span>
                                     </button>
                                     {% elif user.is_staff %}
                                     <!-- Staff: nada aqui, usa o ✏️ -->
@@ -2212,50 +2291,14 @@
                         {% if user.is_staff %}
                         <!-- Histórico de Claim deste Slot (staff only) -->
                         <template x-if="claimLogsBySlot[{{ slot.id }}] && claimLogsBySlot[{{ slot.id }}].length > 0">
-                            <div
-                                class="mt-2 -mx-4 -mb-0 px-3 pb-2 border-t border-slate-100 bg-slate-50/80 rounded-b-xl">
+                            <div class="mt-2 pt-2 border-t border-slate-100 -mx-4 -mb-4 px-4 pb-3 bg-slate-50/60 rounded-b-xl flex justify-center">
                                 <button type="button"
-                                    @click="expandedSlotLogs[{{ slot.id }}] = !expandedSlotLogs[{{ slot.id }}]"
-                                    class="w-full flex items-center justify-between py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">
-                                    <span class="flex items-center gap-1">
-                                        <span>📋</span>
-                                        <span
-                                            x-text="'Histórico (' + claimLogsBySlot[{{ slot.id }}].length + ' tentativa' + (claimLogsBySlot[{{ slot.id }}].length > 1 ? 's)' : ')')"></span>
-                                    </span>
-                                    <span x-text="expandedSlotLogs[{{ slot.id }}] ? '▲' : '▼'"
-                                        class="text-[9px]"></span>
+                                    @click.stop="openSlotLogsModal({{ slot.id }}, '{{ slot.item_definition.name|escapejs }}', {{ set.set_number }})"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition cursor-pointer shadow-2xs"
+                                    title="Ver histórico de tentativas e disputa de claim">
+                                    <span>📋</span>
+                                    <span x-text="'Histórico (' + claimLogsBySlot[{{ slot.id }}].length + ')'"></span>
                                 </button>
-                                <div x-show="expandedSlotLogs[{{ slot.id }}]" x-cloak
-                                    class="space-y-1 max-h-36 overflow-y-auto pr-0.5 pb-1">
-                                    <template x-for="log in claimLogsBySlot[{{ slot.id }}]" :key="log.id">
-                                        <div class="flex items-start justify-between gap-1.5 text-[10px] px-1.5 py-1 rounded"
-                                            :class="{
-                                                     'bg-emerald-50 border border-emerald-100': log.result === 'SUCCESS',
-                                                     'bg-blue-50 border border-blue-100': log.result === 'AUTO_FALLBACK',
-                                                     'bg-amber-50 border border-amber-100': log.result === 'WAITING_LIST',
-                                                     'bg-rose-50 border border-rose-100': log.result === 'LOST_RACE',
-                                                     'bg-slate-100 border border-slate-200': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
-                                                 }">
-                                            <div class="flex-1 min-w-0">
-                                                <div class="flex items-center gap-1">
-                                                    <span class="font-black text-[9px] px-1 py-0.5 rounded" :class="{
-                                                                  'bg-emerald-200 text-emerald-800': log.result === 'SUCCESS',
-                                                                  'bg-blue-200 text-blue-800': log.result === 'AUTO_FALLBACK',
-                                                                  'bg-amber-200 text-amber-800': log.result === 'WAITING_LIST',
-                                                                  'bg-rose-200 text-rose-800': log.result === 'LOST_RACE',
-                                                                  'bg-slate-200 text-slate-600': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
-                                                              }" x-text="log.result_display"></span>
-                                                    <span class="font-bold text-slate-800 truncate"
-                                                        x-text="'#' + log.attempt_number + ' ' + log.participant_name"></span>
-                                                </div>
-                                                <div class="text-slate-500 truncate" x-show="log.social_handle"
-                                                    x-text="log.social_handle"></div>
-                                            </div>
-                                            <div class="text-slate-400 font-mono shrink-0 text-[9px] text-right"
-                                                x-text="log.created_at"></div>
-                                        </div>
-                                    </template>
-                                </div>
                             </div>
                         </template>
                         {% endif %}
@@ -2678,6 +2721,17 @@
                             </button>
                         </div>
 
+                        <!-- Alerta Visual se a Imagem For Muito Pesada -->
+                        <div x-show="editPhotoError" x-cloak
+                            class="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start justify-between gap-2 shadow-xs">
+                            <div class="flex items-start gap-2">
+                                <span class="text-base leading-none">⚠️</span>
+                                <span class="font-bold" x-text="editPhotoError"></span>
+                            </div>
+                            <button type="button" @click="editPhotoError = ''"
+                                class="text-rose-500 hover:text-rose-800 font-bold px-1 text-sm cursor-pointer">✕</button>
+                        </div>
+
                         <!-- Dropzone Interativo: Clique para PC, Arrastar ou Ctrl+V -->
                         <div @dragover.prevent="editPhotoDragOver = true" @dragleave.prevent="editPhotoDragOver = false"
                             @drop.prevent="onPhotoDropped($event)"
@@ -2690,8 +2744,9 @@
                                     class="px-2 py-0.5 bg-pink-100 text-pink-800 border border-pink-200 rounded font-black text-xs">Ctrl
                                     + V</kbd> nesta tela
                             </p>
-                            <p class="text-[11px] text-slate-500">
-                                Ou arraste um arquivo de imagem (JPG, PNG, WEBP) para cá
+                            <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 flex-wrap">
+                                <span>Ou arraste um arquivo (JPG, PNG, WEBP)</span>
+                                <span class="font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded border border-pink-200 text-[10px] uppercase tracking-wider">Máx 5 MB</span>
                             </p>
                         </div>
 
@@ -4333,6 +4388,66 @@
                     <span>🗑️ Excluir CEG Definitivamente</span>
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.is_staff %}
+<!-- Modal de Histórico de Claim / Disputa por Slot (Staff) -->
+<div x-show="slotLogsModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+    @keydown.escape.window="closeSlotLogsModal()">
+    <div class="bg-white dark:bg-[#131B2E] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800"
+        @click.away="closeSlotLogsModal()">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>📋</span> Histórico de Disputa & Claim
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="'Set #' + activeLogSetNumber + ' • ' + activeLogSlotName"></p>
+            </div>
+            <button type="button" @click="closeSlotLogsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div class="max-h-96 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+            <template x-if="!activeLogSlotId || !claimLogsBySlot[activeLogSlotId] || claimLogsBySlot[activeLogSlotId].length === 0">
+                <p class="text-xs text-slate-400 text-center py-8">Nenhum registro de tentativa para este slot.</p>
+            </template>
+            <template x-for="log in (activeLogSlotId && claimLogsBySlot[activeLogSlotId] ? claimLogsBySlot[activeLogSlotId] : [])" :key="log.id">
+                <div class="flex items-start justify-between gap-2.5 text-xs p-3 rounded-xl border transition"
+                    :class="{
+                        'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60': log.result === 'SUCCESS',
+                        'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/60': log.result === 'AUTO_FALLBACK',
+                        'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/60': log.result === 'WAITING_LIST',
+                        'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60': log.result === 'LOST_RACE',
+                        'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                    }">
+                    <div class="flex-1 min-w-0 space-y-0.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-black text-[10px] px-1.5 py-0.5 rounded shadow-2xs"
+                                :class="{
+                                    'bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100': log.result === 'SUCCESS',
+                                    'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-100': log.result === 'AUTO_FALLBACK',
+                                    'bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-100': log.result === 'WAITING_LIST',
+                                    'bg-rose-200 dark:bg-rose-800 text-rose-800 dark:text-rose-100': log.result === 'LOST_RACE',
+                                    'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                                }" x-text="log.result_display"></span>
+                            <span class="font-bold text-slate-900 dark:text-white" x-text="'#' + log.attempt_number + ' ' + log.participant_name"></span>
+                        </div>
+                        <div class="text-slate-600 dark:text-slate-400 text-[11px]" x-show="log.social_handle" x-text="'@' + log.social_handle.replace(/^@/, '')"></div>
+                        <div class="text-slate-500 dark:text-slate-400 text-[10px] italic" x-show="log.message" x-text="log.message"></div>
+                    </div>
+                    <div class="text-slate-400 font-mono text-[10px] shrink-0 text-right" x-text="log.created_at"></div>
+                </div>
+            </template>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <button type="button" @click="closeSlotLogsModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer">
+                Fechar
+            </button>
         </div>
     </div>
 </div>

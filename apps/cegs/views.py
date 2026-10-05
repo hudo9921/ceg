@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from apps.groups.models import Era
@@ -162,11 +162,30 @@ class CEGDetailView(View):
             ceg.status = CEG.Status.OPEN
             ceg.save(update_fields=['status'])
 
-        # Carrega sets ativos com seus respectivos slots ordenados
-        active_sets = ceg.sets.filter(is_active=True).prefetch_related(
-            'slots__item_definition',
-            'slots__claimed_by'
-        ).order_by('set_number')
+        # Carrega sets ativos com contadores anotados e prefetch otimizado (evita N+1 queries)
+        slots_qs = ItemSlot.objects.select_related(
+            'item_definition__tipo_item',
+            'claimed_by'
+        )
+
+        active_sets = list(ceg.sets.filter(is_active=True).annotate(
+            _annotated_slots_count=Count('slots', distinct=True),
+            _annotated_reserved_count=Count(
+                'slots',
+                filter=Q(slots__status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]),
+                distinct=True
+            )
+        ).prefetch_related(
+            Prefetch('slots', queryset=slots_qs)
+        ).order_by('set_number'))
+
+        # Vincula contadores e instâncias em memória para evitar queries adicionais ao renderizar slots
+        for s in active_sets:
+            s._slots_count = s._annotated_slots_count
+            s._reserved_count = s._annotated_reserved_count
+            for slot in s.slots.all():
+                slot.set = s
+                slot.set.ceg = ceg
 
         # Se o usuário for administrador/staff, carrega lista de participantes para seleção rápida e caixas
         all_participants = []
@@ -231,7 +250,6 @@ class CEGDetailView(View):
         user_voted_def_ids = []
         polling_item_definitions = []
         if ceg.is_polling:
-            from django.db.models import Prefetch
             from apps.cegs.polling_service import PollingDemandService
             from apps.cegs.models import CEGInterestVote
             polling_summary = PollingDemandService.get_polling_summary(ceg)
@@ -786,88 +804,93 @@ class UpdateCEGView(StaffRequiredMixin, View):
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
 
-        title = request.POST.get('title', '').strip()
-        era_id = request.POST.get('era_id')
-        caixa_id = request.POST.get('caixa_id')
-        status = request.POST.get('status', '').strip()
-        opens_at_str = request.POST.get('opens_at', '').strip()
-        closes_at_str = request.POST.get('closes_at', '').strip()
-        prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
-        pix_key = request.POST.get('pix_key', '').strip()
-        pix_instructions = request.POST.get('pix_instructions', '').strip()
-        description = request.POST.get('description', '').strip()
-        banner_url = request.POST.get('banner_url', '').strip()
-        remove_banner = request.POST.get('remove_banner') in ('1', 'true', 'on')
+        try:
+            title = request.POST.get('title', '').strip()
+            era_id = request.POST.get('era_id')
+            caixa_id = request.POST.get('caixa_id')
+            status = request.POST.get('status', '').strip()
+            opens_at_str = request.POST.get('opens_at', '').strip()
+            closes_at_str = request.POST.get('closes_at', '').strip()
+            prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
+            pix_key = request.POST.get('pix_key', '').strip()
+            pix_instructions = request.POST.get('pix_instructions', '').strip()
+            description = request.POST.get('description', '').strip()
+            banner_url_input = request.POST.get('banner_url', '').strip()
+            remove_banner = request.POST.get('remove_banner') in ('1', 'true', 'on')
 
-        if title:
-            ceg.title = title
+            if title:
+                ceg.title = title
 
-        if era_id:
-            try:
-                ceg.era = Era.objects.get(id=int(era_id))
-            except (Era.DoesNotExist, ValueError):
-                pass
-
-        if caixa_id is not None:
-            if caixa_id.strip():
+            if era_id:
                 try:
-                    caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
-                    ceg.caixa = caixa
-                    if caixa:
-                        ceg.shipping_status = caixa.status
-                except (ValueError, TypeError):
+                    ceg.era = Era.objects.get(id=int(era_id))
+                except (Era.DoesNotExist, ValueError):
                     pass
-            else:
-                ceg.caixa = None
 
-        if status in CEG.Status.values:
-            ceg.status = status
+            if caixa_id is not None:
+                if caixa_id.strip():
+                    try:
+                        caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                        ceg.caixa = caixa
+                        if caixa:
+                            ceg.shipping_status = caixa.status
+                    except (ValueError, TypeError):
+                        pass
+                else:
+                    ceg.caixa = None
 
-        def parse_local_dt(dt_str):
-            if not dt_str:
-                return None
-            try:
-                dt = parse_datetime(dt_str)
-                if dt and timezone.is_naive(dt):
-                    dt = timezone.make_aware(dt, timezone.get_current_timezone())
-                return dt
-            except Exception:
-                return None
+            if status in CEG.Status.values:
+                ceg.status = status
 
-        ceg.opens_at = parse_local_dt(opens_at_str)
-        ceg.closes_at = parse_local_dt(closes_at_str)
-        ceg.prazo_pagamento_item = parse_local_dt(prazo_item_str)
+            def parse_local_dt(dt_str):
+                if not dt_str:
+                    return None
+                try:
+                    dt = parse_datetime(dt_str)
+                    if dt and timezone.is_naive(dt):
+                        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+                    return dt
+                except Exception:
+                    return None
 
-        # Se tiver opens_at no futuro e status estiver como OPEN, converte para SCHEDULED automaticamente
-        if ceg.opens_at and timezone.now() < ceg.opens_at and ceg.status == CEG.Status.OPEN:
-            ceg.status = CEG.Status.SCHEDULED
+            ceg.opens_at = parse_local_dt(opens_at_str)
+            ceg.closes_at = parse_local_dt(closes_at_str)
+            ceg.prazo_pagamento_item = parse_local_dt(prazo_item_str)
 
-        ceg.pix_key = pix_key
-        ceg.pix_instructions = pix_instructions
-        ceg.description = description
+            # Se tiver opens_at no futuro e status estiver como OPEN, converte para SCHEDULED automaticamente
+            if ceg.opens_at and timezone.now() < ceg.opens_at and ceg.status == CEG.Status.OPEN:
+                ceg.status = CEG.Status.SCHEDULED
 
-        # Upload de Imagem / Foto de Banner (Arquivo, Ctrl+V Base64 ou URL)
-        banner_file = request.FILES.get('banner_file')
-        banner_base64 = request.POST.get('banner_base64', '').strip()
+            ceg.pix_key = pix_key
+            ceg.pix_instructions = pix_instructions
+            ceg.description = description
 
-        if remove_banner:
-            ceg.banner_url = ''
-        elif banner_file or banner_base64:
-            new_banner = process_image_upload(
-                file_obj=banner_file,
-                base64_str=banner_base64,
-                folder='cegs/banners',
-                fallback_url=banner_url
-            )
-            if new_banner:
-                ceg.banner_url = new_banner
-        elif 'banner_url' in request.POST:
-            ceg.banner_url = banner_url
+            # Upload de Imagem / Foto de Banner (Arquivo, Ctrl+V Base64 ou URL)
+            banner_file = request.FILES.get('banner_file')
+            banner_base64 = request.POST.get('banner_base64', '').strip()
 
-        ceg.save()
+            if remove_banner:
+                ceg.banner_url = ''
+            elif banner_file or banner_base64 or banner_url_input:
+                new_banner = process_image_upload(
+                    file_obj=banner_file,
+                    base64_str=banner_base64,
+                    folder='cegs/banners',
+                    fallback_url=banner_url_input
+                )
+                if new_banner:
+                    ceg.banner_url = new_banner
+                elif 'banner_url' in request.POST and not banner_file and not banner_base64:
+                    ceg.banner_url = ''
 
-        messages.success(request, f"✨ Informações e foto da CEG '{ceg.title}' foram atualizadas com sucesso!")
-        return redirect('ceg_detail', slug=ceg.slug)
+            ceg.save()
+
+            messages.success(request, f"✨ Informações e foto da CEG '{ceg.title}' foram atualizadas com sucesso!")
+            return redirect('ceg_detail', slug=ceg.slug)
+        except Exception as e:
+            logger.exception(f"Erro ao atualizar informações da CEG {slug}: {e}")
+            messages.error(request, f"Erro ao atualizar informações da CEG: {e}")
+            return redirect('ceg_detail', slug=ceg.slug)
 
 
 class ManageSlotView(View):

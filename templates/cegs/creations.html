@@ -3088,18 +3088,32 @@ document.addEventListener('alpine:init', () => {
 
         handleGroupImageFile(file) {
             if (!file || file.type.indexOf('image') === -1) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.groupImagePreview = e.target.result;
-                this.groupImageBase64 = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            const MAX_MB = 5;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`⚠️ O arquivo selecionado possui ${sizeMb} MB.\n\nO limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve ou comprima em tinypng.com.`);
+                const fileInput = document.querySelector('input[name="image_file"]');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            let fileAttached = false;
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
                 const fileInput = document.querySelector('input[name="image_file"]');
-                if (fileInput) fileInput.files = dt.files;
-            } catch(e) {}
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                    fileAttached = true;
+                }
+            } catch(e) {
+                fileAttached = false;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.groupImagePreview = e.target.result;
+                this.groupImageBase64 = fileAttached ? '' : e.target.result;
+            };
+            reader.readAsDataURL(file);
         },
         clearGroupImage() {
             this.groupImagePreview = '';
@@ -3111,18 +3125,32 @@ document.addEventListener('alpine:init', () => {
 
         handleEraBannerFile(file) {
             if (!file || file.type.indexOf('image') === -1) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.eraBannerPreview = e.target.result;
-                this.eraBannerBase64 = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            const MAX_MB = 5;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`⚠️ O arquivo selecionado possui ${sizeMb} MB.\n\nO limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve ou comprima em tinypng.com.`);
+                const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            let fileAttached = false;
             try {
                 const dt = new DataTransfer();
                 dt.items.add(file);
                 const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
-                if (fileInput) fileInput.files = dt.files;
-            } catch(e) {}
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                    fileAttached = true;
+                }
+            } catch(e) {
+                fileAttached = false;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.eraBannerPreview = e.target.result;
+                this.eraBannerBase64 = fileAttached ? '' : e.target.result;
+            };
+            reader.readAsDataURL(file);
         },
         clearEraBanner() {
             this.eraBannerPreview = '';
@@ -3134,12 +3162,32 @@ document.addEventListener('alpine:init', () => {
 
         handleCegBannerFile(file) {
             if (!file || file.type.indexOf('image') === -1) return;
+            const MAX_MB = 5;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`⚠️ O arquivo selecionado possui ${sizeMb} MB.\n\nO limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve ou comprima em tinypng.com.`);
+                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            let fileAttached = false;
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                    fileAttached = true;
+                }
+            } catch(e) {
+                fileAttached = false;
+            }
             const reader = new FileReader();
             reader.onload = (e) => {
                 this.cegBannerPreview = e.target.result;
-                this.cegBannerBase64 = e.target.result;
+                this.cegBannerBase64 = fileAttached ? '' : e.target.result;
                 if (this.$refs.cegBannerBase64Input) {
-                    this.$refs.cegBannerBase64Input.value = e.target.result;
+                    this.$refs.cegBannerBase64Input.value = this.cegBannerBase64;
                 }
             };
             reader.readAsDataURL(file);
@@ -3147,12 +3195,6 @@ document.addEventListener('alpine:init', () => {
             if (this.$refs.cegBannerUrlInput) {
                 this.$refs.cegBannerUrlInput.value = '';
             }
-            try {
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
-                if (fileInput) fileInput.files = dt.files;
-            } catch(e) {}
         },
         clearCegBanner() {
             this.cegBannerPreview = '';
