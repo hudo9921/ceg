@@ -279,12 +279,16 @@ class CreateGroupView(StaffRequiredMixin, View):
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
 
-        image_url = process_image_upload(
-            file_obj=image_file,
-            base64_str=image_base64,
-            folder='groups',
-            fallback_url=image_url_input
-        )
+        try:
+            image_url = process_image_upload(
+                file_obj=image_file,
+                base64_str=image_base64,
+                folder='groups',
+                fallback_url=image_url_input
+            )
+        except ValueError as e:
+            messages.error(request, f"⚠️ {e}")
+            return redirect('/creations/?tab=group')
 
         if color_hex:
             if not color_hex.startswith('#') and len(color_hex) in (3, 6):
@@ -340,17 +344,26 @@ class UpdateGroupView(StaffRequiredMixin, View):
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
 
-        if image_file or image_base64:
-            image_url = process_image_upload(
-                file_obj=image_file,
-                base64_str=image_base64,
-                folder='groups',
-                fallback_url=''
-            )
-        elif 'image_url' in request.POST:
-            image_url = image_url_input
-        else:
-            image_url = group.image_url
+        try:
+            if image_file or image_base64:
+                image_url = process_image_upload(
+                    file_obj=image_file,
+                    base64_str=image_base64,
+                    folder='groups',
+                    fallback_url=''
+                )
+            elif 'image_url' in request.POST:
+                image_url = process_image_upload(
+                    file_obj=None,
+                    base64_str=None,
+                    folder='groups',
+                    fallback_url=image_url_input
+                )
+            else:
+                image_url = group.image_url
+        except ValueError as e:
+            messages.error(request, f"⚠️ {e}")
+            return redirect('/creations/?tab=group')
 
         if color_hex:
             if not color_hex.startswith('#') and len(color_hex) in (3, 6):
@@ -416,12 +429,16 @@ class CreateEraView(StaffRequiredMixin, View):
 
         group = get_object_or_404(KpopGroup, id=group_id)
 
-        banner_url = process_image_upload(
-            file_obj=banner_file,
-            base64_str=banner_base64,
-            folder='eras',
-            fallback_url=banner_url_input
-        )
+        try:
+            banner_url = process_image_upload(
+                file_obj=banner_file,
+                base64_str=banner_base64,
+                folder='eras',
+                fallback_url=banner_url_input
+            )
+        except ValueError as e:
+            messages.error(request, f"⚠️ {e}")
+            return redirect('/creations/?tab=era')
 
         if color_hex:
             if not color_hex.startswith('#') and len(color_hex) in (3, 6):
@@ -487,17 +504,26 @@ class UpdateEraView(StaffRequiredMixin, View):
 
         group = get_object_or_404(KpopGroup, id=group_id)
 
-        if banner_file or banner_base64:
-            banner_url = process_image_upload(
-                file_obj=banner_file,
-                base64_str=banner_base64,
-                folder='eras',
-                fallback_url=''
-            )
-        elif 'banner_url' in request.POST:
-            banner_url = banner_url_input
-        else:
-            banner_url = era.banner_url
+        try:
+            if banner_file or banner_base64:
+                banner_url = process_image_upload(
+                    file_obj=banner_file,
+                    base64_str=banner_base64,
+                    folder='eras',
+                    fallback_url=''
+                )
+            elif 'banner_url' in request.POST:
+                banner_url = process_image_upload(
+                    file_obj=None,
+                    base64_str=None,
+                    folder='eras',
+                    fallback_url=banner_url_input
+                )
+            else:
+                banner_url = era.banner_url
+        except ValueError as e:
+            messages.error(request, f"⚠️ {e}")
+            return redirect('/creations/?tab=era')
 
         if color_hex:
             if not color_hex.startswith('#') and len(color_hex) in (3, 6):
@@ -580,12 +606,16 @@ class CreateCEGView(StaffRequiredMixin, View):
         era = get_object_or_404(Era, id=era_id)
 
         # Processa upload de banner da CEG (arquivo, base64 ou URL)
-        banner_url = process_image_upload(
-            file_obj=banner_file,
-            base64_str=banner_base64,
-            folder='cegs/banners',
-            fallback_url=banner_url_input
-        )
+        try:
+            banner_url = process_image_upload(
+                file_obj=banner_file,
+                base64_str=banner_base64,
+                folder='cegs/banners',
+                fallback_url=banner_url_input
+            )
+        except ValueError as e:
+            messages.error(request, f"⚠️ {e}")
+            return redirect('/creations/?tab=ceg')
 
         opens_at = parse_local_datetime(opens_at_str)
         closes_at = parse_local_datetime(closes_at_str)
