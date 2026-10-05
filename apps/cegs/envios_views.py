@@ -436,29 +436,29 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
 
         pacotes = list(qs.order_by('-created_at'))
 
-        # Métricas Globais
-        all_pacotes_qs = PacoteNacional.objects.all()
-        total_pacotes = all_pacotes_qs.count()
-        solicitados_count = all_pacotes_qs.filter(status=PacoteNacional.Status.SOLICITADO).count()
-        em_preparacao_count = all_pacotes_qs.filter(status=PacoteNacional.Status.EM_PREPARACAO).count()
-        enviados_count = all_pacotes_qs.filter(status=PacoteNacional.Status.ENVIADO).count()
-        entregues_count = all_pacotes_qs.filter(status=PacoteNacional.Status.ENTREGUE).count()
+        # Métricas Globais em uma única query agregada
+        metrics = PacoteNacional.objects.aggregate(
+            total_pacotes=Count('id'),
+            solicitados_count=Count('id', filter=Q(status=PacoteNacional.Status.SOLICITADO)),
+            em_preparacao_count=Count('id', filter=Q(status=PacoteNacional.Status.EM_PREPARACAO)),
+            enviados_count=Count('id', filter=Q(status=PacoteNacional.Status.ENVIADO)),
+            entregues_count=Count('id', filter=Q(status=PacoteNacional.Status.ENTREGUE)),
+            com_feedback_count=Count('id', filter=Q(feedback_rating__isnull=False)),
+            media_rating_val=Avg('feedback_rating', filter=Q(feedback_rating__isnull=False)),
+        )
+        media_val = metrics.get('media_rating_val')
+        media_feedback = round(media_val, 1) if media_val is not None else None
 
-        feedbacks_qs = all_pacotes_qs.filter(feedback_rating__isnull=False)
-        com_feedback_count = feedbacks_qs.count()
-        media_rating_val = feedbacks_qs.aggregate(media=Avg('feedback_rating'))['media']
-        media_feedback = round(media_rating_val, 1) if media_rating_val else None
-
-        # Lista de participantes para filtro
-        all_participants = Participant.objects.all().order_by('name')
+        # Lista de participantes para filtro (apenas campos necessários)
+        all_participants = Participant.objects.only('id', 'name', 'username', 'social_handle').order_by('name')
 
         stats = {
-            'total_pacotes': total_pacotes,
-            'solicitados_count': solicitados_count,
-            'em_preparacao_count': em_preparacao_count,
-            'enviados_count': enviados_count,
-            'entregues_count': entregues_count,
-            'com_feedback_count': com_feedback_count,
+            'total_pacotes': metrics['total_pacotes'],
+            'solicitados_count': metrics['solicitados_count'],
+            'em_preparacao_count': metrics['em_preparacao_count'],
+            'enviados_count': metrics['enviados_count'],
+            'entregues_count': metrics['entregues_count'],
+            'com_feedback_count': metrics['com_feedback_count'],
             'media_feedback': media_feedback,
         }
 

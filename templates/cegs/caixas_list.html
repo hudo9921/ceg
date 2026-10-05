@@ -193,7 +193,7 @@
                 <div class="flex items-center gap-2">
                     <span class="text-amber-600 dark:text-amber-400 text-base">⚠️</span>
                     <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">
-                        CEGs Aguardando Vinculação a uma Remessa ({{ cegs_sem_caixa.count }})
+                        CEGs Aguardando Vinculação a uma Remessa ({{ cegs_sem_caixa|length }})
                     </h3>
                 </div>
                 <span class="text-xs text-amber-700 dark:text-amber-300 font-medium">Sem caixa atrelada</span>
@@ -210,9 +210,9 @@
                         <span class="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 rounded font-bold">{{ c.get_status_display }}</span>
                     </a>
                 {% endfor %}
-                {% if cegs_sem_caixa.count > 10 %}
+                {% if cegs_sem_caixa|length > 10 %}
                     <span class="text-xs text-amber-700 dark:text-amber-300 font-bold self-center">
-                        + {{ cegs_sem_caixa.count|add:"-10" }} outras CEGs
+                        + {{ cegs_sem_caixa|length|add:"-10" }} outras CEGs
                     </span>
                 {% endif %}
             </div>

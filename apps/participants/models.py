@@ -347,7 +347,7 @@ class Claim(models.Model):
     payment_proof_url = models.URLField('Link do Comprovante (Pix/Drive)', max_length=500, blank=True)
     participant_notes = models.TextField('Observações do Participante', blank=True)
     organizer_notes = models.TextField('Notas do Organizador', blank=True)
-    claimed_at = models.DateTimeField('Reservado em', auto_now_add=True)
+    claimed_at = models.DateTimeField('Reservado em', auto_now_add=True, db_index=True)
     paid_at = models.DateTimeField('Data de Confirmação do Pagamento', null=True, blank=True)
 
     class Meta:

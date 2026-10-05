@@ -3,7 +3,7 @@ import json
 from datetime import datetime, time
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -182,20 +182,26 @@ class AuditDashboardView(StaffRequiredMixin, View):
                 ])
             return response
 
-        # KPIs Rápidos
-        total_logs = AuditLog.objects.count()
-        total_accounts = AuditLog.objects.filter(event_type=AuditLog.EventType.ACCOUNT_CREATED).count()
-        total_claims = AuditLog.objects.filter(
-            event_type__in=[AuditLog.EventType.CLAIM_ATTEMPT, AuditLog.EventType.CLAIM_SUCCESS]
-        ).count()
-        total_payments = AuditLog.objects.filter(
-            event_type__in=[
-                AuditLog.EventType.PAYMENT_ITEM,
-                AuditLog.EventType.PAYMENT_FRETE_INTER,
-                AuditLog.EventType.PAYMENT_TAXA,
-                AuditLog.EventType.PAYMENT_FRETE_NACIONAL,
-            ]
-        ).count()
+        # KPIs Rápidos (em uma única query agregada)
+        kpis = AuditLog.objects.aggregate(
+            total_logs=Count('id'),
+            total_accounts=Count('id', filter=Q(event_type=AuditLog.EventType.ACCOUNT_CREATED)),
+            total_claims=Count('id', filter=Q(
+                event_type__in=[AuditLog.EventType.CLAIM_ATTEMPT, AuditLog.EventType.CLAIM_SUCCESS]
+            )),
+            total_payments=Count('id', filter=Q(
+                event_type__in=[
+                    AuditLog.EventType.PAYMENT_ITEM,
+                    AuditLog.EventType.PAYMENT_FRETE_INTER,
+                    AuditLog.EventType.PAYMENT_TAXA,
+                    AuditLog.EventType.PAYMENT_FRETE_NACIONAL,
+                ]
+            )),
+        )
+        total_logs = kpis['total_logs']
+        total_accounts = kpis['total_accounts']
+        total_claims = kpis['total_claims']
+        total_payments = kpis['total_payments']
 
         # Paginação
         paginator = Paginator(qs, 40)

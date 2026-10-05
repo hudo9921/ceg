@@ -52,24 +52,29 @@ class CaixasDashboardView(StaffRequiredMixin, View):
                 Q(itens_individuais__nome__icontains=search_query)
             ).distinct()
 
-        # Métricas gerais
-        all_caixas = Caixa.objects.all()
-        total_caixas = all_caixas.count()
-        caixas_kr = all_caixas.filter(origem=Caixa.Origem.KR).count()
-        caixas_jp = all_caixas.filter(origem=Caixa.Origem.JP).count()
-
+        # Métricas gerais em 1 única query consolidada
         transito_statuses = [
             Caixa.Status.ENVIADA,
             Caixa.Status.NO_BRASIL,
             Caixa.Status.TRIBUTADA,
             Caixa.Status.LIBERADA,
         ]
-        caixas_em_transito = all_caixas.filter(status__in=transito_statuses).count()
-        caixas_entregues = all_caixas.filter(status__in=[Caixa.Status.ENTREGUE, Caixa.Status.FINALIZADA]).count()
+        metrics = Caixa.objects.aggregate(
+            total_caixas=Count('id'),
+            caixas_kr=Count('id', filter=Q(origem=Caixa.Origem.KR)),
+            caixas_jp=Count('id', filter=Q(origem=Caixa.Origem.JP)),
+            caixas_em_transito=Count('id', filter=Q(status__in=transito_statuses)),
+            caixas_entregues=Count('id', filter=Q(status__in=[Caixa.Status.ENTREGUE, Caixa.Status.FINALIZADA])),
+        )
+        total_caixas = metrics['total_caixas'] or 0
+        caixas_kr = metrics['caixas_kr'] or 0
+        caixas_jp = metrics['caixas_jp'] or 0
+        caixas_em_transito = metrics['caixas_em_transito'] or 0
+        caixas_entregues = metrics['caixas_entregues'] or 0
         total_cegs_vinculadas = CEG.objects.filter(caixa__isnull=False).count()
 
         # CEGs disponíveis sem caixa (para vincular pelo organizador)
-        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
+        cegs_sem_caixa = list(CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at'))
 
         status_step_map = {
             Caixa.Status.EM_CONSOLIDACAO: 1,
@@ -88,14 +93,16 @@ class CaixasDashboardView(StaffRequiredMixin, View):
         for c in caixas_qs:
             step = status_step_map.get(c.status, 1)
             pct = int((step / 6) * 100)
+            cegs_list = list(c.cegs.all())
+            itens_list = list(c.itens_individuais.all())
             item_info = {
                 'caixa': c,
                 'step': step,
                 'progress_pct': min(pct, 100),
-                'cegs': c.cegs.all(),
-                'cegs_count': c.cegs.count(),
-                'itens': c.itens_individuais.all(),
-                'itens_count': c.itens_individuais.count(),
+                'cegs': cegs_list,
+                'cegs_count': getattr(c, 'cegs_count', len(cegs_list)),
+                'itens': itens_list,
+                'itens_count': getattr(c, 'itens_count', len(itens_list)),
             }
             caixas_data.append(item_info)
             if c.status in (Caixa.Status.ENTREGUE, Caixa.Status.FINALIZADA):
@@ -148,10 +155,10 @@ class CaixaDetailView(View):
         )
 
         is_staff_user = request.user.is_authenticated and request.user.is_staff
-        cegs = caixa.cegs.select_related('era__group').prefetch_related('sets').all()
-        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at') if is_staff_user else CEG.objects.none()
-        itens_individuais = caixa.itens_individuais.select_related('comprador', 'tipo_item').all().order_by('-created_at')
-        itens_individuais_sem_caixa = ItemIndividual.objects.filter(caixa__isnull=True).select_related('comprador', 'tipo_item').order_by('-created_at') if is_staff_user else ItemIndividual.objects.none()
+        cegs = list(caixa.cegs.select_related('era__group').prefetch_related('sets').all())
+        cegs_sem_caixa = list(CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')) if is_staff_user else []
+        itens_individuais = list(caixa.itens_individuais.select_related('comprador', 'tipo_item').all().order_by('-created_at'))
+        itens_individuais_sem_caixa = list(ItemIndividual.objects.filter(caixa__isnull=True).select_related('comprador', 'tipo_item').order_by('-created_at')) if is_staff_user else []
 
         status_step_map = {
             Caixa.Status.EM_CONSOLIDACAO: 1,
@@ -165,12 +172,22 @@ class CaixaDetailView(View):
         }
         current_step = status_step_map.get(caixa.status, 1)
 
-        total_slots_cegs = 0
-        reserved_slots_cegs = 0
+        ceg_slot_counts = {
+            row['set__ceg_id']: row
+            for row in ItemSlot.objects.filter(
+                set__ceg__in=cegs,
+                set__is_active=True
+            ).values('set__ceg_id').annotate(
+                tot=Count('id'),
+                res=Count('id', filter=Q(status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]))
+            )
+        } if cegs else {}
+        total_slots_cegs = sum(r['tot'] for r in ceg_slot_counts.values())
+        reserved_slots_cegs = sum(r['res'] for r in ceg_slot_counts.values())
         for ceg in cegs:
-            for s in ceg.sets.all():
-                total_slots_cegs += s.slots.count()
-                reserved_slots_cegs += s.slots.filter(status__in=[ItemSlot.Status.RESERVED, ItemSlot.Status.PAID]).count()
+            row = ceg_slot_counts.get(ceg.id, {})
+            ceg.total_slots_count = row.get('tot', 0)
+            ceg.reserved_slots_count = row.get('res', 0)
 
         # Detalhamento de taxas e rateios por Tipo de Item dinâmico nesta Caixa
         all_tipos = list(TipoItem.objects.all())
@@ -180,9 +197,16 @@ class CaixaDetailView(View):
         # Pré-carregar todas as taxas configuradas nesta caixa
         rates_by_tipo = {r.tipo_item_id: r for r in caixa.item_rates.select_related('tipo_item').all()}
 
-        # Contagens reais de slots de CEGs e Itens Individuais nesta caixa agrupados por tipo
+        # Contagens reais de slots de CEGs e Itens Individuais nesta caixa agrupados por tipo em queries únicas
         ceg_slots_qs = ItemSlot.objects.filter(set__ceg__caixa=caixa)
         individual_items_qs = caixa.itens_individuais.all()
+
+        ceg_counts_by_tipo = dict(
+            ceg_slots_qs.values_list('item_definition__tipo_item_id').annotate(c=Count('id'))
+        )
+        ind_counts_by_tipo = dict(
+            individual_items_qs.values_list('tipo_item_id').annotate(c=Count('id'))
+        )
 
         import unicodedata
 
@@ -195,8 +219,8 @@ class CaixaDetailView(View):
 
         for tipo in all_tipos:
             rate = rates_by_tipo.get(tipo.id)
-            c_count = ceg_slots_qs.filter(item_definition__tipo_item=tipo).count()
-            i_count = individual_items_qs.filter(tipo_item=tipo).count()
+            c_count = ceg_counts_by_tipo.get(tipo.id, 0)
+            i_count = ind_counts_by_tipo.get(tipo.id, 0)
             tot = c_count + i_count
 
             # Garante formatação com ponto decimal (ex: "2.00") para inputs HTML5 number
@@ -386,7 +410,7 @@ class CaixaDetailView(View):
             'cegs': cegs,
             'cegs_sem_caixa': cegs_sem_caixa,
             'itens_individuais': itens_individuais if is_staff_user else participant_itens_individuais,
-            'itens_individuais_count': itens_individuais.count() if is_staff_user else len(participant_itens_individuais),
+            'itens_individuais_count': len(itens_individuais) if is_staff_user else len(participant_itens_individuais),
             'itens_individuais_sem_caixa': itens_individuais_sem_caixa,
             'itens_individuais_data': itens_individuais_data,
             'itens_individuais_json': json.dumps(itens_individuais_data),
@@ -399,7 +423,7 @@ class CaixaDetailView(View):
             'configured_rates': configured_rates,
             'configured_rates_count': len(configured_rates),
             'all_tipos_item': all_tipos,
-            'tipos_item_json': json.dumps(list(TipoItem.objects.values('id', 'nome'))),
+            'tipos_item_json': json.dumps([{'id': t.id, 'nome': t.nome} for t in all_tipos]),
             'all_caixas': Caixa.objects.all().order_by('-created_at') if is_staff_user else Caixa.objects.none(),
             'item_individual_statuses': ItemIndividual.Status.choices,
             'is_staff_user': is_staff_user,

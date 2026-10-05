@@ -826,6 +826,20 @@ class CEG(models.Model):
             return 0
         return min(counts)
 
+    def get_or_create_avulso_set(self):
+        """Obtém ou cria o set especial (set_number=0) reservado para itens avulsos desta CEG."""
+        avulso_set = self.sets.filter(is_avulso=True).first()
+        if not avulso_set:
+            avulso_set, _ = CEGSet.objects.get_or_create(
+                ceg=self,
+                set_number=0,
+                defaults={
+                    'is_active': True,
+                    'is_avulso': True,
+                    'notes': 'Itens Avulsos & Extras'
+                }
+            )
+        return avulso_set
 
 
 class CEGItemDefinition(models.Model):
@@ -878,6 +892,17 @@ class CEGItemDefinition(models.Model):
         default='',
         help_text='Subcategoria do Photocard (ex: Regulares, Pob, LD, VCE, Broadcast)'
     )
+    is_avulso = models.BooleanField(
+        'Item Avulso (Não replica em sets)',
+        default=False,
+        db_index=True,
+        help_text='Indica se o item possui estoque fixo/individual e não deve ser replicado em novos sets'
+    )
+    quantidade_avulsa = models.PositiveIntegerField(
+        'Quantidade Disponível',
+        default=1,
+        help_text='Quantidade física de unidades deste item avulso'
+    )
 
     class Meta:
         verbose_name = 'Definição de Item da CEG'
@@ -929,6 +954,12 @@ class CEGSet(models.Model):
     )
     set_number = models.PositiveIntegerField('Número do Set', default=1)
     is_active = models.BooleanField('Ativo para Reservas', default=True)
+    is_avulso = models.BooleanField(
+        'Set de Itens Avulsos',
+        default=False,
+        db_index=True,
+        help_text='Indica se este container armazena os itens avulsos da CEG'
+    )
     notes = models.CharField('Anotações do Set', max_length=255, blank=True)
 
     class Meta:
@@ -938,6 +969,8 @@ class CEGSet(models.Model):
         unique_together = ('ceg', 'set_number')
 
     def __str__(self):
+        if self.is_avulso:
+            return f"Itens Avulsos - {self.ceg.title}"
         return f"Set #{self.set_number} - {self.ceg.title}"
 
     @property
@@ -968,14 +1001,28 @@ class CEGSet(models.Model):
     def generate_slots(self):
         """Gera automaticamente todos os ItemSlots baseados nas definições de itens da CEG."""
         created_slots = []
-        for item_def in self.ceg.item_definitions.all():
-            slot, created = ItemSlot.objects.get_or_create(
-                set=self,
-                item_definition=item_def,
-                defaults={'price': item_def.default_price}
-            )
-            if created:
-                created_slots.append(slot)
+        if self.is_avulso:
+            for item_def in self.ceg.item_definitions.filter(is_avulso=True):
+                qtd = max(1, getattr(item_def, 'quantidade_avulsa', 1) or 1)
+                for u in range(1, qtd + 1):
+                    slot, created = ItemSlot.objects.get_or_create(
+                        set=self,
+                        item_definition=item_def,
+                        unit_number=u,
+                        defaults={'price': item_def.default_price}
+                    )
+                    if created:
+                        created_slots.append(slot)
+        else:
+            for item_def in self.ceg.item_definitions.filter(is_avulso=False):
+                slot, created = ItemSlot.objects.get_or_create(
+                    set=self,
+                    item_definition=item_def,
+                    unit_number=1,
+                    defaults={'price': item_def.default_price}
+                )
+                if created:
+                    created_slots.append(slot)
         return created_slots
 
 
@@ -1088,7 +1135,12 @@ class PacoteNacional(models.Model):
 
     @property
     def total_itens(self) -> int:
-        return self.slots.count() + self.itens_individuais.count()
+        if hasattr(self, '_total_itens_count'):
+            return self._total_itens_count
+        cache = getattr(self, '_prefetched_objects_cache', {})
+        slots_count = len(cache['slots']) if 'slots' in cache else self.slots.count()
+        itens_count = len(cache['itens_individuais']) if 'itens_individuais' in cache else self.itens_individuais.count()
+        return slots_count + itens_count
 
     def marcar_como_enviado(self, codigo_rastreio: str = '', transportadora: str = '', actor=None):
         """Marca o pacote como enviado, registra data_envio e envia notificação ao participante."""
@@ -1213,6 +1265,11 @@ class ItemSlot(models.Model):
         on_delete=models.CASCADE,
         related_name='slots',
         verbose_name='Item Definido'
+    )
+    unit_number = models.PositiveIntegerField(
+        'Número da Unidade',
+        default=1,
+        help_text='Identificador sequencial da unidade física do item neste set/avulso'
     )
     price = models.DecimalField('Preço do Slot (R$)', max_digits=10, decimal_places=2)
     status = models.CharField(
@@ -1343,10 +1400,21 @@ class ItemSlot(models.Model):
     class Meta:
         verbose_name = 'Slot de Item'
         verbose_name_plural = 'Slots de Itens'
-        ordering = ['set__set_number', 'item_definition__order_index', 'item_definition__name']
-        unique_together = ('set', 'item_definition')
+        ordering = ['set__set_number', 'item_definition__order_index', 'item_definition__name', 'unit_number']
+        unique_together = ('set', 'item_definition', 'unit_number')
+
+    @property
+    def is_avulso(self) -> bool:
+        if self.set and getattr(self.set, 'is_avulso', False):
+            return True
+        if self.item_definition and getattr(self.item_definition, 'is_avulso', False):
+            return True
+        return False
 
     def __str__(self):
+        if self.is_avulso:
+            unit_str = f" (#{self.unit_number})" if self.unit_number > 1 or (self.item_definition and getattr(self.item_definition, 'quantidade_avulsa', 1) > 1) else ""
+            return f"Avulso | {self.item_definition.name}{unit_str} ({self.get_status_display()})"
         return f"Set {self.set.set_number} | {self.item_definition.name} ({self.get_status_display()})"
 
     @property

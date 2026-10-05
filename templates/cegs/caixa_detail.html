@@ -175,7 +175,7 @@
                     </span>
                 </div>
                 <p class="text-xs text-slate-600">
-                    Ao alterar o status abaixo, <b>todas as {{ cegs.count }} CEG(s)</b> vinculadas a esta caixa terão seu status de envio atualizado automaticamente, e os compradores receberão notificação no painel de claims.
+                    Ao alterar o status abaixo, <b>todas as {{ cegs|length }} CEG(s)</b> vinculadas a esta caixa terão seu status de envio atualizado automaticamente, e os compradores receberão notificação no painel de claims.
                 </p>
 
                 <form action="{% url 'caixa_update_status' slug=caixa.slug %}" method="post" class="flex flex-wrap items-center gap-3 pt-1">
@@ -484,7 +484,7 @@
                 :class="currentTab === 'cegs' ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-blue-700 font-bold'"
                 class="px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer">
             <span>📦</span>
-            <span>CEGs Vinculadas ({{ cegs.count }})</span>
+            <span>CEGs Vinculadas ({{ cegs|length }})</span>
         </button>
         <button type="button" @click="currentTab = 'itens'"
                 :class="currentTab === 'itens' ? 'bg-rose-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-rose-700 font-bold'"
@@ -504,7 +504,7 @@
                         CEGs Consolidadas nesta Caixa
                     </h2>
                     <span class="bg-blue-100 text-blue-800 text-xs font-black px-2.5 py-0.5 rounded-full">
-                        {{ cegs.count }} CEG(s)
+                        {{ cegs|length }} CEG(s)
                     </span>
                 </div>
                 <p class="text-xs text-slate-500">
@@ -588,7 +588,7 @@
                                 </td>
                                 <td class="py-3 px-3 text-center">
                                     <div class="font-bold text-slate-800">
-                                        {{ ceg.sets.count }} set(s)
+                                        {{ ceg.sets.all|length }} set(s)
                                     </div>
                                     <div class="text-[10px] text-slate-400">
                                         {{ ceg.reserved_slots_count }}/{{ ceg.total_slots_count }} slots
@@ -655,7 +655,7 @@
                     {% if itens_individuais_sem_caixa %}
                         <button type="button" @click="linkItemModalOpen = true"
                                 class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs cursor-pointer">
-                            <span>🔗 Vincular Itens Avulsos ({{ itens_individuais_sem_caixa.count }})</span>
+                            <span>🔗 Vincular Itens Avulsos ({{ itens_individuais_sem_caixa|length }})</span>
                         </button>
                     {% endif %}
                     <a href="{% url 'creations_hub' %}?category=mercari&caixa_id={{ caixa.id }}&open=item_individual"
@@ -854,7 +854,7 @@
                         {% if itens_individuais_sem_caixa %}
                             <button type="button" @click="linkItemModalOpen = true"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-sm cursor-pointer">
-                                <span>🔗 Vincular Itens Avulsos ({{ itens_individuais_sem_caixa.count }})</span>
+                                <span>🔗 Vincular Itens Avulsos ({{ itens_individuais_sem_caixa|length }})</span>
                             </button>
                         {% endif %}
                         <a href="{% url 'creations_hub' %}?category=mercari&caixa_id={{ caixa.id }}&open=item_individual"
