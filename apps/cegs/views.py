@@ -35,21 +35,21 @@ class HomeView(View):
         ).update(status=CEG.Status.OPEN)
 
         # CEGs abertas que passaram do encerramento SÓ passam para CLOSED se NÃO houverem mais vagas disponíveis
-        expired_open_cegs = list(
-            CEG.objects.filter(
-                status=CEG.Status.OPEN,
-                closes_at__lte=now
-            )
+        expired_open_cegs = CEG.objects.filter(
+            status=CEG.Status.OPEN,
+            closes_at__lte=now
         )
-        for c in expired_open_cegs:
-            has_available_slots = ItemSlot.objects.filter(
-                set__ceg=c,
-                set__is_active=True,
-                status=ItemSlot.Status.AVAILABLE
-            ).exists()
-            if not has_available_slots:
-                c.status = CEG.Status.CLOSED
-                c.save(update_fields=['status'])
+        if expired_open_cegs.exists():
+            cegs_with_available_slots = set(
+                ItemSlot.objects.filter(
+                    set__ceg__in=expired_open_cegs,
+                    set__is_active=True,
+                    status=ItemSlot.Status.AVAILABLE
+                ).values_list('set__ceg_id', flat=True).distinct()
+            )
+            expired_open_cegs.exclude(
+                id__in=cegs_with_available_slots
+            ).update(status=CEG.Status.CLOSED)
 
         # 2. Busca CEGs abertas
         raw_open_cegs = list(
@@ -187,6 +187,57 @@ class CEGDetailView(View):
                 slot.set = s
                 slot.set.ceg = ceg
 
+        # Separa sets regulares (Set 1, Set 2, Set 3...) do set especial de itens avulsos (set_number=0)
+        regular_sets = [s for s in active_sets if not s.is_avulso]
+        avulso_set = next((s for s in active_sets if s.is_avulso), None)
+        avulso_slots = list(avulso_set.slots.all()) if avulso_set else []
+
+        # Definições de itens avulsos da CEG
+        avulso_definitions = list(
+            ceg.item_definitions.filter(is_avulso=True)
+            .select_related('tipo_item')
+            .order_by('order_index', 'name')
+        )
+        has_avulsos = bool(avulso_slots or avulso_definitions)
+
+        # Mapa estruturado de itens avulsos com seus slots para Alpine.js
+        avulso_items_data = []
+        for idef in avulso_definitions:
+            matching_slots = [s for s in avulso_slots if s.item_definition_id == idef.id]
+            slots_data = []
+            for s in matching_slots:
+                slots_data.append({
+                    'id': s.id,
+                    'unit_number': s.unit_number,
+                    'price': float(s.price),
+                    'status': s.status,
+                    'status_display': s.get_status_display(),
+                    'is_item_paid': s.is_item_paid,
+                    'is_frete_inter_paid': s.is_frete_inter_paid,
+                    'is_taxa_aduaneira_paid': s.is_taxa_aduaneira_paid,
+                    'is_frete_nacional_paid': s.is_frete_nacional_paid,
+                    'frete_inter': float(s.frete_inter) if s.frete_inter is not None else None,
+                    'taxa_aduaneira': float(s.taxa_aduaneira) if s.taxa_aduaneira is not None else None,
+                    'claimed_by_id': s.claimed_by_id,
+                    'claimed_by_name': s.claimed_by.display_name if s.claimed_by else '',
+                    'claimed_by_whatsapp': s.claimed_by.whatsapp if s.claimed_by else '',
+                    'claimed_by_social': s.claimed_by.social_handle if s.claimed_by else '',
+                })
+            avulso_items_data.append({
+                'id': idef.id,
+                'name': idef.name,
+                'member_name': idef.member_name or '',
+                'tipo_item_id': idef.tipo_item_id,
+                'tipo_item_nome': idef.tipo_item_nome,
+                'item_type': idef.item_type,
+                'default_price': float(idef.default_price),
+                'image_url': idef.image_url or '',
+                'quantidade_avulsa': idef.quantidade_avulsa,
+                'slots': slots_data,
+                'slots_count': len(slots_data),
+                'available_count': len([s for s in slots_data if s['status'] == ItemSlot.Status.AVAILABLE]),
+            })
+
         # Se o usuário for administrador/staff, carrega lista de participantes para seleção rápida e caixas
         all_participants = []
         all_caixas = []
@@ -309,7 +360,13 @@ class CEGDetailView(View):
 
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
-            'sets': active_sets,
+            'sets': regular_sets,
+            'avulso_set': avulso_set,
+            'avulso_slots': avulso_slots,
+            'avulso_definitions': avulso_definitions,
+            'has_avulsos': has_avulsos,
+            'avulso_items_data': avulso_items_data,
+            'avulso_items_json': json.dumps(avulso_items_data),
             'countdown_seconds': ceg.countdown_seconds,
             'is_standby': ceg.is_standby,
             'is_open_for_claims': ceg.is_open_for_claims,
@@ -1569,3 +1626,313 @@ class DeleteCEGView(StaffRequiredMixin, View):
 
         messages.success(request, success_msg)
         return redirect('home')
+
+
+class CreateAvulsoItemView(StaffRequiredMixin, View):
+    """
+    Permite à admin adicionar um novo item avulso diretamente na página da CEG:
+    - Nome do item, tipo de item (dropdown compartilhado), categoria, preço, quantidade, integrante (opcional)
+    - Foto do item (Upload de arquivo, base64 ou URL)
+    - Gera os ItemSlots no container de avulsos da CEG (set_number=0)
+    - Pré-reserva opcional de participante
+    """
+    def post(self, request, slug):
+        ceg = get_object_or_404(CEG, slug=slug)
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
+
+        name = request.POST.get('name', '').strip()
+        member_name = (request.POST.get('member_name') or request.POST.get('member') or '').strip()
+        item_type = request.POST.get('item_type', CEGItemDefinition.ItemType.OTHER)
+        tipo_item_id = request.POST.get('tipo_item_id')
+        price_str = (request.POST.get('default_price') or request.POST.get('price') or '0.00').replace(',', '.').strip()
+        quantidade_str = str(request.POST.get('quantidade') or request.POST.get('quantity') or '1').strip()
+        participant_id = request.POST.get('participant_id', '').strip()
+
+        image_file = request.FILES.get('image_file')
+        image_base64 = request.POST.get('image_base64', '').strip()
+        image_url_input = request.POST.get('image_url', '').strip()
+
+        if not name:
+            msg = 'O nome do item avulso é obrigatório.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('ceg_detail', slug=slug)
+
+        try:
+            price = Decimal(price_str)
+        except (InvalidOperation, ValueError):
+            price = Decimal('0.00')
+
+        try:
+            quantidade = max(1, int(quantidade_str))
+        except (ValueError, TypeError):
+            quantidade = 1
+
+        try:
+            image_url = process_image_upload(
+                file_obj=image_file,
+                base64_str=image_base64,
+                folder='cegs/items',
+                fallback_url=image_url_input
+            )
+        except ValueError as e:
+            msg = str(e)
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('ceg_detail', slug=slug)
+
+        tipo_item = None
+        if tipo_item_id:
+            try:
+                tipo_item = TipoItem.objects.filter(id=int(tipo_item_id)).first()
+            except (ValueError, TypeError):
+                pass
+
+        try:
+            with transaction.atomic():
+                avulso_set = ceg.get_or_create_avulso_set()
+                order_index = ceg.item_definitions.count() + 1
+
+                item_def = CEGItemDefinition.objects.create(
+                    ceg=ceg,
+                    name=name,
+                    member_name=member_name,
+                    item_type=item_type,
+                    tipo_item=tipo_item,
+                    default_price=price,
+                    image_url=image_url,
+                    is_avulso=True,
+                    quantidade_avulsa=quantidade,
+                    order_index=order_index
+                )
+
+                created_slots = []
+                for u in range(1, quantidade + 1):
+                    slot = ItemSlot.objects.create(
+                        set=avulso_set,
+                        item_definition=item_def,
+                        unit_number=u,
+                        price=price
+                    )
+                    created_slots.append(slot)
+
+                # Se houver pré-reserva selecionada, vincula ao primeiro slot
+                if participant_id and created_slots:
+                    try:
+                        participant = Participant.objects.get(id=int(participant_id))
+                        first_slot = created_slots[0]
+                        now = timezone.now()
+                        first_slot.claimed_by = participant
+                        first_slot.status = ItemSlot.Status.RESERVED
+                        first_slot.claimed_at = now
+                        first_slot.save(update_fields=['claimed_by', 'status', 'claimed_at'])
+
+                        Claim.objects.create(
+                            slot=first_slot,
+                            participant=participant,
+                            status=Claim.Status.PENDING,
+                            total_price=first_slot.price,
+                            participant_notes="Pré-reservado pela administração ao cadastrar item avulso",
+                            claimed_at=now
+                        )
+                        try:
+                            from .models import AuditLog
+                            AuditLog.objects.create(
+                                event_type=AuditLog.EventType.SLOT_ASSIGNED,
+                                actor=request.user,
+                                actor_name=request.user.get_full_name() or request.user.username,
+                                participant=participant,
+                                participant_name=participant.name,
+                                participant_phone=participant.whatsapp,
+                                ceg=ceg,
+                                slot=first_slot,
+                                action_label=f"Pré-reserva de Item Avulso #{item_def.name} para {participant.display_name}"
+                            )
+                        except Exception:
+                            pass
+                    except (Participant.DoesNotExist, ValueError):
+                        pass
+
+            success_msg = f"🎁 Item Avulso '{item_def.name}' ({quantidade} unidade(s)) adicionado com sucesso!"
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': success_msg})
+            messages.success(request, success_msg)
+            return redirect('ceg_detail', slug=slug)
+
+        except Exception as e:
+            logger.error(f"Erro ao criar item avulso: {e}")
+            err_msg = f"Erro ao adicionar item avulso: {e}"
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': err_msg}, status=500)
+            messages.error(request, err_msg)
+            return redirect('ceg_detail', slug=slug)
+
+
+class UpdateAvulsoItemView(StaffRequiredMixin, View):
+    """
+    Permite à admin editar um item avulso existente:
+    - Nome, membro, tipo_item, preço padrão, imagem
+    - Quantidade de unidades (expande adicionando slots ou contrai removendo apenas slots vagos)
+    """
+    def post(self, request, slug, item_def_id):
+        ceg = get_object_or_404(CEG, slug=slug)
+        item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
+
+        name = request.POST.get('name', '').strip()
+        member_name = (request.POST.get('member_name') or request.POST.get('member') or '').strip()
+        item_type = request.POST.get('item_type', item_def.item_type)
+        tipo_item_id = request.POST.get('tipo_item_id')
+        price_str = (request.POST.get('default_price') or request.POST.get('price') or '').replace(',', '.').strip()
+        quantidade_str = str(request.POST.get('quantidade') or request.POST.get('quantity') or '').strip()
+
+        image_file = request.FILES.get('image_file')
+        image_base64 = request.POST.get('image_base64', '').strip()
+        image_url_input = request.POST.get('image_url', '').strip()
+
+        if name:
+            item_def.name = name
+        item_def.member_name = member_name
+
+        if tipo_item_id:
+            try:
+                item_def.tipo_item = TipoItem.objects.filter(id=int(tipo_item_id)).first()
+            except (ValueError, TypeError):
+                pass
+        elif tipo_item_id == '':
+            item_def.tipo_item = None
+
+        if item_type in CEGItemDefinition.ItemType.values:
+            item_def.item_type = item_type
+
+        price = None
+        if price_str:
+            try:
+                price = Decimal(price_str)
+                item_def.default_price = price
+            except (InvalidOperation, ValueError):
+                pass
+
+        if image_file or image_base64:
+            try:
+                item_def.image_url = process_image_upload(
+                    file_obj=image_file,
+                    base64_str=image_base64,
+                    folder='cegs/items',
+                    fallback_url=''
+                )
+            except ValueError as e:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': str(e)}, status=400)
+                messages.error(request, str(e))
+                return redirect('ceg_detail', slug=slug)
+        elif image_url_input:
+            item_def.image_url = image_url_input
+
+        try:
+            with transaction.atomic():
+                avulso_set = ceg.get_or_create_avulso_set()
+                existing_slots = list(ItemSlot.objects.filter(set=avulso_set, item_definition=item_def).order_by('unit_number'))
+                current_count = len(existing_slots)
+
+                if quantidade_str:
+                    try:
+                        new_quantidade = max(1, int(quantidade_str))
+                    except (ValueError, TypeError):
+                        new_quantidade = current_count
+
+                    if new_quantidade > current_count:
+                        # Gera novas unidades
+                        for u in range(current_count + 1, new_quantidade + 1):
+                            ItemSlot.objects.create(
+                                set=avulso_set,
+                                item_definition=item_def,
+                                unit_number=u,
+                                price=item_def.default_price
+                            )
+                        item_def.quantidade_avulsa = new_quantidade
+                    elif new_quantidade < current_count:
+                        # Verifica se as unidades a serem removidas estão disponíveis
+                        slots_to_remove = [s for s in existing_slots if s.unit_number > new_quantidade]
+                        blocked = [s for s in slots_to_remove if s.status != ItemSlot.Status.AVAILABLE]
+                        if blocked:
+                            err_msg = f"Não é possível reduzir para {new_quantidade} unidade(s) porque a(s) unidade(s) #{', #'.join(str(s.unit_number) for s in blocked)} já possuem reserva ativa."
+                            if is_ajax:
+                                return JsonResponse({'success': False, 'message': err_msg}, status=400)
+                            messages.error(request, err_msg)
+                            return redirect('ceg_detail', slug=slug)
+                        # Deleta com segurança as unidades excedentes
+                        ItemSlot.objects.filter(id__in=[s.id for s in slots_to_remove]).delete()
+                        item_def.quantidade_avulsa = new_quantidade
+
+                # Se o preço mudou, atualiza nos slots disponíveis
+                if price is not None:
+                    ItemSlot.objects.filter(
+                        set=avulso_set,
+                        item_definition=item_def,
+                        status=ItemSlot.Status.AVAILABLE
+                    ).update(price=price)
+
+                item_def.save()
+
+            success_msg = f"🎁 Item Avulso '{item_def.name}' atualizado com sucesso!"
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': success_msg})
+            messages.success(request, success_msg)
+            return redirect('ceg_detail', slug=slug)
+
+        except Exception as e:
+            logger.error(f"Erro ao atualizar item avulso: {e}")
+            err_msg = f"Erro ao atualizar item avulso: {e}"
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': err_msg}, status=500)
+            messages.error(request, err_msg)
+            return redirect('ceg_detail', slug=slug)
+
+
+class DeleteAvulsoItemView(StaffRequiredMixin, View):
+    """
+    Permite à admin excluir um item avulso de uma CEG:
+    - Impede exclusão se houver pagamentos confirmados (is_item_paid=True)
+    - Deleta com segurança slots e a definição do item
+    """
+    def post(self, request, slug, item_def_id):
+        ceg = get_object_or_404(CEG, slug=slug)
+        item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
+
+        slots = ItemSlot.objects.filter(item_definition=item_def)
+        paid_slots = slots.filter(Q(is_item_paid=True) | Q(status=ItemSlot.Status.PAID))
+        if paid_slots.exists():
+            err_msg = f"Não é possível excluir o item '{item_def.name}' pois existem {paid_slots.count()} unidade(s) com pagamento já confirmado. Cancele/estorne os pagamentos antes."
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': err_msg}, status=400)
+            messages.error(request, err_msg)
+            return redirect('ceg_detail', slug=slug)
+
+        try:
+            with transaction.atomic():
+                item_name = item_def.name
+                slots.delete()
+                item_def.delete()
+
+                # Se o set avulso ficou vazio, remove-o
+                avulso_set = ceg.sets.filter(is_avulso=True).first()
+                if avulso_set and avulso_set.slots.count() == 0:
+                    avulso_set.delete()
+
+            success_msg = f"🗑️ Item Avulso '{item_name}' foi excluído com sucesso."
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': success_msg})
+            messages.success(request, success_msg)
+            return redirect('ceg_detail', slug=slug)
+
+        except Exception as e:
+            logger.error(f"Erro ao excluir item avulso: {e}")
+            err_msg = f"Erro ao excluir item avulso: {e}"
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': err_msg}, status=500)
+            messages.error(request, err_msg)
+            return redirect('ceg_detail', slug=slug)

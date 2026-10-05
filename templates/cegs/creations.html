@@ -399,10 +399,10 @@
                                 {% endif %}
                             </td>
                             <td class="py-3 px-3 font-semibold text-slate-700">
-                                {{ c.sets.count }} set(s)
+                                {{ c.sets.all|length }} set(s)
                             </td>
                             <td class="py-3 px-3 font-semibold text-slate-700">
-                                {{ c.item_definitions.count }} itens
+                                {{ c.item_definitions.all|length }} itens
                             </td>
                             <td class="py-3 px-3 text-slate-500">
                                 {{ c.opens_at|date:"d/m/Y H:i"|default:"-" }}
@@ -1800,7 +1800,7 @@
                         <option value="">-- Escolha uma CEG --</option>
                         {% for c in cegs %}
                             <option value="{{ c.id }}">
-                                {{ c.title }} ({{ c.era.group.name }}) — {{ c.sets.count }} set(s) atuais
+                                {{ c.title }} ({{ c.era.group.name }}) — {{ c.sets.all|length }} set(s) atuais
                             </option>
                         {% endfor %}
                     </select>

@@ -15,7 +15,335 @@
          claimLogsBySlot: JSON.parse('{{ claim_logs_by_slot_json|default:'{}'|escapejs }}'),
          expandedSlotLogs: {},
          activeSetTab: 'ALL',
+         viewMode: 'ALL',
          onlyAvailableSlots: false,
+         avulsoItems: JSON.parse('{{ avulso_items_json|default:'[]'|escapejs }}'),
+         findAvulsoItem(defId) {
+             return this.avulsoItems.find(item => item.id === defId) || null;
+         },
+         // --- Gestão de Itens Avulsos (Admin) ---
+         addAvulsoModalOpen: false,
+         addAvulsoLoading: false,
+         addAvulsoError: '',
+         addAvulsoName: '',
+         addAvulsoMember: '',
+         addAvulsoItemType: 'OUTROS',
+         addAvulsoTipoItemId: '',
+         addAvulsoPrice: '',
+         addAvulsoQuantity: 1,
+         addAvulsoPreReserveParticipantId: '',
+         addAvulsoPhotoPreview: '',
+         addAvulsoPhotoBase64: '',
+         addAvulsoPhotoUrl: '',
+         addAvulsoPhotoError: '',
+         addAvulsoPhotoDragOver: false,
+
+         editAvulsoModalOpen: false,
+         editAvulsoLoading: false,
+         editAvulsoError: '',
+         editAvulsoItem: null,
+         editAvulsoName: '',
+         editAvulsoMember: '',
+         editAvulsoItemType: 'OUTROS',
+         editAvulsoTipoItemId: '',
+         editAvulsoPrice: '',
+         editAvulsoQuantity: 1,
+         editAvulsoPhotoPreview: '',
+         editAvulsoPhotoBase64: '',
+         editAvulsoPhotoUrl: '',
+         editAvulsoPhotoError: '',
+         editAvulsoPhotoDragOver: false,
+         editAvulsoRemovePhoto: false,
+
+         deleteAvulsoModalOpen: false,
+         deleteAvulsoLoading: false,
+         deleteAvulsoError: '',
+         deleteAvulsoItem: null,
+
+         openAddAvulsoModal() {
+             this.addAvulsoError = '';
+             this.addAvulsoName = '';
+             this.addAvulsoMember = '';
+             this.addAvulsoItemType = this.itemTypeChoices && this.itemTypeChoices.length > 0 ? this.itemTypeChoices[0].code : 'OUTROS';
+             this.addAvulsoTipoItemId = this.tipoItemList && this.tipoItemList.length > 0 ? String(this.tipoItemList[0].id) : '';
+             this.addAvulsoPrice = '';
+             this.addAvulsoQuantity = 1;
+             this.addAvulsoPreReserveParticipantId = '';
+             this.addAvulsoPhotoPreview = '';
+             this.addAvulsoPhotoBase64 = '';
+             this.addAvulsoPhotoUrl = '';
+             this.addAvulsoPhotoError = '';
+             this.addAvulsoPhotoDragOver = false;
+             const input = document.getElementById('add_avulso_file_input');
+             if (input) input.value = '';
+             this.addAvulsoModalOpen = true;
+         },
+         closeAddAvulsoModal() {
+             this.addAvulsoModalOpen = false;
+             this.addAvulsoError = '';
+         },
+         handleAddAvulsoPhoto(file) {
+             if (!file || file.type.indexOf('image') === -1) return;
+             this.addAvulsoPhotoError = '';
+             const MAX_MB = 5;
+             if (file.size > MAX_MB * 1024 * 1024) {
+                 const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                 this.addAvulsoPhotoError = `O arquivo possui ${sizeMb} MB. Limite máximo: ${MAX_MB} MB.`;
+                 const fileInput = document.getElementById('add_avulso_file_input');
+                 if (fileInput) fileInput.value = '';
+                 return;
+             }
+             let fileAttached = false;
+             try {
+                 const dt = new DataTransfer();
+                 dt.items.add(file);
+                 const fileInput = document.getElementById('add_avulso_file_input');
+                 if (fileInput) {
+                     fileInput.files = dt.files;
+                     fileAttached = true;
+                 }
+             } catch(e) {
+                 fileAttached = false;
+             }
+             const reader = new FileReader();
+             reader.onload = (e) => {
+                 this.addAvulsoPhotoPreview = e.target.result;
+                 this.addAvulsoPhotoBase64 = fileAttached ? '' : e.target.result;
+             };
+             reader.readAsDataURL(file);
+         },
+         clearAddAvulsoPhoto() {
+             this.addAvulsoPhotoPreview = '';
+             this.addAvulsoPhotoBase64 = '';
+             this.addAvulsoPhotoUrl = '';
+             this.addAvulsoPhotoError = '';
+             const input = document.getElementById('add_avulso_file_input');
+             if (input) input.value = '';
+         },
+         async submitAddAvulso() {
+             if (this.addAvulsoLoading) return;
+             if (!this.addAvulsoName.trim()) {
+                 this.addAvulsoError = 'Por favor, informe o nome do item avulso.';
+                 return;
+             }
+             if (!this.addAvulsoPrice || parseFloat(this.addAvulsoPrice) <= 0) {
+                 this.addAvulsoError = 'Por favor, informe um preço válido para o item.';
+                 return;
+             }
+             const qty = parseInt(this.addAvulsoQuantity, 10);
+             if (isNaN(qty) || qty < 1) {
+                 this.addAvulsoError = 'A quantidade deve ser de no mínimo 1 unidade.';
+                 return;
+             }
+
+             this.addAvulsoLoading = true;
+             this.addAvulsoError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('name', this.addAvulsoName.trim());
+                 formData.append('member', this.addAvulsoMember.trim());
+                 formData.append('item_type', this.addAvulsoItemType);
+                 if (this.addAvulsoTipoItemId) formData.append('tipo_item_id', this.addAvulsoTipoItemId);
+                 formData.append('price', this.addAvulsoPrice);
+                 formData.append('quantity', qty);
+                 if (this.addAvulsoPreReserveParticipantId) {
+                     formData.append('participant_id', this.addAvulsoPreReserveParticipantId);
+                 }
+
+                 const fileInput = document.getElementById('add_avulso_file_input');
+                 if (fileInput && fileInput.files && fileInput.files[0]) {
+                     formData.append('image_file', fileInput.files[0]);
+                 } else if (this.addAvulsoPhotoBase64) {
+                     formData.append('image_base64', this.addAvulsoPhotoBase64);
+                 } else if (this.addAvulsoPhotoUrl) {
+                     formData.append('image_url', this.addAvulsoPhotoUrl);
+                 }
+
+                 const res = await fetch('/ceg/{{ ceg.slug }}/avulsos/adicionar/', {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     this.addAvulsoError = data.message || 'Erro ao adicionar item avulso.';
+                 }
+             } catch(e) {
+                 this.addAvulsoError = 'Erro de conexão: ' + e;
+             } finally {
+                 this.addAvulsoLoading = false;
+             }
+         },
+
+         openEditAvulsoModal(item) {
+             if (!item) return;
+             this.editAvulsoItem = item;
+             this.editAvulsoError = '';
+             this.editAvulsoName = item.name || '';
+             this.editAvulsoMember = item.member_name || '';
+             this.editAvulsoItemType = item.item_type || 'OUTROS';
+             this.editAvulsoTipoItemId = item.tipo_item_id ? String(item.tipo_item_id) : '';
+             this.editAvulsoPrice = String(item.default_price || '');
+             this.editAvulsoQuantity = item.quantidade_avulsa || item.slots_count || 1;
+             this.editAvulsoPhotoPreview = item.image_url || '';
+             this.editAvulsoPhotoBase64 = '';
+             this.editAvulsoPhotoUrl = item.image_url || '';
+             this.editAvulsoPhotoError = '';
+             this.editAvulsoPhotoDragOver = false;
+             this.editAvulsoRemovePhoto = false;
+             const input = document.getElementById('edit_avulso_file_input');
+             if (input) input.value = '';
+             this.editAvulsoModalOpen = true;
+         },
+         closeEditAvulsoModal() {
+             this.editAvulsoModalOpen = false;
+             this.editAvulsoItem = null;
+             this.editAvulsoError = '';
+         },
+         handleEditAvulsoPhoto(file) {
+             if (!file || file.type.indexOf('image') === -1) return;
+             this.editAvulsoPhotoError = '';
+             const MAX_MB = 5;
+             if (file.size > MAX_MB * 1024 * 1024) {
+                 const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                 this.editAvulsoPhotoError = `O arquivo possui ${sizeMb} MB. Limite máximo: ${MAX_MB} MB.`;
+                 const fileInput = document.getElementById('edit_avulso_file_input');
+                 if (fileInput) fileInput.value = '';
+                 return;
+             }
+             this.editAvulsoRemovePhoto = false;
+             let fileAttached = false;
+             try {
+                 const dt = new DataTransfer();
+                 dt.items.add(file);
+                 const fileInput = document.getElementById('edit_avulso_file_input');
+                 if (fileInput) {
+                     fileInput.files = dt.files;
+                     fileAttached = true;
+                 }
+             } catch(e) {
+                 fileAttached = false;
+             }
+             const reader = new FileReader();
+             reader.onload = (e) => {
+                 this.editAvulsoPhotoPreview = e.target.result;
+                 this.editAvulsoPhotoBase64 = fileAttached ? '' : e.target.result;
+             };
+             reader.readAsDataURL(file);
+         },
+         clearEditAvulsoPhoto() {
+             this.editAvulsoPhotoPreview = '';
+             this.editAvulsoPhotoBase64 = '';
+             this.editAvulsoPhotoUrl = '';
+             this.editAvulsoRemovePhoto = true;
+             const input = document.getElementById('edit_avulso_file_input');
+             if (input) input.value = '';
+         },
+         async submitEditAvulso() {
+             if (this.editAvulsoLoading || !this.editAvulsoItem) return;
+             if (!this.editAvulsoName.trim()) {
+                 this.editAvulsoError = 'Por favor, informe o nome do item avulso.';
+                 return;
+             }
+             if (!this.editAvulsoPrice || parseFloat(this.editAvulsoPrice) <= 0) {
+                 this.editAvulsoError = 'Por favor, informe um preço válido.';
+                 return;
+             }
+             const qty = parseInt(this.editAvulsoQuantity, 10);
+             if (isNaN(qty) || qty < 1) {
+                 this.editAvulsoError = 'A quantidade deve ser de no mínimo 1 unidade.';
+                 return;
+             }
+
+             this.editAvulsoLoading = true;
+             this.editAvulsoError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('name', this.editAvulsoName.trim());
+                 formData.append('member', this.editAvulsoMember.trim());
+                 formData.append('item_type', this.editAvulsoItemType);
+                 if (this.editAvulsoTipoItemId) formData.append('tipo_item_id', this.editAvulsoTipoItemId);
+                 formData.append('price', this.editAvulsoPrice);
+                 formData.append('quantity', qty);
+                 if (this.editAvulsoRemovePhoto) {
+                     formData.append('remove_image', 'true');
+                 }
+
+                 const fileInput = document.getElementById('edit_avulso_file_input');
+                 if (fileInput && fileInput.files && fileInput.files[0]) {
+                     formData.append('image_file', fileInput.files[0]);
+                 } else if (this.editAvulsoPhotoBase64) {
+                     formData.append('image_base64', this.editAvulsoPhotoBase64);
+                 } else if (this.editAvulsoPhotoUrl && !this.editAvulsoRemovePhoto) {
+                     formData.append('image_url', this.editAvulsoPhotoUrl);
+                 }
+
+                 const res = await fetch(`/ceg/{{ ceg.slug }}/avulsos/${this.editAvulsoItem.id}/editar/`, {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     this.editAvulsoError = data.message || 'Erro ao atualizar item avulso.';
+                 }
+             } catch(e) {
+                 this.editAvulsoError = 'Erro de conexão: ' + e;
+             } finally {
+                 this.editAvulsoLoading = false;
+             }
+         },
+
+         openDeleteAvulsoModal(item) {
+             if (!item) return;
+             this.deleteAvulsoItem = item;
+             this.deleteAvulsoError = '';
+             this.deleteAvulsoLoading = false;
+             this.deleteAvulsoModalOpen = true;
+         },
+         closeDeleteAvulsoModal() {
+             this.deleteAvulsoModalOpen = false;
+             this.deleteAvulsoItem = null;
+             this.deleteAvulsoError = '';
+         },
+         async submitDeleteAvulso() {
+             if (this.deleteAvulsoLoading || !this.deleteAvulsoItem) return;
+             this.deleteAvulsoLoading = true;
+             this.deleteAvulsoError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch(`/ceg/{{ ceg.slug }}/avulsos/${this.deleteAvulsoItem.id}/excluir/`, {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     }
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     this.deleteAvulsoError = data.message || 'Erro ao excluir item avulso.';
+                 }
+             } catch(e) {
+                 this.deleteAvulsoError = 'Erro de conexão: ' + e;
+             } finally {
+                 this.deleteAvulsoLoading = false;
+             }
+         },
          slotLogsModalOpen: false,
          activeLogSlotId: null,
          activeLogSlotName: '',
@@ -1009,16 +1337,25 @@
     }
 }" x-init="
          window.addEventListener('paste', (e) => {
-             if (!editCegModalOpen) return;
              const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
              if (!items) return;
              for (let i = 0; i < items.length; i++) {
                  const it = items[i];
                  if (it.kind === 'file' && it.type.indexOf('image') !== -1) {
                      const blob = it.getAsFile();
-                     handleBannerFile(blob);
-                     e.preventDefault();
-                     break;
+                     if (editCegModalOpen) {
+                         handleBannerFile(blob);
+                         e.preventDefault();
+                         break;
+                     } else if (addAvulsoModalOpen) {
+                         handleAddAvulsoPhoto(blob);
+                         e.preventDefault();
+                         break;
+                     } else if (editAvulsoModalOpen) {
+                         handleEditAvulsoPhoto(blob);
+                         e.preventDefault();
+                         break;
+                     }
                  }
              }
          });
@@ -1454,7 +1791,7 @@
                     </div>
                     <div class="bg-white/5 rounded-xl p-3 border border-white/10">
                         <span class="text-[10px] uppercase font-bold text-purple-300 block">Itens Disponíveis</span>
-                        <span class="text-lg font-black text-white">{{ ceg.item_definitions.count }}</span>
+                        <span class="text-lg font-black text-white">{{ ceg.item_definitions.all|length }}</span>
                     </div>
                     <div class="bg-white/5 rounded-xl p-3 border border-white/10">
                         <span class="text-[10px] uppercase font-bold text-purple-300 block">Prazo Pagto Item</span>
@@ -1669,7 +2006,7 @@
                         <div class="flex items-center justify-between text-[11px]">
                             <span class="text-slate-500 dark:text-slate-400 font-bold">Demanda:</span>
                             <span class="font-black text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/80 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/60">
-                                {{ item_def.interest_votes.count }} voto(s)
+                                {{ item_def.interest_votes.all|length }} voto(s)
                             </span>
                         </div>
 
@@ -1697,7 +2034,7 @@
                                 <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black
                                              bg-purple-100 text-purple-800 border border-purple-200
                                              dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50 shrink-0">
-                                    {{ item_def.interest_votes.count }}
+                                    {{ item_def.interest_votes.all|length }}
                                 </span>
                             </span>
                             <span class="text-xs transition-transform duration-200 font-bold shrink-0 ml-1" :class="isVotesAccordionOpen({{ item_def.id }}) ? 'rotate-180 text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500'">
@@ -1749,7 +2086,7 @@
                                         <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shrink-0">
                                             Set #{{ vote.converted_slot.set.set_number }}
                                         </span>
-                                        {% elif ceg.sets.count > 0 %}
+                                        {% elif active_sets %}
                                         <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-700 shrink-0">
                                             Excedente
                                         </span>
@@ -1786,11 +2123,59 @@
         </div>
         {% else %}
         <!-- Sets Header / Controls & Tabs -->
-        <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+        <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3.5">
+            
+            <!-- Barra Superior: Filtro Principal (Ver Tudo / Apenas Sets / Apenas Itens Avulsos) & Ações -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                <!-- Segmented Control Pills -->
+                <div class="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-bold shadow-2xs">
+                    <button type="button"
+                        @click="viewMode = 'ALL'; if (activeSetTab === 'AVULSOS') activeSetTab = 'ALL'"
+                        class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                        :class="viewMode === 'ALL'
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'">
+                        <span>🗂️</span>
+                        <span>Ver Tudo</span>
+                    </button>
+                    <button type="button"
+                        @click="viewMode = 'SETS'; if (activeSetTab === 'AVULSOS') activeSetTab = 'ALL'"
+                        class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                        :class="viewMode === 'SETS'
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'">
+                        <span>🃏</span>
+                        <span>Apenas Sets ({{ sets|length }})</span>
+                    </button>
+                    <button type="button"
+                        @click="viewMode = 'AVULSOS'; activeSetTab = 'AVULSOS'"
+                        class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                        :class="viewMode === 'AVULSOS'
+                            ? 'bg-white dark:bg-slate-700 text-pink-600 dark:text-pink-400 shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-pink-600 dark:hover:text-pink-400'">
+                        <span>🎁</span>
+                        <span>Apenas Itens Avulsos ({{ avulso_definitions|length }})</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    {% if user.is_staff %}
+                    <button type="button"
+                        @click="openAddAvulsoModal()"
+                        class="px-3 py-1.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white text-xs font-black rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                        <span>➕</span>
+                        <span>Novo Item Avulso</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <!-- Navigation Tabs -->
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 max-w-full text-xs font-bold scrollbar-thin">
+                    <!-- Tab Todos os Sets -->
                     <button type="button"
+                        x-show="viewMode !== 'AVULSOS'"
                         @click="activeSetTab = 'ALL'"
                         class="px-3 py-1.5 rounded-xl transition whitespace-nowrap cursor-pointer"
                         :class="activeSetTab === 'ALL'
@@ -1798,8 +2183,11 @@
                             : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
                         Todos os Sets ({{ sets|length }})
                     </button>
+
+                    <!-- Tabs de cada Set Regular -->
                     {% for s_tab in sets %}
                     <button type="button"
+                        x-show="viewMode !== 'AVULSOS'"
                         @click="activeSetTab = {{ s_tab.set_number }}"
                         class="px-3 py-1.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
                         :class="activeSetTab === {{ s_tab.set_number }}
@@ -1816,6 +2204,22 @@
                         {% endif %}
                     </button>
                     {% endfor %}
+
+                    <!-- Tab de Itens Avulsos -->
+                    <button type="button"
+                        x-show="viewMode !== 'SETS'"
+                        @click="activeSetTab = 'AVULSOS'"
+                        class="px-3 py-1.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer border"
+                        :class="activeSetTab === 'AVULSOS'
+                            ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white border-pink-500 shadow-sm'
+                            : 'bg-pink-50/70 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/60 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800/60'">
+                        <span>🎁</span>
+                        <span>Itens Avulsos</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full font-black"
+                            :class="activeSetTab === 'AVULSOS' ? 'bg-pink-800 text-pink-100' : 'bg-pink-200/80 dark:bg-pink-900 text-pink-800 dark:text-pink-200'">
+                            {{ avulso_definitions|length }}
+                        </span>
+                    </button>
                 </div>
 
                 <!-- Filter: Apenas Vagas Abertas -->
@@ -1834,7 +2238,7 @@
         <!-- Sets & Slots List -->
         <div class="space-y-8">
             {% for set in sets %}
-            <div x-show="activeSetTab === 'ALL' || activeSetTab === {{ set.set_number }}" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div x-show="viewMode !== 'AVULSOS' && (activeSetTab === 'ALL' || activeSetTab === {{ set.set_number }})" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <!-- Set Header -->
                 <div
                     class="bg-slate-100 px-6 py-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
@@ -2316,6 +2720,309 @@
                 Nenhum Set disponível para esta CEG no momento.
             </div>
             {% endfor %}
+
+            <!-- Seção de Itens Avulsos (Standalone) -->
+            <div x-show="viewMode !== 'SETS' && (activeSetTab === 'ALL' || activeSetTab === 'AVULSOS')"
+                 class="space-y-4">
+                
+                <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                    <!-- Header da Seção de Avulsos -->
+                    <div class="bg-gradient-to-r from-pink-50 via-rose-50 to-purple-50 dark:from-pink-950/40 dark:via-rose-950/30 dark:to-purple-950/40 px-6 py-4 border-b border-pink-100 dark:border-pink-900/40 flex flex-wrap justify-between items-center gap-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-600 to-rose-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+                                🎁
+                            </span>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-base font-black text-slate-900 dark:text-white">Itens Avulsos & Exclusivos</h2>
+                                    <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-pink-100 dark:bg-pink-900/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                                        Fixo / Não Replicável
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Itens com quantidade única ou limitada (álbuns selados, pôsteres, POBs avulsos). Não são multiplicados ao adicionar novos Sets.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3 text-xs">
+                            <span class="font-bold text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                📦 {{ avulso_definitions|length }} ite{{ avulso_definitions|length|pluralize:"m,ns" }} • {{ avulso_slots|length }} unidade{{ avulso_slots|length|pluralize }}
+                            </span>
+
+                            {% if user.is_staff %}
+                            <button type="button" @click="openAddAvulsoModal()"
+                                class="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer text-xs">
+                                <span>➕</span>
+                                <span>Adicionar Item Avulso</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Grid de Itens Avulsos -->
+                    {% if avulso_definitions %}
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {% for idef in avulso_definitions %}
+                        <div class="border rounded-2xl p-4 flex flex-col justify-between space-y-3.5 transition bg-white dark:bg-[#1a233a] border-slate-200 dark:border-slate-800 hover:border-pink-300 dark:hover:border-pink-500/50 hover:shadow-md group">
+                            
+                            <!-- Top: Categoria, Integrante e Ações de Admin -->
+                            <div>
+                                <div class="flex items-start justify-between gap-2 mb-2">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        {% if idef.member_name %}
+                                        <span class="text-xs font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/60 px-2 py-0.5 rounded-md border border-pink-100 dark:border-pink-900/50">
+                                            {{ idef.member_name }}
+                                        </span>
+                                        {% endif %}
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                            🏷️ {{ idef.tipo_item_nome }}
+                                        </span>
+                                    </div>
+
+                                    {% if user.is_staff %}
+                                    <div class="flex items-center gap-1">
+                                        <button type="button"
+                                            @click="openEditAvulsoModal(findAvulsoItem({{ idef.id }}))"
+                                            class="w-7 h-7 flex items-center justify-center bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs rounded-lg border border-purple-200 dark:border-purple-800 transition shadow-2xs cursor-pointer"
+                                            title="Editar item avulso">
+                                            ✏️
+                                        </button>
+                                        <button type="button"
+                                            @click="openDeleteAvulsoModal(findAvulsoItem({{ idef.id }}))"
+                                            class="w-7 h-7 flex items-center justify-center bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-300 text-xs rounded-lg border border-rose-200 dark:border-rose-800 transition shadow-2xs cursor-pointer"
+                                            title="Excluir item avulso">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Imagem do Item Avulso (se houver) -->
+                                {% if idef.image_url %}
+                                <div class="mb-3 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 aspect-video relative group/img">
+                                    <img src="{{ idef.image_url }}" alt="{{ idef.name }}"
+                                         class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
+                                </div>
+                                {% endif %}
+
+                                <!-- Nome do Item e Preço -->
+                                <div class="flex items-start justify-between gap-2">
+                                    <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
+                                        {{ idef.name }}
+                                    </h3>
+                                    <div class="text-right flex-shrink-0">
+                                        <span class="text-sm font-black text-slate-900 dark:text-white">
+                                            R$ {{ idef.default_price|floatformat:2 }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <span>Estoque total: <strong>{{ idef.quantidade_avulsa }} unid.</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Unidades/Slots Físicos do Item -->
+                            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Unidades / Vagas
+                                </span>
+
+                                <div class="space-y-1.5">
+                                    {% for slot in avulso_slots %}
+                                    {% if slot.item_definition_id == idef.id %}
+                                    <div class="p-2.5 rounded-xl border transition text-xs flex flex-col gap-2
+                                        {% if slot.status == 'AVAILABLE' %}
+                                            bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700
+                                        {% elif slot.status == 'RESERVED' %}
+                                            bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50
+                                        {% elif slot.status == 'PAID' %}
+                                            bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50
+                                        {% else %}
+                                            bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60
+                                        {% endif %}"
+                                        x-show="!onlyAvailableSlots || status === 'AVAILABLE'"
+                                        x-data="{
+                                            slotId: {{ slot.id }},
+                                            status: '{{ slot.status }}',
+                                            isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                            isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
+                                            isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
+                                            loading: false,
+                                            async toggle(field) {
+                                                if (this.loading) return;
+                                                this.loading = true;
+                                                try {
+                                                    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                                                    const res = await fetch('/slots/' + this.slotId + '/toggle-payment/', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            'X-CSRFToken': csrf
+                                                        },
+                                                        body: JSON.stringify({ field: field })
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        this.status = data.status;
+                                                        this.isItemPaid = data.is_item_paid;
+                                                        this.isInterPaid = data.is_frete_inter_paid;
+                                                        this.isTaxaPaid = data.is_taxa_aduaneira_paid;
+                                                    } else {
+                                                        alert(data.message || 'Erro ao alterar status');
+                                                    }
+                                                } catch(e) {
+                                                    alert('Erro de conexão ao alterar status: ' + e);
+                                                } finally {
+                                                    this.loading = false;
+                                                }
+                                            }
+                                        }">
+                                        
+                                        <!-- Header da Unidade -->
+                                        <div class="flex items-center justify-between gap-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-[10px] flex items-center justify-center">
+                                                    #{{ slot.unit_number }}
+                                                </span>
+                                                <span class="font-bold text-[11px] text-slate-800 dark:text-slate-200">
+                                                    Unidade {{ slot.unit_number }}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                {% if slot.status == 'AVAILABLE' %}
+                                                <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                                    Disponível
+                                                </span>
+                                                {% elif slot.status == 'RESERVED' %}
+                                                <span class="text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                                                    Reservado
+                                                </span>
+                                                {% elif slot.status == 'PAID' %}
+                                                <span class="text-[10px] font-black text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                                                    ✔ Pago
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <!-- Informação de quem reservou ou botão de reserva -->
+                                        {% if slot.claimed_by %}
+                                        <div class="pt-1 flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-300">
+                                            <div class="truncate">
+                                                <span class="font-bold">👤 {{ slot.claimed_by.display_name }}</span>
+                                                {% if slot.claimed_by.social_handle %}
+                                                <span class="text-[10px] text-slate-400">({{ slot.claimed_by.social_handle }})</span>
+                                                {% endif %}
+                                            </div>
+
+                                            {% if user.is_staff %}
+                                            <button type="button"
+                                                @click="openManageSlotModal({
+                                                    id: {{ slot.id }},
+                                                    itemDefId: {{ slot.item_definition.id }},
+                                                    name: '{{ slot.item_definition.name|escapejs }} (Unidade #{{ slot.unit_number }})',
+                                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                    itemType: '{{ slot.item_definition.item_type }}',
+                                                    tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
+                                                    setNumber: 'Avulso #{{ slot.unit_number }}',
+                                                    price: '{{ slot.price|stringformat:'.2f' }}',
+                                                    status: status,
+                                                    statusDisplay: status === 'PAID' ? 'Confirmado / Pago' : (status === 'RESERVED' ? 'Reservado' : 'Disponível'),
+                                                    claimedById: '{{ slot.claimed_by.id|default:'' }}',
+                                                    claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
+                                                    claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
+                                                    isItemPaid: isItemPaid
+                                                })"
+                                                class="text-purple-600 dark:text-purple-400 hover:underline font-bold text-[10px] flex-shrink-0 cursor-pointer">
+                                                Gerenciar
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <div class="pt-1">
+                                            {% if logged_participant %}
+                                            <button type="button"
+                                                @click.stop="if (!isStandby) { $store.claimSelection.toggle({
+                                                    id: {{ slot.id }},
+                                                    name: '{{ slot.item_definition.name|escapejs }} (Unidade #{{ slot.unit_number }})',
+                                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                                    setNumber: 'Avulso #{{ slot.unit_number }}',
+                                                    price: '{{ slot.price|floatformat:2 }}',
+                                                    frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
+                                                    taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
+                                                }); }"
+                                                class="w-full py-1.5 rounded-lg text-xs font-black text-center transition flex items-center justify-center gap-1.5 cursor-pointer select-none"
+                                                :class="$store.claimSelection.slots.some(s => s.id === slotId)
+                                                    ? 'bg-pink-600 text-white shadow-xs'
+                                                    : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-dashed border-slate-300 dark:border-slate-600 hover:border-pink-300 hover:text-pink-600'">
+                                                <span x-text="$store.claimSelection.slots.some(s => s.id === slotId) ? '✔' : '○'"></span>
+                                                <span x-text="$store.claimSelection.slots.some(s => s.id === slotId) ? 'Selecionado' : 'Reservar Unidade'"></span>
+                                            </button>
+                                            {% elif not user.is_staff %}
+                                            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                                                class="w-full py-1.5 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-lg transition shadow-xs flex items-center justify-center gap-1 text-center">
+                                                <span>⚡</span> Entrar para Reservar
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+
+                                        <!-- Ações de Pagamento para Staff -->
+                                        {% if user.is_staff %}
+                                        <div class="pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 grid grid-cols-2 gap-1 text-[9px] font-bold">
+                                            <button type="button" @click="toggle('item')" :disabled="loading"
+                                                :class="isItemPaid ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'"
+                                                class="py-1 px-1 rounded flex items-center justify-center gap-1 transition cursor-pointer">
+                                                <span x-text="isItemPaid ? '✔' : '○'"></span>
+                                                <span>Item</span>
+                                            </button>
+                                            <button type="button" @click="toggle('inter')" :disabled="loading"
+                                                :class="isInterPaid ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'"
+                                                class="py-1 px-1 rounded flex items-center justify-center gap-1 transition cursor-pointer">
+                                                <span x-text="isInterPaid ? '✔' : '○'"></span>
+                                                <span>Inter</span>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Estado vazio de itens avulsos -->
+                    <div class="py-12 px-6 text-center space-y-3">
+                        <span class="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-950/60 text-pink-500 text-2xl flex items-center justify-center mx-auto">
+                            🎁
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum item avulso adicionado</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                                Esta CEG ainda não possui itens avulsos cadastrados. Itens avulsos possuem estoque fixo e não são multiplicados quando novos Sets são abertos.
+                            </p>
+                        </div>
+                        {% if user.is_staff %}
+                        <div class="pt-2">
+                            <button type="button" @click="openAddAvulsoModal()"
+                                class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-xl transition shadow-sm inline-flex items-center gap-2 cursor-pointer">
+                                <span>➕</span>
+                                <span>Adicionar Primeiro Item Avulso</span>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
         </div>
         {% endif %}
 
@@ -3524,7 +4231,7 @@
 
                                     <div class="flex items-center gap-1 shrink-0">
                                         <template x-if="slot.whatsapp">
-                                            <a :href="'https://wa.me/' + slot.whatsapp + '?text=' + encodeURIComponent('Olá, ' + slot.participantName + '! Informamos que o Set #' + setToDelete.setNumber + ' da compra em grupo \'{{ ceg.title|escapejs }}\' precisou ser cancelado por não atingir o fechamento. Seu item reservado era: ' + slot.name + ' (' + (slot.isPaid ? 'Pago' : 'Pendente') + ').')"
+                                            <a :href="'https://wa.me/' + slot.whatsapp + '?text=' + encodeURIComponent('Olá, ' + slot.participantName + '! Informamos que o Set #' + setToDelete.setNumber + ' da compra em grupo '{{ ceg.title|escapejs }}' precisou ser cancelado por não atingir o fechamento. Seu item reservado era: ' + slot.name + ' (' + (slot.isPaid ? 'Pago' : 'Pendente') + ').')"
                                                 target="_blank"
                                                 class="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
                                                 title="Conversar com este participante no WhatsApp">
@@ -4344,7 +5051,7 @@
                 <div class="text-[11px] text-red-900/90 dark:text-red-300/90 space-y-1">
                     <p class="font-bold">Ao confirmar, o sistema apagará permanentemente:</p>
                     <ul class="list-disc list-inside space-y-0.5 pl-1">
-                        <li>Todos os <strong>{{ ceg.sets.count }} Sets</strong> e slots cadastrados nesta CEG</li>
+                        <li>Todos os <strong>{{ active_sets|length }} Sets</strong> e slots cadastrados nesta CEG</li>
                         <li>Todas as reservas (claims) ativas e histórico de compradores</li>
                         <li>Toda a fila de espera e logs de disputa</li>
                         {% if ceg.is_polling %}
@@ -4449,6 +5156,360 @@
                 Fechar
             </button>
         </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.is_staff %}
+<!-- Modal: Adicionar Item Avulso (Staff) -->
+<div x-show="addAvulsoModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+    @keydown.escape.window="closeAddAvulsoModal()">
+
+    <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-200 dark:border-pink-900/40 max-h-[92vh] flex flex-col"
+        @click.away="closeAddAvulsoModal()">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 text-white flex items-center justify-center text-lg shadow-sm">
+                    🎁
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Adicionar Item Avulso</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Estoque fixo/único — não será replicado ao abrir novos Sets</p>
+                </div>
+            </div>
+            <button type="button" @click="closeAddAvulsoModal()"
+                class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl font-bold cursor-pointer">✕</button>
+        </div>
+
+        <!-- Form Body -->
+        <div class="space-y-4 text-xs overflow-y-auto pr-1">
+            <!-- Banner / Aviso Recorte -->
+            <div class="p-3 bg-pink-50/80 dark:bg-pink-950/40 border border-pink-200/80 dark:border-pink-900/50 rounded-2xl flex items-center justify-between gap-3 text-pink-950 dark:text-pink-200">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">✂️</span>
+                    <div>
+                        <div class="font-bold text-[11px]">Recorte direto da foto da CEG</div>
+                        <div class="text-[10px] text-pink-900/80 dark:text-pink-300/80">Seletor com corte visual integrado em desenvolvimento para a próxima etapa.</div>
+                    </div>
+                </div>
+                {% if ceg.display_image_url %}
+                <span class="px-2 py-0.5 rounded-full bg-pink-200/80 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-[9px] font-black uppercase tracking-wider">Em breve</span>
+                {% endif %}
+            </div>
+
+            <!-- Nome do Item -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">
+                    Nome do Item Avulso <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" x-model="addAvulsoName" placeholder="Ex: Álbum Selado Ver. A, Pôster Oficial, POB Exclusivo..."
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Integrante -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Integrante (Opcional)</label>
+                    <input type="text" x-model="addAvulsoMember" placeholder="Ex: Wonyoung, Grupo Todo..."
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+                </div>
+
+                <!-- Tipo de Item -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Categoria / Tipo</label>
+                    <select x-model="addAvulsoTipoItemId"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+                        <template x-for="t in tipoItemList" :key="t.id">
+                            <option :value="t.id" x-text="t.nome"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Preço -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">
+                        Preço por Unidade (R$) <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" step="0.01" min="0" x-model="addAvulsoPrice" placeholder="0.00"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden font-bold">
+                </div>
+
+                <!-- Quantidade Total de Unidades -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">
+                        Quantidade de Unidades <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" min="1" max="100" x-model="addAvulsoQuantity"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden font-bold">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Serão criadas N unidades deste item disponíveis para reserva.</p>
+                </div>
+            </div>
+
+            <!-- Pré-Reserva Opcional -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Pré-reservar para um participante? (Opcional)</label>
+                <select x-model="addAvulsoPreReserveParticipantId"
+                    class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+                    <option value="">Nenhum (Deixar disponível para quem reservar primeiro)</option>
+                    <template x-for="p in allParticipants" :key="p.id">
+                        <option :value="p.id" x-text="p.name + (p.social_handle ? ' (' + p.social_handle + ')' : '')"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Upload de Imagem -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Foto do Item (Opcional)</label>
+                
+                <template x-if="!addAvulsoPhotoPreview">
+                    <div class="border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition select-none"
+                        :class="addAvulsoPhotoDragOver ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 ring-2 ring-pink-300' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:border-pink-400 hover:bg-white dark:hover:bg-slate-800'"
+                        @click="document.getElementById('add_avulso_file_input').click()"
+                        @dragover.prevent="addAvulsoPhotoDragOver = true"
+                        @dragleave.prevent="addAvulsoPhotoDragOver = false"
+                        @drop.prevent="addAvulsoPhotoDragOver = false; if ($event.dataTransfer.files[0]) handleAddAvulsoPhoto($event.dataTransfer.files[0])">
+                        <input type="file" id="add_avulso_file_input" accept="image/*" class="hidden"
+                            @change="if ($event.target.files[0]) handleAddAvulsoPhoto($event.target.files[0])">
+                        <span class="text-2xl block mb-1">📋</span>
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Clique para selecionar ou dê <kbd class="px-2 py-0.5 bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800 rounded font-black text-xs">Ctrl + V</kbd> nesta tela
+                        </p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5 flex-wrap mt-1">
+                            <span>Ou arraste um arquivo (JPG, PNG, WEBP)</span>
+                            <span class="font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/50 px-2 py-0.5 rounded border border-pink-200 dark:border-pink-800 text-[10px] uppercase tracking-wider">Máx 5 MB</span>
+                        </p>
+                    </div>
+                </template>
+
+                <template x-if="addAvulsoPhotoPreview">
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 max-h-48 flex items-center justify-center p-2 group">
+                        <img :src="addAvulsoPhotoPreview" class="max-h-44 w-full object-contain rounded-xl">
+                        <button type="button" @click="clearAddAvulsoPhoto()"
+                            class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-xs cursor-pointer transition hover:scale-105"
+                            title="Remover foto">✕</button>
+                        <span class="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[10px] py-0.5 px-2 rounded-lg text-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                            Cole outra com Ctrl+V ou clique no ✕ para trocar
+                        </span>
+                    </div>
+                </template>
+
+                <div class="mt-2" x-show="!addAvulsoPhotoPreview">
+                    <input type="url" x-model="addAvulsoPhotoUrl" placeholder="Ou cole a URL direta de uma imagem externa..."
+                        class="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs">
+                </div>
+
+                <div x-show="addAvulsoPhotoError" class="mt-1 text-rose-500 font-bold text-[11px]" x-text="addAvulsoPhotoError"></div>
+            </div>
+
+            <!-- Error Banner -->
+            <div x-show="addAvulsoError" class="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold" x-text="addAvulsoError"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" @click="closeAddAvulsoModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" @click="submitAddAvulso()" :disabled="addAvulsoLoading"
+                class="px-5 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                <span x-show="!addAvulsoLoading">Salvar Item Avulso</span>
+                <span x-show="addAvulsoLoading">Salvando...</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Editar Item Avulso (Staff) -->
+<div x-show="editAvulsoModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+    @keydown.escape.window="closeEditAvulsoModal()">
+
+    <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-200 dark:border-purple-900/40 max-h-[92vh] flex flex-col"
+        @click.away="closeEditAvulsoModal()">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg shadow-sm border border-purple-200 dark:border-purple-800">
+                    ✏️
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Editar Item Avulso</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" x-text="editAvulsoItem ? editAvulsoItem.name : ''"></p>
+                </div>
+            </div>
+            <button type="button" @click="closeEditAvulsoModal()"
+                class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl font-bold cursor-pointer">✕</button>
+        </div>
+
+        <!-- Form Body -->
+        <div class="space-y-4 text-xs overflow-y-auto pr-1">
+            <!-- Nome do Item -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">
+                    Nome do Item <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" x-model="editAvulsoName"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Integrante -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Integrante</label>
+                    <input type="text" x-model="editAvulsoMember"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                </div>
+
+                <!-- Tipo de Item -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Categoria / Tipo</label>
+                    <select x-model="editAvulsoTipoItemId"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                        <template x-for="t in tipoItemList" :key="t.id">
+                            <option :value="t.id" x-text="t.nome"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Preço -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Preço por Unidade (R$)</label>
+                    <input type="number" step="0.01" min="0" x-model="editAvulsoPrice"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Atualiza o valor de todas as unidades ainda disponíveis.</p>
+                </div>
+
+                <!-- Quantidade -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Quantidade de Unidades</label>
+                    <input type="number" min="1" max="100" x-model="editAvulsoQuantity"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Se diminuir, apenas unidades sem reserva ativa serão removidas.</p>
+                </div>
+            </div>
+
+            <!-- Foto do Item -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Foto do Item</label>
+
+                <template x-if="!editAvulsoPhotoPreview">
+                    <div class="border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition select-none"
+                        :class="editAvulsoPhotoDragOver ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40 ring-2 ring-purple-300' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:border-purple-400 hover:bg-white dark:hover:bg-slate-800'"
+                        @click="document.getElementById('edit_avulso_file_input').click()"
+                        @dragover.prevent="editAvulsoPhotoDragOver = true"
+                        @dragleave.prevent="editAvulsoPhotoDragOver = false"
+                        @drop.prevent="editAvulsoPhotoDragOver = false; if ($event.dataTransfer.files[0]) handleEditAvulsoPhoto($event.dataTransfer.files[0])">
+                        <input type="file" id="edit_avulso_file_input" accept="image/*" class="hidden"
+                            @change="if ($event.target.files[0]) handleEditAvulsoPhoto($event.target.files[0])">
+                        <span class="text-2xl block mb-1">📋</span>
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Clique para selecionar ou dê <kbd class="px-2 py-0.5 bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded font-black text-xs">Ctrl + V</kbd> nesta tela
+                        </p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5 flex-wrap mt-1">
+                            <span>Ou arraste um arquivo (JPG, PNG, WEBP)</span>
+                            <span class="font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 text-[10px] uppercase tracking-wider">Máx 5 MB</span>
+                        </p>
+                    </div>
+                </template>
+
+                <template x-if="editAvulsoPhotoPreview">
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 max-h-48 flex items-center justify-center p-2 group">
+                        <img :src="editAvulsoPhotoPreview" class="max-h-44 w-full object-contain rounded-xl">
+                        <button type="button" @click="clearEditAvulsoPhoto()"
+                            class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-xs cursor-pointer transition hover:scale-105"
+                            title="Remover foto">✕</button>
+                        <span class="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[10px] py-0.5 px-2 rounded-lg text-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                            Cole outra com Ctrl+V ou clique no ✕ para trocar
+                        </span>
+                    </div>
+                </template>
+
+                <div x-show="editAvulsoPhotoError" class="mt-1 text-rose-500 font-bold text-[11px]" x-text="editAvulsoPhotoError"></div>
+            </div>
+
+            <!-- Error Banner -->
+            <div x-show="editAvulsoError" class="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold" x-text="editAvulsoError"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" @click="closeEditAvulsoModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" @click="submitEditAvulso()" :disabled="editAvulsoLoading"
+                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                <span x-show="!editAvulsoLoading">Salvar Alterações</span>
+                <span x-show="editAvulsoLoading">Salvando...</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Excluir Item Avulso (Staff) -->
+<div x-show="deleteAvulsoModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+    @keydown.escape.window="closeDeleteAvulsoModal()">
+
+    <div class="bg-white dark:bg-[#131B2E] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-200 dark:border-rose-900/40 max-h-[90vh] flex flex-col"
+        @click.away="closeDeleteAvulsoModal()">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg shadow-2xs border border-rose-100 dark:border-rose-900/50">
+                    🗑️
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Excluir Item Avulso</h3>
+                    <p class="text-xs text-rose-600 dark:text-rose-400 truncate max-w-[260px]" x-text="deleteAvulsoItem ? deleteAvulsoItem.name : ''"></p>
+                </div>
+            </div>
+            <button type="button" @click="closeDeleteAvulsoModal()"
+                class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl font-bold cursor-pointer">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+            <div class="p-3 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl space-y-1.5 text-rose-950 dark:text-rose-200">
+                <div class="font-black flex items-center gap-1.5 text-rose-900 dark:text-rose-300">
+                    <span>⚠️</span> Confirma a exclusão definitiva?
+                </div>
+                <ul class="text-[11px] space-y-1 text-rose-900/90 dark:text-rose-300/90 list-disc list-inside">
+                    <li>O item <strong><span x-text="deleteAvulsoItem ? deleteAvulsoItem.name : ''"></span></strong> e todas as suas unidades serão apagados.</li>
+                    <li>Vagas disponíveis e reservas não pagas serão canceladas.</li>
+                    <li>Itens com pagamento já confirmado <strong>não</strong> podem ser excluídos diretamente.</li>
+                </ul>
+            </div>
+
+            <!-- Error Banner -->
+            <div x-show="deleteAvulsoError" class="p-3 bg-rose-100 dark:bg-rose-900/80 border border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-100 rounded-xl text-xs font-bold" x-text="deleteAvulsoError"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" @click="closeDeleteAvulsoModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" @click="submitDeleteAvulso()" :disabled="deleteAvulsoLoading"
+                class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                <span x-show="!deleteAvulsoLoading">Sim, Excluir Item</span>
+                <span x-show="deleteAvulsoLoading">Excluindo...</span>
+            </button>
+        </div>
+
     </div>
 </div>
 {% endif %}

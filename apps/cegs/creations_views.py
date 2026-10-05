@@ -50,11 +50,12 @@ class CreationsHubView(StaffRequiredMixin, View):
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
         cegs = CEG.objects.select_related('era__group', 'caixa').prefetch_related('sets', 'item_definitions').order_by('-created_at')
         caixas = Caixa.objects.all().order_by('-created_at')
-        itens_individuais = ItemIndividual.objects.select_related('caixa', 'comprador').order_by('-created_at')
+        itens_individuais = ItemIndividual.objects.select_related('caixa', 'comprador', 'tipo_item').order_by('-created_at')
 
         # Dicionário de grupos e eras para seleção em cascata e edição no Alpine.js
         groups_data = []
         for g in groups:
+            members_list = list(g.members.all())
             groups_data.append({
                 'id': g.id,
                 'name': g.name,
@@ -62,10 +63,10 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'image_url': g.image_url,
                 'color_hex': g.color_hex or '',
                 'description': g.description or '',
-                'members_count': g.members.count(),
+                'members_count': len(members_list),
                 'members': [
                     {'id': m.id, 'name': m.name, 'order': m.order}
-                    for m in g.members.all()
+                    for m in members_list
                 ],
                 'eras': [
                     {
@@ -86,6 +87,7 @@ class CreationsHubView(StaffRequiredMixin, View):
         # Resumo de inventário para a aba de listagem
         cegs_summary = []
         for c in cegs:
+            sets_list = list(c.sets.all())
             cegs_summary.append({
                 'id': c.id,
                 'title': c.title,
@@ -99,9 +101,9 @@ class CreationsHubView(StaffRequiredMixin, View):
                 'caixa_slug': c.caixa.slug if c.caixa else None,
                 'caixa_origem': c.caixa.origem if c.caixa else None,
                 'shipping_status_display': c.get_shipping_status_display(),
-                'sets_count': c.sets.count(),
-                'active_sets_count': c.sets.filter(is_active=True).count(),
-                'items_count': c.item_definitions.count(),
+                'sets_count': len(sets_list),
+                'active_sets_count': sum(1 for s in sets_list if s.is_active),
+                'items_count': len(c.item_definitions.all()),
                 'opens_at': c.opens_at.strftime('%d/%m/%Y %H:%M') if c.opens_at else None,
                 'prazo_pagamento_item': c.prazo_pagamento_item.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_item else None,
                 'frete_inter': str(c.frete_inter) if c.frete_inter is not None else None,
@@ -724,6 +726,9 @@ class CreateCEGView(StaffRequiredMixin, View):
                         except (ValueError, TypeError):
                             tipo_item = None
 
+                    is_av = bool(item_data.get('is_avulso', False))
+                    qtd_av = max(1, int(item_data.get('quantidade_avulsa', 1) or 1)) if is_av else 1
+
                     item_def = CEGItemDefinition.objects.create(
                         ceg=ceg,
                         name=i_name,
@@ -733,6 +738,8 @@ class CreateCEGView(StaffRequiredMixin, View):
                         sub_category=item_data.get('sub_category', '').strip(),
                         default_price=price,
                         image_url=item_data.get('image_url', '').strip(),
+                        is_avulso=is_av,
+                        quantidade_avulsa=qtd_av,
                         order_index=int(item_data.get('order_index', order_idx))
                     )
                     created_items_map.append((item_def, item_data))
@@ -754,7 +761,7 @@ class CreateCEGView(StaffRequiredMixin, View):
 
                     # No Set #1, se houver pré-reserva configurada para o item, vincula ao participante pré-existente
                     if set_num == 1:
-                        item_data_by_def = {idef.id: idata for (idef, idata) in created_items_map}
+                        item_data_by_def = {idef.id: idata for (idef, idata) in created_items_map if not idef.is_avulso}
                         for slot in slots:
                             idata = item_data_by_def.get(slot.item_definition_id)
                             p_id = idata.get('participant_id') or idata.get('pre_assigned_participant_id') if idata else None
@@ -782,6 +789,49 @@ class CreateCEGView(StaffRequiredMixin, View):
                                             action='assign',
                                             actor=request.user,
                                             metadata={'notes': 'Pré-reserva na criação da CEG'}
+                                        )
+                                    except Exception:
+                                        pass
+                                    pre_reserved_count += 1
+                                except (Participant.DoesNotExist, ValueError):
+                                    pass
+
+                # 4. Se houver itens avulsos definidos, gera o set especial de avulsos e seus slots
+                has_avulsos = any(idef.is_avulso for idef, _ in created_items_map)
+                if has_avulsos:
+                    avulso_set = ceg.get_or_create_avulso_set()
+                    av_slots = avulso_set.generate_slots()
+                    generated_slots_count += len(av_slots)
+
+                    item_data_by_def = {idef.id: idata for (idef, idata) in created_items_map if idef.is_avulso}
+                    for slot in av_slots:
+                        if slot.unit_number == 1:
+                            idata = item_data_by_def.get(slot.item_definition_id)
+                            p_id = idata.get('participant_id') or idata.get('pre_assigned_participant_id') if idata else None
+                            if p_id:
+                                try:
+                                    participant = Participant.objects.get(id=int(p_id))
+                                    slot.claimed_by = participant
+                                    slot.status = ItemSlot.Status.RESERVED
+                                    slot.claimed_at = now
+                                    slot.save(update_fields=['claimed_by', 'status', 'claimed_at'])
+
+                                    Claim.objects.create(
+                                        slot=slot,
+                                        participant=participant,
+                                        status=Claim.Status.PENDING,
+                                        total_price=slot.price,
+                                        participant_notes="Pré-reservado pelo organizador na abertura da CEG",
+                                        claimed_at=now
+                                    )
+                                    try:
+                                        from apps.cegs.audit_service import AuditService
+                                        AuditService.log_slot_assignment(
+                                            slot=slot,
+                                            participant=participant,
+                                            action='assign',
+                                            actor=request.user,
+                                            metadata={'notes': 'Pré-reserva de item avulso na criação da CEG'}
                                         )
                                     except Exception:
                                         pass
@@ -826,11 +876,11 @@ class CreateSetView(StaffRequiredMixin, View):
 
         ceg = get_object_or_404(CEG, id=ceg_id)
 
-        # Determina o próximo número do Set
+        # Determina o próximo número do Set (ignorando o set avulso #0)
         if set_number_input and set_number_input.isdigit():
             set_number = int(set_number_input)
         else:
-            last_set = ceg.sets.order_by('-set_number').first()
+            last_set = ceg.sets.filter(is_avulso=False).order_by('-set_number').first()
             set_number = (last_set.set_number + 1) if last_set else 1
 
         if ceg.sets.filter(set_number=set_number).exists():
@@ -843,6 +893,7 @@ class CreateSetView(StaffRequiredMixin, View):
                     ceg=ceg,
                     set_number=set_number,
                     is_active=is_active,
+                    is_avulso=False,
                     notes=notes or f"Set #{set_number}"
                 )
                 created_slots = new_set.generate_slots()
@@ -874,6 +925,12 @@ class AddItemToCEGView(StaffRequiredMixin, View):
         price_str = request.POST.get('default_price', '0.00').replace(',', '.').strip()
         image_url = request.POST.get('image_url', '').strip()
         sync_active_sets = request.POST.get('sync_active_sets') == 'on' or request.POST.get('sync_active_sets') == 'true'
+        is_avulso = request.POST.get('is_avulso') in ('on', 'true', '1')
+        quantidade_avulsa_raw = request.POST.get('quantidade_avulsa', '1').strip()
+        try:
+            quantidade_avulsa = max(1, int(quantidade_avulsa_raw)) if is_avulso else 1
+        except (ValueError, TypeError):
+            quantidade_avulsa = 1
 
         if not ceg_id or not name:
             messages.error(request, "Selecione a CEG e informe o Nome do Item.")
@@ -905,25 +962,46 @@ class AddItemToCEGView(StaffRequiredMixin, View):
                     tipo_item=tipo_item,
                     default_price=price,
                     image_url=image_url,
+                    is_avulso=is_avulso,
+                    quantidade_avulsa=quantidade_avulsa,
                     order_index=last_order + 1
                 )
 
                 synced_count = 0
-                if sync_active_sets:
-                    for s in ceg.sets.filter(is_active=True):
+                if is_avulso:
+                    avulso_set = ceg.get_or_create_avulso_set()
+                    for u in range(1, quantidade_avulsa + 1):
+                        slot, created = ItemSlot.objects.get_or_create(
+                            set=avulso_set,
+                            item_definition=item_def,
+                            unit_number=u,
+                            defaults={'price': price}
+                        )
+                        if created:
+                            synced_count += 1
+                elif sync_active_sets:
+                    for s in ceg.sets.filter(is_active=True, is_avulso=False):
                         slot, created = ItemSlot.objects.get_or_create(
                             set=s,
                             item_definition=item_def,
+                            unit_number=1,
                             defaults={'price': price}
                         )
                         if created:
                             synced_count += 1
 
-            messages.success(
-                request,
-                f"✨ Item '{item_def.name}' adicionado à CEG '{ceg.title}'. "
-                f"{f'{synced_count} novos slots gerados nos sets ativos.' if sync_active_sets else ''}"
-            )
+            if is_avulso:
+                messages.success(
+                    request,
+                    f"🎁 Item Avulso '{item_def.name}' adicionado com sucesso à CEG '{ceg.title}'! "
+                    f"({synced_count} vaga(s) gerada(s))."
+                )
+            else:
+                messages.success(
+                    request,
+                    f"✨ Item '{item_def.name}' adicionado à CEG '{ceg.title}'. "
+                    f"{f'{synced_count} novos slots gerados nos sets ativos.' if sync_active_sets else ''}"
+                )
             return redirect('ceg_detail', slug=ceg.slug)
         except Exception as e:
             logger.error(f"Erro ao adicionar item à CEG: {e}")
