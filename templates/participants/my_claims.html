@@ -152,6 +152,21 @@
             })),
             expandedCegs: {},
             copiedPixCegId: null,
+            galleryDisplayMode: (function() {
+                try { return localStorage.getItem('ceg_gallery_display_mode') || 'folders'; } catch(e) { return 'folders'; }
+            })(),
+            setGalleryDisplayMode(mode) {
+                this.galleryDisplayMode = mode;
+                try { localStorage.setItem('ceg_gallery_display_mode', mode); } catch(e) {}
+            },
+            activeCegFolder: null,
+            openCegFolder(cegId) {
+                this.activeCegFolder = String(cegId);
+                this.expandedCegs[String(cegId)] = true;
+            },
+            closeCegFolder() {
+                this.activeCegFolder = null;
+            },
             init() {
                 const map = {};
                 this.allCegs.forEach(c => {
@@ -356,6 +371,7 @@
             this.selectedCaixa = 'ALL';
             this.categoryFilter = 'ALL';
             this.statusFilter = 'ALL';
+            this.activeCegFolder = null;
         },
         matchesCeg(groupId, cegId, caixaId = '', countPending, countPaid, countInterUnpaid = 0, countTaxaUnpaid = 0, countAnyUnpaid = undefined) {
             if (this.categoryFilter === 'MERCARI') return false;

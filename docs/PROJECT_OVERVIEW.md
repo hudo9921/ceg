@@ -138,4 +138,10 @@ O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com um
   - **Ação Contextual Rápida:** Botão de solicitar envio nacional caso o item esteja no estágio `READY_CAIXINHA`.
 - **Prévia Detalhada:** Clique no card aciona `openPreview(...)`, exibindo modal com código de rastreio, chave Pix, data de reserva e transportadora.
 
+### 8.3. Binder Digital / Visão em Pastas de Álbuns (Opção 1)
+- **Grid de Pastas de CEG (Capas de Álbuns):** Por padrão, a galeria exibe as CEGs como **Folder Cards / Capas de Álbum** (`aspect-[3/4]`), valorizando a arte oficial e eliminando barras horizontais pesadas cortando a tela.
+- **Navegação Focada:** Clicar em qualquer pasta de CEG abre o álbum daquela compra, exibindo no topo o botão `← Voltar para Todos os Álbuns` e listando no grid de alta densidade exclusivamente os photocards 2:3 daquela CEG.
+- **Alternância Flexível:** O participante pode alternar com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem pastas) ou para a visão clássica de `📋 Tabela`.
+
+
 

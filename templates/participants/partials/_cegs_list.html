@@ -1,7 +1,125 @@
+        <!-- BARRA SUPERIOR DE NAVEGAÇÃO DA GALERIA DE ÁLBUNS -->
+        <div x-show="viewMode === 'gallery'" class="mb-4">
+            <!-- Barra quando UMA PASTA ESTÁ ABERTA -->
+            <div x-show="activeCegFolder && galleryDisplayMode === 'folders'"
+                class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#131B2E] p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                <button type="button" @click="closeCegFolder()"
+                    class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-100 hover:bg-pink-50 dark:bg-slate-800 dark:hover:bg-pink-950/60 text-slate-700 hover:text-pink-600 dark:text-slate-300 dark:hover:text-pink-400 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs">
+                    <span>←</span>
+                    <span>Voltar para Todos os Álbuns</span>
+                </button>
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                    <span>📁 Pasta em exibição</span>
+                </div>
+            </div>
+
+            <!-- Barra quando TODAS AS PASTAS ESTÃO VISÍVEIS -->
+            <div x-show="!activeCegFolder && galleryDisplayMode === 'folders'"
+                class="flex items-center justify-between gap-2 px-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Álbuns & Pastas de CEG
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/40">
+                        {{ cegs_groups|length }} {% if cegs_groups|length == 1 %}pasta{% else %}pastas{% endif %}
+                    </span>
+                </div>
+                <button type="button" @click="setGalleryDisplayMode('all')"
+                    class="text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1 cursor-pointer">
+                    <span>✨ Ver Todos os Photocards Juntos</span>
+                </button>
+            </div>
+
+            <!-- Barra quando o usuário optou por 'VER TODOS JUNTOS' -->
+            <div x-show="galleryDisplayMode === 'all'"
+                class="flex items-center justify-between gap-2 px-1">
+                <span class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Todos os Photocards (Visão Completa)
+                </span>
+                <button type="button" @click="setGalleryDisplayMode('folders')"
+                    class="text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1 cursor-pointer">
+                    <span>📁 Agrupar por Pastas</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 1. GRID DE PASTAS / ÁLBUNS DE CEG (Visão de Capas) -->
+        <div x-show="viewMode === 'gallery' && galleryDisplayMode === 'folders' && !activeCegFolder"
+            class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
+            {% for group in cegs_groups %}
+            <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }})"
+                @click="openCegFolder('{{ group.ceg.id }}')"
+                class="group relative aspect-[3/4] w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 shadow-sm hover:shadow-xl hover:border-pink-400 dark:hover:border-pink-500 transition-all duration-200 cursor-pointer select-none flex flex-col justify-between">
+                
+                <!-- Imagem de Capa do Álbum (Banner da CEG ou Primeiro Photocard) -->
+                {% if group.ceg.banner_url %}
+                <img src="{{ group.ceg.banner_url }}" alt="{{ group.ceg.title }}" loading="lazy"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                {% elif group.claims.0.slot.item_definition.image_url %}
+                <img src="{{ group.claims.0.slot.item_definition.image_url }}" alt="{{ group.ceg.title }}" loading="lazy"
+                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                {% else %}
+                <div class="absolute inset-0 bg-gradient-to-br from-pink-900/40 via-purple-950/40 to-slate-900 flex items-center justify-center">
+                    <span class="text-4xl opacity-50">📁</span>
+                </div>
+                {% endif %}
+
+                <!-- Overlay Escuro Degradê -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 pointer-events-none"></div>
+
+                <!-- Topo: Grupo/Era e Contagem -->
+                <div class="relative z-10 p-2.5 sm:p-3 flex items-start justify-between gap-1 pointer-events-none">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-pink-300 border border-white/10 shadow-xs truncate max-w-[65%]">
+                        {{ group.ceg.era.group.name }}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-600/90 backdrop-blur-md text-white shadow-xs">
+                        {{ group.claims|length }} {% if group.claims|length == 1 %}card{% else %}cards{% endif %}
+                    </span>
+                </div>
+
+                <!-- Centro/Hover Overlay -->
+                <div class="relative z-10 p-2 sm:p-2.5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    <span class="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-black shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                        <span>📂</span>
+                        <span>Abrir Pasta</span>
+                    </span>
+                </div>
+
+                <!-- Rodapé: Título, Remessa e Status Financeiro -->
+                <div class="relative z-10 p-2.5 sm:p-3 space-y-1.5 pointer-events-none">
+                    <h4 class="text-xs sm:text-sm font-black text-white line-clamp-2 leading-tight drop-shadow-xs" title="{{ group.ceg.title }}">
+                        {{ group.ceg.title }}
+                    </h4>
+
+                    {% if group.ceg.caixa %}
+                    <div class="flex items-center gap-1 text-[10px] text-blue-300 font-bold truncate">
+                        <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                        <span class="truncate">{{ group.ceg.caixa.nome }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Status Financeiro da Pasta -->
+                    <div class="pt-1 border-t border-white/10 flex items-center justify-between text-[10px]">
+                        {% if group.total_geral_pendente > 0 %}
+                        <span class="text-pink-300 font-black">
+                            R$ {{ group.total_geral_pendente|floatformat:2 }} pendente
+                        </span>
+                        {% else %}
+                        <span class="text-emerald-400 font-bold flex items-center gap-1">
+                            <span>✔</span> Quitado
+                        </span>
+                        {% endif %}
+                        <span class="text-slate-400 font-bold text-[9px]">Abrir →</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
         {% for group in cegs_groups %}
-        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }})"
+        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }}) && (viewMode === 'table' || galleryDisplayMode === 'all' || activeCegFolder === '{{ group.ceg.id }}')"
             data-ceg-id="{{ group.ceg.id }}"
-            class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition">
+            class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition mb-6">
 
             <!-- CEG Header Slim & Interativo -->
             <div @click="toggleCeg('{{ group.ceg.id }}')"
@@ -9,6 +127,14 @@
                 
                 <!-- Lado Esquerdo: Toggle, Era, Título e Badges de Remessa/Prazo -->
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <!-- Botão de Voltar para os Álbuns quando na visão de pasta aberta -->
+                    <button type="button" x-show="viewMode === 'gallery' && galleryDisplayMode === 'folders' && activeCegFolder === '{{ group.ceg.id }}'"
+                        @click.stop="closeCegFolder()"
+                        class="px-2.5 py-1 rounded-lg bg-pink-100 hover:bg-pink-200 dark:bg-pink-950/70 dark:hover:bg-pink-900 text-pink-700 dark:text-pink-300 text-xs font-black transition flex items-center gap-1 cursor-pointer flex-shrink-0 shadow-2xs">
+                        <span>←</span>
+                        <span>Álbuns</span>
+                    </button>
+
                     <!-- Chevron de Expansão -->
                     <button type="button" class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition flex-shrink-0">
                         <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="isCegExpanded('{{ group.ceg.id }}') ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
