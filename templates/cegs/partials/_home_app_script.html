@@ -1,0 +1,219 @@
+<script>
+function homeApp() {
+    return {
+        searchQuery: '',
+        selectedGroup: '',
+        selectedEra: '',
+        selectedMember: '',
+        selectedTipo: '',
+        sortBy: 'recentes',
+
+        // Gestão do Bottom Sheet Mobile
+        bottomSheetOpen: false,
+        activeSheetCeg: null,
+        cegsMetaMap: {
+            {% for ceg in active_cegs %}
+            {{ ceg.id }}: {
+                id: {{ ceg.id }},
+                title: "{{ ceg.title|escapejs }}",
+                group_era: "{{ ceg.era.group.name|escapejs }} • {{ ceg.era.name|escapejs }}",
+                price: "{{ ceg.min_price_str }}",
+                vagas: {{ ceg.available_slots_count|default:0 }},
+                url: "{% url 'ceg_detail' ceg.slug %}",
+                members: [{% for item in ceg.grouped_available_items %}"{{ item.member_name|default:item.item_name|escapejs }}",{% endfor %}],
+                groupId: "{{ ceg.era.group.id }}",
+                eraId: "{{ ceg.era.id }}",
+                searchCorpus: "{{ ceg.title|escapejs }} {{ ceg.era.group.name|escapejs }} {{ ceg.era.name|escapejs }} {{ ceg.available_members_str|escapejs }}",
+                membersStr: "{{ ceg.available_members_str|escapejs }}",
+                isMista: "{{ ceg.is_mista|yesno:'true,false' }}",
+                exclusiveTipo: "{{ ceg.exclusive_tipo_id|default:'' }}",
+                tipoIds: "{{ ceg.tipo_ids_str }}"
+            },
+            {% endfor %}
+        },
+
+        openBottomSheet(cegId) {
+            this.activeSheetCeg = this.cegsMetaMap[cegId] || null;
+            if (this.activeSheetCeg) {
+                this.bottomSheetOpen = true;
+                this.$nextTick(() => {
+                    if (window.lucide) window.lucide.createIcons();
+                });
+            }
+        },
+        closeBottomSheet() {
+            this.bottomSheetOpen = false;
+        },
+
+        hasActiveFilters() {
+            return Boolean(
+                (this.searchQuery && this.searchQuery.trim()) ||
+                this.selectedGroup ||
+                this.selectedEra ||
+                this.selectedMember ||
+                this.selectedTipo ||
+                this.sortBy !== 'recentes'
+            );
+        },
+
+        isCegVisible(id) {
+            const ceg = this.cegsMetaMap[id];
+            if (!ceg) return false;
+
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                if (!ceg.searchCorpus.toLowerCase().includes(q)) return false;
+            }
+            if (this.selectedGroup && String(this.selectedGroup) !== String(ceg.groupId)) {
+                return false;
+            }
+            if (this.selectedEra && String(this.selectedEra) !== String(ceg.eraId)) {
+                return false;
+            }
+            if (this.selectedMember) {
+                const memTarget = this.selectedMember.toLowerCase().trim();
+                if (!ceg.membersStr.toLowerCase().includes(memTarget)) return false;
+            }
+            if (this.selectedTipo) {
+                if (this.selectedTipo === 'mista') {
+                    if (ceg.isMista !== 'true') return false;
+                } else if (this.selectedTipo.startsWith('apenas_')) {
+                    if (this.selectedTipo !== 'apenas_' + ceg.exclusiveTipo) return false;
+                } else if (this.selectedTipo.startsWith('contem_')) {
+                    const targetId = this.selectedTipo.replace('contem_', '');
+                    if ((' ' + ceg.tipoIds + ' ').indexOf(' ' + targetId + ' ') === -1) return false;
+                }
+            }
+            return true;
+        },
+
+        isGroupVisible(groupId) {
+            if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) {
+                return false;
+            }
+            for (const id in this.cegsMetaMap) {
+                const ceg = this.cegsMetaMap[id];
+                if (String(ceg.groupId) === String(groupId) && this.isCegVisible(id)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        getGroupVisibleCount(groupId) {
+            let count = 0;
+            for (const id in this.cegsMetaMap) {
+                const ceg = this.cegsMetaMap[id];
+                if (String(ceg.groupId) === String(groupId) && this.isCegVisible(id)) {
+                    count++;
+                }
+            }
+            return count;
+        },
+
+        totalVisibleCount() {
+            let count = 0;
+            for (const id in this.cegsMetaMap) {
+                if (this.isCegVisible(id)) count++;
+            }
+            return count;
+        },
+
+        resetTracksScroll() {
+            this.$nextTick(() => {
+                document.querySelectorAll('[data-carousel-track]').forEach(track => {
+                    track.scrollTo({ left: 0, behavior: 'smooth' });
+                });
+            });
+        },
+
+        clearFilters() {
+            this.searchQuery = '';
+            this.selectedGroup = '';
+            this.selectedEra = '';
+            this.selectedMember = '';
+            this.selectedTipo = '';
+            this.sortBy = 'recentes';
+            this.sortCards();
+            this.resetTracksScroll();
+        },
+
+        sortCards() {
+            const tracks = document.querySelectorAll('[data-carousel-track]');
+            tracks.forEach(track => {
+                const items = Array.from(track.querySelectorAll('.ceg-card-item'));
+                items.sort((a, b) => {
+                    const priceA = parseFloat(a.dataset.price || 0);
+                    const priceB = parseFloat(b.dataset.price || 0);
+                    const vagasA = parseInt(a.dataset.vagas || 0);
+                    const vagasB = parseInt(b.dataset.vagas || 0);
+                    const indexA = parseInt(a.dataset.index || 0);
+                    const indexB = parseInt(b.dataset.index || 0);
+
+                    if (this.sortBy === 'preco_asc') return priceA - priceB;
+                    if (this.sortBy === 'preco_desc') return priceB - priceA;
+                    if (this.sortBy === 'vagas_desc') return vagasB - vagasA;
+                    if (this.sortBy === 'vagas_asc') return vagasA - vagasB;
+                    return indexA - indexB;
+                });
+                items.forEach(el => track.appendChild(el));
+            });
+        },
+
+        // Gestão de Divulgação (Staff Admin)
+        cegShareMap: JSON.parse(document.getElementById('ceg-share-map-data')?.textContent || '{}'),
+        shareModalOpen: false,
+        shareCopied: false,
+        shareEmoji: '🟢',
+        shareShowSoldOut: false,
+        shareIncludePrice: false,
+        currentShareCeg: null,
+        openShareModal(cegId) {
+            const data = this.cegShareMap[cegId];
+            if (!data) return;
+            this.currentShareCeg = data;
+            this.shareCopied = false;
+            this.shareModalOpen = true;
+        },
+        closeShareModal() {
+            this.shareModalOpen = false;
+        },
+        get shareText() {
+            if (!this.currentShareCeg) return '';
+            const groupName = this.currentShareCeg.group_name || '';
+            const title = `✨ CEG ${groupName} - ${this.currentShareCeg.title} ✨`;
+            const lines = [];
+
+            (this.currentShareCeg.items || []).forEach(item => {
+                const name = item.member_name || item.name;
+                if (item.available_count > 0) {
+                    const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
+                    lines.push(`${name} ${emojis}`);
+                } else if (this.shareShowSoldOut) {
+                    lines.push(`${name} ❌`);
+                }
+            });
+
+            let body = lines.join('\n');
+            if (!body) body = '🎉 Todas as vagas foram preenchidas!';
+
+            let priceSection = '';
+            if (this.shareIncludePrice && this.currentShareCeg.price_display) {
+                priceSection = `\n\n💵 Valor: ${this.currentShareCeg.price_display} cada`;
+            }
+
+            const url = window.location.origin + '/ceg/' + this.currentShareCeg.slug + '/';
+            return `${title}\n\n${body}${priceSection}\n\n🔗 Link: ${url}`;
+        },
+        async copyShareText() {
+            try {
+                await navigator.clipboard.writeText(this.shareText);
+                this.shareCopied = true;
+                setTimeout(() => { this.shareCopied = false; }, 2500);
+            } catch (e) {
+                alert('Erro ao copiar: ' + e);
+            }
+        }
+    };
+}
+</script>

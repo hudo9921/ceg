@@ -1,6 +1,8 @@
 <!-- Trilho / Carrossel Horizontal por Grupo (Estilo Deezer / Peek-a-boo com Navegação Desktop) -->
 <div class="space-y-3"
      id="grupo-{{ group.id }}"
+     x-show="isGroupVisible('{{ group.id }}')"
+     x-transition
      x-data="{ isDown: false, startX: 0, scrollLeftPos: 0 }">
     
     <!-- Cabeçalho do Trilho do Artista -->
@@ -10,15 +12,17 @@
             <h3 class="text-base sm:text-lg font-black text-slate-800 dark:text-cyber-silver tracking-tight">
                 {{ group.name }}
             </h3>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10">
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10"
+                  x-text="getGroupVisibleCount('{{ group.id }}') + ' CEG' + (getGroupVisibleCount('{{ group.id }}') === 1 ? '' : 's')">
                 {{ group.cegs_count }} CEG{{ group.cegs_count|pluralize }}
             </span>
         </div>
 
-        <!-- Ações do Cabeçalho: Setas de Navegação (Desktop) + Ver Todas -->
+        <!-- Ações do Cabeçalho: Setas de Navegação (Desktop) + Foco no Grupo -->
         <div class="flex items-center gap-2">
             <!-- Botões de Navegação Horizontal por Setas (Desktop) -->
-            <div class="hidden sm:flex items-center gap-1">
+            <div class="hidden sm:flex items-center gap-1"
+                 x-show="getGroupVisibleCount('{{ group.id }}') > 1">
                 <button type="button"
                         @click="$refs.carouselTrack.scrollBy({ left: -360, behavior: 'smooth' })"
                         class="p-1.5 rounded-full bg-white dark:bg-cyber-surface border border-purple-100 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-cyber-elevated text-slate-600 dark:text-cyber-silver transition shadow-2xs cursor-pointer active:scale-95"
@@ -33,18 +37,19 @@
                 </button>
             </div>
 
-            <!-- Botão para filtrar apenas este grupo e ver grade completa -->
+            <!-- Botão para alternar foco apenas neste grupo -->
             <button type="button"
-                    @click="selectedGroup = '{{ group.id }}'"
+                    @click="selectedGroup = (selectedGroup == '{{ group.id }}' ? '' : '{{ group.id }}'); resetTracksScroll()"
                     class="ml-1 text-xs font-bold text-pink-600 dark:text-cyber-neon hover:underline flex items-center gap-1 cursor-pointer">
-                <span>Ver todas</span>
-                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                <span x-text="selectedGroup == '{{ group.id }}' ? 'Ver todos' : 'Focar grupo'">Focar grupo</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5" x-show="selectedGroup != '{{ group.id }}'"></i>
             </button>
         </div>
     </div>
 
     <!-- Trilho com Efeito Peek-a-boo (Suporta Touch, Wheel do Mouse e Arrastar) -->
     <div x-ref="carouselTrack"
+         data-carousel-track
          @wheel.prevent="$refs.carouselTrack.scrollLeft += ($event.deltaY || $event.deltaX)"
          @mousedown="isDown = true; startX = $event.pageX - $refs.carouselTrack.offsetLeft; scrollLeftPos = $refs.carouselTrack.scrollLeft"
          @mouseleave="isDown = false"
@@ -53,7 +58,12 @@
          class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar py-2 px-1 cursor-grab active:cursor-grabbing select-none">
         {% for ceg in active_cegs %}
             {% if ceg.era.group.id == group.id %}
-                <div class="w-[72vw] sm:w-64 flex-shrink-0 snap-start">
+                <div class="ceg-card-item w-[72vw] sm:w-64 flex-shrink-0 snap-start"
+                     data-price="{{ ceg.min_price_str }}"
+                     data-vagas="{{ ceg.available_slots_count|default:0 }}"
+                     data-index="{{ forloop.counter0 }}"
+                     x-show="isCegVisible({{ ceg.id }})"
+                     x-transition>
                     {% include 'cegs/partials/_home_ceg_card.html' %}
                 </div>
             {% endif %}

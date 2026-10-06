@@ -19,12 +19,31 @@
     <!-- 3. Barra de Busca Inteligente e Filtros (Grupo, Era, Membro/Bias, Tipo) -->
     {% include 'cegs/partials/_home_filter_bar.html' %}
 
-    <!-- 4. SEÇÃO: VITRINE PADRÃO (Trilhos/Carrosséis Horizontais por Grupo - Estilo Deezer) -->
-    <div x-show="!hasActiveFilters()" x-transition class="space-y-8">
+    <!-- 4. SEÇÃO: VITRINE DE CARROSSÉIS HORIZONTAIS POR GRUPO (Permanece Ativa Mesmo Filtrando!) -->
+    <div class="space-y-8">
         {% if active_cegs %}
             {% for group in open_groups %}
                 {% include 'cegs/partials/_home_group_carousel.html' %}
             {% endfor %}
+
+            <!-- Estado Vazio Dinâmico: Quando há filtros ativos mas 0 CEGs batem com a busca -->
+            <div x-show="hasActiveFilters() && totalVisibleCount() === 0"
+                 x-cloak
+                 x-transition
+                 class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 border border-purple-100/70 dark:border-white/10 space-y-3">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
+                    <i data-lucide="search-x" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-black text-slate-800 dark:text-cyber-silver">Nenhuma CEG encontrada</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Tente ajustar os filtros ou buscar por outro termo.</p>
+                <div class="pt-2">
+                    <button type="button"
+                            @click="clearFilters()"
+                            class="px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs transition shadow-xs cursor-pointer">
+                        Limpar todos os filtros
+                    </button>
+                </div>
+            </div>
         {% else %}
             <!-- Estado Vazio: Nenhuma CEG Aberta no Momento -->
             <div class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 border border-purple-100/70 dark:border-white/10 space-y-3">
@@ -37,29 +56,6 @@
         {% endif %}
     </div>
 
-    <!-- 5. SEÇÃO: GRADE FOCADA DE RESULTADOS (Ativa quando o usuário filtra por Membro, Era ou Texto) -->
-    <div x-show="hasActiveFilters()" x-cloak x-transition class="space-y-4">
-        <div class="flex items-center justify-between px-1">
-            <h3 class="text-sm font-black text-slate-800 dark:text-cyber-silver flex items-center gap-2">
-                <i data-lucide="layout-grid" class="w-4 h-4 text-pink-500"></i>
-                <span>Resultados da Busca</span>
-            </h3>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" x-ref="cegsContainer">
-            {% for ceg in active_cegs %}
-                <div x-show="matchesFilters('{{ ceg.title|escapejs }} {{ ceg.era.group.name|escapejs }} {{ ceg.era.name|escapejs }}', '{{ ceg.era.group.id }}', '{{ ceg.era.id }}', '{{ ceg.available_members_str|escapejs }}', '{{ ceg.is_mista }}', '{{ ceg.exclusive_tipo_id|default:'' }}', '{{ ceg.tipo_ids_str }}')"
-                     x-transition
-                     data-price="{{ ceg.min_price_str }}"
-                     data-vagas="{{ ceg.available_slots_count|default:0 }}"
-                     data-index="{{ forloop.counter0 }}"
-                     class="ceg-grid-item">
-                    {% include 'cegs/partials/_home_ceg_card.html' %}
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-
     <!-- 6. Bottom Sheet Mobile (Gaveta de Ações do Polegar) -->
     {% include 'cegs/partials/_home_bottom_sheet.html' %}
 
@@ -68,171 +64,6 @@
 
 </div>
 
-<script>
-function homeApp() {
-    return {
-        searchQuery: '',
-        selectedGroup: '',
-        selectedEra: '',
-        selectedMember: '',
-        selectedTipo: '',
-        sortBy: 'recentes',
-
-        // Gestão do Bottom Sheet Mobile
-        bottomSheetOpen: false,
-        activeSheetCeg: null,
-        cegsMetaMap: {
-            {% for ceg in active_cegs %}
-            {{ ceg.id }}: {
-                id: {{ ceg.id }},
-                title: "{{ ceg.title|escapejs }}",
-                group_era: "{{ ceg.era.group.name|escapejs }} • {{ ceg.era.name|escapejs }}",
-                price: "{{ ceg.min_price_str }}",
-                vagas: {{ ceg.available_slots_count|default:0 }},
-                url: "{% url 'ceg_detail' ceg.slug %}",
-                members: [{% for item in ceg.grouped_available_items %}"{{ item.member_name|default:item.item_name|escapejs }}",{% endfor %}]
-            },
-            {% endfor %}
-        },
-
-        openBottomSheet(cegId) {
-            this.activeSheetCeg = this.cegsMetaMap[cegId] || null;
-            if (this.activeSheetCeg) {
-                this.bottomSheetOpen = true;
-                this.$nextTick(() => {
-                    if (window.lucide) window.lucide.createIcons();
-                });
-            }
-        },
-        closeBottomSheet() {
-            this.bottomSheetOpen = false;
-        },
-
-        hasActiveFilters() {
-            return Boolean(
-                (this.searchQuery && this.searchQuery.trim()) ||
-                this.selectedGroup ||
-                this.selectedEra ||
-                this.selectedMember ||
-                this.selectedTipo ||
-                this.sortBy !== 'recentes'
-            );
-        },
-
-        clearFilters() {
-            this.searchQuery = '';
-            this.selectedGroup = '';
-            this.selectedEra = '';
-            this.selectedMember = '';
-            this.selectedTipo = '';
-            this.sortBy = 'recentes';
-            this.sortCards();
-        },
-
-        matchesFilters(searchCorpus, groupId, eraId, membersStr, isMista, exclusiveTipo, tipoIds) {
-            if (this.searchQuery && this.searchQuery.trim()) {
-                const q = this.searchQuery.toLowerCase().trim();
-                if (!searchCorpus.toLowerCase().includes(q)) return false;
-            }
-            if (this.selectedGroup && this.selectedGroup !== groupId) {
-                return false;
-            }
-            if (this.selectedEra && this.selectedEra !== eraId) {
-                return false;
-            }
-            if (this.selectedMember) {
-                const memTarget = this.selectedMember.toLowerCase().trim();
-                if (!membersStr.toLowerCase().includes(memTarget)) return false;
-            }
-            if (this.selectedTipo) {
-                if (this.selectedTipo === 'mista') {
-                    if (isMista !== 'True' && isMista !== 'true') return false;
-                } else if (this.selectedTipo.startsWith('apenas_')) {
-                    if (this.selectedTipo !== 'apenas_' + exclusiveTipo) return false;
-                } else if (this.selectedTipo.startsWith('contem_')) {
-                    const targetId = this.selectedTipo.replace('contem_', '');
-                    if ((' ' + tipoIds + ' ').indexOf(' ' + targetId + ' ') === -1) return false;
-                }
-            }
-            return true;
-        },
-
-        sortCards() {
-            const container = this.$refs.cegsContainer;
-            if (!container) return;
-            const items = Array.from(container.querySelectorAll('.ceg-grid-item'));
-            items.sort((a, b) => {
-                const priceA = parseFloat(a.dataset.price || 0);
-                const priceB = parseFloat(b.dataset.price || 0);
-                const vagasA = parseInt(a.dataset.vagas || 0);
-                const vagasB = parseInt(a.dataset.vagas || 0);
-                const indexA = parseInt(a.dataset.index || 0);
-                const indexB = parseInt(b.dataset.index || 0);
-
-                if (this.sortBy === 'preco_asc') return priceA - priceB;
-                if (this.sortBy === 'preco_desc') return priceB - priceA;
-                if (this.sortBy === 'vagas_desc') return vagasB - vagasA;
-                if (this.sortBy === 'vagas_asc') return vagasA - vagasB;
-                return indexA - indexB;
-            });
-            items.forEach(el => container.appendChild(el));
-        },
-
-        // Gestão de Divulgação (Staff Admin)
-        cegShareMap: JSON.parse(document.getElementById('ceg-share-map-data')?.textContent || '{}'),
-        shareModalOpen: false,
-        shareCopied: false,
-        shareEmoji: '🟢',
-        shareShowSoldOut: false,
-        shareIncludePrice: false,
-        currentShareCeg: null,
-        openShareModal(cegId) {
-            const data = this.cegShareMap[cegId];
-            if (!data) return;
-            this.currentShareCeg = data;
-            this.shareCopied = false;
-            this.shareModalOpen = true;
-        },
-        closeShareModal() {
-            this.shareModalOpen = false;
-        },
-        get shareText() {
-            if (!this.currentShareCeg) return '';
-            const groupName = this.currentShareCeg.group_name || '';
-            const title = `✨ CEG ${groupName} - ${this.currentShareCeg.title} ✨`;
-            const lines = [];
-
-            (this.currentShareCeg.items || []).forEach(item => {
-                const name = item.member_name || item.name;
-                if (item.available_count > 0) {
-                    const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
-                    lines.push(`${name} ${emojis}`);
-                } else if (this.shareShowSoldOut) {
-                    lines.push(`${name} ❌`);
-                }
-            });
-
-            let body = lines.join('\n');
-            if (!body) body = '🎉 Todas as vagas foram preenchidas!';
-
-            let priceSection = '';
-            if (this.shareIncludePrice && this.currentShareCeg.price_display) {
-                priceSection = `\n\n💵 Valor: ${this.currentShareCeg.price_display} cada`;
-            }
-
-            const url = window.location.origin + '/ceg/' + this.currentShareCeg.slug + '/';
-            return `${title}\n\n${body}${priceSection}\n\n🔗 Link: ${url}`;
-        },
-        async copyShareText() {
-            try {
-                await navigator.clipboard.writeText(this.shareText);
-                this.shareCopied = true;
-                setTimeout(() => { this.shareCopied = false; }, 2500);
-            } catch (e) {
-                alert('Erro ao copiar: ' + e);
-            }
-        }
-    };
-}
-</script>
+<!-- 8. Script Reativo Alpine.js com Gestão de Carrosséis e Filtros -->
+{% include 'cegs/partials/_home_app_script.html' %}
 {% endblock %}

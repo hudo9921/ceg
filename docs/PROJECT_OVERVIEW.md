@@ -175,15 +175,20 @@ Implementado na branch `embelezamento`:
 
 ---
 
-## 10. Vitrine da Home: Deezer Streaming Layout & Busca Inteligente
-
+## 10. Vitrine da Home: Deezer Streaming Layout & Carrosséis Reativos com Filtro In-Place
+ 
 - **Layout Híbrido:** Sidebar vertical retrátil fixa à esquerda no desktop (`lg:pl-20`) e Dock flutuante translúcido no rodapé para mobile.
-- **Modo Vitrine Padrão (Sem filtros ativos):**
-  - **Barra de Chips de Artista (`_home_chips_bar.html`):** Pílulas no topo com mini-foto do grupo e contagem de CEGs abertas.
+- **Estrutura Modularizada (< 200 linhas por arquivo):**
+  - **Barra de Chips de Artista (`_home_chips_bar.html`):** Pílulas no topo com avatar do grupo e contagem de CEGs abertas que atualiza dinamicamente conforme os filtros aplicados.
   - **Hero Spotlight (`_home_hero_spotlight.html`):** Banner flutuante com degradê Y2K/Obsidian e botões em pílula.
+  - **Barra de Filtros Inteligentes (`_home_filter_bar.html`):** Filtro cirúrgico com busca por bias/integrante, era, grupo, tipo de item e ordenação.
   - **Trilhos Horizontais por Grupo (`_home_group_carousel.html`):** Cada artista ganha um carrossel nativo com rolagem suave (`snap-x snap-mandatory no-scrollbar`), efeito *peek-a-boo* no mobile, e no desktop conta com **três modos de navegação fluida**: botões com setas (`chevron-left` / `chevron-right`), conversão da rodinha do mouse vertical para horizontal (`@wheel`), e clique e arraste com o mouse (*drag to scroll*).
   - **Card de CEG Toploader (`_home_ceg_card.html`):** Card em moldura sleeve com badges translúcidos, indicador de slots (`layers` 4/5), preço em fonte mono tabular e **cascata de imagem inteligente** (`ceg.banner_url` ➔ `ceg.era.banner_url` ➔ `ceg.era.group.image_url` ➔ fallback gradiente).
-- **Modo Busca Focada (Quando o usuário pesquisa ou filtra):**
-  - Permite filtrar cirurgicamente por **Membro (Bias)**, **Grupo**, **Era**, **Tipo de Item** e **Busca Textual**.
-  - Os carrosséis dão lugar instantaneamente a uma grade responsiva com as CEGs correspondentes e botão para limpar filtros e retornar à vitrine.
-- **Bottom Sheet Mobile (`_home_bottom_sheet.html`):** Ao tocar no card no celular, uma gaveta ergonômica sobe da base da tela com as vagas, integrantes disponíveis e botão no alcance do polegar.
+  - **Bottom Sheet Mobile (`_home_bottom_sheet.html`):** Ao tocar no card no celular, uma gaveta ergonômica sobe da base da tela com as vagas, integrantes disponíveis e botão no alcance do polegar.
+  - **Script de Gestão (`_home_app_script.html`):** Motor Alpine.js desacoplado controlando a visibilidade dos cards, contadores e ordenação.
+- **Experiência de Carrossel Contínua (Mesmo com Filtros Ativos):**
+  - A filtragem não quebra a interface nem substitui os carrosséis por grades verticais estáticas.
+  - Ao selecionar um integrante (bias), era ou digitar na busca, os cards correspondentes permanecem dispostos em seus respectivos carrosséis de grupo.
+  - Grupos sem itens correspondentes ao filtro são ocultados dinamicamente.
+  - O trilho do carrossel reposiciona o scroll no início automaticamente (`resetTracksScroll()`), garantindo que o usuário veja imediatamente os primeiros cards filtrados.
+  - Se nenhum card coincidir, é exibido um estado vazio elegante com botão direto para limpar os filtros.

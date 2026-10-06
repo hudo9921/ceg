@@ -95,8 +95,7 @@ class ColorExtractionTestCase(TestCase):
 
         # Verify dynamic styling is in rendered home page
         self.assertIn('#9333EA', content)
-        self.assertIn('border-left: 6px solid #9333EA', content)
-        self.assertIn('background: linear-gradient(125deg, #9333EA20', content)
+        self.assertIn('--era-accent: #9333EA', content)
 
     @patch('apps.groups.color_utils.extract_dominant_color')
     def test_update_era_auto_reextracts_color_when_empty(self, mock_extract):

@@ -11,13 +11,14 @@
             <div class="relative">
                 <input type="text"
                        x-model="searchQuery"
+                       @input="resetTracksScroll()"
                        placeholder="Nome, era, item..."
                        class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl pl-8 pr-7 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition">
                 <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none"></i>
                 <button type="button"
                         x-show="searchQuery"
                         x-cloak
-                        @click="searchQuery = ''"
+                        @click="searchQuery = ''; resetTracksScroll()"
                         class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
                 </button>
@@ -31,7 +32,7 @@
                 <span>Grupo:</span>
             </label>
             <select x-model="selectedGroup"
-                    @change="selectedEra = ''"
+                    @change="selectedEra = ''; resetTracksScroll()"
                     class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
                 <option value="">Todos os Grupos</option>
                 {% for group in open_groups %}
@@ -47,6 +48,7 @@
                 <span>Era:</span>
             </label>
             <select x-model="selectedEra"
+                    @change="resetTracksScroll()"
                     class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
                 <option value="">Todas as Eras</option>
                 {% for era in open_eras %}
@@ -65,6 +67,7 @@
                 <span>Membro (Bias):</span>
             </label>
             <select x-model="selectedMember"
+                    @change="resetTracksScroll()"
                     class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
                 <option value="">Todos os Membros</option>
                 {% for m in open_members %}
@@ -80,6 +83,7 @@
                 <span>Tipo de Item:</span>
             </label>
             <select x-model="selectedTipo"
+                    @change="resetTracksScroll()"
                     class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
                 <option value="">Qualquer tipo</option>
                 {% if count_mistas > 0 %}
@@ -122,7 +126,10 @@
          class="pt-3 border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div class="flex items-center gap-2 text-slate-600 dark:text-cyber-silver font-semibold">
             <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
-            <span>Filtro ativo: exibindo resultados focados</span>
+            <span>Filtros ativos:</span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold text-[11px]"
+                  x-text="totalVisibleCount() + ' CEG' + (totalVisibleCount() === 1 ? '' : 's') + ' encontrada' + (totalVisibleCount() === 1 ? '' : 's')">
+            </span>
             <span x-show="selectedMember" class="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold text-[11px]">
                 Membro: <span x-text="selectedMember"></span>
             </span>
@@ -135,7 +142,7 @@
                 @click="clearFilters()"
                 class="px-3 py-1 rounded-full bg-slate-100 dark:bg-cyber-elevated text-slate-600 dark:text-cyber-silver hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer">
             <i data-lucide="x" class="w-3.5 h-3.5"></i>
-            <span>Limpar filtros e voltar aos carrosséis</span>
+            <span>Limpar filtros</span>
         </button>
     </div>
 </div>

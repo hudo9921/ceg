@@ -123,17 +123,21 @@ python manage.py test apps.cegs
   - `claim_confirmation_modal.html`: Modal de claim em vidro acrílico com gradiente de malha acionado por `--era-accent` e timer pulsante.
 
 ### 3.8. Vitrine da Home (`home.html`): Streaming Carousels & Mobile Bottom Sheet
-- **Modularização Estrita (< 200 linhas):** O arquivo `home.html` foi reduzido de 939 para menos de 200 linhas, orquestrando parciais dedicados em `templates/cegs/partials/`:
-  - `_home_chips_bar.html`: Pílulas roláveis com avatar dos artistas.
+- **Modularização Estrita (< 200 linhas):** O arquivo `home.html` possui apenas ~70 linhas, orquestrando parciais dedicados em `templates/cegs/partials/`:
+  - `_home_chips_bar.html`: Pílulas roláveis com avatar dos artistas e contadores dinâmicos.
   - `_home_hero_spotlight.html`: Card de destaque com degradê e CTAs em pílula.
-  - `_home_filter_bar.html`: Filtro cirúrgico com busca por bias/integrante, era e grupo.
+  - `_home_filter_bar.html`: Filtro cirúrgico com busca por bias/integrante, era, grupo, tipo e ordenação com contadores em tempo real.
   - `_home_group_carousel.html`: Trilhos horizontais snap com efeito *peek-a-boo* no mobile e três modos de navegação desktop (setas `chevron-left`/`right`, conversão de mouse wheel vertical para horizontal `@wheel`, e drag-to-scroll por arraste).
   - `_home_ceg_card.html`: Card toploader de vitrine com badges translúcidos, preço mono tabular e cascata de imagens (`ceg.banner_url` ➔ `ceg.era.banner_url` ➔ `ceg.era.group.image_url`).
   - `_home_bottom_sheet.html`: Gaveta ergonômica móvel que sobe do rodapé ao tocar no card no celular.
   - `_home_share_modal.html`: Modal de divulgação para staff/admin GOM.
-- **Alternância Dinâmica de Modos:**
-  - `!hasActiveFilters()`: Exibe a vitrine relaxada estilo Deezer com carrosséis por artista.
-  - `hasActiveFilters()`: Alterna instantaneamente para a grade focada de resultados com botão para limpar filtros.
+  - `_home_app_script.html`: Lógica reativa Alpine.js (`homeApp`) para filtragem in-place, ordenação e estado.
+- **Carrosséis Vivos Mesmo com Filtros Ativos:**
+  - A experiência Deezer de carrosséis por artista **nunca é interrompida** ao filtrar ou pesquisar.
+  - Ao filtrar por Integrante (Bias), Era, Grupo, Tipo de Item ou Texto, os cards que não correspondem somem suavemente de dentro dos próprios carrosséis (`isCegVisible(ceg.id)`).
+  - Grupos com zero itens correspondentes são ocultados suavemente da tela (`isGroupVisible(group.id)`).
+  - O trilho do carrossel reseta suavemente o scroll para o início ao alterar os filtros (`resetTracksScroll()`), e a contagem de CEGs nos badges e chips se ajusta em tempo real.
+  - Caso nenhum resultado seja encontrado em nenhum grupo, exibe estado vazio inteligente com CTA de limpar filtros.
 
 
 
