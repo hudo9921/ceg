@@ -140,62 +140,71 @@
                             </button>
                         </div>
 
-                        <!-- Título da CEG com Link Externo -->
+                        <!-- Título da CEG com Link Externo (Clamp de 2 Linhas Estrito) -->
                         <a href="{% url 'ceg_detail' slug=group.ceg.slug %}"
-                           class="text-xs sm:text-sm font-black text-white hover:text-pink-300 transition line-clamp-2 leading-tight block">
-                            <span>{{ group.ceg.title }}</span>
-                            <span class="text-[10px] text-pink-400 opacity-70 ml-0.5">↗</span>
+                           title="{{ group.ceg.title }}"
+                           class="line-clamp-2 text-xs font-black text-white hover:text-pink-300 transition leading-snug">
+                            {{ group.ceg.title }} <span class="text-[9px] text-pink-400 opacity-70">↗</span>
                         </a>
 
                         <!-- Bloco Logístico e Status -->
-                        <div class="p-2 rounded-xl bg-white/5 border border-white/10 space-y-1.5 text-[10px]">
+                        <div class="p-2 rounded-xl bg-white/5 border border-white/10 space-y-1.5 text-[9.5px]">
                             {% if group.ceg.caixa %}
-                            <div class="flex items-center justify-between gap-1 font-bold">
-                                <span class="flex items-center gap-1 text-blue-300 truncate">
+                            <div class="flex items-center justify-between gap-1 text-[10px] truncate">
+                                <span class="flex items-center gap-1 text-blue-300 font-bold truncate">
                                     <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
                                     <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}" class="hover:underline truncate">{{ group.ceg.caixa.nome }}</a>
                                 </span>
-                                {% if group.ceg.caixa.codigo_rastreio %}
-                                <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank" class="text-blue-400 font-mono text-[9px] hover:underline flex-shrink-0" title="Rastrear">Rastreio ↗</a>
+                                <span class="text-slate-400 text-[9px] truncate flex items-center gap-1 flex-shrink-0">
+                                    <span>✈️</span>
+                                    <span class="truncate">{{ group.ceg.get_shipping_status_display }}</span>
+                                    {% if group.ceg.caixa.codigo_rastreio %}
+                                    <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank" class="text-blue-400 font-mono hover:underline" title="Rastrear Remessa">↗</a>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+
+                            <div class="flex items-center justify-between gap-1 {% if group.ceg.caixa %}pt-1 border-t border-white/5{% endif %}">
+                                {% if group.prazo_destaque %}
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8.5px] font-bold {{ group.prazo_destaque.urgencia_class }} truncate">
+                                    <span>⏱️</span>
+                                    <span class="truncate">{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }}</span>
+                                </span>
+                                {% else %}
+                                <span></span>
                                 {% endif %}
-                            </div>
-                            <div class="flex items-center gap-1 text-slate-300 text-[9px] sm:text-[10px]">
-                                <span>✈️</span>
-                                <span class="truncate">{{ group.ceg.get_shipping_status_display }}</span>
-                            </div>
-                            {% endif %}
 
-                            {% if group.prazo_destaque %}
-                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold {{ group.prazo_destaque.urgencia_class }}">
-                                <span>⏱️</span>
-                                <span class="truncate">{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }}</span>
-                            </div>
-                            {% endif %}
-
-                            <div class="text-slate-400 text-[10px] flex items-center gap-1">
-                                <span>📁</span>
-                                <span>{{ group.claims|length }} {% if group.claims|length == 1 %}item nesta pasta{% else %}itens nesta pasta{% endif %}</span>
+                                <span class="text-slate-400 text-[9px] font-medium flex-shrink-0">
+                                    📁 {{ group.claims|length }} {% if group.claims|length == 1 %}item{% else %}itens{% endif %}
+                                </span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Base: Balanço Financeiro e Botão Pix -->
-                    <div class="pt-2 border-t border-white/10 space-y-2">
+                    <div class="pt-2 border-t border-white/10 space-y-1.5">
                         {% if group.total_geral_pendente > 0 %}
-                        <div>
-                            <div class="text-[9px] sm:text-[10px] text-slate-400 font-semibold leading-none">Total a Pagar nesta CEG:</div>
-                            <div class="text-sm sm:text-base font-black text-pink-400 font-mono mt-0.5">
+                        <div class="flex items-baseline justify-between gap-1">
+                            <span class="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">Total a Pagar nesta CEG:</span>
+                            <span class="text-sm sm:text-base font-black text-pink-400 font-mono">
                                 R$ {{ group.total_geral_pendente|floatformat:2 }}
-                            </div>
+                            </span>
                         </div>
 
                         <!-- Breakdown Frete & Taxa (Compatibilidade com Testes) -->
-                        <div class="flex items-center gap-1.5 text-[9px] font-bold flex-wrap">
+                        <div class="flex items-center justify-between gap-1 text-[8.5px] font-bold bg-white/5 px-2 py-1 rounded-lg border border-white/5">
                             {% if group.total_frete_inter_pendente > 0 %}
-                            <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Frete a Pagar: R$ {{ group.total_frete_inter_pendente|floatformat:2 }}</span>
+                            <span class="text-blue-300 truncate" title="Frete a Pagar: R$ {{ group.total_frete_inter_pendente|floatformat:2 }}">
+                                Frete a Pagar: R$ {{ group.total_frete_inter_pendente|floatformat:2 }}
+                            </span>
+                            {% else %}
+                            <span></span>
                             {% endif %}
                             {% if group.total_taxa_aduaneira_pendente > 0 %}
-                            <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Taxa a Pagar: R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}</span>
+                            <span class="text-purple-300 truncate" title="Taxa a Pagar: R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}">
+                                Taxa a Pagar: R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}
+                            </span>
                             {% endif %}
                         </div>
 
