@@ -59,25 +59,22 @@
                     @click="toggleCeg('{{ group.ceg.id }}')"
                     class="group w-full h-full rounded-2xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-slate-900 shadow-sm hover:shadow-xl hover:border-pink-400 dark:hover:border-pink-500 transition-all duration-200 cursor-pointer flex flex-col justify-between relative">
                     
-                    <!-- Banner ou Imagem (CEG -> Era -> Grupo -> Photocard -> Placeholder) -->
-                    {% if group.ceg.banner_url %}
-                    <img src="{{ group.ceg.banner_url }}" alt="{{ group.ceg.title }}" loading="lazy"
-                        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                    {% elif group.ceg.era.banner_url %}
-                    <img src="{{ group.ceg.era.banner_url }}" alt="{{ group.ceg.era.name }}" loading="lazy"
-                        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                    {% elif group.ceg.era.group.image_url %}
-                    <img src="{{ group.ceg.era.group.image_url }}" alt="{{ group.ceg.era.group.name }}" loading="lazy"
-                        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                    {% elif group.claims.0.slot.item_definition.image_url %}
-                    <img src="{{ group.claims.0.slot.item_definition.image_url }}" alt="{{ group.ceg.title }}" loading="lazy"
-                        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <!-- Banner ou Imagem (Opção 2: Fundo Borrado + Imagem Inteira sem Cortes) -->
+                    {% with cover_url=group.ceg.banner_url|default:group.ceg.era.banner_url|default:group.ceg.era.group.image_url|default:group.claims.0.slot.item_definition.image_url %}
+                    {% if cover_url %}
+                    <!-- Fundo desfocado para preencher as margens com as cores da foto -->
+                    <img src="{{ cover_url }}" alt="" aria-hidden="true" loading="lazy"
+                        class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-70 dark:opacity-40 pointer-events-none">
+                    <!-- Imagem principal inteira sem corte de integrantes -->
+                    <img src="{{ cover_url }}" alt="{{ group.ceg.title }}" loading="lazy"
+                        class="absolute inset-0 w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105 pointer-events-none">
                     {% else %}
                     <div class="absolute inset-0 bg-gradient-to-br from-pink-100 via-purple-100 to-slate-100 dark:from-pink-950/40 dark:via-purple-950/40 dark:to-slate-900 flex flex-col items-center justify-center p-3 text-center">
                         <span class="text-3xl mb-1 opacity-70">📁</span>
                         <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 line-clamp-2">{{ group.ceg.era.group.name }}</span>
                     </div>
                     {% endif %}
+                    {% endwith %}
 
                     <!-- Degradê Sutil Apenas na Base (Sem cobrir a foto inteira!) -->
                     <div class="absolute inset-x-0 bottom-0 h-28 sm:h-32 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none"></div>
