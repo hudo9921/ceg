@@ -127,8 +127,8 @@ python manage.py test apps.cegs
   - `_home_chips_bar.html`: Pílulas roláveis com avatar dos artistas.
   - `_home_hero_spotlight.html`: Card de destaque com degradê e CTAs em pílula.
   - `_home_filter_bar.html`: Filtro cirúrgico com busca por bias/integrante, era e grupo.
-  - `_home_group_carousel.html`: Trilhos horizontais snap com efeito *peek-a-boo* cortando 20% do próximo card no mobile.
-  - `_home_ceg_card.html`: Card toploader de vitrine com badges translúcidos e preço mono tabular.
+  - `_home_group_carousel.html`: Trilhos horizontais snap com efeito *peek-a-boo* no mobile e três modos de navegação desktop (setas `chevron-left`/`right`, conversão de mouse wheel vertical para horizontal `@wheel`, e drag-to-scroll por arraste).
+  - `_home_ceg_card.html`: Card toploader de vitrine com badges translúcidos, preço mono tabular e cascata de imagens (`ceg.banner_url` ➔ `ceg.era.banner_url` ➔ `ceg.era.group.image_url`).
   - `_home_bottom_sheet.html`: Gaveta ergonômica móvel que sobe do rodapé ao tocar no card no celular.
   - `_home_share_modal.html`: Modal de divulgação para staff/admin GOM.
 - **Alternância Dinâmica de Modos:**

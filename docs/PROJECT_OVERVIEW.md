@@ -181,8 +181,8 @@ Implementado na branch `embelezamento`:
 - **Modo Vitrine Padrão (Sem filtros ativos):**
   - **Barra de Chips de Artista (`_home_chips_bar.html`):** Pílulas no topo com mini-foto do grupo e contagem de CEGs abertas.
   - **Hero Spotlight (`_home_hero_spotlight.html`):** Banner flutuante com degradê Y2K/Obsidian e botões em pílula.
-  - **Trilhos Horizontais por Grupo (`_home_group_carousel.html`):** Cada artista ganha um carrossel nativo com rolagem suave (`snap-x snap-mandatory no-scrollbar`) e efeito *peek-a-boo* cortando 20% do próximo card no mobile.
-  - **Card de CEG Toploader (`_home_ceg_card.html`):** Card em moldura sleeve com badges translúcidos, indicador de slots (`layers` 4/5) e preço em fonte mono tabular.
+  - **Trilhos Horizontais por Grupo (`_home_group_carousel.html`):** Cada artista ganha um carrossel nativo com rolagem suave (`snap-x snap-mandatory no-scrollbar`), efeito *peek-a-boo* no mobile, e no desktop conta com **três modos de navegação fluida**: botões com setas (`chevron-left` / `chevron-right`), conversão da rodinha do mouse vertical para horizontal (`@wheel`), e clique e arraste com o mouse (*drag to scroll*).
+  - **Card de CEG Toploader (`_home_ceg_card.html`):** Card em moldura sleeve com badges translúcidos, indicador de slots (`layers` 4/5), preço em fonte mono tabular e **cascata de imagem inteligente** (`ceg.banner_url` ➔ `ceg.era.banner_url` ➔ `ceg.era.group.image_url` ➔ fallback gradiente).
 - **Modo Busca Focada (Quando o usuário pesquisa ou filtra):**
   - Permite filtrar cirurgicamente por **Membro (Bias)**, **Grupo**, **Era**, **Tipo de Item** e **Busca Textual**.
   - Os carrosséis dão lugar instantaneamente a uma grade responsiva com as CEGs correspondentes e botão para limpar filtros e retornar à vitrine.
