@@ -111,6 +111,18 @@ python manage.py test apps.cegs
 - **Busca com Auto-Expansão:** Digitar na busca textual expande automaticamente as pastas cujos itens correspondem ao termo pesquisado.
 - **Alternância para Modo Completo ou Tabela:** Suporta alternância com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem separação de pastas) ou `📋 Tabela`.
 
+### 3.7. Design System: Paleta Bipolar (Y2K / Cyber-Luxury) & Lucide Icons
+- **Branch de Trabalho:** `embelezamento`.
+- **Paleta Bipolar:**
+  - **Modo Claro (Soft Y2K Pastels):** Fundo base `#F8F7FA`, textos `#1E1B26`, lavanda `#E9D5FF`, menta `#CCFBF1`, blush `#FCE7F3`, manteiga `#FEF9C3` e bordas suaves.
+  - **Modo Escuro (Cyber-Luxury):** Fundo base obsidiana `#0B0A0F`, superfícies acrílicas `#14121B` / `#1A1724`, textos prateados `#E2E8F0`, neon pink `#F472B6`, roxo elétrico `#C084FC`, azul gelo `#38BDF8`.
+- **Ícones Lucide:** Carregamento CDN com traço unificado `stroke-width="1.75"` e trigger automático via Alpine (`alpine:initialized` e `window.dispatchEvent(new Event('icons-refresh'))`).
+- **Componentes Modulares Reutilizáveis (`templates/components/`):**
+  - `sidebar_dock_nav.html`: Sidebar vertical colapsável (desktop) e dock flutuante translúcido (mobile).
+  - `photocard_sleeve_card.html`: Card sleeve `aspect-[2/3]` colecionável com semáforo integrado.
+  - `claim_confirmation_modal.html`: Modal de claim em vidro acrílico com gradiente de malha acionado por `--era-accent` e timer pulsante.
+
+
 ---
 
 ## 🧩 4. Guia de Parciais em Templates (Modularização)

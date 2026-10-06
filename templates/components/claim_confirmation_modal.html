@@ -1,0 +1,108 @@
+<!-- Modal de Confirmação de Reserva / Claim com Acrílico Translúcido e Mesh Gradient Dinâmico -->
+<!-- Pode ser acionado via Alpine.js: x-data="{ claimModalOpen: false, selectedSlot: null, countdown: 120 }" -->
+<div x-show="claimModalOpen"
+     x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+
+    <!-- Backdrop com Blur e Escurecimento Suave -->
+    <div class="fixed inset-0 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md transition-opacity"
+         @click="claimModalOpen = false"></div>
+
+    <!-- Container do Modal em Acrílico Translúcido (Cyber-Luxury / Soft Y2K) -->
+    <div class="relative w-full max-w-lg rounded-3xl overflow-hidden bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-2xl border border-purple-100/80 dark:border-white/10 shadow-glass p-6 sm:p-8 space-y-6 transform transition-all duration-300 scale-100"
+         style="--era-accent: {{ ceg.theme_color|default:'#EC4899' }};"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 scale-95 translate-y-4">
+
+        <!-- 1. BRILHO DE LUZ AMBIENTE / MESH GRADIENT NO TOPO CONSUMINDO --era-accent -->
+        <div class="absolute -top-24 -left-24 w-72 h-72 rounded-full pointer-events-none blur-3xl opacity-30 dark:opacity-20"
+             style="background: radial-gradient(circle, var(--era-accent, #EC4899) 0%, transparent 70%);"></div>
+        <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none blur-3xl opacity-25 dark:opacity-15 bg-purple-400"></div>
+
+        <!-- 2. CABEÇALHO DO MODAL -->
+        <div class="relative z-10 flex items-start justify-between gap-4">
+            <div class="space-y-1">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/60 dark:border-white/10">
+                    <i data-lucide="sparkles" class="w-3 h-3"></i>
+                    <span>Confirmar Reserva</span>
+                </div>
+                <h3 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                    Garantir Photocard
+                </h3>
+            </div>
+            
+            <button type="button" @click="claimModalOpen = false"
+                    class="p-2 rounded-2xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-cyber-elevated transition cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- 3. CARD RESUMO DO ITEM SELECIONADO -->
+        <div class="relative z-10 p-4 rounded-2xl bg-purple-50/50 dark:bg-cyber-elevated/80 border border-purple-100/70 dark:border-white/5 flex items-center gap-4">
+            <!-- Miniatura do Card -->
+            <div class="w-16 h-24 rounded-xl overflow-hidden bg-slate-200 dark:bg-cyber-obsidian border border-purple-200/50 dark:border-white/10 flex-shrink-0 shadow-sm relative">
+                <template x-if="selectedSlot && selectedSlot.image_url">
+                    <img :src="selectedSlot.image_url" :alt="selectedSlot.name" class="w-full h-full object-cover">
+                </template>
+                <template x-if="!selectedSlot || !selectedSlot.image_url">
+                    <div class="w-full h-full flex items-center justify-center text-pink-400">
+                        <i data-lucide="sparkles" class="w-6 h-6 animate-pulse-subtle"></i>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Dados do Item -->
+            <div class="flex-1 min-w-0 space-y-1">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500" x-text="selectedSlot?.era_group || 'CEG Oficial'"></div>
+                <h4 class="text-base font-black text-slate-900 dark:text-white truncate" x-text="selectedSlot?.member_name || selectedSlot?.name || 'Photocard Selecionado'"></h4>
+                <div class="flex items-center gap-2 pt-0.5">
+                    <span class="text-xs px-2 py-0.5 rounded-md font-bold bg-white dark:bg-black/40 text-slate-700 dark:text-cyber-silver border border-purple-100 dark:border-white/10"
+                          x-text="'Set #' + (selectedSlot?.set_number || 1)"></span>
+                    <span class="text-sm font-mono font-black text-pink-600 dark:text-cyber-neon"
+                          x-text="'R$ ' + (selectedSlot?.price || '0,00')"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CONTADOR REGRESSIVO DE SEGURANÇA (PULSO SUTIL) -->
+        <div class="relative z-10 flex items-center justify-between px-3 py-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-500/30 text-xs">
+            <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold">
+                <i data-lucide="clock" class="w-4 h-4 animate-pulse-subtle"></i>
+                <span>Slot reservado temporariamente:</span>
+            </div>
+            <span class="font-mono font-black text-amber-900 dark:text-amber-200 text-sm animate-pulse-subtle">
+                01:59
+            </span>
+        </div>
+
+        <!-- 5. AVISO DE CONCORRÊNCIA E SEGURANÇA -->
+        <div class="relative z-10 flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+            <span>Sua vaga é garantida com precisão atômica no segundo zero. Ao confirmar, seu WhatsApp receberá as notificações do lote.</span>
+        </div>
+
+        <!-- 6. AÇÕES / BOTÕES COM TRANSIÇÃO E GRADIENTE TEMÁTICO -->
+        <div class="relative z-10 flex items-center justify-end gap-3 pt-2">
+            <button type="button" @click="claimModalOpen = false"
+                    class="px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 dark:text-cyber-silver hover:bg-slate-100 dark:hover:bg-cyber-elevated transition cursor-pointer">
+                Cancelar
+            </button>
+            <button type="button" @click="$dispatch('confirm-claim-action', selectedSlot)"
+                    class="px-6 py-2.5 rounded-2xl text-xs font-black text-white shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center gap-2"
+                    style="background: linear-gradient(135deg, var(--era-accent, #EC4899) 0%, #A855F7 100%);">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                <span>Garantir Vaga Agora</span>
+            </button>
+        </div>
+    </div>
+</div>

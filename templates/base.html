@@ -42,11 +42,59 @@
                             lilac: '#E9D5FF',
                             peach: '#FFEDD5',
                             mint: '#DCFCE7'
+                        },
+                        // Paleta Bipolar: Soft Y2K (Modo Claro) e Cyber-Luxury (Modo Escuro)
+                        cyber: {
+                            obsidian: '#0B0A0F',
+                            surface: '#14121B',
+                            elevated: '#1A1724',
+                            silver: '#E2E8F0',
+                            neon: '#F472B6',
+                            electric: '#C084FC',
+                            ice: '#38BDF8',
+                            border: 'rgba(255, 255, 255, 0.08)'
+                        },
+                        y2k: {
+                            bg: '#F8F7FA',
+                            surface: '#FFFFFF',
+                            text: '#1E1B26',
+                            lavender: '#E9D5FF',
+                            mint: '#CCFBF1',
+                            blush: '#FCE7F3',
+                            butter: '#FEF9C3',
+                            border: 'rgba(233, 213, 255, 0.6)'
                         }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                        'glow': '0 0 35px -5px var(--era-accent, rgba(244,114,182,0.35))',
+                        'cyber': '0 0 15px -3px rgba(192, 132, 252, 0.25)',
+                        'y2k': '0 4px 20px -2px rgba(233, 213, 255, 0.4)'
+                    },
+                    animation: {
+                        'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
                     }
                 }
             }
         }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        function initLucideIcons() {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons({
+                    attrs: {
+                        'stroke-width': 1.75
+                    }
+                });
+            }
+        }
+        document.addEventListener('DOMContentLoaded', initLucideIcons);
+        document.addEventListener('alpine:initialized', () => {
+            setTimeout(initLucideIcons, 40);
+        });
+        window.addEventListener('icons-refresh', initLucideIcons);
     </script>
     <script>
         document.addEventListener('alpine:init', () => {
@@ -144,20 +192,20 @@
             color-scheme: dark;
         }
 
-        /* 1. Body & Base Background */
+        /* 1. Body & Base Background (Obsidiana Cyber-Luxury) */
         html.dark body {
-            background-color: #0B0F19 !important;
-            color: #F8FAFC !important;
+            background-color: #0B0A0F !important;
+            color: #E2E8F0 !important;
         }
 
-        /* 2. Containers, Cards, Modais, Dropdowns e Gaveta Lateral */
+        /* 2. Containers, Cards, Modais, Dropdowns e Gaveta Lateral (Acrílico Escuro) */
         html.dark .bg-white {
-            background-color: #131B2E !important;
+            background-color: #14121B !important;
         }
         html.dark .bg-white\/80,
         html.dark .bg-white\/90,
         html.dark .bg-white\/95 {
-            background-color: rgba(19, 27, 46, 0.9) !important;
+            background-color: rgba(20, 18, 27, 0.92) !important;
         }
 
         /* 3. Superfícies secundárias (Fundos de tabelas, áreas de input, agrupamentos) */
@@ -551,7 +599,7 @@
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-[#faf7f9] dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans antialiased transition-colors duration-200 overflow-x-hidden">
+<body class="bg-[#F8F7FA] dark:bg-[#0B0A0F] text-[#1E1B26] dark:text-[#E2E8F0] min-h-screen flex flex-col font-sans antialiased transition-colors duration-200 overflow-x-hidden">
 
     <!-- Contêiner de Navegação com Gestão de Acordeão Lateral -->
     <div x-data="adminSidebarApp()" @keydown.window.escape="adminSidebarOpen = false; mobileNavOpen = false">

@@ -158,5 +158,21 @@ O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com um
 - **Multi-Expansão Simultânea:** Permite abrir e fechar várias pastas livremente. O cabeçalho oferece botões rápidos "📂 Expandir Todas" e "📁 Recolher Todas".
 - **Alternância Flexível:** O participante pode alternar com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem pastas) ou para a visão clássica de `📋 Tabela`.
 
+---
+
+## 9. Novo Design System: Paleta Bipolar (Y2K / Cyber-Luxury) & Lucide Icons
+
+Implementado na branch `embelezamento`:
+- **Paleta Bipolar:**
+  - **Modo Claro (Soft Y2K Pastels):** Fundo base leitoso `#F8F7FA`, textos `#1E1B26`, acentos lavanda (`#E9D5FF`), menta suave (`#CCFBF1`), blush (`#FCE7F3`), manteiga (`#FEF9C3`) e bordas translúcidas.
+  - **Modo Escuro (Cyber-Luxury):** Fundo base obsidiana `#0B0A0F`, superfícies acrílicas `#14121B` / `#1A1724`, textos prateados `#E2E8F0`, acentos elétricos neon pink (`#F472B6`), roxo elétrico (`#C084FC`) e azul gelo (`#38BDF8`).
+- **Sistema de Ícones Lucide:** Integrado via CDN com `stroke-width="1.75"` e inicialização automática via Alpine (`alpine:initialized` e evento customizado `icons-refresh`).
+- **Sombras & Micro-interações:** `shadow-glass`, `shadow-glow`, `shadow-cyber`, `shadow-y2k`, transições elásticas `hover:scale-[1.015]` e `animate-pulse-subtle`.
+- **Componentes Modulares (`templates/components/`):**
+  - `sidebar_dock_nav.html`: Sidebar vertical colapsável estilo Deezer/Linear no desktop e Dock translúcido flutuante estilo Godly no mobile.
+  - `photocard_sleeve_card.html`: Card de photocard colecionável em proporção `aspect-[2/3]` com chips Lucide e semáforo financeiro integrado.
+  - `claim_confirmation_modal.html`: Modal de confirmação de claim com vidro acrílico, gradiente de malha acionado por `--era-accent` e temporizador pulsante.
+
+
 
 

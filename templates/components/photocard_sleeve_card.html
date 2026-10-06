@@ -1,0 +1,107 @@
+<!-- Card de Photocard Colecionável Estilo Sleeve (2:3) com Design Bipolar Soft Y2K & Cyber-Luxury -->
+<!-- Espera variáveis no contexto: claim (ou slot), com item_definition, lifecycle, status e preços -->
+<div class="group relative aspect-[2/3] w-full rounded-2xl overflow-hidden border border-purple-100/70 dark:border-white/10 bg-white dark:bg-cyber-surface shadow-xs hover:shadow-xl hover:shadow-purple-500/10 dark:hover:shadow-pink-500/15 transition-all duration-300 ease-out hover:scale-[1.015] cursor-pointer select-none flex flex-col justify-between"
+     @click="$dispatch('open-slot-preview', { slotId: '{{ claim.slot.id }}' })">
+    
+    <!-- 1. TOPO: CHIPS FLUTUANTES TRANSLÚCIDOS COM LUCIDE ICONS -->
+    <div class="relative z-10 p-2 sm:p-2.5 flex items-start justify-between gap-1 pointer-events-none">
+        <!-- Chip de Set # -->
+        <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-white/80 dark:bg-black/60 backdrop-blur-md text-slate-800 dark:text-cyber-silver border border-purple-100/50 dark:border-white/10 shadow-2xs">
+            Set #{{ claim.slot.set.set_number|default:"1" }}
+        </span>
+
+        <!-- Chip de Ciclo de Vida -->
+        <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold backdrop-blur-md border shadow-2xs flex items-center gap-1 {{ claim.lifecycle.badge_class|default:'bg-pink-100/80 text-pink-700 border-pink-200 dark:bg-cyber-neon/20 dark:text-cyber-neon dark:border-cyber-neon/40' }}">
+            {% if claim.lifecycle.stage == 1 %}
+                <i data-lucide="clock" class="w-3 h-3"></i>
+            {% elif claim.lifecycle.stage == 2 %}
+                <i data-lucide="compass" class="w-3 h-3"></i>
+            {% elif claim.lifecycle.stage == 3 %}
+                <i data-lucide="shield-check" class="w-3 h-3"></i>
+            {% elif claim.lifecycle.stage == 4 %}
+                <i data-lucide="boxes" class="w-3 h-3"></i>
+            {% else %}
+                <i data-lucide="sparkles" class="w-3 h-3"></i>
+            {% endif %}
+            <span>{{ claim.lifecycle.label|default:"Em Andamento" }}</span>
+        </span>
+    </div>
+
+    <!-- 2. CORPO / FOTO DO PHOTOCARD (100% LIMPA SEM DEGRADÊ ESCURO) -->
+    <div class="absolute inset-0 w-full h-full z-0 overflow-hidden bg-slate-100 dark:bg-cyber-obsidian">
+        {% if claim.slot.item_definition.image_url %}
+            <img src="{{ claim.slot.item_definition.image_url }}"
+                 alt="{{ claim.slot.item_definition.name }}"
+                 loading="lazy"
+                 class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">
+        {% else %}
+            <!-- Placeholder Temático Soft Y2K & Cyber -->
+            <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-purple-100/60 via-slate-50 to-pink-100/60 dark:from-cyber-surface dark:via-cyber-obsidian dark:to-cyber-elevated">
+                <i data-lucide="sparkles" class="w-8 h-8 text-pink-400 dark:text-cyber-electric mb-2 animate-pulse-subtle"></i>
+                <span class="text-xs font-black text-slate-700 dark:text-cyber-silver line-clamp-2">
+                    {{ claim.slot.item_definition.member_name|default:claim.slot.item_definition.name }}
+                </span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. RODAPÉ SÓLIDO DE INFORMAÇÕES & SEMÁFORO FINANCEIRO EM 3 CHIPS -->
+    <div class="relative z-10 bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-md border-t border-purple-100/60 dark:border-white/10 p-2 sm:p-2.5 space-y-1.5 transition-colors">
+        
+        <!-- Linha 1: Nome do Integrante + Preço em Fonte Monospaçada -->
+        <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-black text-slate-900 dark:text-white truncate" title="{{ claim.slot.item_definition.member_name|default:claim.slot.item_definition.name }}">
+                {{ claim.slot.item_definition.member_name|default:claim.slot.item_definition.name }}
+            </span>
+            <span class="text-xs font-mono font-black text-pink-600 dark:text-cyber-neon flex-shrink-0">
+                R$ {{ claim.total_price|default:claim.slot.price|floatformat:2 }}
+            </span>
+        </div>
+
+        <!-- Linha 2: Semáforo de Pagamentos em 3 Chips Miniaturas -->
+        <div class="grid grid-cols-3 gap-1 pt-0.5 border-t border-slate-100 dark:border-white/5 text-[8px] font-black text-center">
+            
+            <!-- Chip 1: Item / Produto -->
+            <span class="py-0.5 rounded-md flex items-center justify-center gap-0.5 {% if claim.status == 'PAID' or claim.slot.is_item_paid %}bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30{% endif %}">
+                {% if claim.status == 'PAID' or claim.slot.is_item_paid %}
+                    <i data-lucide="check-circle-2" class="w-2.5 h-2.5"></i>
+                    <span>Pago</span>
+                {% else %}
+                    <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                    <span>Item</span>
+                {% endif %}
+            </span>
+
+            <!-- Chip 2: Frete Internacional -->
+            <span class="py-0.5 rounded-md flex items-center justify-center gap-0.5 {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30{% endif %}{% else %}bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500 border border-transparent{% endif %}">
+                {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}
+                    {% if claim.slot.is_frete_inter_paid %}
+                        <i data-lucide="check-circle-2" class="w-2.5 h-2.5"></i>
+                        <span>Frete</span>
+                    {% else %}
+                        <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                        <span>Frete</span>
+                    {% endif %}
+                {% else %}
+                    <span>—</span>
+                {% endif %}
+            </span>
+
+            <!-- Chip 3: Taxa Alfandegária -->
+            <span class="py-0.5 rounded-md flex items-center justify-center gap-0.5 {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30{% endif %}{% else %}bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-500 border border-transparent{% endif %}">
+                {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}
+                    {% if claim.slot.is_taxa_aduaneira_paid %}
+                        <i data-lucide="check-circle-2" class="w-2.5 h-2.5"></i>
+                        <span>Taxa</span>
+                    {% else %}
+                        <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                        <span>Taxa</span>
+                    {% endif %}
+                {% else %}
+                    <span>—</span>
+                {% endif %}
+            </span>
+
+        </div>
+    </div>
+</div>
