@@ -90,14 +90,15 @@ python manage.py test apps.cegs
 - **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
 - **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
 
-### 3.6. Galeria do Participante: Cards Sleeve (2:3) & Pastas com Estantes Horizontais
-- **Grid de Pastas de CEG (`aspect-[3/4]`):** A galeria inicializa no modo de **Pastas de CEG** (`aspect-[3/4]`), organizando as CEGs como capas de álbuns colecionáveis no grid, de forma limpa e compacta.
-- **Expansão Dinâmica em Estante Horizontal (`col-span-full`):** Ao clicar em uma pasta, ela se expande na horizontal em formato de estante interativa:
-  - **Card de Resumo / Metadados da CEG (à esquerda, 3:4):** Substitui a foto da capa por informações vitais (Era/Grupo, link da CEG ↗, remessa/caixa, prazo em destaque, saldo pendente total, breakdown de frete e taxa, botão de cópia Pix em 1 clique e botão "▲ Recolher Pasta").
-  - **Fileira de Photocards Sleeve 2:3 (à direita):** Lado a lado em scroll horizontal fluido (`overflow-x-auto scrollbar-thin`), exibindo 100% da imagem, integrante em rosa (`text-pink-300`), preço mono e o Semáforo em 3 Chips Miniaturas (`📦 Item`, `✈️ Frete`, `🏛️ Taxa`).
-- **Multi-Expansão e Controle Rápido:** O participante pode expandir múltiplas pastas ao mesmo tempo ou recolher individualmente. Botões rápidos no topo permitem "📂 Expandir Todas" e "📁 Recolher Todas" com 1 clique.
-- **Busca com Auto-Expansão:** Digitar na busca textual expande automaticamente as estantes das CEGs que contêm itens correspondentes.
-- **Alternância para Modo Completo ou Tabela:** Suporta alternância com 1 clique para `✨ Ver Todos os Photocards Juntos` (grid denso unificado) ou `📋 Tabela`.
+### 3.6. Galeria do Participante: Cards Sleeve (2:3) & Grid Flow Contínuo de Pastas
+- **Grid Unificado & Proporção 2:3 Única:** Todas as pastas (fechadas ou abertas) e todos os photocards habitam o mesmo grid responsivo (`aspect-[2/3]`), sem quebras ou estantes separadas.
+- **Expansão em Fluxo Contínuo (Inline Flow Grid):**
+  - Clicar na pasta de uma CEG transforma seu card no **Card de Resumo da CEG** (mesma célula 2:3, exibindo Era/Grupo, link da CEG ↗, remessa/caixa, prazo em destaque, saldo pendente total, breakdown de frete e taxa, botão Pix em 1 clique e botão "▲ Fechar").
+  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, **empurrando naturalmente** as próximas pastas e photocards para as colunas e linhas seguintes.
+  - Ao recolher a pasta, os photocards são ocultados e todos os itens posteriores refluem para a esquerda/cima instantaneamente.
+- **Multi-Expansão e Controle Rápido:** Várias pastas podem ser abertas ao mesmo tempo, fluindo livremente pelo grid. Botões rápidos no topo permitem "📂 Expandir Todas" e "📁 Recolher Todas" com 1 clique.
+- **Busca com Auto-Expansão:** Digitar na busca textual expande automaticamente as pastas cujos itens correspondem ao termo pesquisado.
+- **Alternância para Modo Completo ou Tabela:** Suporta alternância com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem separação de pastas) ou `📋 Tabela`.
 
 ---
 
