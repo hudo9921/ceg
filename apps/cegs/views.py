@@ -18,7 +18,7 @@ from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptL
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
 from .creations_views import StaffRequiredMixin
-from .image_utils import process_image_upload
+from .image_utils import process_image_upload, crop_image_from_coordinates
 
 logger = logging.getLogger(__name__)
 
@@ -1950,3 +1950,73 @@ class DeleteAvulsoItemView(StaffRequiredMixin, View):
                 return JsonResponse({'success': False, 'message': err_msg}, status=500)
             messages.error(request, err_msg)
             return redirect('ceg_detail', slug=slug)
+
+
+class CropCEGItemPhotoView(View):
+    """
+    Endpoint AJAX para salvar a foto recortada de um item da CEG (CEGItemDefinition).
+    Suporta:
+    1. Base64 gerado pelo Cropper.js no browser (image_base64 / base64_data).
+    2. Coordenadas {x, y, width, height} para recorte via Pillow no backend.
+    """
+    def post(self, request, slug, item_def_id):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+
+        ceg = get_object_or_404(CEG, slug=slug)
+        item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg)
+
+        try:
+            if request.content_type == 'application/json':
+                data = json.loads(request.body.decode('utf-8') or '{}')
+            else:
+                data = request.POST
+        except Exception:
+            data = request.POST
+
+        base64_data = data.get('base64_data') or data.get('image_base64')
+        source_url = data.get('source_url') or ceg.banner_url or ''
+        x = data.get('x')
+        y = data.get('y')
+        width = data.get('width')
+        height = data.get('height')
+
+        new_image_url = ''
+
+        # 1. Base64 exportado pelo Cropper.js no cliente
+        if base64_data:
+            try:
+                new_image_url = process_image_upload(base64_str=base64_data, folder='items')
+            except Exception as e:
+                logger.error(f"Erro ao salvar Base64 do recorte de item: {e}")
+
+        # 2. Coordenadas para corte no backend com Pillow
+        elif x is not None and y is not None and width and height:
+            try:
+                new_image_url = crop_image_from_coordinates(
+                    source_url_or_path=source_url,
+                    x=float(x),
+                    y=float(y),
+                    width=float(width),
+                    height=float(height),
+                    folder='items'
+                )
+            except Exception as e:
+                logger.error(f"Erro ao recortar via coordenadas Pillow: {e}")
+
+        if new_image_url:
+            item_def.image_url = new_image_url
+            item_def.save(update_fields=['image_url'])
+            return JsonResponse({
+                'success': True,
+                'image_url': new_image_url,
+                'item_def_id': item_def.id,
+                'item_name': item_def.name,
+                'message': f"Foto de {item_def.name} recortada e salva com sucesso!"
+            })
+
+        return JsonResponse({
+            'success': False,
+            'message': 'Não foi possível processar a imagem recortada. Forneça dados Base64 ou coordenadas válidas.'
+        }, status=400)
+

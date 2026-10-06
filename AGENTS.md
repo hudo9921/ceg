@@ -17,7 +17,8 @@ python manage.py test apps.participants.tests.ParticipantPrazosProximosTests.tes
 python manage.py test apps.participants.tests.ParticipantPrazosProximosTests
 python manage.py test apps.participants.tests.ParticipantMyClaimsTests
 
-# 2. Testes de CEGs / Criação / Edição (< 3s)
+# 2. Testes de CEGs / Criação / Edição / Recorte (< 3s)
+python manage.py test apps.cegs.tests_crop_studio
 python manage.py test apps.cegs.tests.CEGModelTest
 python manage.py test apps.cegs.tests.CEGUpdateViewTest
 
@@ -47,6 +48,7 @@ python manage.py test apps.cegs
 | **Minha Caixinha / Pedir Envio** | `PacoteNacional`, `ItemSlot` | `apps/participants/caixinha_views.py` | `templates/participants/partials/_caixinha_tab.html` |
 | **Caixas & Remessas Internacionais** | `Caixa`, `ItemRateCaixa` | `apps/cegs/caixas_views.py` | `templates/cegs/caixas_dashboard.html`<br>`templates/cegs/caixa_detail.html`<br>`templates/cegs/caixa_form.html` |
 | **CEGs (Grupos de Compra)** | `CEG`, `ItemSlot`, `ItemDefinition`, `Set` | `apps/cegs/views.py`, `creations_views.py` | `templates/cegs/detail.html`<br>`templates/cegs/creations.html` |
+| **Estúdio de Recorte de Photocards** | `CEG`, `CEGItemDefinition` | `apps/cegs/views.py:CropCEGItemPhotoView`<br>`apps/cegs/image_utils.py:crop_image_from_coordinates` | `templates/cegs/partials/_crop_studio_modal.html`<br>`templates/cegs/creations.html`<br>`templates/cegs/detail.html` |
 | **Compras Avulsas (Mercari JP)** | `ItemIndividual` | `apps/cegs/mercari_views.py` | `templates/cegs/mercari_dashboard.html`<br>`templates/participants/partials/_mercari_section.html` |
 | **Analytics & BI** | — | `apps/analytics/views.py`, `services.py` | `templates/analytics/` |
 
@@ -81,6 +83,12 @@ python manage.py test apps.cegs
 ### 3.4. Concorrência no Segundo Zero
 - Reservas de slots utilizam `select_for_update()` com transações atômicas para evitar overclaiming.
 - Quando múltiplos usuários disputam o mesmo slot, os excedentes são alocados em Sets subsequentes ou enfileirados na Lista de Espera com timestamp de precisão em milissegundos.
+
+### 3.5. Estúdio de Recorte de Photocards (Cropper.js & Esteira de Integrantes)
+- Permite recortar a imagem oficial/banner da CEG para associar fotos a cada integrante (`CEGItemDefinition`).
+- Proporção padrão: `2:3` (formato oficial de photocard K-pop ~55mm x 85mm), com alternância para `1:1` e `Livre`.
+- **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
+- **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
 
 ---
 

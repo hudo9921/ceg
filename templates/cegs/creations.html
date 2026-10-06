@@ -1261,7 +1261,14 @@
                                 Defina os photocards/itens da CEG e pré-reserve slots para participantes cadastrados se desejar.
                             </span>
                         </div>
-                        <div class="flex items-center gap-2 self-start sm:self-auto">
+                        <div class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                            <button type="button" @click="openCropStudioForCeg()"
+                                    :disabled="!cegBannerPreview && !cegBannerUrl"
+                                    :class="(cegBannerPreview || cegBannerUrl) ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'"
+                                    class="px-2.5 py-1.5 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
+                                    :title="(cegBannerPreview || cegBannerUrl) ? 'Recortar fotos dos integrantes a partir da imagem da CEG' : 'Anexe o banner da CEG primeiro para recortar'">
+                                <span>✂️</span> Recortar Fotos
+                            </button>
                             <button type="button" @click="showNewTipoModal = true"
                                     class="px-2.5 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer">
                                 <span>🏷️</span> + Novo Tipo
@@ -1362,8 +1369,20 @@
                         <template x-for="(item, index) in items" :key="index">
                             <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2 shadow-xs">
                                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                                    <span class="w-6 h-6 rounded-md bg-pink-100 text-pink-700 font-bold text-xs flex items-center justify-center shrink-0"
-                                          x-text="index + 1"></span>
+                                    <!-- Miniatura / Photocard e Gatilho de Recorte -->
+                                    <div class="w-8 h-10 rounded-lg bg-pink-50 border border-pink-200 shrink-0 flex items-center justify-center overflow-hidden relative group/thumb cursor-pointer shadow-2xs"
+                                         @click="openCropStudioForCeg(index)"
+                                         title="Clique para recortar ou alterar a foto deste integrante no estúdio">
+                                        <template x-if="item.image_base64 || item.image_url">
+                                            <img :src="item.image_base64 || item.image_url" class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!item.image_base64 && !item.image_url">
+                                            <span class="text-[11px] text-pink-700 font-black" x-text="index + 1"></span>
+                                        </template>
+                                        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition flex items-center justify-center text-[11px] text-white">
+                                            ✂️
+                                        </div>
+                                    </div>
 
                                     <!-- Nome do Item (Tipo de item ou Subtipo por padrão) -->
                                     <div class="flex-1 w-full sm:w-auto">
@@ -1995,6 +2014,9 @@
         </div>
     </div>
 
+    <!-- Estúdio de Recorte de Photocards Integrado -->
+    {% include 'cegs/partials/_crop_studio_modal.html' %}
+
 <!-- Dados Iniciais em JSON isolado (Permite que o script JS abaixo seja 100% livre de erros de lint) -->
 <script id="creations-hub-data" type="application/json">
 {
@@ -2081,6 +2103,16 @@ document.addEventListener('alpine:init', () => {
         cegBannerBase64: '',
         cegBannerUrl: '',
         cegDragOver: false,
+
+        // Estado do Estúdio de Recorte de Itens / Photocards
+        cropStudioOpen: false,
+        cropStudioSaving: false,
+        cropStudioImageReady: false,
+        cropStudioSourceUrl: '',
+        cropStudioItems: [],
+        cropStudioCurrentIndex: 0,
+        cropAspectRatio: 2/3,
+        cropperInstance: null,
 
         // Estado do Item Individual (criação / edição)
         itemImagePreview: '',
@@ -2996,6 +3028,152 @@ document.addEventListener('alpine:init', () => {
                 alert('Erro ao conectar com o servidor.');
             } finally {
                 this.newTipoSubmitting = false;
+            }
+        },
+        openCropStudioForCeg(startIndex = 0) {
+            const src = this.cegBannerPreview || this.cegBannerUrl;
+            if (!src) {
+                alert('Por favor, selecione ou envie a foto/banner da CEG no Passo 1 primeiro para poder recortar as fotos dos itens.');
+                return;
+            }
+            if (!this.items || this.items.length === 0) {
+                alert('Adicione pelo menos um integrante/item antes de abrir o estúdio de recorte.');
+                return;
+            }
+
+            this.cropStudioSourceUrl = src;
+            this.cropStudioItems = this.items;
+            this.cropStudioCurrentIndex = Math.max(0, Math.min(startIndex, this.items.length - 1));
+            this.cropStudioImageReady = false;
+            this.cropStudioOpen = true;
+
+            if (this.cropperInstance) {
+                try { this.cropperInstance.destroy(); } catch (e) {}
+                this.cropperInstance = null;
+            }
+
+            this.$nextTick(() => {
+                const img = document.getElementById('crop-studio-target-image');
+                if (img) {
+                    img.style.display = 'block';
+                    if (img.complete && img.naturalWidth > 0) {
+                        this.initCropperInstance();
+                    }
+                }
+            });
+        },
+        initCropperInstance() {
+            this.cropStudioImageReady = true;
+            this.$nextTick(() => {
+                const img = document.getElementById('crop-studio-target-image');
+                if (!img) return;
+
+                if (this.cropperInstance) {
+                    try { this.cropperInstance.destroy(); } catch (e) {}
+                    this.cropperInstance = null;
+                }
+
+                if (typeof Cropper === 'undefined') {
+                    console.error('Cropper.js ainda não foi carregado.');
+                    return;
+                }
+
+                this.cropperInstance = new Cropper(img, {
+                    aspectRatio: this.cropAspectRatio,
+                    viewMode: 1,
+                    autoCropArea: 0.6,
+                    responsive: true,
+                    restore: false,
+                    checkCrossOrigin: false,
+                    zoomable: true,
+                    scalable: false,
+                    rotatable: true,
+                    movable: true,
+                    guides: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                });
+            });
+        },
+        setCropAspectRatio(ratio) {
+            this.cropAspectRatio = ratio;
+            if (this.cropperInstance) {
+                this.cropperInstance.setAspectRatio(ratio);
+            }
+        },
+        cropperZoom(delta) {
+            if (this.cropperInstance) {
+                this.cropperInstance.zoom(delta);
+            }
+        },
+        cropperRotate(deg) {
+            if (this.cropperInstance) {
+                this.cropperInstance.rotate(deg);
+            }
+        },
+        cropperReset() {
+            if (this.cropperInstance) {
+                this.cropperInstance.reset();
+            }
+        },
+        selectCropStudioIndex(idx) {
+            if (idx >= 0 && idx < this.cropStudioItems.length) {
+                this.cropStudioCurrentIndex = idx;
+            }
+        },
+        cropCurrentItemAndNext() {
+            if (!this.cropperInstance) return;
+            const canvas = this.cropperInstance.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 1200,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+
+            if (!canvas) {
+                alert('Não foi possível gerar o recorte. Verifique a seleção na imagem.');
+                return;
+            }
+
+            let base64 = '';
+            try {
+                base64 = canvas.toDataURL('image/webp', 0.85);
+            } catch (e) {
+                try {
+                    base64 = canvas.toDataURL('image/jpeg', 0.85);
+                } catch (err) {
+                    console.error('Erro ao converter canvas em Base64:', err);
+                }
+            }
+
+            if (base64) {
+                const item = this.cropStudioItems[this.cropStudioCurrentIndex];
+                if (item) {
+                    item.image_base64 = base64;
+                    item.image_url = base64;
+                }
+            }
+
+            if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+                this.cropStudioCurrentIndex++;
+            } else {
+                this.closeCropStudio();
+            }
+        },
+        skipCropStudioItem() {
+            if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+                this.cropStudioCurrentIndex++;
+            } else {
+                this.closeCropStudio();
+            }
+        },
+        closeCropStudio() {
+            this.cropStudioOpen = false;
+            if (this.cropperInstance) {
+                try { this.cropperInstance.destroy(); } catch (e) {}
+                this.cropperInstance = null;
             }
         },
         calculateSetTotal() {

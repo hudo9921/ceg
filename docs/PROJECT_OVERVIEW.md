@@ -96,4 +96,24 @@ Cada slot claimado passa por 5 estágios visuais no painel do participante:
 - **Framework CSS:** Tailwind CSS (classes utilitárias, Dark Mode nativo com classe `dark`).
 - **Framework JS Reativo:** Alpine.js (para filtros reativos instantâneos, acordeões, modais e cópia de Pix sem recarregar página).
 - **Modularização de Templates:**
-  - O template central `templates/participants/my_claims.html` é mantido compacto e desacoplado através de parciais na pasta `templates/participants/partials/`.
+  - **Portal do Participante:** `templates/participants/my_claims.html` é mantido compacto e desacoplado através de parciais em `templates/participants/partials/` (`_quick_pix.html`, `_semaforo_prazos.html`, `_caixinha_tab.html`, etc.).
+  - **Módulo de CEGs & Gestão:** Componentes complexos reutilizáveis residem em `templates/cegs/partials/` (ex: `_crop_studio_modal.html`), evitando templates monolíticos com mais de 200 linhas.
+
+---
+
+## 7. Estúdio de Recorte de Photocards (Modo Esteira)
+
+O **Estúdio de Recorte de Photocards** permite que administradores e GOMs recortem a imagem principal/banner oficial da CEG para extrair e associar fotos individuais a cada integrante/photocard (`CEGItemDefinition`).
+
+### Principais Características:
+- **Fluxo Produtivo em Esteira:** Interface com visualização simultânea da imagem original e lista vertical dos integrantes com miniaturas ao vivo e status (Pendente / Recortado).
+- **Proporção Oficial:** Padrão travado em `2:3` (formato padrão de photocard de K-pop ~55mm x 85mm), com alternância rápida para `1:1` (quadrado) e `Livre`.
+- **Controles de Precisão:** Zoom in/out, rotação 90°, reset e ajuste fino por teclas direcionais.
+- **Teclas de Atalho:**
+  - `Enter`: Salva o recorte do integrante atual e avança para o próximo.
+  - `ESC`: Fecha o estúdio preservando os recortes já concluídos.
+- **Dualidade de Operação:**
+  1. **Na Criação da CEG (`creations.html`):** Atua como um sub-modal sobre o formulário de nova CEG. Armazena os recortes em Base64 Data URI no array Alpine em memória (`items[i].image_base64`). Ao salvar a CEG, o backend converte e otimiza via `process_image_upload(folder='items')`.
+  2. **Na Página de Gestão (`detail.html`):** Permite recortar e associar fotos a qualquer momento para CEGs existentes. Salva cada recorte via AJAX POST para `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando a imagem nos cards de slots sem recarregar a página.
+- **Resiliência e Fallback:** O frontend gera WebP otimizado via canvas do navegador; caso o canvas esteja restrito por CORS, as coordenadas `{x, y, width, height}` são enviadas ao backend para corte direto com o Pillow (`crop_image_from_coordinates`).
+

@@ -662,6 +662,18 @@ class CreateCEGView(StaffRequiredMixin, View):
                     is_av = bool(item_data.get('is_avulso', False))
                     qtd_av = max(1, int(item_data.get('quantidade_avulsa', 1) or 1)) if is_av else 1
 
+                    raw_item_img = item_data.get('image_base64') or item_data.get('image_url', '')
+                    item_image_url = ''
+                    if raw_item_img and isinstance(raw_item_img, str) and raw_item_img.strip():
+                        raw_item_img_clean = raw_item_img.strip()
+                        if raw_item_img_clean.startswith('data:image/') or ';base64,' in raw_item_img_clean:
+                            try:
+                                item_image_url = process_image_upload(base64_str=raw_item_img_clean, folder='items')
+                            except Exception as e:
+                                logger.warning(f"Erro ao salvar imagem recortada do item '{i_name}': {e}")
+                        else:
+                            item_image_url = raw_item_img_clean[:500]
+
                     item_def = CEGItemDefinition.objects.create(
                         ceg=ceg,
                         name=i_name,
@@ -670,7 +682,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                         tipo_item=tipo_item,
                         sub_category=item_data.get('sub_category', '').strip(),
                         default_price=price,
-                        image_url=item_data.get('image_url', '').strip(),
+                        image_url=item_image_url,
                         is_avulso=is_av,
                         quantidade_avulsa=qtd_av,
                         order_index=int(item_data.get('order_index', order_idx))
