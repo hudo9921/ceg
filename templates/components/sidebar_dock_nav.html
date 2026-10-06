@@ -1,5 +1,5 @@
 <!-- Componente de Navegação Híbrida: Sidebar Deezer/Linear (Desktop) + Dock Flutuante Godly (Mobile) -->
-<div x-data="{ sidebarCollapsed: true }" class="relative">
+<div x-data="{ sidebarCollapsed: true, gomMenuOpen: {% if 'creations' in request.path or 'caixa' in request.path or 'status' in request.path or 'auditoria' in request.path or 'envio' in request.path or 'vendas' in request.path or 'consulta-joiner' in request.path %}true{% else %}false{% endif %} }" class="relative">
     
     <!-- 1. SIDEBAR VERTICAL RETRÁTIL (DESKTOP) -->
     <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 flex-col justify-between transition-all duration-300 ease-in-out border-r border-purple-100/70 dark:border-white/10 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-xl shadow-xs"
@@ -59,12 +59,80 @@
             <div class="my-3 border-t border-purple-100/50 dark:border-white/5"></div>
 
             {% if request.user.is_authenticated and request.user.is_staff %}
-            <!-- Gestão / Staff Admin (ShieldCheck) -->
-            <button type="button" @click="adminSidebarOpen = true"
-                    class="w-full group flex items-center gap-3.5 px-3 py-2.5 rounded-2xl transition-all duration-200 text-slate-700 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-electric font-bold cursor-pointer">
-                <i data-lucide="shield-check" class="w-5 h-5 flex-shrink-0 text-amber-500 transition-transform group-hover:scale-110"></i>
-                <span x-show="!sidebarCollapsed" x-transition class="text-xs whitespace-nowrap">Menu Gestão GOM</span>
-            </button>
+            <!-- Gestão / Staff Admin (ShieldCheck) - Acordeão Inline na Sidebar -->
+            <div class="space-y-1">
+                <button type="button"
+                        @click="if(sidebarCollapsed) { sidebarCollapsed = false; gomMenuOpen = true; } else { gomMenuOpen = !gomMenuOpen; } $nextTick(() => { if(window.lucide) window.lucide.createIcons(); })"
+                        class="w-full group flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 cursor-pointer {% if 'creations' in request.path or 'caixa' in request.path or 'status' in request.path or 'auditoria' in request.path or 'envio' in request.path or 'vendas' in request.path or 'consulta-joiner' in request.path %}bg-purple-100/70 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-black shadow-xs border border-purple-200/70 dark:border-white/10{% else %}text-slate-700 dark:text-cyber-silver hover:bg-purple-50/70 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-electric font-bold{% endif %}">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <i data-lucide="shield-check" class="w-5 h-5 flex-shrink-0 text-amber-500 transition-transform group-hover:scale-110"></i>
+                        <span x-show="!sidebarCollapsed" x-transition class="text-xs whitespace-nowrap">Menu Gestão GOM</span>
+                    </div>
+                    <i data-lucide="chevron-down"
+                       x-show="!sidebarCollapsed"
+                       class="w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 flex-shrink-0"
+                       :class="gomMenuOpen ? 'rotate-180 text-pink-600 dark:text-cyber-neon' : ''"></i>
+                </button>
+
+                <!-- Sub-itens do Acordeão Inline (Exibidos DIRETAMENTE ABAIXO) -->
+                <div x-show="!sidebarCollapsed && gomMenuOpen"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 -translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 -translate-y-1"
+                     class="pl-3 pr-1 py-1 space-y-1 border-l-2 border-purple-200/70 dark:border-white/10 ml-5 my-1">
+                    
+                    <a href="{% url 'creations_hub' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'creations' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500"></i>
+                        <span class="truncate">Hub de Criações</span>
+                    </a>
+
+                    <a href="{% url 'cegs_status' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'status' in request.path or request.resolver_match.url_name == 'cegs_status' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="activity" class="w-3.5 h-3.5 flex-shrink-0 text-amber-500"></i>
+                        <span class="truncate">Status das CEGs</span>
+                    </a>
+
+                    <a href="{% url 'caixas_dashboard' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'caixa' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="plane" class="w-3.5 h-3.5 flex-shrink-0 text-sky-500"></i>
+                        <span class="truncate">Caixas & Remessas</span>
+                    </a>
+
+                    <a href="{% url 'consulta_joiner' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'consulta-joiner' in request.path or request.resolver_match.url_name == 'consulta_joiner' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="users" class="w-3.5 h-3.5 flex-shrink-0 text-purple-500"></i>
+                        <span class="truncate">Consulta Joiner 360º</span>
+                    </a>
+
+                    <a href="{% url 'envios_nacionais' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'envio' in request.path or request.resolver_match.url_name == 'envios_nacionais' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="truck" class="w-3.5 h-3.5 flex-shrink-0 text-emerald-500"></i>
+                        <span class="truncate">Envios Nacionais</span>
+                    </a>
+
+                    <a href="{% url 'auditoria_logs' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'auditoria' in request.path or 'logs' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="shield" class="w-3.5 h-3.5 flex-shrink-0 text-indigo-500"></i>
+                        <span class="truncate">Auditoria & Logs</span>
+                    </a>
+
+                    <a href="{% url 'sales_report' %}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'vendas' in request.path or 'sales' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5 flex-shrink-0 text-teal-500"></i>
+                        <span class="truncate">Relatório de Vendas</span>
+                    </a>
+
+                    <a href="/admin/" target="_blank"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all text-slate-500 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5 flex-shrink-0 text-slate-400"></i>
+                        <span class="truncate">Django Admin</span>
+                    </a>
+                </div>
+            </div>
             {% endif %}
         </nav>
 

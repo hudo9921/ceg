@@ -118,7 +118,7 @@ python manage.py test apps.cegs
   - **Modo Escuro (Cyber-Luxury):** Fundo base obsidiana `#0B0A0F`, superfícies acrílicas `#14121B` / `#1A1724`, textos prateados `#E2E8F0`, neon pink `#F472B6`, roxo elétrico `#C084FC`, azul gelo `#38BDF8`.
 - **Ícones Lucide:** Carregamento CDN com traço unificado `stroke-width="1.75"` e trigger automático via Alpine (`alpine:initialized` e `window.dispatchEvent(new Event('icons-refresh'))`).
 - **Componentes Modulares Reutilizáveis (`templates/components/`):**
-  - `sidebar_dock_nav.html`: Sidebar vertical colapsável (desktop) e dock flutuante translúcido (mobile).
+  - `sidebar_dock_nav.html`: Sidebar vertical colapsável (desktop) e dock flutuante translúcido (mobile). O item **Menu Gestão GOM** expande inline em formato de acordeão diretamente na sidebar (sem abrir nenhum modal ou gaveta deslizante sobre a página), listando os acessos administrativos (Hub de Criações, Status das CEGs, Caixas & Remessas, Consulta Joiner 360º, Envios Nacionais, Auditoria & Logs, Relatório de Vendas e Django Admin) com 100% Lucide Icons (`stroke-width="1.75"`).
   - `photocard_sleeve_card.html`: Card sleeve `aspect-[2/3]` colecionável com semáforo integrado.
   - `claim_confirmation_modal.html`: Modal de claim em vidro acrílico com gradiente de malha acionado por `--era-accent` e timer pulsante.
 
