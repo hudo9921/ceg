@@ -1,0 +1,317 @@
+<!-- ==========================================
+     GRADE DE ITENS AVULSOS & EXCLUSIVOS (MERCARI / EXTRAS)
+     100% Lucide Icons & Suporte a Dark Mode
+     ========================================== -->
+<div x-show="viewMode !== 'SETS' && (activeSetTab === 'ALL' || activeSetTab === 'AVULSOS')"
+     class="space-y-4">
+    
+    <div class="bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-xl rounded-3xl border border-purple-100/80 dark:border-white/10 overflow-hidden shadow-soft transition-colors">
+        <!-- Header da Seção de Avulsos -->
+        <div class="bg-gradient-to-r from-pink-50/80 via-purple-50/60 to-rose-50/80 dark:from-pink-950/40 dark:via-purple-950/30 dark:to-rose-950/40 px-6 py-4 border-b border-purple-100/80 dark:border-white/10 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="w-9 h-9 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 text-white font-black text-base flex items-center justify-center shadow-xs">
+                    <i data-lucide="package" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-black text-slate-900 dark:text-white">Itens Avulsos & Exclusivos</h2>
+                        <span class="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-pink-100 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-pink-200 dark:border-white/10">
+                            Fixo / Não Replicável
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Itens com quantidade única ou limitada (álbuns selados, pôsteres, POBs avulsos). Não são multiplicados ao adicionar novos Sets.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3 text-xs">
+                <span class="font-bold text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-cyber-elevated px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs inline-flex items-center gap-1.5">
+                    <i data-lucide="box" class="w-3.5 h-3.5 text-pink-500"></i>
+                    <span>{{ avulso_definitions|length }} ite{{ avulso_definitions|length|pluralize:"m,ns" }} • {{ avulso_slots|length }} unidade{{ avulso_slots|length|pluralize }}</span>
+                </span>
+
+                {% if user.is_staff %}
+                <button type="button" @click="openAddAvulsoModal()"
+                    class="px-3.5 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer text-xs active:scale-95">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Adicionar Item Avulso</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grid de Itens Avulsos -->
+        {% if avulso_definitions %}
+        <div class="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {% for idef in avulso_definitions %}
+            <div class="border rounded-2xl p-4 flex flex-col justify-between space-y-3.5 transition-all bg-white dark:bg-cyber-surface border-slate-200 dark:border-white/10 hover:border-pink-300 dark:hover:border-cyber-neon hover:shadow-md group">
+                
+                <!-- Top: Categoria, Integrante e Ações de Admin -->
+                <div>
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            {% if idef.member_name %}
+                            <span class="text-xs font-black text-pink-600 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/60 px-2 py-0.5 rounded-lg border border-pink-100 dark:border-pink-900/50 shadow-2xs">
+                                {{ idef.member_name }}
+                            </span>
+                            {% endif %}
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                <i data-lucide="tag" class="w-2.5 h-2.5"></i>
+                                <span>{{ idef.tipo_item_nome }}</span>
+                            </span>
+                        </div>
+
+                        {% if user.is_staff %}
+                        <div class="flex items-center gap-1">
+                            <button type="button"
+                                @click="openEditAvulsoModal(findAvulsoItem({{ idef.id }}))"
+                                class="w-7 h-7 flex items-center justify-center bg-purple-50 dark:bg-cyber-elevated hover:bg-purple-100 text-purple-700 dark:text-cyber-neon text-xs rounded-xl border border-purple-200 dark:border-white/10 transition shadow-2xs cursor-pointer active:scale-95"
+                                title="Editar item avulso">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button type="button"
+                                @click="openDeleteAvulsoModal(findAvulsoItem({{ idef.id }}))"
+                                class="w-7 h-7 flex items-center justify-center bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-xs rounded-xl border border-rose-200 dark:border-rose-800/60 transition shadow-2xs cursor-pointer active:scale-95"
+                                title="Excluir item avulso">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Imagem do Item Avulso (se houver) -->
+                    {% if idef.image_url %}
+                    <div class="mb-3 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-white/10 aspect-video relative group/img cursor-pointer"
+                         @click="zoomImageUrl = '{{ idef.image_url|escapejs }}'"
+                         title="Clique para ver imagem ampliada">
+                        <img src="{{ idef.image_url }}" alt="{{ idef.name }}"
+                             class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-slate-950/50 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-[11px] text-white font-bold gap-1.5 backdrop-blur-xs">
+                            <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                            <span>Ver Ampliado</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Nome do Item e Preço -->
+                    <div class="flex items-start justify-between gap-2">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
+                            {{ idef.name }}
+                        </h3>
+                        <div class="text-right flex-shrink-0">
+                            <span class="text-sm font-black text-slate-900 dark:text-white font-mono">
+                                R$ {{ idef.default_price|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span>Estoque total: <strong>{{ idef.quantidade_avulsa }} unid.</strong></span>
+                    </div>
+                </div>
+
+                <!-- Lista de Unidades/Slots Físicos do Item -->
+                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Unidades / Vagas
+                    </span>
+
+                    <div class="space-y-1.5">
+                        {% for slot in avulso_slots %}
+                        {% if slot.item_definition_id == idef.id %}
+                        <div class="p-2.5 rounded-xl border transition text-xs flex flex-col gap-2
+                            {% if slot.status == 'AVAILABLE' %}
+                                bg-slate-50 dark:bg-cyber-elevated/60 border-slate-200 dark:border-white/10
+                            {% elif slot.status == 'RESERVED' %}
+                                bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50
+                            {% elif slot.status == 'PAID' %}
+                                bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50
+                            {% else %}
+                                bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60
+                            {% endif %}"
+                            x-show="!onlyAvailableSlots || status === 'AVAILABLE'"
+                            x-data="{
+                                slotId: {{ slot.id }},
+                                status: '{{ slot.status }}',
+                                isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
+                                isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
+                                isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
+                                loading: false,
+                                async toggle(field) {
+                                    if (this.loading) return;
+                                    this.loading = true;
+                                    try {
+                                        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                                        const res = await fetch('/slots/' + this.slotId + '/toggle-payment/', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRFToken': csrf
+                                            },
+                                            body: JSON.stringify({ field: field })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                            this.status = data.status;
+                                            this.isItemPaid = data.is_item_paid;
+                                            this.isInterPaid = data.is_frete_inter_paid;
+                                            this.isTaxaPaid = data.is_taxa_aduaneira_paid;
+                                        } else {
+                                            alert(data.message || 'Erro ao alterar status');
+                                        }
+                                    } catch(e) {
+                                        alert('Erro de conexão ao alterar status: ' + e);
+                                    } finally {
+                                        this.loading = false;
+                                    }
+                                }
+                            }">
+                            
+                            <!-- Header da Unidade -->
+                            <div class="flex items-center justify-between gap-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-[10px] flex items-center justify-center">
+                                        #{{ slot.unit_number }}
+                                    </span>
+                                    <span class="font-bold text-[11px] text-slate-800 dark:text-slate-200">
+                                        Unidade {{ slot.unit_number }}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    {% if slot.status == 'AVAILABLE' %}
+                                    <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                        Disponível
+                                    </span>
+                                    {% elif slot.status == 'RESERVED' %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                                        <i data-lucide="lock" class="w-2.5 h-2.5"></i>
+                                        <span>Reservado</span>
+                                    </span>
+                                    {% elif slot.status == 'PAID' %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-black text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                                        <i data-lucide="check" class="w-2.5 h-2.5"></i>
+                                        <span>Pago</span>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Informação de quem reservou ou botão de reserva -->
+                            {% if slot.claimed_by %}
+                            <div class="pt-1 flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-300">
+                                <div class="truncate flex items-center gap-1">
+                                    <i data-lucide="user" class="w-3 h-3 text-pink-500"></i>
+                                    <span class="font-bold">{{ slot.claimed_by.display_name }}</span>
+                                    {% if slot.claimed_by.social_handle %}
+                                    <span class="text-[10px] text-slate-400 font-mono">({{ slot.claimed_by.social_handle }})</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if user.is_staff %}
+                                <button type="button"
+                                    @click="openManageSlotModal({
+                                        id: {{ slot.id }},
+                                        itemDefId: {{ slot.item_definition.id }},
+                                        name: '{{ slot.item_definition.name|escapejs }} (Unidade #{{ slot.unit_number }})',
+                                        member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                        itemType: '{{ slot.item_definition.item_type }}',
+                                        tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
+                                        setNumber: 'Avulso #{{ slot.unit_number }}',
+                                        price: '{{ slot.price|stringformat:'.2f' }}',
+                                        status: status,
+                                        statusDisplay: status === 'PAID' ? 'Confirmado / Pago' : (status === 'RESERVED' ? 'Reservado' : 'Disponível'),
+                                        claimedById: '{{ slot.claimed_by.id|default:'' }}',
+                                        claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
+                                        claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}',
+                                        isItemPaid: isItemPaid
+                                    })"
+                                    class="text-purple-600 dark:text-cyber-neon hover:underline font-bold text-[10px] flex-shrink-0 cursor-pointer">
+                                    Gerenciar
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="pt-1">
+                                {% if logged_participant %}
+                                <button type="button"
+                                    @click.stop="if (!isStandby) { $store.claimSelection.toggle({
+                                        id: {{ slot.id }},
+                                        name: '{{ slot.item_definition.name|escapejs }} (Unidade #{{ slot.unit_number }})',
+                                        member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
+                                        setNumber: 'Avulso #{{ slot.unit_number }}',
+                                        price: '{{ slot.price|floatformat:2 }}',
+                                        frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
+                                        taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
+                                    }); }"
+                                    class="w-full py-1.5 rounded-xl text-xs font-black text-center transition flex items-center justify-center gap-1.5 cursor-pointer select-none active:scale-95"
+                                    :class="$store.claimSelection.slots.some(s => s.id === slotId)
+                                        ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-xs'
+                                        : 'bg-white dark:bg-cyber-elevated text-slate-700 dark:text-slate-200 border border-dashed border-slate-300 dark:border-white/10 hover:border-pink-300 hover:text-pink-600 dark:hover:text-cyber-neon'">
+                                    <i :data-lucide="$store.claimSelection.slots.some(s => s.id === slotId) ? 'check' : 'plus-circle'" class="w-3.5 h-3.5"></i>
+                                    <span x-text="$store.claimSelection.slots.some(s => s.id === slotId) ? 'Selecionado' : 'Reservar Unidade'"></span>
+                                </button>
+                                {% elif not user.is_staff %}
+                                <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                                    class="w-full py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-black rounded-xl transition shadow-xs flex items-center justify-center gap-1 text-center active:scale-95">
+                                    <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
+                                    <span>Entrar para Reservar</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Ações de Pagamento para Staff -->
+                            {% if user.is_staff %}
+                            <div class="pt-1.5 border-t border-slate-200/60 dark:border-white/5 grid grid-cols-2 gap-1 text-[9px] font-bold">
+                                <button type="button" @click="toggle('item')" :disabled="loading"
+                                    :class="isItemPaid ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'"
+                                    class="py-1 px-1 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer active:scale-95">
+                                    <span x-text="isItemPaid ? '✔' : '○'"></span>
+                                    <span>Item</span>
+                                </button>
+                                <button type="button" @click="toggle('inter')" :disabled="loading"
+                                    :class="isInterPaid ? 'bg-sky-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'"
+                                    class="py-1 px-1 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer active:scale-95">
+                                    <span x-text="isInterPaid ? '✔' : '○'"></span>
+                                    <span>Inter</span>
+                                </button>
+                            </div>
+                            {% endif %}
+
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Estado vazio de itens avulsos -->
+        <div class="py-12 px-6 text-center space-y-3">
+            <span class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-cyber-elevated text-pink-500 text-2xl flex items-center justify-center mx-auto shadow-xs">
+                <i data-lucide="package" class="w-6 h-6"></i>
+            </span>
+            <div>
+                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum item avulso adicionado</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                    Esta CEG ainda não possui itens avulsos cadastrados. Itens avulsos possuem estoque fixo e não são multiplicados quando novos Sets são abertos.
+                </p>
+            </div>
+            {% if user.is_staff %}
+            <div class="pt-2">
+                <button type="button" @click="openAddAvulsoModal()"
+                    class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl transition shadow-xs inline-flex items-center gap-2 cursor-pointer active:scale-95">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Adicionar Primeiro Item Avulso</span>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>

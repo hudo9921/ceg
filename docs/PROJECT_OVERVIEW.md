@@ -98,7 +98,7 @@ Cada slot claimado passa por 5 estágios visuais no painel do participante:
 - **Framework JS Reativo:** Alpine.js (para filtros reativos instantâneos, acordeões, modais e cópia de Pix sem recarregar página).
 - **Modularização de Templates:**
   - **Portal do Participante:** `templates/participants/my_claims.html` é mantido compacto e desacoplado através de parciais em `templates/participants/partials/` (`_quick_pix.html`, `_semaforo_prazos.html`, `_caixinha_tab.html`, etc.).
-  - **Módulo de CEGs & Gestão:** Componentes complexos reutilizáveis residem em `templates/cegs/partials/` (`_detail_header.html`, `_detail_bulk_toolbar.html`, `_crop_studio_modal.html`, etc.), evitando templates monolíticos com mais de 200 linhas.
+  - **Módulo de CEGs & Gestão:** Componentes complexos reutilizáveis residem em `templates/cegs/partials/` (`_detail_header.html`, `_detail_bulk_toolbar.html`, `_detail_polling_grid.html`, `_detail_tabs_bar.html`, `_detail_sets_grid.html`, `_detail_avulsos_grid.html`, `_crop_studio_modal.html`), evitando templates monolíticos com mais de 200 linhas.
   - **Navegação & Sidebar (`templates/components/sidebar_dock_nav.html`):** Sidebar desktop unificada e dock flutuante mobile. O "Menu Gestão GOM" para administradores opera em acordeão inline dentro da própria sidebar (sem gavetas deslizantes ou sobreposição de tela), fornecendo acesso direto com 100% Lucide Icons.
 
 ---

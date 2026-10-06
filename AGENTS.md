@@ -153,6 +153,10 @@ Ao trabalhar em páginas com templates ricos (especialmente `my_claims.html` e `
 5. **Parciais de `detail.html`:**
    - `_detail_header.html`: Capa/Banner Deezer com ambient blur, badges de grupo/era, status da remessa, dados Pix e painel das 3 fases de pagamento (100% Lucide Icons).
    - `_detail_bulk_toolbar.html`: Barra flutuante (sticky) de ações em lote para staff (pagamentos em massa, alteração de tipos, preço e exclusão com Lucide Icons).
+   - `_detail_polling_grid.html`: Grade de votação da enquete de demanda com contagem regressiva, auditoria com precisão de microssegundos e Lucide Icons.
+   - `_detail_tabs_bar.html`: Controles segmentados (Ver Tudo / Sets / Avulsos), tabs dinâmicas de cada Set e filtro de vagas abertas.
+   - `_detail_sets_grid.html`: Grade de Sets e slots físicos estilo toploader/sleeve `2:3` colecionável com semáforo financeiro, zoom e seleção interativa.
+   - `_detail_avulsos_grid.html`: Seção de itens avulsos/exclusivos com gestão de estoque e unidades físicas.
 
 ---
 

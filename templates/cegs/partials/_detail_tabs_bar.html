@@ -1,0 +1,117 @@
+<!-- ==========================================
+     BARRA DE TABS & FILTROS DE SLOTS / SETS
+     100% Lucide Icons & Segmented Controls
+     ========================================== -->
+<div class="bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-xl rounded-2xl border border-purple-100/80 dark:border-white/10 p-4 shadow-sm space-y-3.5">
+    
+    <!-- Barra Superior: Filtro Principal (Ver Tudo / Apenas Sets / Apenas Itens Avulsos) & Ações -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-purple-100/60 dark:border-white/5">
+        <!-- Segmented Control Pills -->
+        <div class="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-cyber-elevated rounded-xl text-xs font-bold shadow-2xs border border-transparent dark:border-white/5">
+            <button type="button"
+                @click="viewMode = 'ALL'; if (activeSetTab === 'AVULSOS') activeSetTab = 'ALL'"
+                class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                :class="viewMode === 'ALL'
+                    ? 'bg-white dark:bg-cyber-surface text-slate-900 dark:text-cyber-neon shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'">
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                <span>Ver Tudo</span>
+            </button>
+            <button type="button"
+                @click="viewMode = 'SETS'; if (activeSetTab === 'AVULSOS') activeSetTab = 'ALL'"
+                class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                :class="viewMode === 'SETS'
+                    ? 'bg-white dark:bg-cyber-surface text-slate-900 dark:text-cyber-neon shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                <span>Apenas Sets ({{ sets|length }})</span>
+            </button>
+            <button type="button"
+                @click="viewMode = 'AVULSOS'; activeSetTab = 'AVULSOS'"
+                class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                :class="viewMode === 'AVULSOS'
+                    ? 'bg-white dark:bg-cyber-surface text-pink-600 dark:text-cyber-neon shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-pink-600 dark:hover:text-cyber-neon'">
+                <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                <span>Itens Avulsos ({{ avulso_definitions|length }})</span>
+            </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+            {% if user.is_staff %}
+            <button type="button"
+                @click="openAddAvulsoModal()"
+                class="px-3 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-black rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Novo Item Avulso</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Barra Inferior: Tabs de Sets & Filtro de Vagas Abertas -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 max-w-full text-xs font-bold no-scrollbar">
+            <!-- Tab Todos os Sets -->
+            <button type="button"
+                x-show="viewMode !== 'AVULSOS'"
+                @click="activeSetTab = 'ALL'"
+                class="px-3 py-1.5 rounded-xl transition whitespace-nowrap cursor-pointer active:scale-95 flex items-center gap-1.5"
+                :class="activeSetTab === 'ALL'
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm font-black'
+                    : 'bg-slate-100 dark:bg-cyber-elevated hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                <span>Todos os Sets ({{ sets|length }})</span>
+            </button>
+
+            <!-- Tabs de cada Set Regular -->
+            {% for s_tab in sets %}
+            <button type="button"
+                x-show="viewMode !== 'AVULSOS'"
+                @click="activeSetTab = {{ s_tab.set_number }}"
+                class="px-3 py-1.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer active:scale-95"
+                :class="activeSetTab === {{ s_tab.set_number }}
+                    ? 'bg-pink-600 text-white shadow-sm font-black'
+                    : 'bg-slate-100 dark:bg-cyber-elevated hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'">
+                <span>Set #{{ s_tab.set_number }}</span>
+                {% if s_tab.is_full %}
+                <span class="w-2 h-2 rounded-full bg-emerald-400" title="100% Fechado"></span>
+                {% else %}
+                <span class="text-[10px] px-1.5 py-0.2 rounded-full"
+                    :class="activeSetTab === {{ s_tab.set_number }} ? 'bg-pink-700 text-pink-100' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
+                    {{ s_tab.reserved_count }}/{{ s_tab.slots_count }}
+                </span>
+                {% endif %}
+            </button>
+            {% endfor %}
+
+            <!-- Tab de Itens Avulsos -->
+            <button type="button"
+                x-show="viewMode !== 'SETS'"
+                @click="activeSetTab = 'AVULSOS'"
+                class="px-3 py-1.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer border active:scale-95"
+                :class="activeSetTab === 'AVULSOS'
+                    ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white border-pink-500 shadow-sm font-black'
+                    : 'bg-pink-50/70 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/60 text-pink-700 dark:text-cyber-neon border-pink-200 dark:border-pink-800/60'">
+                <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                <span>Itens Avulsos</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded-full font-black"
+                    :class="activeSetTab === 'AVULSOS' ? 'bg-pink-800 text-pink-100' : 'bg-pink-200/80 dark:bg-cyber-elevated text-pink-800 dark:text-cyber-neon'">
+                    {{ avulso_definitions|length }}
+                </span>
+            </button>
+        </div>
+
+        <!-- Filter: Apenas Vagas Abertas -->
+        <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none px-3 py-1.5 bg-slate-50 dark:bg-cyber-elevated hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl border border-slate-200 dark:border-white/10 transition active:scale-95">
+                <input type="checkbox" x-model="onlyAvailableSlots" class="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 border-slate-300 dark:border-slate-600 cursor-pointer">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500" :class="onlyAvailableSlots ? 'animate-pulse' : ''"></span>
+                    <span>Apenas Vagas Abertas</span>
+                </span>
+            </label>
+        </div>
+    </div>
+</div>
