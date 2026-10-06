@@ -148,100 +148,129 @@
                         </a>
 
                         <!-- Bloco Logístico e Status -->
-                        <div class="p-2 rounded-xl bg-white/5 border border-white/10 space-y-1.5 text-[9.5px]">
+                        <div class="p-2 rounded-xl bg-white/5 border border-white/10 space-y-1 text-[9.5px]">
                             {% if group.ceg.caixa %}
-                            <div class="flex items-center justify-between gap-1 text-[10px] truncate">
-                                <span class="flex items-center gap-1 text-blue-300 font-bold truncate">
+                            <div class="flex items-center justify-between gap-1 text-[10px]">
+                                <span class="flex items-center gap-1.5 text-blue-300 font-bold truncate">
                                     <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
                                     <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}" class="hover:underline truncate">{{ group.ceg.caixa.nome }}</a>
                                 </span>
-                                <span class="text-slate-400 text-[9px] truncate flex items-center gap-1 flex-shrink-0">
-                                    <span>✈️</span>
-                                    <span class="truncate">{{ group.ceg.get_shipping_status_display }}</span>
-                                    {% if group.ceg.caixa.codigo_rastreio %}
-                                    <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank" class="text-blue-400 font-mono hover:underline" title="Rastrear Remessa">↗</a>
-                                    {% endif %}
-                                </span>
+                                {% if group.ceg.caixa.codigo_rastreio %}
+                                <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank" class="text-blue-400 font-mono text-[9px] hover:underline flex-shrink-0 flex items-center gap-0.5" title="Rastrear Remessa">
+                                    <span>Rastreio</span> <span>↗</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-300 text-[9px]">
+                                <span>✈️</span>
+                                <span class="truncate">{{ group.ceg.get_shipping_status_display }}</span>
                             </div>
                             {% endif %}
 
-                            <div class="flex items-center justify-between gap-1 {% if group.ceg.caixa %}pt-1 border-t border-white/5{% endif %}">
+                            <div class="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
                                 {% if group.prazo_destaque %}
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8.5px] font-bold {{ group.prazo_destaque.urgencia_class }} truncate">
                                     <span>⏱️</span>
                                     <span class="truncate">{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }}</span>
                                 </span>
                                 {% else %}
-                                <span></span>
+                                <span class="text-slate-400 text-[8.5px]">Prazos em dia</span>
                                 {% endif %}
 
-                                <span class="text-slate-400 text-[9px] font-medium flex-shrink-0">
-                                    📁 {{ group.claims|length }} {% if group.claims|length == 1 %}item{% else %}itens{% endif %}
+                                <span class="text-slate-400 text-[9px] font-semibold flex-shrink-0 flex items-center gap-1">
+                                    <span>📁</span>
+                                    <span>{{ group.claims|length }} {% if group.claims|length == 1 %}item{% else %}itens{% endif %}</span>
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Base: Balanço Financeiro e Botão Pix -->
-                    <div class="pt-2 border-t border-white/10 space-y-1.5">
+                    <div class="space-y-1.5">
                         {% if group.total_geral_pendente > 0 %}
-                        <div class="flex items-baseline justify-between gap-1">
-                            <span class="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">Total a Pagar nesta CEG:</span>
-                            <span class="text-sm sm:text-base font-black text-pink-400 font-mono">
-                                R$ {{ group.total_geral_pendente|floatformat:2 }}
-                            </span>
+                        <!-- Card Extrato / Valores a Pagar -->
+                        <div class="p-2 sm:p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
+                            <div class="text-[9px] font-black uppercase tracking-wider text-pink-300 flex items-center justify-between">
+                                <span>Extrato Pendente</span>
+                                <span class="text-[8px] px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">A Pagar</span>
+                            </div>
+
+                            <!-- Linhas Individuais (Sem truncar nenhum valor!) -->
+                            <div class="space-y-1 pt-1 border-t border-white/5 text-[10px]">
+                                {% if group.total_pending > 0 %}
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="flex items-center gap-1 text-amber-300 font-semibold">
+                                        <span>📦</span>
+                                        <span>Itens:</span>
+                                    </span>
+                                    <span class="font-mono font-bold text-amber-300">R$ {{ group.total_pending|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if group.total_frete_inter_pendente > 0 %}
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="flex items-center gap-1 text-blue-300 font-semibold">
+                                        <span>✈️</span>
+                                        <span>Frete a Pagar:</span>
+                                    </span>
+                                    <span class="font-mono font-bold text-blue-300">R$ {{ group.total_frete_inter_pendente|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if group.total_taxa_aduaneira_pendente > 0 %}
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="flex items-center gap-1 text-purple-300 font-semibold">
+                                        <span>🏛️</span>
+                                        <span>Taxa a Pagar:</span>
+                                    </span>
+                                    <span class="font-mono font-bold text-purple-300">R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Total Geral da CEG -->
+                            <div class="pt-1.5 border-t border-white/10 flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-white">Total a Pagar nesta CEG:</span>
+                                <span class="text-sm sm:text-base font-black text-pink-400 font-mono">
+                                    R$ {{ group.total_geral_pendente|floatformat:2 }}
+                                </span>
+                            </div>
                         </div>
 
-                        <!-- Breakdown Frete & Taxa (Compatibilidade com Testes) -->
-                        <div class="flex items-center justify-between gap-1 text-[8.5px] font-bold bg-white/5 px-2 py-1 rounded-lg border border-white/5">
-                            {% if group.total_frete_inter_pendente > 0 %}
-                            <span class="text-blue-300 truncate" title="Frete a Pagar: R$ {{ group.total_frete_inter_pendente|floatformat:2 }}">
-                                Frete a Pagar: R$ {{ group.total_frete_inter_pendente|floatformat:2 }}
-                            </span>
-                            {% else %}
-                            <span></span>
-                            {% endif %}
-                            {% if group.total_taxa_aduaneira_pendente > 0 %}
-                            <span class="text-purple-300 truncate" title="Taxa a Pagar: R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}">
-                                Taxa a Pagar: R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}
-                            </span>
-                            {% endif %}
-                        </div>
-
-                        <!-- Botão Pix -->
+                        <!-- Botão Pix Compacto e Discreto (Não rouba a tela) -->
                         {% if group.has_distinct_pix_keys %}
                         <div class="flex items-center gap-1">
                             {% if group.total_pending > 0 and group.pix_key_item %}
                             <button type="button" @click="copyPix('{{ group.pix_key_item }}', '{{ group.ceg.id }}_item')"
-                                class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer">
-                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_item' ? '✔' : '📦 Item'"></span>
+                                class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer shadow-xs">
+                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_item' ? '✔' : '📦 Pix Item'"></span>
                             </button>
                             {% endif %}
                             {% if group.total_frete_inter_pendente > 0 and group.pix_key_frete %}
                             <button type="button" @click="copyPix('{{ group.pix_key_frete }}', '{{ group.ceg.id }}_frete')"
-                                class="flex-1 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer">
-                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_frete' ? '✔' : '✈️ Frete'"></span>
+                                class="flex-1 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer shadow-xs">
+                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_frete' ? '✔' : '✈️ Pix Frete'"></span>
                             </button>
                             {% endif %}
                             {% if group.total_taxa_aduaneira_pendente > 0 and group.pix_key_taxa %}
                             <button type="button" @click="copyPix('{{ group.pix_key_taxa }}', '{{ group.ceg.id }}_taxa')"
-                                class="flex-1 py-1.5 bg-purple-500 hover:bg-purple-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer">
-                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_taxa' ? '✔' : '🏛️ Taxa'"></span>
+                                class="flex-1 py-1.5 bg-purple-500 hover:bg-purple-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer shadow-xs">
+                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_taxa' ? '✔' : '🏛️ Pix Taxa'"></span>
                             </button>
                             {% endif %}
                         </div>
                         {% elif group.ceg.pix_key %}
                         <button type="button" @click="copyPix('{{ group.ceg.pix_key }}', '{{ group.ceg.id }}')"
-                            class="w-full py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                            class="w-full py-1.5 px-3 bg-pink-600 hover:bg-pink-500 text-white font-bold text-[11px] rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                             <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? '✔' : '📋'"></span>
-                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Pix da CEG'"></span>
+                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Chave Pix'"></span>
                         </button>
                         {% endif %}
 
                         {% else %}
-                        <div class="py-2 px-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black text-center flex items-center justify-center gap-1.5">
+                        <div class="py-2.5 px-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold text-center flex items-center justify-center gap-1.5">
                             <span>✔</span>
-                            <span>100% Quitado</span>
+                            <span>100% Quitado nesta CEG</span>
                         </div>
                         {% endif %}
                     </div>
