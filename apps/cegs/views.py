@@ -1975,7 +1975,7 @@ class CropCEGItemPhotoView(View):
             data = request.POST
 
         base64_data = data.get('base64_data') or data.get('image_base64')
-        source_url = data.get('source_url') or ceg.banner_url or ''
+        source_url = data.get('source_url') or (ceg.get_banner_image() if hasattr(ceg, 'get_banner_image') else '') or ceg.banner_url or ''
         x = data.get('x')
         y = data.get('y')
         width = data.get('width')

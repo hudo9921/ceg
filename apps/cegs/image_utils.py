@@ -174,8 +174,13 @@ def crop_image_from_coordinates(
         elif cleaned_src.startswith('http://') or cleaned_src.startswith('https://'):
             try:
                 import urllib.request
-                req = urllib.request.Request(cleaned_src, headers={'User-Agent': 'KpopCEGManager/1.0'})
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                import ssl
+                req = urllib.request.Request(cleaned_src, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+                })
+                ctx = ssl.create_default_context()
+                with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
                     raw_bytes = resp.read()
             except Exception as e:
                 logger.warning(f"Falha ao baixar imagem remota para crop ({cleaned_src}): {e}")

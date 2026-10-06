@@ -88,7 +88,7 @@ python manage.py test apps.cegs
 - Permite recortar a imagem oficial/banner da CEG para associar fotos a cada integrante (`CEGItemDefinition`).
 - Proporção padrão: `2:3` (formato oficial de photocard K-pop ~55mm x 85mm), com alternância para `1:1` e `Livre`.
 - **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
-- **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
+- **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira. Possui **fallback automático para recorte por coordenadas via Pillow no backend** caso o Canvas seja bloqueado por CORS (Tainted Canvas) em imagens hospedadas em CDNs externas (como Cloudflare R2 / S3).
 
 ### 3.6. Galeria do Participante: Cards Sleeve & Gatefold Album no Grid Flow Contínuo
 - **Grid Unificado de Alta Densidade (Até 6 Colunas):** O grid utiliza `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo que os photocards voltem ao formato compacto de binder/fichário real com muitos cards visíveis por linha.

@@ -65,6 +65,25 @@ class CropStudioBackendTests(TestCase):
         self.item_karina.refresh_from_db()
         self.assertEqual(self.item_karina.image_url, data['image_url'])
 
+    def test_crop_item_photo_view_staff_coordinates_fallback(self):
+        """Organizador staff envia coordenadas e o backend faz o recorte com Pillow."""
+        self.client.login(username='admin_crop', password='crop123')
+        url = reverse('crop_ceg_item_photo', kwargs={'slug': self.ceg.slug, 'item_def_id': self.item_karina.id})
+        res = self.client.post(url, {
+            'source_url': self.img_b64,
+            'x': 10,
+            'y': 10,
+            'width': 50,
+            'height': 75
+        }, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['image_url'])
+
+        self.item_karina.refresh_from_db()
+        self.assertEqual(self.item_karina.image_url, data['image_url'])
+
     def test_create_ceg_view_with_cropped_item_image(self):
         """Ao criar uma CEG no Hub de Criações, itens com foto recortada em Base64 são salvos no storage."""
         self.client.login(username='admin_crop', password='crop123')

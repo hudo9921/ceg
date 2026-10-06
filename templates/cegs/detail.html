@@ -1450,32 +1450,45 @@
         const item = this.cropStudioItems[this.cropStudioCurrentIndex];
         if (!item) return;
 
-        const canvas = this.cropperInstance.getCroppedCanvas({
-            maxWidth: 800,
-            maxHeight: 1200,
-            fillColor: '#fff',
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high',
-        });
+        let base64 = '';
+        let cropData = null;
 
-        if (!canvas) {
-            alert('Não foi possível gerar o recorte. Verifique a seleção.');
-            return;
+        // 1. Tentar exportar Base64 direto via Canvas (caso a imagem não sofra restrição de CORS)
+        try {
+            const canvas = this.cropperInstance?.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 1200,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            if (canvas) {
+                try {
+                    base64 = canvas.toDataURL('image/webp', 0.85);
+                } catch (e) {
+                    try {
+                        base64 = canvas.toDataURL('image/jpeg', 0.85);
+                    } catch (err) {
+                        console.warn('Canvas bloqueado por CORS (tainted). Usando corte por coordenadas no backend.');
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Erro ou restrição de CORS ao gerar canvas:', e);
         }
 
-        let base64 = '';
-        try {
-            base64 = canvas.toDataURL('image/webp', 0.85);
-        } catch (e) {
+        // 2. Se o canvas estiver bloqueado por CORS (tainted canvas), pegamos as coordenadas do Cropper
+        // para que o backend (Python/Pillow) faça o recorte diretamente da URL original no servidor!
+        if (!base64 && this.cropperInstance) {
             try {
-                base64 = canvas.toDataURL('image/jpeg', 0.85);
+                cropData = this.cropperInstance.getData(true);
             } catch (err) {
-                console.error('Erro ao converter canvas em Base64:', err);
+                console.error('Erro ao obter coordenadas do Cropper:', err);
             }
         }
 
-        if (!base64) {
-            alert('Erro ao processar imagem para envio.');
+        if (!base64 && (!cropData || !cropData.width || !cropData.height)) {
+            alert('Não foi possível gerar o recorte. Verifique a seleção da imagem.');
             return;
         }
 
@@ -1483,6 +1496,17 @@
         try {
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
             const url = `/ceg/{{ ceg.slug }}/item/${item.id}/crop/`;
+
+            const payload = base64 ? {
+                image_base64: base64
+            } : {
+                source_url: this.cropStudioSourceUrl,
+                x: cropData.x,
+                y: cropData.y,
+                width: cropData.width,
+                height: cropData.height
+            };
+
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -1490,9 +1514,7 @@
                     'X-CSRFToken': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({
-                    image_base64: base64
-                })
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (data.success) {
