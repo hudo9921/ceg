@@ -170,29 +170,27 @@
             init() {
                 const map = {};
                 this.allCegs.forEach(c => {
-                    const hasPending = (c.countPending > 0) || (c.countInterUnpaid > 0) || (c.countTaxaUnpaid > 0) || (c.countAnyUnpaid > 0);
-                    map[c.id] = hasPending;
+                    map[c.id] = false;
                 });
                 this.expandedCegs = map;
             },
-                                toggleCeg(cegId) {
-                                    const id = String(cegId);
-                                    this.expandedCegs[id] = !this.isCegExpanded(id);
-                                },
-                                isCegExpanded(cegId) {
-                                    const id = String(cegId);
-                                    if (this.searchQuery) {
-                                        const found = this.allCegs.find(c => c.id === id);
-                                        if (found && found.searchText && found.searchText.includes(this.searchQuery.toLowerCase().trim())) {
-                                            return true;
-                                        }
-                                    }
-                                    if (this.expandedCegs[id] === undefined) {
-                                        const found = this.allCegs.find(c => c.id === id);
-                                        return found ? (found.countPending > 0 || found.countInterUnpaid > 0 || found.countTaxaUnpaid > 0) : true;
-                                    }
-                                    return !!this.expandedCegs[id];
-                                },
+            toggleCeg(cegId) {
+                const id = String(cegId);
+                this.expandedCegs[id] = !this.isCegExpanded(id);
+            },
+            isCegExpanded(cegId) {
+                const id = String(cegId);
+                if (this.searchQuery) {
+                    const found = this.allCegs.find(c => c.id === id);
+                    if (found && found.searchText && found.searchText.includes(this.searchQuery.toLowerCase().trim())) {
+                        return true;
+                    }
+                }
+                if (this.expandedCegs[id] === undefined) {
+                    return false;
+                }
+                return !!this.expandedCegs[id];
+            },
                                 expandAllCegs() {
                                     const map = {};
                                     this.allCegs.forEach(c => { map[c.id] = true; });

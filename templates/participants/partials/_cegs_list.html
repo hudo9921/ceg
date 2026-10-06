@@ -1,36 +1,38 @@
         <!-- BARRA SUPERIOR DE NAVEGAÇÃO DA GALERIA DE ÁLBUNS -->
         <div x-show="viewMode === 'gallery'" class="mb-4">
-            <!-- Barra quando UMA PASTA ESTÁ ABERTA -->
-            <div x-show="activeCegFolder && galleryDisplayMode === 'folders'"
-                class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#131B2E] p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-                <button type="button" @click="closeCegFolder()"
-                    class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-100 hover:bg-pink-50 dark:bg-slate-800 dark:hover:bg-pink-950/60 text-slate-700 hover:text-pink-600 dark:text-slate-300 dark:hover:text-pink-400 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs">
-                    <span>←</span>
-                    <span>Voltar para Todos os Álbuns</span>
-                </button>
-                <div class="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-                    <span>📁 Pasta em exibição</span>
-                </div>
-            </div>
-
-            <!-- Barra quando TODAS AS PASTAS ESTÃO VISÍVEIS -->
-            <div x-show="!activeCegFolder && galleryDisplayMode === 'folders'"
-                class="flex items-center justify-between gap-2 px-1">
+            <!-- Barra quando em MODO PASTAS / ESTANTES -->
+            <div x-show="galleryDisplayMode === 'folders'"
+                class="flex flex-wrap items-center justify-between gap-2.5 px-1 py-1">
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        Álbuns & Pastas de CEG
+                        Pastas de CEG & Estantes
                     </span>
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/40">
                         {{ cegs_groups|length }} {% if cegs_groups|length == 1 %}pasta{% else %}pastas{% endif %}
                     </span>
                 </div>
-                <button type="button" @click="setGalleryDisplayMode('all')"
-                    class="text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1 cursor-pointer">
-                    <span>✨ Ver Todos os Photocards Juntos</span>
-                </button>
+                
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button type="button" @click="expandAllCegs()"
+                        class="text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 flex items-center gap-1 cursor-pointer">
+                        <span>📂</span>
+                        <span>Expandir Todas</span>
+                    </button>
+                    <span class="text-slate-300 dark:text-slate-700 text-xs">•</span>
+                    <button type="button" @click="collapseAllCegs()"
+                        class="text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 flex items-center gap-1 cursor-pointer">
+                        <span>📁</span>
+                        <span>Recolher Todas</span>
+                    </button>
+                    <span class="text-slate-300 dark:text-slate-700 text-xs">•</span>
+                    <button type="button" @click="setGalleryDisplayMode('all')"
+                        class="text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1 cursor-pointer">
+                        <span>✨ Ver Todos os Photocards Juntos</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Barra quando o usuário optou por 'VER TODOS JUNTOS' -->
+            <!-- Barra quando em MODO TODOS OS CARDS JUNTOS -->
             <div x-show="galleryDisplayMode === 'all'"
                 class="flex items-center justify-between gap-2 px-1">
                 <span class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -43,73 +45,293 @@
             </div>
         </div>
 
-        <!-- 1. GRID DE PASTAS / ÁLBUNS DE CEG (Visão de Capas) -->
-        <div x-show="viewMode === 'gallery' && galleryDisplayMode === 'folders' && !activeCegFolder"
+        <!-- 1. GRID & ESTANTES DE CEG (Visão de Pastas com Expansão em Estante Horizontal) -->
+        <div x-show="viewMode === 'gallery' && galleryDisplayMode === 'folders'"
             class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
             {% for group in cegs_groups %}
             <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }})"
-                @click="openCegFolder('{{ group.ceg.id }}')"
-                class="group relative aspect-[3/4] w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 shadow-sm hover:shadow-xl hover:border-pink-400 dark:hover:border-pink-500 transition-all duration-200 cursor-pointer select-none flex flex-col justify-between">
+                data-ceg-id="{{ group.ceg.id }}"
+                :class="isCegExpanded('{{ group.ceg.id }}') ? 'col-span-full' : 'col-span-1'"
+                class="transition-all duration-300">
                 
-                <!-- Imagem de Capa do Álbum (Banner da CEG ou Primeiro Photocard) -->
-                {% if group.ceg.banner_url %}
-                <img src="{{ group.ceg.banner_url }}" alt="{{ group.ceg.title }}" loading="lazy"
-                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                {% elif group.claims.0.slot.item_definition.image_url %}
-                <img src="{{ group.claims.0.slot.item_definition.image_url }}" alt="{{ group.ceg.title }}" loading="lazy"
-                    class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                {% else %}
-                <div class="absolute inset-0 bg-gradient-to-br from-pink-900/40 via-purple-950/40 to-slate-900 flex items-center justify-center">
-                    <span class="text-4xl opacity-50">📁</span>
-                </div>
-                {% endif %}
-
-                <!-- Overlay Escuro Degradê -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 pointer-events-none"></div>
-
-                <!-- Topo: Grupo/Era e Contagem -->
-                <div class="relative z-10 p-2.5 sm:p-3 flex items-start justify-between gap-1 pointer-events-none">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-pink-300 border border-white/10 shadow-xs truncate max-w-[65%]">
-                        {{ group.ceg.era.group.name }}
-                    </span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-600/90 backdrop-blur-md text-white shadow-xs">
-                        {{ group.claims|length }} {% if group.claims|length == 1 %}card{% else %}cards{% endif %}
-                    </span>
-                </div>
-
-                <!-- Centro/Hover Overlay -->
-                <div class="relative z-10 p-2 sm:p-2.5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                    <span class="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-black shadow-lg flex items-center gap-1.5 backdrop-blur-md">
-                        <span>📂</span>
-                        <span>Abrir Pasta</span>
-                    </span>
-                </div>
-
-                <!-- Rodapé: Título, Remessa e Status Financeiro -->
-                <div class="relative z-10 p-2.5 sm:p-3 space-y-1.5 pointer-events-none">
-                    <h4 class="text-xs sm:text-sm font-black text-white line-clamp-2 leading-tight drop-shadow-xs" title="{{ group.ceg.title }}">
-                        {{ group.ceg.title }}
-                    </h4>
-
-                    {% if group.ceg.caixa %}
-                    <div class="flex items-center gap-1 text-[10px] text-blue-300 font-bold truncate">
-                        <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
-                        <span class="truncate">{{ group.ceg.caixa.nome }}</span>
+                <!-- CASO A: PASTA FECHADA (Capa Compacta 3:4 no Grid) -->
+                <div x-show="!isCegExpanded('{{ group.ceg.id }}')"
+                    @click="toggleCeg('{{ group.ceg.id }}')"
+                    class="group relative aspect-[3/4] w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 shadow-sm hover:shadow-xl hover:border-pink-400 dark:hover:border-pink-500 transition-all duration-200 cursor-pointer select-none flex flex-col justify-between">
+                    
+                    <!-- Banner ou Imagem do Photocard -->
+                    {% if group.ceg.banner_url %}
+                    <img src="{{ group.ceg.banner_url }}" alt="{{ group.ceg.title }}" loading="lazy"
+                        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% elif group.claims.0.slot.item_definition.image_url %}
+                    <img src="{{ group.claims.0.slot.item_definition.image_url }}" alt="{{ group.ceg.title }}" loading="lazy"
+                        class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% else %}
+                    <div class="absolute inset-0 bg-gradient-to-br from-pink-900/40 via-purple-950/40 to-slate-900 flex items-center justify-center">
+                        <span class="text-4xl opacity-50">📁</span>
                     </div>
                     {% endif %}
 
-                    <!-- Status Financeiro da Pasta -->
-                    <div class="pt-1 border-t border-white/10 flex items-center justify-between text-[10px]">
-                        {% if group.total_geral_pendente > 0 %}
-                        <span class="text-pink-300 font-black">
-                            R$ {{ group.total_geral_pendente|floatformat:2 }} pendente
+                    <!-- Overlay Degradê -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 pointer-events-none"></div>
+
+                    <!-- Topo: Grupo/Era e Quantidade -->
+                    <div class="relative z-10 p-2.5 sm:p-3 flex items-start justify-between gap-1 pointer-events-none">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-pink-300 border border-white/10 shadow-xs truncate max-w-[65%]">
+                            {{ group.ceg.era.group.name }}
                         </span>
-                        {% else %}
-                        <span class="text-emerald-400 font-bold flex items-center gap-1">
-                            <span>✔</span> Quitado
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-600/90 backdrop-blur-md text-white shadow-xs">
+                            {{ group.claims|length }} {% if group.claims|length == 1 %}card{% else %}cards{% endif %}
                         </span>
+                    </div>
+
+                    <!-- Centro Hover Badge -->
+                    <div class="relative z-10 p-2 sm:p-2.5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        <span class="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-xs font-black shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                            <span>📂</span>
+                            <span>Abrir Estante</span>
+                        </span>
+                    </div>
+
+                    <!-- Rodapé: Título, Remessa e Status Financeiro -->
+                    <div class="relative z-10 p-2.5 sm:p-3 space-y-1.5 pointer-events-none">
+                        <h4 class="text-xs sm:text-sm font-black text-white line-clamp-2 leading-tight drop-shadow-xs" title="{{ group.ceg.title }}">
+                            {{ group.ceg.title }}
+                        </h4>
+
+                        {% if group.ceg.caixa %}
+                        <div class="flex items-center gap-1 text-[10px] text-blue-300 font-bold truncate">
+                            <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                            <span class="truncate">{{ group.ceg.caixa.nome }}</span>
+                        </div>
                         {% endif %}
-                        <span class="text-slate-400 font-bold text-[9px]">Abrir →</span>
+
+                        <div class="pt-1 border-t border-white/10 flex items-center justify-between text-[10px]">
+                            {% if group.total_geral_pendente > 0 %}
+                            <span class="text-pink-300 font-black">
+                                R$ {{ group.total_geral_pendente|floatformat:2 }} pendente
+                            </span>
+                            {% else %}
+                            <span class="text-emerald-400 font-bold flex items-center gap-1">
+                                <span>✔</span> Quitado
+                            </span>
+                            {% endif %}
+                            <span class="text-slate-400 font-bold text-[9px]">Abrir →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CASO B: PASTA ABERTA (Estante Horizontal Completa) -->
+                <div x-show="isCegExpanded('{{ group.ceg.id }}')"
+                    x-cloak
+                    class="w-full p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#131B2E] border border-pink-200/90 dark:border-pink-900/60 shadow-md">
+                    
+                    <div class="flex items-stretch gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-thin">
+                        
+                        <!-- 1. METADATA / SUMMARY CARD DA CEG -->
+                        <div class="w-64 sm:w-72 flex-shrink-0 rounded-2xl p-3.5 sm:p-4 bg-gradient-to-br from-slate-900 via-slate-950 to-pink-950/40 text-white border border-pink-500/30 shadow-md flex flex-col justify-between select-none relative">
+                            
+                            <!-- Topo: Era, Título e Badges -->
+                            <div>
+                                <div class="flex items-center justify-between gap-1 mb-2">
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-pink-500/20 text-pink-300 border border-pink-500/30 truncate">
+                                        {{ group.ceg.era.group.name }} • {{ group.ceg.era.name }}
+                                    </span>
+                                    <button type="button" @click.stop="toggleCeg('{{ group.ceg.id }}')"
+                                        title="Recolher Estante"
+                                        class="w-6 h-6 rounded-lg bg-white/10 hover:bg-pink-600/80 text-white text-xs font-black flex items-center justify-center transition cursor-pointer">
+                                        ▲
+                                    </button>
+                                </div>
+
+                                <a href="{% url 'ceg_detail' slug=group.ceg.slug %}"
+                                   class="text-xs sm:text-sm font-black text-white hover:text-pink-300 transition line-clamp-2 leading-snug inline-flex items-center gap-1 group">
+                                    <span>{{ group.ceg.title }}</span>
+                                    <span class="text-[10px] text-pink-400 opacity-70 group-hover:opacity-100">↗</span>
+                                </a>
+
+                                <div class="mt-2.5 space-y-1.5 text-[10px]">
+                                    {% if group.ceg.caixa %}
+                                    <div class="flex items-center gap-1.5 text-blue-300 font-bold">
+                                        <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                                        <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}" class="hover:underline truncate">{{ group.ceg.caixa.nome }}</a>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-slate-300">
+                                        <span>✈️</span>
+                                        <span>{{ group.ceg.get_shipping_status_display }}</span>
+                                        {% if group.ceg.caixa.codigo_rastreio %}
+                                        <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank" class="text-blue-400 font-mono font-bold hover:underline ml-1">🔗</a>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    {% if group.prazo_destaque %}
+                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold {{ group.prazo_destaque.urgencia_class }}">
+                                        <span>⏱️</span>
+                                        <span>{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="text-slate-400 text-[10px] flex items-center gap-1">
+                                        <span>📁</span>
+                                        <span>{{ group.claims|length }} {% if group.claims|length == 1 %}photocard nesta pasta{% else %}photocards nesta pasta{% endif %}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Base: Balanço, Totais e Botão Pix -->
+                            <div class="pt-2.5 border-t border-white/10 space-y-2">
+                                {% if group.total_geral_pendente > 0 %}
+                                <div>
+                                    <div class="text-[10px] text-slate-400 font-semibold">Total a Pagar nesta CEG:</div>
+                                    <div class="text-sm sm:text-base font-black text-pink-400 font-mono">
+                                        R$ {{ group.total_geral_pendente|floatformat:2 }}
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 text-[9px] text-slate-300 font-bold flex-wrap">
+                                    {% if group.total_frete_inter_pendente > 0 %}
+                                    <span class="text-blue-300">Frete a Pagar: R$ {{ group.total_frete_inter_pendente|floatformat:2 }}</span>
+                                    {% endif %}
+                                    {% if group.total_taxa_aduaneira_pendente > 0 %}
+                                    <span class="text-purple-300">Taxa a Pagar: R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if group.has_distinct_pix_keys %}
+                                <div class="flex items-center gap-1 pt-0.5">
+                                    {% if group.total_pending > 0 and group.pix_key_item %}
+                                    <button type="button" @click="copyPix('{{ group.pix_key_item }}', '{{ group.ceg.id }}_item')"
+                                        class="flex-1 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer">
+                                        <span x-text="copiedPixCegId === '{{ group.ceg.id }}_item' ? '✔ Copiado' : '📦 Item'"></span>
+                                    </button>
+                                    {% endif %}
+                                    {% if group.total_frete_inter_pendente > 0 and group.pix_key_frete %}
+                                    <button type="button" @click="copyPix('{{ group.pix_key_frete }}', '{{ group.ceg.id }}_frete')"
+                                        class="flex-1 py-1 bg-blue-500 hover:bg-blue-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer">
+                                        <span x-text="copiedPixCegId === '{{ group.ceg.id }}_frete' ? '✔ Copiado' : '✈️ Frete'"></span>
+                                    </button>
+                                    {% endif %}
+                                    {% if group.total_taxa_aduaneira_pendente > 0 and group.pix_key_taxa %}
+                                    <button type="button" @click="copyPix('{{ group.pix_key_taxa }}', '{{ group.ceg.id }}_taxa')"
+                                        class="flex-1 py-1 bg-purple-500 hover:bg-purple-600 text-white font-bold text-[9px] rounded-lg transition text-center cursor-pointer">
+                                        <span x-text="copiedPixCegId === '{{ group.ceg.id }}_taxa' ? '✔ Copiado' : '🏛️ Taxa'"></span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% elif group.ceg.pix_key %}
+                                <button type="button" @click="copyPix('{{ group.ceg.pix_key }}', '{{ group.ceg.id }}')"
+                                    class="w-full py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-[11px] rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? '✔' : '📋'"></span>
+                                    <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Chave Pix'"></span>
+                                </button>
+                                {% endif %}
+
+                                {% else %}
+                                <div class="py-1 px-2.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold text-center">
+                                    ✔ 100% Quitado
+                                </div>
+                                {% endif %}
+
+                                <button type="button" @click.stop="toggleCeg('{{ group.ceg.id }}')"
+                                    class="w-full py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer">
+                                    <span>▲</span>
+                                    <span>Recolher Pasta</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. PHOTOCARDS SLEEVES (2:3) NA ESTANTE HORIZONTAL -->
+                        {% for claim in group.claims %}
+                        <div x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
+                            @click="openPreview({
+                                title: '{{ claim.slot.item_definition.name|escapejs }}',
+                                member: '{{ claim.slot.item_definition.member_name|default:''|escapejs }}',
+                                image: '{{ claim.slot.item_definition.image_url|default:''|escapejs }}',
+                                ceg: '{{ group.ceg.title|escapejs }}',
+                                set: '{{ claim.slot.set.set_number }}',
+                                price: '{{ claim.total_price|floatformat:2 }}',
+                                claimedAt: '{{ claim.claimed_at|date:'d/m/Y H:i' }}',
+                                lifecycle: {
+                                    stage: {{ claim.lifecycle.stage }},
+                                    code: '{{ claim.lifecycle.code }}',
+                                    label: '{{ claim.lifecycle.label|escapejs }}',
+                                    icon: '{{ claim.lifecycle.icon|escapejs }}',
+                                    badgeClass: '{{ claim.lifecycle.badge_class|escapejs }}',
+                                    detail: '{{ claim.lifecycle.detail|escapejs }}'
+                                },
+                                pixKey: '{{ group.ceg.pix_key|default:''|escapejs }}',
+                                cegId: '{{ group.ceg.id }}',
+                                isItemPaid: {% if claim.status == 'PAID' or claim.slot.is_item_paid %}true{% else %}false{% endif %},
+                                freteInter: '{{ claim.slot.frete_inter|default:0|floatformat:2 }}',
+                                isFretePaid: {% if claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %},
+                                taxaAduaneira: '{{ claim.slot.taxa_aduaneira|default:0|floatformat:2 }}',
+                                isTaxaPaid: {% if claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %},
+                                pacoteId: '{{ claim.slot.pacote_nacional.identificador|default:''|escapejs }}',
+                                pacoteTracking: '{{ claim.slot.pacote_nacional.codigo_rastreio|default:''|escapejs }}',
+                                pacoteUrl: '{{ claim.slot.pacote_nacional.tracking_url|default:''|escapejs }}'
+                            })"
+                            class="group relative w-36 xs:w-40 sm:w-44 flex-shrink-0 aspect-[2/3] rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-slate-900 shadow-2xs hover:shadow-xl hover:border-pink-400 dark:hover:border-pink-500 transition-all duration-200 cursor-pointer select-none">
+                            
+                            <!-- Imagem do Photocard -->
+                            {% if claim.slot.item_definition.image_url %}
+                            <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
+                                 loading="lazy"
+                                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                            {% else %}
+                            <div class="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col items-center justify-center p-2 text-center text-slate-500">
+                                <span class="text-2xl mb-1">✨</span>
+                                <span class="text-[10px] font-bold line-clamp-2">{{ claim.slot.item_definition.name }}</span>
+                            </div>
+                            {% endif %}
+
+                            <!-- Degradê Inferior -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none"></div>
+
+                            <!-- Topo: Set # e Ciclo de Vida -->
+                            <div class="relative z-10 p-2 flex items-start justify-between gap-1 pointer-events-none">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-black/70 backdrop-blur-md text-white border border-white/10 shadow-xs">
+                                    #{{ claim.slot.set.set_number }}
+                                </span>
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold {{ claim.lifecycle.badge_class }} backdrop-blur-md shadow-xs flex items-center gap-0.5"
+                                      title="{{ claim.lifecycle.detail }}">
+                                    <span>{{ claim.lifecycle.icon }}</span>
+                                    <span class="hidden xs:inline">{{ claim.lifecycle.label }}</span>
+                                </span>
+                            </div>
+
+                            <!-- Base: Integrante, Preço e 3 Chips -->
+                            <div class="absolute inset-x-0 bottom-0 z-10 p-2 sm:p-2.5 space-y-1 pointer-events-none">
+                                <div class="flex items-center justify-between gap-1">
+                                    {% if claim.slot.item_definition.member_name %}
+                                    <span class="text-[11px] font-black text-pink-300 drop-shadow-xs truncate">
+                                        {{ claim.slot.item_definition.member_name }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-[10px] font-bold text-slate-300 truncate">
+                                        {{ claim.slot.item_definition.name }}
+                                    </span>
+                                    {% endif %}
+                                    <span class="text-[10px] font-mono font-black text-white flex-shrink-0">
+                                        R$ {{ claim.total_price|floatformat:2 }}
+                                    </span>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-1 pt-1 border-t border-white/15 text-[8px] font-black text-center">
+                                    <span class="py-0.5 rounded {% if claim.status == 'PAID' or claim.slot.is_item_paid %}bg-emerald-500/80 text-white{% else %}bg-amber-500/80 text-white{% endif %}">
+                                        {% if claim.status == 'PAID' or claim.slot.is_item_paid %}✔ Pago{% else %}⏳ Item{% endif %}
+                                    </span>
+                                    <span class="py-0.5 rounded {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}bg-blue-500/80 text-white{% else %}bg-amber-500/80 text-white{% endif %}{% else %}bg-black/40 text-slate-400{% endif %}">
+                                        {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}✔ Frete{% else %}⏳ Frete{% endif %}{% else %}—{% endif %}
+                                    </span>
+                                    <span class="py-0.5 rounded {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}bg-purple-500/80 text-white{% else %}bg-amber-500/80 text-white{% endif %}{% else %}bg-black/40 text-slate-400{% endif %}">
+                                        {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}✔ Taxa{% else %}⏳ Taxa{% endif %}{% else %}—{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
                     </div>
                 </div>
             </div>
@@ -117,7 +339,7 @@
         </div>
 
         {% for group in cegs_groups %}
-        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }}) && (viewMode === 'table' || galleryDisplayMode === 'all' || activeCegFolder === '{{ group.ceg.id }}')"
+        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }}) && (viewMode === 'table' || galleryDisplayMode === 'all')"
             data-ceg-id="{{ group.ceg.id }}"
             class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition mb-6">
 
@@ -127,14 +349,6 @@
                 
                 <!-- Lado Esquerdo: Toggle, Era, Título e Badges de Remessa/Prazo -->
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <!-- Botão de Voltar para os Álbuns quando na visão de pasta aberta -->
-                    <button type="button" x-show="viewMode === 'gallery' && galleryDisplayMode === 'folders' && activeCegFolder === '{{ group.ceg.id }}'"
-                        @click.stop="closeCegFolder()"
-                        class="px-2.5 py-1 rounded-lg bg-pink-100 hover:bg-pink-200 dark:bg-pink-950/70 dark:hover:bg-pink-900 text-pink-700 dark:text-pink-300 text-xs font-black transition flex items-center gap-1 cursor-pointer flex-shrink-0 shadow-2xs">
-                        <span>←</span>
-                        <span>Álbuns</span>
-                    </button>
-
                     <!-- Chevron de Expansão -->
                     <button type="button" class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition flex-shrink-0">
                         <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="isCegExpanded('{{ group.ceg.id }}') ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">

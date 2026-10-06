@@ -90,11 +90,14 @@ python manage.py test apps.cegs
 - **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
 - **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
 
-### 3.6. Galeria do Participante: Cards Sleeve (2:3) & Pastas de Álbuns (Binder)
-- **Binder de Pastas (Opção 1):** A galeria inicializa no modo de **Pastas de CEG** (`aspect-[3/4]`), organizando as CEGs como capas de álbuns colecionáveis no grid, sem barras horizontais full-width cortando a tela.
-- **Navegação Focada na Pasta:** Clicar em um álbum abre aquela pasta com botão `← Voltar para Todos os Álbuns` e exibe exclusivamente os photocards daquela CEG no grid de alta densidade. Suporta alternância para `✨ Ver Todos os Photocards Juntos`.
-- **Card Sleeve (2:3):** 100% da área útil é o photocard com proporção oficial 2:3. Contém overlays escuros foscos no topo (Set # e Ciclo de Vida) e gradiente inferior (Integrante em rosa `text-pink-300`, Preço mono, Nome do item e Semáforo em 3 Chips Miniaturas para Item, Frete e Taxa).
-- **Grid de Alta Densidade:** `grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2.5 sm:gap-3`, exibindo de 6 a 8 itens por linha em desktop e maximizando a área de visualização sem desperdício de espaço.
+### 3.6. Galeria do Participante: Cards Sleeve (2:3) & Pastas com Estantes Horizontais
+- **Grid de Pastas de CEG (`aspect-[3/4]`):** A galeria inicializa no modo de **Pastas de CEG** (`aspect-[3/4]`), organizando as CEGs como capas de álbuns colecionáveis no grid, de forma limpa e compacta.
+- **Expansão Dinâmica em Estante Horizontal (`col-span-full`):** Ao clicar em uma pasta, ela se expande na horizontal em formato de estante interativa:
+  - **Card de Resumo / Metadados da CEG (à esquerda, 3:4):** Substitui a foto da capa por informações vitais (Era/Grupo, link da CEG ↗, remessa/caixa, prazo em destaque, saldo pendente total, breakdown de frete e taxa, botão de cópia Pix em 1 clique e botão "▲ Recolher Pasta").
+  - **Fileira de Photocards Sleeve 2:3 (à direita):** Lado a lado em scroll horizontal fluido (`overflow-x-auto scrollbar-thin`), exibindo 100% da imagem, integrante em rosa (`text-pink-300`), preço mono e o Semáforo em 3 Chips Miniaturas (`📦 Item`, `✈️ Frete`, `🏛️ Taxa`).
+- **Multi-Expansão e Controle Rápido:** O participante pode expandir múltiplas pastas ao mesmo tempo ou recolher individualmente. Botões rápidos no topo permitem "📂 Expandir Todas" e "📁 Recolher Todas" com 1 clique.
+- **Busca com Auto-Expansão:** Digitar na busca textual expande automaticamente as estantes das CEGs que contêm itens correspondentes.
+- **Alternância para Modo Completo ou Tabela:** Suporta alternância com 1 clique para `✨ Ver Todos os Photocards Juntos` (grid denso unificado) ou `📋 Tabela`.
 
 ---
 
