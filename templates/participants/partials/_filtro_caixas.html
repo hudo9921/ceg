@@ -1,0 +1,139 @@
+    <!-- Filtro por Caixa / Remessa Internacional -->
+    <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+                <div
+                    class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800/60 flex items-center justify-center text-base">
+                    📦
+                </div>
+                <div>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>Filtrar por Caixa / Remessa</span>
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {{ caixas_list|length }} {% if caixas_list|length == 1 %}caixa{% else %}caixas{% endif %}
+                        </span>
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Selecione uma caixa para acompanhar seus itens em trânsito, ou veja itens que ainda não têm
+                        remessa vinculada.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Indicador e botão para limpar filtro de caixa -->
+            <div x-show="selectedCaixa !== 'ALL'" class="flex items-center gap-2 self-start sm:self-auto">
+                <button type="button" @click="selectedCaixa = 'ALL'; onCaixaChange();"
+                    class="text-[11px] font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 px-2.5 py-1 rounded-lg transition border border-indigo-200 dark:border-indigo-800/70 flex items-center gap-1 shadow-xs cursor-pointer">
+                    <span>✕</span> Ver Todas as Caixas
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista / Tabs de Caixas Interativas -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+            <!-- Opção 1: Todas as Caixas -->
+            <button type="button" @click="selectedCaixa = 'ALL'; onCaixaChange();"
+                :class="selectedCaixa === 'ALL' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300 dark:ring-indigo-500' : 'bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 font-medium'"
+                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none cursor-pointer">
+                <span>🌐 Todas as Caixas</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                    :class="selectedCaixa === 'ALL' ? 'bg-indigo-700 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'">
+                    {{ total_claims_count|add:itens_individuais_count }}
+                </span>
+            </button>
+
+            <!-- Opção 2: Cada Caixa que o participante tem itens -->
+            {% for c in caixas_list %}
+            <button type="button" @click="selectedCaixa = '{{ c.id }}'; onCaixaChange();"
+                :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-600 text-white font-bold shadow-sm ring-2 ring-indigo-300 dark:ring-indigo-500' : 'bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 font-medium'"
+                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none cursor-pointer">
+                <span class="text-sm">
+                    {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% elif c.origem == 'CN' %}🇨🇳{% elif c.origem == 'US' %}🇺🇸{% else %}📦{% endif %}
+                </span>
+                <span>{{ c.nome }}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                    :class="selectedCaixa === '{{ c.id }}' ? 'bg-indigo-700 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'">
+                    {{ c.items_count }}
+                </span>
+            </button>
+            {% endfor %}
+
+            <!-- Opção 3: Fora de Caixas / Sem Remessa -->
+            <button type="button" @click="selectedCaixa = 'NONE'; onCaixaChange();"
+                :class="selectedCaixa === 'NONE' ? 'bg-amber-600 text-white font-bold shadow-sm ring-2 ring-amber-300 dark:ring-amber-500' : 'bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-medium'"
+                class="px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 select-none cursor-pointer">
+                <span>⏳ Itens Fora de Caixas (Sem Remessa)</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                    :class="selectedCaixa === 'NONE' ? 'bg-amber-700 text-white' : 'bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'">
+                    {{ itens_sem_caixa_count }}
+                </span>
+            </button>
+        </div>
+
+        <!-- Painel informativo quando uma Caixa específica está selecionada -->
+        {% for c in caixas_list %}
+        <div x-show="selectedCaixa === '{{ c.id }}'"
+            class="mt-2 p-3.5 bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/90 dark:border-indigo-500/40 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+            <div class="space-y-1.5">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-black text-indigo-950 dark:text-white text-sm flex items-center gap-1.5">
+                        <span>{% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% elif c.origem == 'CN' %}🇨🇳{% elif c.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                        <span>{{ c.nome }}</span>
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md font-bold text-[10px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-900 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/60">
+                        {{ c.status_display }}
+                    </span>
+                    <span class="text-slate-500 dark:text-slate-400 font-medium">
+                        ({{ c.items_count }} {% if c.items_count == 1 %}item seu nesta caixa{% else %}itens seus nesta
+                        caixa{% endif %})
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600 dark:text-slate-300 text-[11px]">
+                    {% if c.codigo_rastreio %}
+                    <div class="flex items-center gap-1">
+                        <span class="text-slate-400 dark:text-slate-400">Rastreio:</span>
+                        {% if c.tracking_url %}
+                        <a href="{{ c.tracking_url }}" target="_blank" rel="noopener noreferrer"
+                            class="font-mono font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline">
+                            {{ c.codigo_rastreio }} ↗
+                        </a>
+                        {% else %}
+                        <span class="font-mono font-bold text-slate-700 dark:text-slate-200">{{ c.codigo_rastreio }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if c.prazo_frete %}
+                    <div class="flex items-center gap-1">
+                        <span class="text-slate-400 dark:text-slate-400">Prazo Frete:</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">{{ c.prazo_frete|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if c.prazo_taxa %}
+                    <div class="flex items-center gap-1">
+                        <span class="text-slate-400 dark:text-slate-400">Prazo Taxa:</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">{{ c.prazo_taxa|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <a href="{% url 'caixa_detail' slug=c.slug %}"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition cursor-pointer">
+                    <span>Ver Página da Caixa</span>
+                    <span>↗</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Painel informativo quando "Itens Fora de Caixas" está selecionado -->
+        <div x-show="selectedCaixa === 'NONE'"
+            class="mt-2 p-3 bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
+            <div class="flex items-center gap-2">
+                <span class="text-base">⏳</span>
+                <span>Exibindo <strong>{{ itens_sem_caixa_count }} {% if itens_sem_caixa_count == 1 %}item{% else %}itens{% endif %}</strong> que ainda não foram alocados em nenhuma remessa internacional
+                    (aguardando fechamento/envio).</span>
+            </div>
+        </div>
+    </div>

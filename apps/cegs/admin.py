@@ -39,6 +39,13 @@ class CaixaAdmin(admin.ModelAdmin):
         ('Custos da Remessa (Opcional)', {
             'fields': ('frete_inter_total', 'taxa_aduaneira_total')
         }),
+        ('Chaves Pix da Remessa (Frete e Taxa)', {
+            'fields': (
+                'pix_key_frete', 'pix_instructions_frete',
+                'pix_key_taxa', 'pix_instructions_taxa',
+            ),
+            'description': 'Configure chaves Pix específicas para arrecadar o frete e a taxa desta remessa (opcional).'
+        }),
         ('Anotações Internas', {
             'fields': ('observacoes',)
         }),
@@ -235,7 +242,12 @@ class CEGAdmin(admin.ModelAdmin):
             'description': 'Configure os prazos de pagamento e os valores de frete internacional e taxa aduaneira.'
         }),
         ('Instruções Pix', {
-            'fields': ('pix_key', 'pix_instructions')
+            'fields': (
+                'pix_key', 'pix_instructions',
+                'pix_key_frete', 'pix_instructions_frete',
+                'pix_key_taxa', 'pix_instructions_taxa',
+            ),
+            'description': 'Configure a chave Pix padrão/itens e, se desejar, chaves separadas para frete internacional e taxa aduaneira.'
         }),
     )
 

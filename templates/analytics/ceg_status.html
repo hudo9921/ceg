@@ -425,13 +425,25 @@
                             <div class="flex items-center gap-1.5 flex-shrink-0">
                                 <button type="button"
                                         @click="openShareModal('{{ s.ceg_id }}')"
-                                        class="px-2.5 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        class="px-2 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
                                         title="Gerar texto formatado de vagas abertas">
                                     <span>📢</span> Gerar Texto
                                 </button>
+                                <button type="button"
+                                        @click="openAddSetModal({ id: '{{ s.ceg_id }}', title: '{{ s.ceg_title|escapejs }}' })"
+                                        class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg text-xs border border-amber-200 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        title="Adicionar novo Set a esta CEG">
+                                    <span>➕ Set</span>
+                                </button>
+                                <button type="button"
+                                        @click="openEditCegModalById('{{ s.ceg_id }}')"
+                                        class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer"
+                                        title="Editar Informações da CEG">
+                                    <span>✏️</span>
+                                </button>
                                 <a href="/ceg/{{ s.ceg_slug }}/"
-                                   class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg text-xs border border-pink-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
-                                    <span>Abrir CEG</span> ↗
+                                   class="px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold rounded-lg text-xs border border-pink-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
+                                    <span>Ver</span> ↗
                                 </a>
                             </div>
                         </div>
@@ -550,10 +562,24 @@
                                 </div>
                             </div>
 
-                            <a href="/ceg/{{ s.ceg_slug }}/"
-                               class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
-                                <span>Ver</span> ↗
-                            </a>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <button type="button"
+                                        @click="openAddSetModal({ id: '{{ s.ceg_id }}', title: '{{ s.ceg_title|escapejs }}' })"
+                                        class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-xs"
+                                        title="Abrir novo Set para esta CEG">
+                                    <span>➕ Próximo Set</span>
+                                </button>
+                                <button type="button"
+                                        @click="openEditCegModalById('{{ s.ceg_id }}')"
+                                        class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer"
+                                        title="Editar Informações da CEG">
+                                    <span>✏️</span>
+                                </button>
+                                <a href="/ceg/{{ s.ceg_slug }}/"
+                                   class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer">
+                                    <span>Ver</span> ↗
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Valores do Set -->
@@ -749,10 +775,18 @@
                                 </div>
                             </div>
 
-                            <a href="/ceg/{{ s.ceg_slug }}/"
-                               class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer flex-shrink-0">
-                                <span>Ver</span> ↗
-                            </a>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <button type="button"
+                                        @click="openEditCegModalById('{{ s.ceg_id }}')"
+                                        class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer"
+                                        title="Editar Informações da CEG">
+                                    <span>✏️</span>
+                                </button>
+                                <a href="/ceg/{{ s.ceg_slug }}/"
+                                   class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 transition flex items-center gap-1 cursor-pointer">
+                                    <span>Ver</span> ↗
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Valores do Set -->
@@ -871,6 +905,11 @@
                 </p>
             </div>
             <div class="flex items-center gap-2">
+                <button type="button"
+                        @click="openAddSetModal()"
+                        class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                    <span>➕ Novo Set</span>
+                </button>
                 <span class="text-xs text-slate-500 font-bold" x-text="getCegTableSubtext()">
                     Total: {{ cegs_overview|length }} CEG(s)
                 </span>
@@ -1002,6 +1041,18 @@
                                             class="px-2 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
                                             title="Gerar texto formatado de vagas abertas">
                                         <span>📢</span> Gerar Texto
+                                    </button>
+                                    <button type="button"
+                                            @click="openAddSetModal({ id: '{{ c.ceg_id }}', title: '{{ c.title|escapejs }}' })"
+                                            class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg text-xs transition border border-amber-200 flex items-center gap-1 cursor-pointer shadow-2xs"
+                                            title="Adicionar novo Set a esta CEG">
+                                        <span>➕ Set</span>
+                                    </button>
+                                    <button type="button"
+                                            @click="openEditCegModalById('{{ c.ceg_id }}')"
+                                            class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition border border-slate-200 flex items-center gap-1 cursor-pointer"
+                                            title="Editar Informações da CEG">
+                                        <span>✏️ Editar</span>
                                     </button>
                                     <a href="/ceg/{{ c.slug }}/"
                                        class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-xs transition border border-purple-200">
@@ -1660,6 +1711,303 @@
         </div>
     </div>
 
+    <!-- Modal Adicionar Novo Set -->
+    <div x-show="addSetModalOpen" x-cloak
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+         style="z-index: 99999;"
+         @keydown.escape.window="closeAddSetModal()">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden"
+             @click.away="closeAddSetModal()">
+            <form action="{% url 'create_set' %}" method="POST" class="flex flex-col">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="/analytics/cegs-status/">
+
+                <!-- Header -->
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-black shadow-xs">
+                            ➕
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-900 text-base">Adicionar Novo Set</h3>
+                            <p class="text-xs text-slate-500">Cria um novo set com slots físicos para reservas</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeAddSetModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">✕</button>
+                </div>
+
+                <!-- Body -->
+                <div class="p-5 space-y-4 text-xs">
+                    <!-- CEG Alvo -->
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">CEG de Destino *</label>
+                        <select name="ceg_id" x-model="addSetCegId" @change="onAddSetCegChange()" required
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500">
+                            <option value="">Selecione uma CEG...</option>
+                            <template x-for="c in cegsOverview" :key="c.ceg_id">
+                                <option :value="c.ceg_id" x-text="(c.group_name ? c.group_name + ' — ' : '') + c.clean_title + ' (' + c.total_sets + ' set' + (c.total_sets > 1 ? 's' : '') + ')'"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Número do Set -->
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">
+                            Número do Set *
+                            <span class="text-slate-400 font-normal ml-1">(Calculado automaticamente)</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 font-black text-slate-400">#</span>
+                            <input type="number" name="set_number" x-model="addSetNumber" min="1" max="99" required
+                                   placeholder="Ex: 2"
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-2 text-xs font-black text-slate-900 focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Observações / Notas Internas</label>
+                        <input type="text" name="notes" x-model="addSetNotes" placeholder="Ex: Aberto para fila de espera, prioridade..."
+                               class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Ativo -->
+                    <label class="flex items-center gap-2 cursor-pointer pt-1">
+                        <input type="checkbox" name="is_active" x-model="addSetIsActive" class="rounded text-amber-600 focus:ring-amber-500">
+                        <span class="font-bold text-slate-800">Set Ativo para reservas imediatas</span>
+                    </label>
+
+                    <div class="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-amber-900 text-[11px] leading-relaxed flex items-start gap-2">
+                        <span class="text-base leading-none">💡</span>
+                        <span>Se houver participantes na <strong>Lista de Espera</strong> dos photocards desta CEG, eles serão alocados <strong>automaticamente</strong> no novo set!</span>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2.5">
+                    <button type="button" @click="closeAddSetModal()"
+                            class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 text-xs font-black text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md shadow-amber-600/20 transition cursor-pointer flex items-center gap-1.5">
+                        <span>➕ Criar Set</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Completo de Edição de CEG -->
+    <div x-show="editCegModalOpen" x-cloak
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm"
+         style="z-index: 99999;"
+         @keydown.escape.window="closeEditCegModal()">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden"
+             @click.away="closeEditCegModal()">
+            <form id="edit_ceg_status_form"
+                  :action="'/ceg/' + (editingCeg.slug || '') + '/edit/'"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="flex flex-col h-full overflow-hidden">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="/analytics/cegs-status/">
+                <input type="hidden" name="remove_banner" :value="removeBannerFlag ? '1' : '0'">
+
+                <!-- Header Fixo -->
+                <div class="flex-shrink-0 p-4 sm:px-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg font-black shadow-xs">
+                            ✏️
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-900 text-sm sm:text-base leading-tight">
+                                Editar CEG: <span class="text-purple-600 font-extrabold" x-text="editingCeg.clean_title || editingCeg.title"></span>
+                            </h3>
+                            <p class="text-[11px] text-slate-500">Altere informações, prazos, banner e status da CEG</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeEditCegModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer">✕</button>
+                </div>
+
+                <!-- Corpo Scrollável -->
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
+                    <!-- 1. Foto / Banner com Dropzone e Ctrl+V -->
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span>📸</span> Foto de Capa / Banner da CEG
+                            </label>
+                            <span class="text-[10px] text-slate-500 font-medium">Ctrl+V, Arquivo ou URL (Máx 5MB)</span>
+                        </div>
+
+                        <!-- Preview -->
+                        <div x-show="cegBannerPreview" class="relative rounded-xl overflow-hidden border border-slate-300 h-36 bg-slate-950 flex items-center justify-center shadow-inner">
+                            <img :src="cegBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-lg opacity-40 scale-110 pointer-events-none select-none">
+                            <img :src="cegBannerPreview" alt="Banner da CEG" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto select-none">
+                            <button type="button" @click="clearCegBanner()"
+                                    class="absolute top-2 right-2 z-20 px-2 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                <span>🗑️</span> Remover
+                            </button>
+                        </div>
+
+                        <!-- Dropzone -->
+                        <div x-show="!cegBannerPreview"
+                             class="relative border-2 border-dashed rounded-xl p-3 text-center transition-all bg-white cursor-pointer select-none"
+                             :class="cegDragOver ? 'border-purple-500 bg-purple-50/40 ring-2 ring-purple-300' : 'border-slate-300 hover:border-purple-300'"
+                             @dragover.prevent="cegDragOver = true"
+                             @dragleave.prevent="cegDragOver = false"
+                             @drop.prevent="cegDragOver = false; handleCegBannerFile($event)"
+                             @click="document.getElementById('status_ceg_banner_file').click()">
+                            <div class="space-y-1 py-1">
+                                <div class="text-xl">📋</div>
+                                <p class="text-xs font-bold text-slate-800">
+                                    Dê <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-purple-700 font-black">Ctrl + V</kbd> nesta tela ou clique para selecionar
+                                </p>
+                                <p class="text-[10px] text-slate-500">Arraste uma foto ou clique para escolher</p>
+                            </div>
+                        </div>
+
+                        <!-- Input de arquivo invisível -->
+                        <input type="file" id="status_ceg_banner_file" name="banner_file" accept="image/*" class="hidden"
+                               @change="handleCegBannerFile($event)">
+                        <input type="hidden" name="banner_base64" :value="cegBannerBase64">
+
+                        <!-- Alerta de erro de foto -->
+                        <div x-show="cegBannerError" x-cloak class="p-2 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs font-bold">
+                            ⚠️ <span x-text="cegBannerError"></span>
+                        </div>
+
+                        <!-- Link Direto / URL -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Ou cole o link direto da imagem:</label>
+                            <input type="text" name="banner_url" x-model="cegBannerUrl" @input="handleCegBannerUrl()"
+                                   placeholder="https://exemplo.com/banner-ceg.jpg"
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+
+                    <!-- 2. Identificação e Vínculos -->
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                        <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            <span>📝</span> Identificação & Vínculos
+                        </label>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Título da CEG *</label>
+                            <input type="text" name="title" x-model="editingCeg.title" required
+                                   class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Grupo & Era</label>
+                                <select name="era_id" x-model="editingCeg.era_id"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                    {% for e in filter_options.eras %}
+                                    <option value="{{ e.id }}" :selected="String(editingCeg.era_id) === '{{ e.id }}'">
+                                        {{ e.group_name }} — {{ e.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Caixa Vinculada</label>
+                                <select name="caixa_id" x-model="editingCeg.caixa_id"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                    <option value="">Sem Caixa</option>
+                                    {% for cx in caixas %}
+                                    <option value="{{ cx.id }}" :selected="String(editingCeg.caixa_id) === '{{ cx.id }}'">
+                                        {{ cx.nome }} ({{ cx.get_origem_display }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Status da CEG</label>
+                                <select name="status" x-model="editingCeg.status"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                    {% for st_val, st_lbl in ceg_statuses %}
+                                    <option value="{{ st_val }}" :selected="editingCeg.status === '{{ st_val }}'">
+                                        {{ st_lbl }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Prazos e Datas -->
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                        <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            <span>⏰</span> Prazos e Agendamentos
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Abertura / Standby</label>
+                                <input type="datetime-local" name="opens_at" x-model="editingCeg.opens_at_iso"
+                                       class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Encerramento</label>
+                                <input type="datetime-local" name="closes_at" x-model="editingCeg.closes_at_iso"
+                                       class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Prazo Pagto Item</label>
+                                <input type="datetime-local" name="prazo_pagamento_item" x-model="editingCeg.prazo_item_iso"
+                                       class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Chave Pix & Instruções -->
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                        <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            <span>💸</span> Chave Pix & Pagamentos
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Chave Pix</label>
+                                <input type="text" name="pix_key" x-model="editingCeg.pix_key" placeholder="CPF, e-mail, telefone..."
+                                       class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Instruções de Pagamento</label>
+                                <input type="text" name="pix_instructions" x-model="editingCeg.pix_instructions" placeholder="Ex: Enviar comprovante no grupo..."
+                                       class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Regras & Observações -->
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                        <label class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            <span>📋</span> Regras & Informações Gerais
+                        </label>
+                        <textarea name="description" rows="3" x-model="editingCeg.description"
+                                  placeholder="Regras de prioridade, descarte, prazos e políticas da CEG..."
+                                  class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500"></textarea>
+                    </div>
+                </div>
+
+                <!-- Footer Fixo -->
+                <div class="flex-shrink-0 p-4 sm:px-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                    <button type="button" @click="closeEditCegModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer flex items-center gap-1.5">
+                        <span>💾 Salvar CEG</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -1681,6 +2029,20 @@ function cegStatusApp() {
         newTipoModalOpen: false,
         newTipoNome: '',
         newTipoDescricao: '',
+        addSetModalOpen: false,
+        addSetCegId: '',
+        addSetCegTitle: '',
+        addSetNumber: '',
+        addSetNotes: '',
+        addSetIsActive: true,
+        editCegModalOpen: false,
+        editingCeg: {},
+        cegBannerPreview: '',
+        cegBannerBase64: '',
+        cegBannerUrl: '',
+        removeBannerFlag: false,
+        cegBannerError: '',
+        cegDragOver: false,
         tiposItem: JSON.parse(document.getElementById('tipos-item-data')?.textContent || '[]'),
         mercariItems: JSON.parse(document.getElementById('mercari-items-data')?.textContent || '[]'),
         filterOptions: JSON.parse(document.getElementById('filter-options-data')?.textContent || '{"groups":[],"eras":[]}'),
@@ -1878,21 +2240,140 @@ function cegStatusApp() {
         },
         init() {
             window.addEventListener('paste', (e) => {
-                if (!this.editItemModalOpen) return;
-                const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
-                if (!items) return;
-                let imageFile = null;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        imageFile = items[i].getAsFile();
-                        break;
+                if (this.editItemModalOpen) {
+                    const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                    if (!items) return;
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            const imageFile = items[i].getAsFile();
+                            if (imageFile) {
+                                e.preventDefault();
+                                this.handleFileChange({ target: { files: [imageFile] } });
+                                break;
+                            }
+                        }
+                    }
+                } else if (this.editCegModalOpen) {
+                    const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                    if (!items) return;
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            const imageFile = items[i].getAsFile();
+                            if (imageFile) {
+                                e.preventDefault();
+                                this.handleCegBannerFile({ target: { files: [imageFile] } });
+                                break;
+                            }
+                        }
                     }
                 }
-                if (imageFile) {
-                    e.preventDefault();
-                    this.handleFileChange({ target: { files: [imageFile] } });
-                }
             });
+        },
+        openAddSetModal(arg) {
+            let ceg = null;
+            if (typeof arg === 'string' || typeof arg === 'number') {
+                ceg = this.cegsOverview.find(c => String(c.ceg_id) === String(arg));
+            } else if (arg && typeof arg === 'object') {
+                ceg = arg;
+            }
+            if (ceg) {
+                this.addSetCegId = ceg.id || ceg.ceg_id || '';
+                this.addSetCegTitle = ceg.title || ceg.ceg_title || '';
+                const found = this.cegsOverview.find(c => String(c.ceg_id) === String(this.addSetCegId));
+                const totalSets = found ? (found.total_sets || 0) : (ceg.total_sets || 0);
+                this.addSetNumber = totalSets + 1;
+            } else {
+                this.addSetCegId = '';
+                this.addSetCegTitle = '';
+                this.addSetNumber = '';
+            }
+            this.addSetNotes = '';
+            this.addSetIsActive = true;
+            this.addSetModalOpen = true;
+        },
+        onAddSetCegChange() {
+            if (this.addSetCegId) {
+                const found = this.cegsOverview.find(c => String(c.ceg_id) === String(this.addSetCegId));
+                if (found) {
+                    this.addSetCegTitle = found.title;
+                    this.addSetNumber = (found.total_sets || 0) + 1;
+                }
+            }
+        },
+        closeAddSetModal() {
+            this.addSetModalOpen = false;
+        },
+        openEditCegModal(arg) {
+            let ceg = null;
+            if (typeof arg === 'string' || typeof arg === 'number') {
+                ceg = this.cegsOverview.find(c => String(c.ceg_id) === String(arg));
+            } else if (arg && typeof arg === 'object') {
+                ceg = arg;
+            }
+            if (!ceg) return;
+            this.editingCeg = Object.assign({}, ceg);
+            this.cegBannerPreview = ceg.banner_url || '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = ceg.banner_url || '';
+            this.removeBannerFlag = false;
+            this.cegBannerError = '';
+            this.cegDragOver = false;
+            this.editCegModalOpen = true;
+        },
+        openEditCegModalById(cegId) {
+            this.openEditCegModal(cegId);
+        },
+        closeEditCegModal() {
+            this.editCegModalOpen = false;
+            this.editingCeg = {};
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            this.removeBannerFlag = false;
+            this.cegBannerError = '';
+        },
+        handleCegBannerFile(event) {
+            const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+            const file = files && files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    this.cegBannerError = 'A imagem selecionada é muito pesada (máximo 5 MB).';
+                    return;
+                }
+                this.cegBannerError = '';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.cegBannerPreview = e.target.result;
+                    this.cegBannerBase64 = e.target.result;
+                    this.cegBannerUrl = '';
+                    this.removeBannerFlag = false;
+                };
+                reader.readAsDataURL(file);
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fileInput = document.querySelector('#edit_ceg_status_form input[name="banner_file"]');
+                    if (fileInput) fileInput.files = dt.files;
+                } catch(err) {}
+            }
+        },
+        handleCegBannerUrl() {
+            if (this.cegBannerUrl) {
+                this.cegBannerPreview = this.cegBannerUrl;
+                this.cegBannerBase64 = '';
+                this.removeBannerFlag = false;
+            }
+        },
+        clearCegBanner() {
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            this.removeBannerFlag = true;
+            if (this.editingCeg) {
+                this.editingCeg.banner_url = '';
+            }
+            const fileInput = document.querySelector('#edit_ceg_status_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
         },
         openEditItem(itemId) {
             const item = this.mercariItems.find(i => i.id === itemId);

@@ -1,0 +1,535 @@
+        {% for group in cegs_groups %}
+        <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }})"
+            data-ceg-id="{{ group.ceg.id }}"
+            class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm transition">
+
+            <!-- CEG Header Compacto -->
+            <div class="p-4 sm:p-5 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                <!-- Linha 1: Título, Grupo, Caixa e Resumo Financeiro -->
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase tracking-wide">
+                                {{ group.ceg.era.group.name }} • {{ group.ceg.era.name }}
+                            </span>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                            <a href="{% url 'ceg_detail' slug=group.ceg.slug %}" class="hover:text-pink-600 transition inline-flex items-center gap-1">
+                                <span>{{ group.ceg.title }}</span>
+                                <span class="text-xs text-pink-500">↗</span>
+                            </a>
+                        </h3>
+                        {% if group.ceg.caixa %}
+                        <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                            <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}"
+                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">
+                                <span>{% if group.ceg.caixa.origem == 'KR' %}🇰🇷{% elif group.ceg.caixa.origem == 'JP' %}🇯🇵{% elif group.ceg.caixa.origem == 'CN' %}🇨🇳{% elif group.ceg.caixa.origem == 'US' %}🇺🇸{% else %}📦{% endif %}</span>
+                                <span>Remessa: {{ group.ceg.caixa.nome }}</span>
+                            </a>
+                            <span
+                                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                <span>✈️ {{ group.ceg.get_shipping_status_display }}</span>
+                            </span>
+                            {% if group.ceg.caixa.codigo_rastreio %}
+                            <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank"
+                                class="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                <span>🔗 Rastreio: {{ group.ceg.caixa.codigo_rastreio }}</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if group.prazo_destaque %}
+                        <div class="pt-0.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold {{ group.prazo_destaque.urgencia_class }}">
+                                <span>⏱️</span>
+                                <span>{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }} (até {{ group.prazo_destaque.prazo|date:"d/m H:i" }})</span>
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Resumo Financeiro Compacto da CEG -->
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
+                        {% if group.total_pending > 0 %}
+                        <div class="text-left sm:text-right" x-show="statusFilter === 'ALL' || statusFilter === 'PENDING'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Itens Pendentes:</span>
+                            <span class="text-amber-600 dark:text-amber-400 font-bold text-xs sm:text-sm">
+                                {{ group.count_pending }} {% if group.count_pending == 1 %}item{% else %}itens{% endif %}
+                                (R$ {{ group.total_pending|floatformat:2 }})
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_frete_inter_pendente > 0 %}
+                        <div class="text-left sm:text-right" x-show="statusFilter === 'ALL' || statusFilter === 'INTER_UNPAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Frete a Pagar:</span>
+                            <span class="text-blue-600 dark:text-blue-400 font-bold text-xs sm:text-sm">
+                                R$ {{ group.total_frete_inter_pendente|floatformat:2 }}
+                            </span>
+                        </div>
+                        {% elif group.total_frete_inter > 0 and group.total_frete_inter_pendente == 0 %}
+                        <div class="text-left sm:text-right hidden md:block" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Frete Inter:</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                ✔ Quitado
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_taxa_aduaneira_pendente > 0 %}
+                        <div class="text-left sm:text-right" x-show="statusFilter === 'ALL' || statusFilter === 'TAXA_UNPAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Taxa a Pagar:</span>
+                            <span class="text-purple-600 dark:text-purple-400 font-bold text-xs sm:text-sm">
+                                R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}
+                            </span>
+                        </div>
+                        {% elif group.total_taxa_aduaneira > 0 and group.total_taxa_aduaneira_pendente == 0 %}
+                        <div class="text-left sm:text-right hidden md:block" x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Taxa:</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                ✔ Quitada
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_paid > 0 and group.total_pending == 0 and group.total_devido_frete_taxa == 0 %}
+                        <div class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-xs font-bold"
+                            x-show="statusFilter === 'ALL' || statusFilter === 'PAID'">
+                            <span>✔</span>
+                            <span>100% Quitado</span>
+                        </div>
+                        {% endif %}
+
+                        {% if group.total_geral_pendente > 0 %}
+                        <div class="pl-3 border-l border-slate-200 dark:border-slate-700 text-left sm:text-right"
+                            x-show="statusFilter === 'ALL'">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block">Total a Pagar nesta CEG:</span>
+                            <span class="text-pink-600 dark:text-pink-400 font-black text-base sm:text-lg">
+                                R$ {{ group.total_geral_pendente|floatformat:2 }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Linha 2: Barra Integrada de Pix & Botão Expandir -->
+                <div class="pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <!-- Chave Pix da CEG (se houver pendente e se tiver chave) -->
+                    {% if group.has_distinct_pix_keys %}
+                    <div class="flex flex-wrap items-center gap-2 text-xs w-full sm:w-auto">
+                        {% if group.total_pending > 0 and group.pix_key_item %}
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-slate-800 border border-amber-200 dark:border-amber-500/30 rounded-xl">
+                            <span class="font-bold text-slate-700 dark:text-slate-300">📦 Pix Item:</span>
+                            <span class="font-mono font-bold text-pink-600 dark:text-pink-400 select-all">{{ group.pix_key_item }}</span>
+                            <button type="button" @click="copyPix('{{ group.pix_key_item }}', '{{ group.ceg.id }}_item')"
+                                class="ml-1 px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg transition shadow-2xs">
+                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_item' ? '✔' : '📋'"></span>
+                            </button>
+                        </div>
+                        {% endif %}
+                        {% if group.total_frete_inter_pendente > 0 and group.pix_key_frete %}
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-500/30 rounded-xl">
+                            <span class="font-bold text-slate-700 dark:text-slate-300">✈️ Pix Frete:</span>
+                            <span class="font-mono font-bold text-blue-600 dark:text-blue-400 select-all">{{ group.pix_key_frete }}</span>
+                            <button type="button" @click="copyPix('{{ group.pix_key_frete }}', '{{ group.ceg.id }}_frete')"
+                                class="ml-1 px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg transition shadow-2xs">
+                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_frete' ? '✔' : '📋'"></span>
+                            </button>
+                        </div>
+                        {% endif %}
+                        {% if group.total_taxa_aduaneira_pendente > 0 and group.pix_key_taxa %}
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-purple-500/30 rounded-xl">
+                            <span class="font-bold text-slate-700 dark:text-slate-300">🏛️ Pix Taxa:</span>
+                            <span class="font-mono font-bold text-purple-600 dark:text-purple-400 select-all">{{ group.pix_key_taxa }}</span>
+                            <button type="button" @click="copyPix('{{ group.pix_key_taxa }}', '{{ group.ceg.id }}_taxa')"
+                                class="ml-1 px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] rounded-lg transition shadow-2xs">
+                                <span x-text="copiedPixCegId === '{{ group.ceg.id }}_taxa' ? '✔' : '📋'"></span>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% elif group.ceg.pix_key and group.total_geral_pendente > 0 %}
+                    <div class="flex flex-wrap items-center gap-2 text-xs w-full sm:w-auto">
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-slate-800 border border-amber-200 dark:border-amber-500/30 rounded-xl flex-wrap">
+                            <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <span>🔑</span>
+                                <span class="hidden xs:inline">Chave Pix:</span>
+                            </span>
+                            <span class="font-mono font-bold text-pink-600 dark:text-pink-400 select-all">
+                                {{ group.ceg.pix_key }}
+                            </span>
+                        </div>
+                        <button type="button" @click="copyPix('{{ group.ceg.pix_key }}', '{{ group.ceg.id }}')"
+                            class="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? '✔' : '📋'"></span>
+                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Chave Pix'"></span>
+                        </button>
+                    </div>
+                    {% elif group.ceg.pix_key %}
+                    <div class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                        <span>✨</span>
+                        <span>Nenhum pagamento pendente nesta CEG</span>
+                    </div>
+                    {% else %}
+                    <div class="text-xs text-slate-400 dark:text-slate-500">
+                        <span>CEG sem chave Pix cadastrada</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Botão Toggle de Expansão dos Itens -->
+                    <div class="ml-auto flex items-center gap-2">
+                        <button type="button"
+                            @click="toggleCeg('{{ group.ceg.id }}')"
+                            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer select-none"
+                            :class="isCegExpanded('{{ group.ceg.id }}') ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700' : 'bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 hover:bg-pink-100 dark:hover:bg-pink-900/60 border border-pink-200 dark:border-pink-800/50 shadow-xs'">
+                            <span x-text="isCegExpanded('{{ group.ceg.id }}') ? 'Ocultar Itens' : 'Ver {{ group.claims|length }} {% if group.claims|length == 1 %}item{% else %}itens{% endif %}'"></span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="isCegExpanded('{{ group.ceg.id }}') ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gaveta Expansível de Detalhes dos Itens -->
+            <div x-show="isCegExpanded('{{ group.ceg.id }}')"
+                x-cloak
+                class="border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20">
+
+                {% if group.ceg.pix_instructions and group.total_geral_pendente > 0 %}
+                <div class="px-5 pt-3.5 pb-1">
+                    <div class="p-3 bg-amber-50/70 dark:bg-slate-900/60 border border-amber-200/70 dark:border-amber-500/20 rounded-xl text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
+                        <span class="text-base flex-shrink-0">📌</span>
+                        <div class="space-y-0.5">
+                            <span class="font-bold text-amber-900 dark:text-amber-300">Instruções do Organizador desta CEG:</span>
+                            <p class="text-slate-600 dark:text-slate-400">{{ group.ceg.pix_instructions }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 1. MODO GALERIA (Photocards Visuais) -->
+                <div x-show="viewMode === 'gallery'" class="p-4 sm:p-5">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4">
+                        {% for claim in group.claims %}
+                        <div x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
+                            class="group bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xs hover:shadow-md hover:border-pink-300 dark:hover:border-pink-500/50 transition-all duration-200 flex flex-col justify-between">
+                            
+                            <!-- Card Image (Aspect 3:4 Photocard Ratio) -->
+                            <div class="relative aspect-[3/4] w-full bg-slate-100 dark:bg-slate-900/80 overflow-hidden cursor-pointer"
+                                 @click="openPreview({
+                                     title: '{{ claim.slot.item_definition.name|escapejs }}',
+                                     member: '{{ claim.slot.item_definition.member_name|default:''|escapejs }}',
+                                     image: '{{ claim.slot.item_definition.image_url|default:''|escapejs }}',
+                                     ceg: '{{ group.ceg.title|escapejs }}',
+                                     set: '{{ claim.slot.set.set_number }}',
+                                     price: '{{ claim.total_price|floatformat:2 }}',
+                                     claimedAt: '{{ claim.claimed_at|date:'d/m/Y H:i' }}',
+                                     lifecycle: {
+                                         stage: {{ claim.lifecycle.stage }},
+                                         code: '{{ claim.lifecycle.code }}',
+                                         label: '{{ claim.lifecycle.label|escapejs }}',
+                                         icon: '{{ claim.lifecycle.icon|escapejs }}',
+                                         badgeClass: '{{ claim.lifecycle.badge_class|escapejs }}',
+                                         detail: '{{ claim.lifecycle.detail|escapejs }}'
+                                     },
+                                     pixKey: '{{ group.ceg.pix_key|default:''|escapejs }}',
+                                     cegId: '{{ group.ceg.id }}',
+                                     isItemPaid: {% if claim.status == 'PAID' or claim.slot.is_item_paid %}true{% else %}false{% endif %},
+                                     freteInter: '{{ claim.slot.frete_inter|default:0|floatformat:2 }}',
+                                     isFretePaid: {% if claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %},
+                                     taxaAduaneira: '{{ claim.slot.taxa_aduaneira|default:0|floatformat:2 }}',
+                                     isTaxaPaid: {% if claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %},
+                                     pacoteId: '{{ claim.slot.pacote_nacional.identificador|default:''|escapejs }}',
+                                     pacoteTracking: '{{ claim.slot.pacote_nacional.codigo_rastreio|default:''|escapejs }}',
+                                     pacoteUrl: '{{ claim.slot.pacote_nacional.tracking_url|default:''|escapejs }}'
+                                 })">
+
+                                {% if claim.slot.item_definition.image_url %}
+                                <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
+                                     loading="lazy"
+                                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                                {% else %}
+                                <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-pink-50 via-purple-50 to-slate-100 dark:from-slate-900 dark:via-pink-950/20 dark:to-slate-800">
+                                    <span class="text-3xl mb-1">✨</span>
+                                    <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 line-clamp-2">
+                                        {{ claim.slot.item_definition.name }}
+                                    </span>
+                                </div>
+                                {% endif %}
+
+                                <!-- Badges sobre a foto -->
+                                <div class="absolute top-2 left-2 flex items-center gap-1">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-black/60 backdrop-blur-md text-white shadow-xs">
+                                        Set #{{ claim.slot.set.set_number }}
+                                    </span>
+                                </div>
+
+                                <div class="absolute top-2 right-2">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black font-mono bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-slate-900 dark:text-white shadow-xs">
+                                        R$ {{ claim.total_price|floatformat:2 }}
+                                    </span>
+                                </div>
+
+                                <!-- Overlay Hover de Prévia -->
+                                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span class="px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-slate-900 dark:text-white text-[11px] font-bold shadow-md flex items-center gap-1">
+                                        <span>🔍</span>
+                                        <span>Ver Detalhes</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Metadados do Card -->
+                            <div class="p-3 space-y-2 flex-1 flex flex-col justify-between">
+                                <div class="space-y-1">
+                                    {% if claim.slot.item_definition.member_name %}
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-pink-100 dark:bg-pink-950/70 text-pink-700 dark:text-pink-300 inline-block">
+                                        {{ claim.slot.item_definition.member_name }}
+                                    </span>
+                                    {% endif %}
+                                    <h5 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 leading-tight" title="{{ claim.slot.item_definition.name }}">
+                                        {{ claim.slot.item_definition.name }}
+                                    </h5>
+                                </div>
+
+                                <!-- Lifecycle Badge e Mini Financeiro -->
+                                <div class="pt-1.5 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ claim.lifecycle.badge_class }} flex items-center gap-1 truncate w-full" title="{{ claim.lifecycle.detail }}">
+                                        <span>{{ claim.lifecycle.icon }}</span>
+                                        <span class="truncate">{{ claim.lifecycle.label }}</span>
+                                    </span>
+
+                                    <!-- Mini Grid de Status Financeiro -->
+                                    <div class="grid grid-cols-3 gap-1 text-[9px] font-bold text-center">
+                                        <div class="py-0.5 rounded {% if claim.status == 'PAID' or claim.slot.is_item_paid %}bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400{% else %}bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400{% endif %}" title="Preço do Item">
+                                            {% if claim.status == 'PAID' or claim.slot.is_item_paid %}✔ Item{% else %}⏳ Item{% endif %}
+                                        </div>
+                                        <div class="py-0.5 rounded {% if not claim.slot.frete_inter or claim.slot.frete_inter == 0 %}bg-slate-50 dark:bg-slate-800/40 text-slate-400{% elif claim.slot.is_frete_inter_paid %}bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400{% else %}bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400{% endif %}" title="Frete Internacional">
+                                            {% if not claim.slot.frete_inter or claim.slot.frete_inter == 0 %}— Fr{% elif claim.slot.is_frete_inter_paid %}✔ Fr{% else %}⏳ Fr{% endif %}
+                                        </div>
+                                        <div class="py-0.5 rounded {% if not claim.slot.taxa_aduaneira or claim.slot.taxa_aduaneira == 0 %}bg-slate-50 dark:bg-slate-800/40 text-slate-400{% elif claim.slot.is_taxa_aduaneira_paid %}bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400{% else %}bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400{% endif %}" title="Taxa Aduaneira">
+                                            {% if not claim.slot.taxa_aduaneira or claim.slot.taxa_aduaneira == 0 %}— Tx{% elif claim.slot.is_taxa_aduaneira_paid %}✔ Tx{% else %}⏳ Tx{% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Botão de Ação Rápida Contextual -->
+                                    {% if claim.lifecycle.code == 'READY_CAIXINHA' %}
+                                    <button type="button" @click.stop="activeMainTab = 'caixinha'"
+                                        class="w-full mt-1 py-1 px-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-[10px] font-extrabold flex items-center justify-center gap-1 transition shadow-2xs cursor-pointer">
+                                        <span>📦 Pedir Envio</span>
+                                    </button>
+                                    {% elif claim.status != 'PAID' and not claim.slot.is_item_paid and group.pix_key_item %}
+                                    <button type="button" @click.stop="copyPix('{{ group.pix_key_item }}', '{{ group.ceg.id }}_item')"
+                                        class="w-full mt-1 py-1 px-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition shadow-2xs cursor-pointer">
+                                        <span x-text="copiedPixCegId === '{{ group.ceg.id }}_item' ? '✔ Chave Copiada' : '📋 Pagar Item'"></span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 2. MODO TABELA (Visão Detalhada Analítica) -->
+                <div x-show="viewMode === 'table'" class="px-5 py-4 overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                                <th class="py-2.5 w-12 text-center">Foto</th>
+                                <th class="py-2.5">Set</th>
+                                <th class="py-2.5">Item / Inclusão</th>
+                                <th class="py-2.5">Integrante</th>
+                                <th class="py-2.5">Ciclo / Status</th>
+                                <th class="py-2.5">Item (R$)</th>
+                                <th class="py-2.5 text-center">1. Item</th>
+                                <th class="py-2.5 text-center">
+                                    2. Frete Inter
+                                    {% if group.single_frete_inter and group.single_frete_inter > 0 %}
+                                    <span class="block text-[9px] text-blue-600 dark:text-blue-400 font-semibold lowercase">(R$ {{ group.single_frete_inter|floatformat:2 }})</span>
+                                    {% elif group.ceg.frete_inter and group.ceg.frete_inter > 0 and not group.has_multiple_fretes %}
+                                    <span class="block text-[9px] text-blue-600 dark:text-blue-400 font-semibold lowercase">(R$ {{ group.ceg.frete_inter|floatformat:2 }})</span>
+                                    {% endif %}
+                                </th>
+                                <th class="py-2.5 text-center">
+                                    3. Taxa
+                                    {% if group.single_taxa_aduaneira and group.single_taxa_aduaneira > 0 %}
+                                    <span class="block text-[9px] text-purple-600 dark:text-purple-400 font-semibold lowercase">(R$ {{ group.single_taxa_aduaneira|floatformat:2 }})</span>
+                                    {% elif group.ceg.taxa_aduaneira and group.ceg.taxa_aduaneira > 0 and not group.has_multiple_taxas %}
+                                    <span class="block text-[9px] text-purple-600 dark:text-purple-400 font-semibold lowercase">(R$ {{ group.ceg.taxa_aduaneira|floatformat:2 }})</span>
+                                    {% endif %}
+                                </th>
+                                <th class="py-2.5 text-center">4. Envio Nacional</th>
+                                <th class="py-2.5">Data da Reserva</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                            {% for claim in group.claims %}
+                            <tr x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
+                                class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+                                <td class="py-2.5 text-center">
+                                    <div class="w-9 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700 mx-auto flex-shrink-0 cursor-pointer hover:opacity-85 transition shadow-2xs"
+                                         @click="openPreview({
+                                             title: '{{ claim.slot.item_definition.name|escapejs }}',
+                                             member: '{{ claim.slot.item_definition.member_name|default:''|escapejs }}',
+                                             image: '{{ claim.slot.item_definition.image_url|default:''|escapejs }}',
+                                             ceg: '{{ group.ceg.title|escapejs }}',
+                                             set: '{{ claim.slot.set.set_number }}',
+                                             price: '{{ claim.total_price|floatformat:2 }}',
+                                             claimedAt: '{{ claim.claimed_at|date:'d/m/Y H:i' }}',
+                                             lifecycle: {
+                                                 stage: {{ claim.lifecycle.stage }},
+                                                 code: '{{ claim.lifecycle.code }}',
+                                                 label: '{{ claim.lifecycle.label|escapejs }}',
+                                                 icon: '{{ claim.lifecycle.icon|escapejs }}',
+                                                 badgeClass: '{{ claim.lifecycle.badge_class|escapejs }}',
+                                                 detail: '{{ claim.lifecycle.detail|escapejs }}'
+                                             },
+                                             pixKey: '{{ group.ceg.pix_key|default:''|escapejs }}',
+                                             cegId: '{{ group.ceg.id }}',
+                                             isItemPaid: {% if claim.status == 'PAID' or claim.slot.is_item_paid %}true{% else %}false{% endif %},
+                                             freteInter: '{{ claim.slot.frete_inter|default:0|floatformat:2 }}',
+                                             isFretePaid: {% if claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %},
+                                             taxaAduaneira: '{{ claim.slot.taxa_aduaneira|default:0|floatformat:2 }}',
+                                             isTaxaPaid: {% if claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %},
+                                             pacoteId: '{{ claim.slot.pacote_nacional.identificador|default:''|escapejs }}',
+                                             pacoteTracking: '{{ claim.slot.pacote_nacional.codigo_rastreio|default:''|escapejs }}',
+                                             pacoteUrl: '{{ claim.slot.pacote_nacional.tracking_url|default:''|escapejs }}'
+                                         })">
+                                        {% if claim.slot.item_definition.image_url %}
+                                        <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}" class="w-full h-full object-cover">
+                                        {% else %}
+                                        <div class="w-full h-full flex items-center justify-center text-[10px]">✨</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="py-3 font-bold text-slate-900 dark:text-white">
+                                    Set #{{ claim.slot.set.set_number }}
+                                </td>
+                                <td class="py-3 font-semibold">
+                                    {{ claim.slot.item_definition.name }}
+                                </td>
+                                <td class="py-3">
+                                    {% if claim.slot.item_definition.member_name %}
+                                    <span class="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 font-bold rounded">
+                                        {{ claim.slot.item_definition.member_name }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-slate-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ claim.lifecycle.badge_class }} inline-flex items-center gap-1" title="{{ claim.lifecycle.detail }}">
+                                        <span>{{ claim.lifecycle.icon }}</span>
+                                        <span>{{ claim.lifecycle.label }}</span>
+                                    </span>
+                                </td>
+                                <td class="py-3 font-bold text-slate-900 dark:text-white font-mono">
+                                    R$ {{ claim.total_price|floatformat:2 }}
+                                </td>
+                                <td class="py-3 text-center">
+                                    {% if claim.slot.is_item_paid %}
+                                    <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold rounded text-[11px]">
+                                        ✔ Pago
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold rounded text-[11px]">
+                                        ⏳ Pendente
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-center">
+                                    {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}
+                                    <div class="font-bold font-mono text-slate-900 dark:text-slate-100 text-xs">
+                                        R$ {{ claim.slot.frete_inter|floatformat:2 }}
+                                    </div>
+                                    {% if claim.slot.is_frete_inter_paid %}
+                                    <span class="inline-block mt-0.5 px-2 py-0.5 bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 font-bold rounded text-[10px]">
+                                        ✔ Pago
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-block mt-0.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold rounded text-[10px]">
+                                        ⏳ Pendente
+                                    </span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-slate-300 dark:text-slate-600 font-bold text-xs" title="Não aplicável">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-center">
+                                    {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}
+                                    <div class="font-bold font-mono text-slate-900 dark:text-slate-100 text-xs">
+                                        R$ {{ claim.slot.taxa_aduaneira|floatformat:2 }}
+                                    </div>
+                                    {% if claim.slot.is_taxa_aduaneira_paid %}
+                                    <span class="inline-block mt-0.5 px-2 py-0.5 bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 font-bold rounded text-[10px]">
+                                        ✔ Paga
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-block mt-0.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold rounded text-[10px]">
+                                        ⏳ Pendente
+                                    </span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-slate-300 dark:text-slate-600 font-bold text-xs" title="Não aplicável">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-center">
+                                    {% if claim.slot.pacote_nacional %}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold {% if claim.slot.pacote_nacional.status == 'ENVIADO' %}bg-emerald-100 text-emerald-800{% elif claim.slot.pacote_nacional.status == 'ENTREGUE' %}bg-slate-100 text-slate-700{% else %}bg-blue-100 text-blue-800{% endif %}"
+                                        title="Transportadora: {{ claim.slot.pacote_nacional.transportadora }}{% if claim.slot.pacote_nacional.codigo_rastreio %} | Rastreio: {{ claim.slot.pacote_nacional.codigo_rastreio }}{% endif %}">
+                                        <span>📦</span>
+                                        <span>{{ claim.slot.pacote_nacional.identificador }}</span>
+                                        {% if claim.slot.pacote_nacional.codigo_rastreio %}
+                                        <a href="{{ claim.slot.pacote_nacional.tracking_url }}" target="_blank"
+                                            class="text-blue-600 hover:text-blue-800 underline ml-0.5"
+                                            title="Rastrear nos Correios">↗</a>
+                                        {% endif %}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-slate-300 dark:text-slate-600 font-bold text-xs" title="Aguardando empacotamento nacional">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-slate-400">
+                                    {{ claim.claimed_at|date:"d/m/Y H:i" }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Fim da Gaveta Expansível -->
+
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 space-y-3">
+            <div class="text-3xl">🛍️</div>
+            <p class="text-base font-bold text-slate-800">Você ainda não tem reservas ativas.</p>
+            <p class="text-xs">Acesse a página inicial para conferir as CEGs abertas e garantir seus photocards!</p>
+            <div class="pt-2">
+                <a href="{% url 'home' %}"
+                    class="inline-block px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow transition">
+                    Ver CEGs Disponíveis →
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Mensagem quando filtros não encontram correspondência -->
+        {% if cegs_groups %}
+        <div x-show="visibleCegsCount === 0"
+            class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-10 text-center text-slate-500 space-y-2">
+            <div class="text-3xl">🔍</div>
+            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhuma reserva encontrada para os filtros selecionados.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Tente selecionar outra caixa, grupo, CEG ou status.</p>
+            <div class="pt-2">
+                <button type="button" @click="clearFilters()"
+                    class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                    Limpar Filtros
+                </button>
+            </div>
+        </div>
+        {% endif %}

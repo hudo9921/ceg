@@ -514,4 +514,283 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(len(prazos), 0)
         self.assertNotContains(res, 'Prazos Próximos de Pagamento')
 
+    def test_claim_lifecycle_property_stages(self):
+        from apps.participants.models import Claim
+        from apps.cegs.models import ItemSlot, PacoteNacional
+
+        # 1. Aguardando pagamento
+        self.assertEqual(self.claim.lifecycle['code'], 'PENDING_PAYMENT')
+        self.assertEqual(self.claim.lifecycle['stage'], 1)
+
+        # 2. Pago e sem caixa em trânsito => Pronto na Caixinha
+        self.claim.status = Claim.Status.PAID
+        self.claim.save()
+        self.slot.status = ItemSlot.Status.PAID
+        self.slot.is_item_paid = True
+        self.slot.save()
+        self.assertEqual(self.claim.lifecycle['code'], 'READY_CAIXINHA')
+        self.assertEqual(self.claim.lifecycle['stage'], 4)
+
+        # 3. Pacote Nacional (Enviado)
+        pacote = PacoteNacional.objects.create(
+            participant=self.participant,
+            identificador='PAC-TEST-01',
+            status=PacoteNacional.Status.ENVIADO,
+            codigo_rastreio='BR123456789BR'
+        )
+        self.slot.pacote_nacional = pacote
+        self.slot.save()
+        self.assertEqual(self.claim.lifecycle['code'], 'SHIPPED')
+        self.assertEqual(self.claim.lifecycle['stage'], 5)
+
+        # 4. Pacote Entregue
+        pacote.status = PacoteNacional.Status.ENTREGUE
+        pacote.save()
+        self.assertEqual(self.claim.lifecycle['code'], 'DELIVERED')
+        self.assertEqual(self.claim.lifecycle['stage'], 5)
+
+    def test_my_claims_view_quick_pix_and_search_data(self):
+        from django.urls import reverse
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.get(reverse('my_claims'))
+        self.assertEqual(res.status_code, 200)
+
+        # Quick Pix assertions
+        self.assertIn('cegs_com_pendencias', res.context)
+        self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
+        self.assertEqual(res.context['total_geral_pendente_todas_cegs'], 50.00)
+        self.assertContains(res, 'Central de Pagamento Rápido (Pix)')
+
+        # Search text presence in JSON script
+        self.assertIn('search_text', res.context['cegs_filter_list'][0])
+        self.assertIn('chaewon', res.context['cegs_filter_list'][0]['search_text'])
+
+        # View mode toggle buttons present
+        self.assertContains(res, 'Galeria')
+        self.assertContains(res, 'Tabela')
+
+    def test_my_claims_caixa_filter_and_unpaid_rates_counting(self):
+        from decimal import Decimal
+        from apps.cegs.models import Caixa, ItemSlot
+        from apps.participants.models import Claim
+        from django.urls import reverse
+
+        # Criar caixa e vincular a CEG
+        caixa = Caixa.objects.create(nome='KR Remessa Teste', origem='KR', status='EM_TRANSITO')
+        self.ceg.caixa = caixa
+        self.ceg.save()
+
+        # Marcar item como pago, mas frete internacional não pago
+        self.ceg.frete_inter = Decimal('22.00')
+        self.ceg.taxa_aduaneira = Decimal('2.00')
+        self.ceg.save()
+
+        self.claim.status = Claim.Status.PAID
+        self.claim.save()
+        self.slot.status = ItemSlot.Status.PAID
+        self.slot.is_item_paid = True
+        self.slot.is_frete_inter_paid = False
+        self.slot.is_taxa_aduaneira_paid = False
+        self.slot.save()
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.get(reverse('my_claims'))
+        self.assertEqual(res.status_code, 200)
+
+        # Context assertions
+        self.assertEqual(res.context['pending_claims_count'], 0) # Item price is paid
+        self.assertEqual(res.context['paid_claims_count'], 1)
+        self.assertEqual(res.context['inter_unpaid_count'], 1)
+        self.assertEqual(res.context['taxa_unpaid_count'], 1)
+        self.assertEqual(res.context['total_any_unpaid_count'], 1) # Item has unpaid rates!
+
+        # In cegs_filter_list
+        ceg_filter_data = res.context['cegs_filter_list'][0]
+        self.assertEqual(ceg_filter_data['count_pending'], 0)
+        self.assertEqual(ceg_filter_data['count_inter_unpaid'], 1)
+        self.assertEqual(ceg_filter_data['count_taxa_unpaid'], 1)
+        self.assertEqual(ceg_filter_data['count_any_unpaid'], 1)
+        self.assertEqual(ceg_filter_data['caixa_id'], str(caixa.id))
+
+        # In cegs_com_pendencias
+        self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
+        self.assertEqual(res.context['total_geral_pendente_todas_cegs'], Decimal('24.00'))
+
+        # Template contains interactive filters and clear filter button
+        self.assertContains(res, 'filterByCegPayment')
+        self.assertContains(res, 'filteredCounts.pending')
+        self.assertContains(res, 'visibleCegsCount')
+        self.assertContains(res, 'Limpar Filtros')
+        self.assertContains(res, 'clearFilters()')
+        self.assertContains(res, 'hasActiveFilters')
+
+    def test_quick_pix_caixa_and_mercari_consolidation(self):
+        from decimal import Decimal
+        from apps.cegs.models import Caixa, ItemSlot, ItemIndividual
+        from apps.participants.models import Claim
+        from django.urls import reverse
+
+        caixa = Caixa.objects.create(nome='Caixa Japão #01', origem='JP', status='ENVIADO')
+        self.ceg.caixa = caixa
+        self.ceg.save()
+
+        # CEG tem pendência de 50.00 no item da setUp
+        # Agora adicionar um item avulso Mercari vinculado à mesma caixa
+        item_mercari = ItemIndividual.objects.create(
+            comprador=self.participant,
+            caixa=caixa,
+            nome='Photobar Mercari Sakura',
+            quantidade=1,
+            preco_produto=Decimal('35.00'),
+            produto_pago=False,
+            frete_inter=Decimal('15.00'),
+            frete_inter_pago=False,
+            taxa_aduaneira=Decimal('5.00'),
+            taxa_aduaneira_paga=False,
+        )
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.get(reverse('my_claims'))
+        self.assertEqual(res.status_code, 200)
+
+        # 1. Consolidação por CEG
+        self.assertIn('cegs_com_pendencias', res.context)
+        self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
+        self.assertEqual(res.context['total_geral_pendente_todas_cegs'], Decimal('50.00'))
+
+        # 2. Consolidação por Caixa
+        self.assertIn('caixas_com_pendencias', res.context)
+        self.assertEqual(len(res.context['caixas_com_pendencias']), 1)
+        caixa_pend = res.context['caixas_com_pendencias'][0]
+        self.assertEqual(caixa_pend['nome'], 'Caixa Japão #01')
+        self.assertEqual(caixa_pend['total_items_pending'], Decimal('50.00') + Decimal('35.00')) # 85.00
+        self.assertEqual(caixa_pend['total_frete_pending'], Decimal('15.00'))
+        self.assertEqual(caixa_pend['total_taxa_pending'], Decimal('5.00'))
+        self.assertEqual(caixa_pend['total_geral_pendente'], Decimal('105.00'))
+        self.assertEqual(res.context['total_geral_pendente_caixas'], Decimal('105.00'))
+
+        # 3. Consolidação Mercari
+        self.assertIn('mercari_pendencias', res.context)
+        mercari_info = res.context['mercari_pendencias']
+        self.assertEqual(mercari_info['items_count'], 1)
+        self.assertEqual(mercari_info['total_produtos_pendente'], Decimal('35.00'))
+        self.assertEqual(mercari_info['total_frete_pendente'], Decimal('15.00'))
+        self.assertEqual(mercari_info['total_taxa_pendente'], Decimal('5.00'))
+        self.assertEqual(mercari_info['total_geral_pendente'], Decimal('55.00'))
+        self.assertEqual(res.context['total_geral_pendente_mercari'], Decimal('55.00'))
+        self.assertEqual(res.context['total_geral_pendente_global'], Decimal('105.00'))
+
+        # 4. Renderização no template
+        self.assertContains(res, 'Por CEG')
+        self.assertContains(res, 'Por Caixa')
+        self.assertContains(res, 'Mercari')
+        self.assertContains(res, 'quickPixTab')
+        self.assertContains(res, 'Photobar Mercari Sakura')
+        self.assertContains(res, 'Caixa Japão #01')
+
+    def test_distinct_pix_keys_for_item_frete_taxa(self):
+        from decimal import Decimal
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.cegs.models import Caixa, ItemSlot
+        from apps.participants.models import Claim
+        from django.urls import reverse
+
+        # 1. Configurar chaves distintas na CEG
+        self.ceg.pix_key = 'pix_item@banco.com'
+        self.ceg.pix_instructions = 'Comprovante item com nome'
+        self.ceg.pix_key_frete = 'pix_frete_ceg@transportadora.com'
+        self.ceg.pix_instructions_frete = 'Comprovante frete com código CEG'
+        self.ceg.pix_key_taxa = 'pix_taxa_ceg@alfandega.com'
+        self.ceg.pix_instructions_taxa = 'Comprovante taxa urgente'
+        self.ceg.prazo_pagamento_item = timezone.now() + timedelta(days=2)
+        self.ceg.prazo_pagamento_frete_inter = timezone.now() + timedelta(days=3)
+        self.ceg.prazo_pagamento_taxa_aduaneira = timezone.now() + timedelta(days=4)
+        self.ceg.save()
+
+        # Configurar slot com pendências de item, frete e taxa
+        self.ceg.frete_inter = Decimal('20.00')
+        self.ceg.taxa_aduaneira = Decimal('10.00')
+        self.ceg.save()
+        self.slot.is_frete_inter_paid = False
+        self.slot.is_taxa_aduaneira_paid = False
+        self.slot.save()
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        # Requisição para my_claims
+        res = self.client.get(reverse('my_claims'))
+        self.assertEqual(res.status_code, 200)
+
+        # Asserções no context da CEG
+        ceg_pend = res.context['cegs_com_pendencias'][0]
+        self.assertTrue(ceg_pend['has_distinct_pix_keys'])
+        self.assertEqual(ceg_pend['pix_key_item'], 'pix_item@banco.com')
+        self.assertEqual(ceg_pend['pix_key_frete'], 'pix_frete_ceg@transportadora.com')
+        self.assertEqual(ceg_pend['pix_key_taxa'], 'pix_taxa_ceg@alfandega.com')
+        self.assertEqual(ceg_pend['pix_instructions_item'], 'Comprovante item com nome')
+        self.assertEqual(ceg_pend['pix_instructions_frete'], 'Comprovante frete com código CEG')
+        self.assertEqual(ceg_pend['pix_instructions_taxa'], 'Comprovante taxa urgente')
+
+        # Asserções no Semáforo de Prazos
+        prazos = {p['tipo']: p for p in res.context['prazos_proximos']}
+        self.assertIn('ITEM', prazos)
+        self.assertIn('FRETE', prazos)
+        self.assertIn('TAXA', prazos)
+        self.assertEqual(prazos['ITEM']['pix_key'], 'pix_item@banco.com')
+        self.assertEqual(prazos['FRETE']['pix_key'], 'pix_frete_ceg@transportadora.com')
+        self.assertEqual(prazos['TAXA']['pix_key'], 'pix_taxa_ceg@alfandega.com')
+
+        # Asserções no HTML renderizado
+        self.assertContains(res, 'pix_item@banco.com')
+        self.assertContains(res, 'pix_frete_ceg@transportadora.com')
+        self.assertContains(res, 'pix_taxa_ceg@alfandega.com')
+        self.assertContains(res, 'Pix Itens:')
+        self.assertContains(res, 'Pix Frete:')
+        self.assertContains(res, 'Pix Taxa:')
+
+        # 2. Testar sobrescrita pela Caixa (Caixa com chaves próprias de Frete e Taxa)
+        caixa = Caixa.objects.create(
+            nome='Caixa KR Chaves Específicas',
+            origem='KR',
+            status='EM_TRANSITO',
+            pix_key_frete='pix_caixa_frete@courier.com',
+            pix_instructions_frete='Frete Caixa KR',
+            pix_key_taxa='pix_caixa_taxa@receita.com',
+            pix_instructions_taxa='Taxa Caixa KR'
+        )
+        self.ceg.caixa = caixa
+        self.ceg.save()
+
+        # Verificar fallback no modelo CEG
+        self.assertEqual(self.ceg.get_pix_key_frete(), 'pix_caixa_frete@courier.com')
+        self.assertEqual(self.ceg.get_pix_key_taxa(), 'pix_caixa_taxa@receita.com')
+        self.assertEqual(self.ceg.get_pix_key_item(), 'pix_item@banco.com')
+
+        res2 = self.client.get(reverse('my_claims'))
+        self.assertEqual(res2.status_code, 200)
+
+        # Na visualização por Caixa
+        caixa_pend = res2.context['caixas_com_pendencias'][0]
+        self.assertTrue(caixa_pend['has_distinct_pix_keys'])
+        self.assertEqual(caixa_pend['pix_key_frete'], 'pix_caixa_frete@courier.com')
+        self.assertEqual(caixa_pend['pix_key_taxa'], 'pix_caixa_taxa@receita.com')
+
+        # No Semáforo de Prazos, Frete e Taxa agora usam as chaves da Caixa
+        prazos2 = {p['tipo']: p for p in res2.context['prazos_proximos']}
+        self.assertEqual(prazos2['FRETE']['pix_key'], 'pix_caixa_frete@courier.com')
+        self.assertEqual(prazos2['TAXA']['pix_key'], 'pix_caixa_taxa@receita.com')
+        self.assertEqual(prazos2['ITEM']['pix_key'], 'pix_item@banco.com')
+
 

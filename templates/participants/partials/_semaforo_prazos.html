@@ -1,0 +1,90 @@
+    {% if prazos_proximos %}
+    <!-- Semáforo de Prazos Próximos de Pagamento -->
+    <div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-base">
+                    ⏱️
+                </div>
+                <div>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>Prazos Próximos de Pagamento</span>
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full {% if prazos_urgentes_count > 0 %}bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 animate-pulse{% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                            {{ prazos_proximos|length }} {% if prazos_proximos|length == 1 %}prazo pendente{% else %}prazos pendentes{% endif %}
+                        </span>
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Acompanhe seus prazos de pagamento de item, frete internacional e taxa aduaneira para não perder suas reservas.
+                    </p>
+                </div>
+            </div>
+
+            {% if prazos_urgentes_count > 0 %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 self-start sm:self-auto">
+                <span>⚠️</span>
+                <span>{{ prazos_urgentes_count }} {% if prazos_urgentes_count == 1 %}prazo requer atenção{% else %}prazos requerem atenção{% endif %}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Grid de Cards de Prazos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {% for p in prazos_proximos %}
+            <div class="p-3.5 rounded-xl border {{ p.urgencia_class }} flex flex-col justify-between gap-3 shadow-2xs transition">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-white/80 dark:bg-black/30 shadow-2xs">
+                            {% if p.tipo == 'ITEM' %}📦{% elif p.tipo == 'FRETE' %}✈️{% else %}🏛️{% endif %}
+                            <span>{{ p.tipo_label }}</span>
+                        </span>
+                        <span class="text-xs font-black">
+                            {{ p.urgencia_badge }}
+                        </span>
+                    </div>
+
+                    <div class="pt-0.5">
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-1" title="{{ p.origem }}">
+                            {{ p.origem }}
+                        </h4>
+                        {% if p.remessa_nome %}
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400 block">
+                            Remessa: {{ p.remessa_nome }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-2">
+                    <div>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">A pagar:</span>
+                        <strong class="text-sm font-black text-slate-900 dark:text-white font-mono">
+                            R$ {{ p.valor|floatformat:2 }}
+                        </strong>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 block">
+                            Até {{ p.prazo|date:"d/m H:i" }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        {% if p.pix_key %}
+                        <button type="button" @click="copyPix('{{ p.pix_key }}', '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}')"
+                            class="px-2.5 py-1.5 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer"
+                            title="Copiar Chave Pix para {{ p.tipo_label }}">
+                            <span x-text="copiedPixCegId === '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}' ? '✔' : '📋'"></span>
+                            <span class="text-[11px]" x-text="copiedPixCegId === '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}' ? 'Copiada!' : 'Pix'"></span>
+                        </button>
+                        {% endif %}
+                        {% if p.ceg_slug %}
+                        <a href="{% url 'ceg_detail' slug=p.ceg_slug %}"
+                            class="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 text-xs transition shadow-xs"
+                            title="Ver detalhes da CEG">
+                            ↗
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}

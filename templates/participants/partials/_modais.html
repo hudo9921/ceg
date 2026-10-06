@@ -1,0 +1,383 @@
+    <!-- MODAL: CANCELAR SOLICITAÇÃO DE ENVIO -->
+    <div x-show="cancelModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="cancelModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white dark:bg-[#131B2E] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800"
+                @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">⚠️</span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">Cancelar Solicitação de Envio</h3>
+                            <p class="text-[11px] text-slate-400">Pacote <span class="font-bold text-slate-700 dark:text-slate-300" x-text="cancelPacoteIdentificador"></span></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="cancelModalOpen = false"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xl leading-none">&times;</button>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Tem certeza de que deseja cancelar esta solicitação de envio? Os itens voltarão imediatamente para a sua <strong>Minha Caixinha</strong> e você poderá solicitá-los novamente quando quiser.
+                </p>
+
+                <form :action="'/me/pacotes/' + cancelPacoteId + '/cancelar-solicitacao/'" method="post" class="pt-2 flex justify-end gap-2">
+                    {% csrf_token %}
+                    <button type="button" @click="cancelModalOpen = false"
+                        class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer">
+                        Voltar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow transition cursor-pointer">
+                        Sim, Cancelar Solicitação
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRMAR ENTREGA & DEIXAR FEEDBACK -->
+    <div x-show="deliveryModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" @click="deliveryModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white dark:bg-[#131B2E] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800"
+                @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🎉</span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">Confirmar Recebimento</h3>
+                            <p class="text-[11px] text-slate-400">Pacote <span class="font-bold text-slate-700 dark:text-slate-300"
+                                    x-text="deliveryPacoteIdentificador"></span></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="deliveryModalOpen = false"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xl leading-none">&times;</button>
+                </div>
+
+                <form :action="'/me/pacotes/' + deliveryPacoteId + '/confirmar-entrega/'" method="post"
+                    class="space-y-4">
+                    {% csrf_token %}
+
+                    <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2">
+                        <span class="text-base mt-0.5">📦</span>
+                        <div>
+                            <strong>Seus photocards chegaram?</strong>
+                            <p class="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                                Ao confirmar o recebimento, o status do pacote é alterado para <strong>Entregue</strong>
+                                e o organizador é notificado.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Avaliação por Estrelas -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Sua Avaliação (1 a 5 estrelas)</label>
+                        <div class="flex items-center gap-2">
+                            <template x-for="star in [1, 2, 3, 4, 5]" :key="star">
+                                <button type="button" @click="deliveryRating = star"
+                                    class="text-2xl transition transform hover:scale-125 focus:outline-none cursor-pointer"
+                                    :class="star <= deliveryRating ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'">
+                                    ★
+                                </button>
+                            </template>
+                            <span class="ml-2 text-xs font-bold text-amber-800 dark:text-amber-300"
+                                x-text="deliveryRating + ' de 5 estrelas'"></span>
+                            <input type="hidden" name="rating" :value="deliveryRating">
+                        </div>
+                    </div>
+
+                    <!-- Campo de Depoimento / Feedback -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                            Depoimento / Comentário <span class="text-slate-400 font-normal">(Opcional)</span>
+                        </label>
+                        <textarea name="feedback" rows="3"
+                            placeholder="Conte como os itens chegaram (embalagem, brindes, estado dos cards)..."
+                            class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" @click="deliveryModalOpen = false"
+                            class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer">
+                            Voltar
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5 cursor-pointer">
+                            <span>✅</span>
+                            <span>Confirmar Entrega</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Perfil (Nome, WhatsApp, Twitter/Instagram) -->
+    <div x-show="profileModalOpen" x-cloak
+        class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+        @keydown.escape.window="profileModalOpen = false">
+
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all"
+            @click.away="profileModalOpen = false">
+
+            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <span class="text-xs font-black text-pink-600 uppercase tracking-wider">Conta do Participante</span>
+                    <h3 class="text-lg font-black text-slate-900">Meu Perfil de Colecionador</h3>
+                    <p class="text-xs text-slate-500">Mantenha seus dados atualizados para suas reservas e comprovantes.
+                    </p>
+                </div>
+                <button type="button" @click="profileModalOpen = false"
+                    class="text-slate-400 hover:text-slate-700 text-xl font-bold">
+                    ✕
+                </button>
+            </div>
+
+            <form action="{% url 'update_profile' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Nome Completo (Obrigatório) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Nome Completo <span class="text-pink-600">*</span>
+                    </label>
+                    <input type="text" name="name" required
+                        value="{% if is_placeholder_name %}{% else %}{{ participant.name }}{% endif %}"
+                        placeholder="Ex: Beatriz Lima da Silva"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Obrigatório. Seu nome civil completo para conferência de
+                        pagamentos Pix, envios e encomendas.</span>
+                </div>
+
+                <!-- Como prefere ser chamado(a) / Apelido (Opcional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Como prefere ser chamado(a)? / Nome de Usuário <span
+                            class="text-slate-400 font-normal text-[11px]">(opcional)</span>
+                    </label>
+                    <input type="text" name="username" value="{{ participant.username|default:'' }}"
+                        placeholder="Ex: Bia, Hudo, JihyoStan"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    <span class="text-[10px] text-slate-400">Nome de usuário ou apelido usado nas saudações e no painel.
+                        Se em branco, usará seu nome completo.</span>
+                </div>
+
+                <!-- WhatsApp (Obrigatório / Autenticado via OTP) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        WhatsApp <span class="text-pink-600">*</span>
+                    </label>
+                    <div
+                        class="flex items-center justify-between px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700">
+                        <div class="flex items-center space-x-2">
+                            <span>🇧🇷</span>
+                            <span>{{ participant.formatted_phone }}</span>
+                        </div>
+                        <span
+                            class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span>✔</span> Autenticado via OTP
+                        </span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">Número verificado por código de 6 dígitos. Não pode ser
+                        alterado diretamente.</span>
+                </div>
+
+                <!-- Twitter / Instagram (Opcional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        @ Twitter (X) ou Instagram <span
+                            class="text-slate-400 font-normal text-[11px]">(opcional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="social_handle" value="{{ participant.social_handle|default:'' }}"
+                            placeholder="Ex: @jihyolover"
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                    </div>
+                    <span class="text-[10px] text-slate-400">Exibido publicamente na lista de reservas de cada Set e
+                        photocard.</span>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" @click="profileModalOpen = false"
+                        class="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                        <span>💾</span>
+                        <span>Salvar Alterações</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+
+    <!-- Modal Lightbox de Prévia do Photocard / Item -->
+    <div x-show="previewModalOpen"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+         @keydown.escape.window="closePreview()">
+        
+        <div class="relative bg-white dark:bg-[#131B2E] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl space-y-0"
+             @click.outside="closePreview()">
+            
+            <!-- Header do Modal -->
+            <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider block"
+                          x-text="(previewItem?.ceg || '') + (previewItem?.set ? ' • Set #' + previewItem?.set : '')"></span>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white"
+                        x-text="previewItem?.title"></h3>
+                </div>
+                <button type="button" @click="closePreview()"
+                    class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center text-sm font-bold transition cursor-pointer">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Conteúdo do Modal: Foto em Destaque e Detalhes -->
+            <div class="p-4 sm:p-5 space-y-4">
+                <!-- Imagem Ampliada -->
+                <div class="relative w-full max-w-[280px] mx-auto aspect-[3/4] bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                    <template x-if="previewItem?.image">
+                        <img :src="previewItem.image" :alt="previewItem.title"
+                             class="w-full h-full object-cover">
+                    </template>
+                    <template x-if="!previewItem?.image">
+                        <div class="text-center p-4">
+                            <span class="text-5xl block mb-2">✨</span>
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400" x-text="previewItem?.title"></span>
+                        </div>
+                    </template>
+
+                    <!-- Preço Overlay -->
+                    <div class="absolute bottom-2.5 right-2.5 px-3 py-1 rounded-xl bg-black/70 backdrop-blur-md text-white font-mono font-black text-xs shadow-md">
+                        R$ <span x-text="previewItem?.price"></span>
+                    </div>
+                </div>
+
+                <!-- Ciclo de Vida: Stepper Visual de 5 Estágios -->
+                <div class="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progresso do Item</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold flex items-center gap-1"
+                              :class="previewItem?.lifecycle?.badgeClass">
+                            <span x-text="previewItem?.lifecycle?.icon"></span>
+                            <span x-text="previewItem?.lifecycle?.label"></span>
+                        </span>
+                    </div>
+
+                    <!-- Stepper Dots/Bar -->
+                    <div class="grid grid-cols-5 gap-1.5 pt-1">
+                        <!-- Estágio 1: Pagamento -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 1) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-slate-800'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 1) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                1. Quitado
+                            </span>
+                        </div>
+                        <!-- Estágio 2: Trânsito Inter -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 2) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-slate-800'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 2) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                2. Trânsito
+                            </span>
+                        </div>
+                        <!-- Estágio 3: Alfândega -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 3) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-slate-800'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 3) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                3. Aduana
+                            </span>
+                        </div>
+                        <!-- Estágio 4: Caixinha -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 4) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-slate-800'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 4) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                4. Caixinha
+                            </span>
+                        </div>
+                        <!-- Estágio 5: Entregue -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 5) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-slate-800'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 5) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                5. Entregue
+                            </span>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-600 dark:text-slate-400 pt-1" x-text="previewItem?.lifecycle?.detail"></p>
+                </div>
+
+                <!-- Detalhes de Logística e Fretes -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="p-2.5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase block">✈️ Frete Internacional</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 font-mono"
+                              x-text="previewItem?.freteInter && previewItem?.freteInter !== '0.00' ? ('R$ ' + previewItem?.freteInter + (previewItem?.isFretePaid ? ' (Pago)' : ' (Pendente)')) : 'Incluso / Não Cobrado'"></span>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase block">🏛️ Taxa Aduaneira</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 font-mono"
+                              x-text="previewItem?.taxaAduaneira && previewItem?.taxaAduaneira !== '0.00' ? ('R$ ' + previewItem?.taxaAduaneira + (previewItem?.isTaxaPaid ? ' (Paga)' : ' (Pendente)')) : 'Isento / Não Cobrado'"></span>
+                    </div>
+                </div>
+
+                <!-- Se houver pacote nacional vinculado -->
+                <template x-if="previewItem?.pacoteId">
+                    <div class="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800/60 flex items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span>📦</span>
+                            <div>
+                                <span class="font-bold text-blue-900 dark:text-blue-200" x-text="'Pacote ' + previewItem.pacoteId"></span>
+                                <span x-show="previewItem.pacoteTracking" class="text-slate-500 font-mono text-[11px] block" x-text="'Rastreio: ' + previewItem.pacoteTracking"></span>
+                            </div>
+                        </div>
+                        <template x-if="previewItem?.pacoteUrl">
+                            <a :href="previewItem.pacoteUrl" target="_blank"
+                                class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition shadow-xs">
+                                Rastrear ↗
+                            </a>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Se houver pendência de Pix: Chave e Ação Rápida -->
+                <template x-if="!previewItem?.isItemPaid && previewItem?.pixKey">
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60 space-y-2">
+                        <div class="flex items-center justify-between text-xs text-amber-900 dark:text-amber-300 font-bold">
+                            <span>Chave Pix da CEG:</span>
+                            <span class="text-[11px] font-mono select-all truncate max-w-[200px]" x-text="previewItem?.pixKey"></span>
+                        </div>
+                        <button type="button" @click="copyPix(previewItem?.pixKey, previewItem?.cegId)"
+                            class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span x-text="copiedPixCegId === previewItem?.cegId ? '✔ Chave Copiada!' : '📋 Copiar Chave Pix'"></span>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Se item estiver na Caixinha: Botão de Ação -->
+                <template x-if="previewItem?.lifecycle?.code === 'READY_CAIXINHA'">
+                    <button type="button" @click="activeMainTab = 'caixinha'; closePreview()"
+                        class="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <span>📦</span>
+                        <span>Ir para Minha Caixinha e Pedir Envio</span>
+                        <span>➔</span>
+                    </button>
+                </template>
+            </div>
+
+        </div>
+    </div>
