@@ -100,6 +100,10 @@ python manage.py test apps.cegs
   - **Corpo Dividido em 2 Partes Nativas (Sem Abas):**
     - **Lado Esquerdo (Logística & Remessa):** Caixa Internacional de Origem (com bandeira e link direto de rastreio), Status do Envio e Semáforo de Urgência de Prazos.
     - **Lado Direito (Financeiro & Checkout):** Extrato completo de valores a pagar sem cortes (`📦 Itens`, `✈️ Frete a Pagar`, `🏛️ Taxa a Pagar`, `Total a Pagar nesta CEG`), e Botões de Copiar Pix (ou 3 botões dedicados caso haja chaves distintas).
+- **Card de Photocard (Formato 1 — Colecionador com Foto Limpa + Rodapé de Informações):**
+  - **Topo / Foto (`flex-1`):** A imagem do photocard fica 100% limpa e visível, sem nenhum degradê escuro cobrindo o integrante. Mantém no topo apenas chips sutis de Set # e Ciclo de Vida.
+  - **Base / Rodapé de Dados:** Painel inferior sólido com Nome do Integrante + Preço na linha 1, e Semáforo de Pagamentos em 3 chips (`✔ Pago/Item`, `✔ Frete`, `✔ Taxa`) na linha 2.
+  - **Nivelamento:** O container possui `h-full`, alinhando a base do card perfeitamente com a base do card da CEG na mesma linha.
 - **Expansão em Fluxo Contínuo (Inline Flow Grid):**
   - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, empurrando naturalmente as próximas pastas e photocards para as colunas e linhas seguintes.
   - Ao recolher a pasta, ela volta para 1 coluna (`aspect-[2/3]`) e os photocards recolhem instantaneamente.
