@@ -140,7 +140,7 @@ O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com um
 
 ### 8.3. Grid Flow Contínuo de Pastas & Photocards (Gatefold Album & Alta Densidade)
 - **Grid Unificado de Alta Densidade (Até 6 Colunas):** Adota `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo visualizar muitos photocards simultaneamente na tela com a estética de um binder/fichário real de colecionador.
-- **Card da Pasta Fechada (2:3 Sleeve):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`), idêntica a um photocard normal com capa da CEG, integrante/banner, badge de Era e contagem de itens.
+- **Card da Pasta Fechada (2:3 Sleeve):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`). Exibe a capa com cascata de fallback inteligente (`Banner da CEG` ➔ `Banner da Era` ➔ `Logo/Imagem do Grupo` ➔ `Photocard`), e restringe o degradê escuro apenas à base inferior (`h-28`), mantendo a imagem da capa 100% clara, nítida e sem escurecimento desnecessário.
 - **Card da Pasta Aberta (Gatefold Album `col-span-2 aspect-[4/3]`):**
   - Ao abrir, a pasta expande horizontalmente para ocupar **2 colunas** (`col-span-2`).
   - Graças à proporção matemática `aspect-[4/3]`, a altura vertical do card duplo coincide exatamente com a altura dos cards `aspect-[2/3]` da mesma linha ($2W \div 1.5W = 4/3$), mantendo a linha nivelada sem degraus nem quebras.

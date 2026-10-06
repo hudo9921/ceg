@@ -92,7 +92,7 @@ python manage.py test apps.cegs
 
 ### 3.6. Galeria do Participante: Cards Sleeve & Gatefold Album no Grid Flow Contínuo
 - **Grid Unificado de Alta Densidade (Até 6 Colunas):** O grid utiliza `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo que os photocards voltem ao formato compacto de binder/fichário real com muitos cards visíveis por linha.
-- **Card da Pasta Fechada (2:3 Sleeve):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`), idêntica a um photocard normal com capa da CEG, integrante/banner, badge de Era e contagem de itens.
+- **Card da Pasta Fechada (2:3 Sleeve):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`). Exibe a capa com cascata de fallback inteligente (`Banner da CEG` ➔ `Banner da Era` ➔ `Logo/Imagem do Grupo` ➔ `Photocard`), e restringe o degradê escuro apenas à base inferior (`h-28`), mantendo a imagem da capa 100% clara, nítida e sem escurecimento desnecessário.
 - **Card da Pasta Aberta (Gatefold Album `col-span-2 aspect-[4/3]`):**
   - Ao abrir, a pasta expande horizontalmente para ocupar **2 colunas** (`col-span-2`).
   - Graças à proporção matemática `aspect-[4/3]`, a altura vertical do card duplo coincide exatamente com a altura dos cards `aspect-[2/3]` da mesma linha ($2W \div 1.5W = 4/3$), mantendo a linha nivelada sem degraus nem quebras.
