@@ -48,9 +48,8 @@ class CreationsHubView(StaffRequiredMixin, View):
     def get(self, request):
         groups = KpopGroup.objects.prefetch_related('eras', 'members').order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        cegs = CEG.objects.select_related('era__group', 'caixa').prefetch_related('sets', 'item_definitions').order_by('-created_at')
+        cegs = CEG.objects.select_related('era__group').prefetch_related('sets').order_by('-created_at')
         caixas = Caixa.objects.all().order_by('-created_at')
-        itens_individuais = ItemIndividual.objects.select_related('caixa', 'comprador', 'tipo_item').order_by('-created_at')
 
         # Dicionário de grupos e eras para seleção em cascata e edição no Alpine.js
         groups_data = []
@@ -84,74 +83,12 @@ class CreationsHubView(StaffRequiredMixin, View):
                 ]
             })
 
-        # Resumo de inventário para a aba de listagem
-        cegs_summary = []
-        for c in cegs:
-            sets_list = list(c.sets.all())
-            cegs_summary.append({
-                'id': c.id,
-                'title': c.title,
-                'slug': c.slug,
-                'group_name': c.era.group.name,
-                'era_name': c.era.name,
-                'status': c.status,
-                'status_display': c.get_status_display(),
-                'caixa_id': c.caixa.id if c.caixa else None,
-                'caixa_nome': c.caixa.nome if c.caixa else None,
-                'caixa_slug': c.caixa.slug if c.caixa else None,
-                'caixa_origem': c.caixa.origem if c.caixa else None,
-                'shipping_status_display': c.get_shipping_status_display(),
-                'sets_count': len(sets_list),
-                'active_sets_count': sum(1 for s in sets_list if s.is_active),
-                'items_count': len(c.item_definitions.all()),
-                'opens_at': c.opens_at.strftime('%d/%m/%Y %H:%M') if c.opens_at else None,
-                'prazo_pagamento_item': c.prazo_pagamento_item.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_item else None,
-                'frete_inter': str(c.frete_inter) if c.frete_inter is not None else None,
-                'taxa_aduaneira': str(c.taxa_aduaneira) if c.taxa_aduaneira is not None else None,
-                'prazo_pagamento_frete_inter': c.prazo_pagamento_frete_inter.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_frete_inter else None,
-                'prazo_pagamento_taxa_aduaneira': c.prazo_pagamento_taxa_aduaneira.strftime('%d/%m/%Y %H:%M') if c.prazo_pagamento_taxa_aduaneira else None,
-                'is_standby': c.is_standby,
-                'pix_key': c.pix_key,
-            })
-
         # Participantes cadastrados para pré-reserva de itens no cadastro da CEG
         participants = list(
             Participant.objects.all().order_by('name').values(
                 'id', 'name', 'username', 'whatsapp', 'social_handle'
             )
         )
-
-        # Itens Individuais (Mercari) serializados para modal de edição ágil
-        itens_individuais_data = []
-        for item in itens_individuais:
-            itens_individuais_data.append({
-                'id': item.id,
-                'nome': item.nome,
-                'tipo_item_id': item.tipo_item_id,
-                'tipo_item_nome': item.tipo_item.nome if item.tipo_item else 'Item',
-                'link_pedido': item.link_pedido,
-                'quantidade': item.quantidade,
-                'caixa_id': item.caixa_id,
-                'caixa_nome': item.caixa.nome if item.caixa else None,
-                'caixa_slug': item.caixa.slug if item.caixa else None,
-                'caixa_origem': item.caixa.origem if item.caixa else None,
-                'status': item.status,
-                'status_display': item.get_status_display(),
-                'comprador_id': item.comprador_id,
-                'comprador_nome': item.comprador.display_name if item.comprador else '',
-                'comprador_whatsapp': item.comprador.whatsapp if item.comprador else '',
-                'comprador_username': item.comprador.username if item.comprador else '',
-                'comprador_social': item.comprador.social_handle if item.comprador else '',
-                'preco_produto': str(item.preco_produto) if item.preco_produto else '',
-                'frete_inter': str(item.frete_inter) if item.frete_inter else '',
-                'frete_inter_pago': item.frete_inter_pago,
-                'prazo_frete_inter': item.prazo_frete_inter.strftime('%Y-%m-%dT%H:%M') if item.prazo_frete_inter else '',
-                'taxa_aduaneira': str(item.taxa_aduaneira) if item.taxa_aduaneira else '',
-                'taxa_aduaneira_paga': item.taxa_aduaneira_paga,
-                'prazo_taxa_aduaneira': item.prazo_taxa_aduaneira.strftime('%Y-%m-%dT%H:%M') if item.prazo_taxa_aduaneira else '',
-                'image_url': item.image_display_url,
-                'observacoes': item.observacoes or '',
-            })
 
         caixas_data = [
             {
@@ -185,7 +122,6 @@ class CreationsHubView(StaffRequiredMixin, View):
             'groups_json': json.dumps(groups_data),
             'participants': participants,
             'participants_json': json.dumps(participants),
-            'cegs_summary': cegs_summary,
             'item_types': CEGItemDefinition.ItemType.choices,
             'tipos_item': tipos_item,
             'tipos_item_json': json.dumps(tipos_item_data),
@@ -198,10 +134,7 @@ class CreationsHubView(StaffRequiredMixin, View):
             'total_groups': groups.count(),
             'total_eras': eras.count(),
             'total_cegs': cegs.count(),
-            'open_cegs': cegs.filter(status=CEG.Status.OPEN).count(),
-            'itens_individuais': itens_individuais,
-            'itens_individuais_json': json.dumps(itens_individuais_data),
-            'total_itens_individuais': itens_individuais.count(),
+            'open_cegs': sum(1 for c in cegs if c.status == CEG.Status.OPEN),
             'item_individual_statuses': ItemIndividual.Status.choices,
         }
         return render(request, 'cegs/creations.html', context)
@@ -865,6 +798,7 @@ class CreateSetView(StaffRequiredMixin, View):
     """Adiciona um novo Set a uma CEG existente e gera os slots automaticamente."""
 
     def post(self, request):
+        next_url = request.POST.get('next')
         ceg_id = request.POST.get('ceg_id')
         set_number_input = request.POST.get('set_number', '').strip()
         notes = request.POST.get('notes', '').strip()
@@ -872,7 +806,7 @@ class CreateSetView(StaffRequiredMixin, View):
 
         if not ceg_id:
             messages.error(request, "Selecione a CEG para a qual deseja adicionar o Set.")
-            return redirect('/creations/?tab=sets')
+            return redirect(next_url or '/creations/?tab=sets')
 
         ceg = get_object_or_404(CEG, id=ceg_id)
 
@@ -885,7 +819,7 @@ class CreateSetView(StaffRequiredMixin, View):
 
         if ceg.sets.filter(set_number=set_number).exists():
             messages.error(request, f"O Set #{set_number} já existe para a CEG '{ceg.title}'. Escolha outro número.")
-            return redirect('/creations/?tab=sets')
+            return redirect(next_url or '/creations/?tab=sets')
 
         try:
             with transaction.atomic():
@@ -907,11 +841,13 @@ class CreateSetView(StaffRequiredMixin, View):
                 msg += f" 🎯 {promoted_count} participante(s) da Lista de Espera foram alocados automaticamente nas vagas do novo set!"
 
             messages.success(request, msg)
+            if next_url:
+                return redirect(next_url)
             return redirect('ceg_detail', slug=ceg.slug)
         except Exception as e:
             logger.error(f"Erro ao criar set: {e}")
             messages.error(request, f"Erro ao adicionar Set: {e}")
-            return redirect('/creations/?tab=sets')
+            return redirect(next_url or '/creations/?tab=sets')
 
 
 class AddItemToCEGView(StaffRequiredMixin, View):

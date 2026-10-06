@@ -1,0 +1,219 @@
+    <!-- Seção de Itens Individuais & Caixas Mercari -->
+    {% if itens_individuais %}
+    <div id="secao-mercari" x-show="categoryFilter === 'ALL' || categoryFilter === 'MERCARI'" class="space-y-6 pt-2">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4"
+            :class="categoryFilter === 'MERCARI' ? 'ring-2 ring-pink-400 border-pink-300' : ''">
+
+            <!-- Banner quando filtro Mercari está ativo -->
+            <div x-show="categoryFilter === 'MERCARI'"
+                class="p-3.5 bg-pink-50 border border-pink-200 rounded-xl flex items-center justify-between gap-3 text-xs text-pink-900">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🇯🇵</span>
+                    <span>Filtro ativo: Exibindo apenas <strong>Itens Mercari / Compras no Japão</strong>.</span>
+                </div>
+                <button type="button" @click="categoryFilter = 'ALL'"
+                    class="px-3 py-1 bg-white hover:bg-pink-100 text-pink-700 border border-pink-300 rounded-lg font-bold text-[11px] transition shadow-xs">
+                    Ver Todas as CEGs e Itens
+                </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>🇯🇵</span>
+                        <span>Meus Itens Avulsos & Mercari</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 pt-0.5">
+                        Itens individuais comprados para você em caixas do Japão / Mercari.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-bold">
+                        {{ itens_individuais_count }} {% if itens_individuais_count == 1 %}item individual{% else %}itens individuais{% endif %}
+                    </span>
+                    {% if itens_frete_unpaid_count > 0 or itens_taxa_unpaid_count > 0 %}
+                    <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+                        ⚠️ Frete/Taxa Pendente
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tabela dos Itens Individuais do Participante -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead
+                        class="text-[11px] text-slate-400 uppercase bg-slate-50 border-y border-slate-100 font-bold tracking-wider">
+                        <tr>
+                            <th class="py-3 px-3">Item / Foto</th>
+                            <th class="py-3 px-3">Caixa Vinculada</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                            <th class="py-3 px-3 text-center">Frete Inter</th>
+                            <th class="py-3 px-3 text-center">Taxa Aduaneira</th>
+                            <th class="py-3 px-3 text-center">Envio Nacional</th>
+                            <th class="py-3 px-3 text-right">Link Original</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for item in itens_individuais %}
+                        <tr x-show="matchesMercariItem('{{ item.caixa_id|default:'' }}', '{{ item.status }}', {{ item.frete_inter_pago|yesno:'true,false' }}, {{ item.taxa_aduaneira_paga|yesno:'true,false' }}, {{ item.frete_inter|default:0 }}, {{ item.taxa_aduaneira|default:0 }}, '{{ item.nome|escapejs }} {{ item.caixa.nome|default:''|escapejs }}')"
+                            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-3.5 px-3">
+                                <div class="flex items-center gap-3">
+                                    {% if item.image_display_url %}
+                                    <img src="{{ item.image_display_url }}" alt="{{ item.nome }}"
+                                        class="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-2xs flex-shrink-0 cursor-pointer hover:opacity-85 transition"
+                                        @click="openPreview({
+                                            title: '{{ item.nome|escapejs }}',
+                                            member: '',
+                                            image: '{{ item.image_display_url|escapejs }}',
+                                            ceg: '{{ item.caixa.nome|default:'Mercari / Japão'|escapejs }}',
+                                            set: '',
+                                            price: '{{ item.preco_estimado|default:0|floatformat:2 }}',
+                                            claimedAt: '{{ item.created_at|date:'d/m/Y' }}',
+                                            lifecycle: {
+                                                stage: {{ item.lifecycle.stage }},
+                                                code: '{{ item.lifecycle.code }}',
+                                                label: '{{ item.lifecycle.label|escapejs }}',
+                                                icon: '{{ item.lifecycle.icon|escapejs }}',
+                                                badgeClass: '{{ item.lifecycle.badge_class|escapejs }}',
+                                                detail: '{{ item.lifecycle.detail|escapejs }}'
+                                            },
+                                            pixKey: '',
+                                            cegId: '',
+                                            isItemPaid: true,
+                                            freteInter: '{{ item.frete_inter|default:0|floatformat:2 }}',
+                                            isFretePaid: {{ item.frete_inter_pago|yesno:'true,false' }},
+                                            taxaAduaneira: '{{ item.taxa_aduaneira|default:0|floatformat:2 }}',
+                                            isTaxaPaid: {{ item.taxa_aduaneira_paga|yesno:'true,false' }},
+                                            pacoteId: '{{ item.pacote_nacional.identificador|default:''|escapejs }}',
+                                            pacoteTracking: '{{ item.pacote_nacional.codigo_rastreio|default:''|escapejs }}',
+                                            pacoteUrl: '{{ item.pacote_nacional.tracking_url|default:''|escapejs }}'
+                                        })">
+                                    {% else %}
+                                    <div
+                                        class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 font-bold text-lg flex-shrink-0">
+                                        📦
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="font-bold text-slate-900 text-sm">{{ item.nome }}</div>
+                                        <div class="text-[11px] text-slate-400">Qtd: <span
+                                                class="font-bold text-slate-700">{{ item.quantidade }}</span> •
+                                            Cadastrado em {{ item.created_at|date:"d/m/Y" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-3">
+                                {% if item.caixa %}
+                                <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span>{% if item.caixa.origem == 'JP' %}🇯🇵{% elif item.caixa.origem == 'KR' %}🇰🇷{% else %}📦{% endif %}</span>
+                                    <span>{{ item.caixa.nome }}</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500">Status: {{ item.caixa.get_status_display }}
+                                </div>
+                                {% if item.caixa.codigo_rastreio %}
+                                <a href="{{ item.caixa.tracking_url|default:'#' }}" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 text-[11px] text-pink-600 hover:underline font-mono">
+                                    <span>🔍</span> {{ item.caixa.codigo_rastreio }}
+                                </a>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-slate-400 italic">Sem caixa vinculada</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-3 text-center">
+                                <div class="space-y-1 inline-flex flex-col items-center">
+                                    <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold {{ item.lifecycle.badge_class }} inline-flex items-center gap-1" title="{{ item.lifecycle.detail }}">
+                                        <span>{{ item.lifecycle.icon }}</span>
+                                        <span>{{ item.lifecycle.label }}</span>
+                                    </span>
+                                    <span class="text-[9px] text-slate-400 block font-medium">{{ item.get_status_display }}</span>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-3 text-center">
+                                {% if item.frete_inter and item.frete_inter > 0 %}
+                                <div class="font-bold text-slate-800">R$ {{ item.frete_inter|floatformat:2 }}</div>
+                                {% if item.frete_inter_pago %}
+                                <span
+                                    class="inline-block mt-0.5 px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">✔
+                                    Pago</span>
+                                {% else %}
+                                <span
+                                    class="inline-block mt-0.5 px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">⏳
+                                    Pendente</span>
+                                {% if item.prazo_frete_inter %}
+                                <div class="text-[10px] text-slate-400 mt-0.5">Prazo: {{ item.prazo_frete_inter|date:"d/m/Y" }}</div>
+                                {% endif %}
+                                {% endif %}
+                                {% else %}
+                                <span class="text-slate-300 font-bold text-xs">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-3 text-center">
+                                {% if item.taxa_aduaneira and item.taxa_aduaneira > 0 %}
+                                <div class="font-bold text-slate-800">R$ {{ item.taxa_aduaneira|floatformat:2 }}</div>
+                                {% if item.taxa_aduaneira_paga %}
+                                <span
+                                    class="inline-block mt-0.5 px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">✔
+                                    Pago</span>
+                                {% else %}
+                                <span
+                                    class="inline-block mt-0.5 px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">⏳
+                                    Pendente</span>
+                                {% if item.prazo_taxa_aduaneira %}
+                                <div class="text-[10px] text-slate-400 mt-0.5">Prazo: {{ item.prazo_taxa_aduaneira|date:"d/m/Y" }}</div>
+                                {% endif %}
+                                {% endif %}
+                                {% else %}
+                                <span class="text-slate-300 font-bold text-xs">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-3 text-center">
+                                {% if item.pacote_nacional %}
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold {% if item.pacote_nacional.status == 'ENVIADO' %}bg-emerald-100 text-emerald-800{% elif item.pacote_nacional.status == 'ENTREGUE' %}bg-slate-100 text-slate-700{% else %}bg-blue-100 text-blue-800{% endif %}"
+                                    title="Transportadora: {{ item.pacote_nacional.transportadora }}{% if item.pacote_nacional.codigo_rastreio %} | Rastreio: {{ item.pacote_nacional.codigo_rastreio }}{% endif %}">
+                                    <span>📦</span>
+                                    <span>{{ item.pacote_nacional.identificador }}</span>
+                                    {% if item.pacote_nacional.codigo_rastreio %}
+                                    <a href="{{ item.pacote_nacional.tracking_url }}" target="_blank"
+                                        class="text-blue-600 hover:text-blue-800 underline ml-0.5"
+                                        title="Rastrear nos Correios">↗</a>
+                                    {% endif %}
+                                </span>
+                                {% else %}
+                                <span class="text-slate-300 font-bold text-xs">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-3 text-right">
+                                {% if item.link_pedido %}
+                                <a href="{{ item.link_pedido }}" target="_blank" rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">
+                                    <span>🔗 Ver Anúncio</span>
+                                </a>
+                                {% else %}
+                                <span class="text-slate-300 text-xs">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Mensagem quando filtros não encontram correspondência na tabela Mercari -->
+                        <tr
+                            x-show="allMercari.length > 0 && !allMercari.some(it => matchesMercariItem(it.caixa_id, it.status, it.frete_inter_pago, it.taxa_aduaneira_paga, it.frete_inter, it.taxa_aduaneira, it.search_text || it.nome))">
+                            <td colspan="6" class="py-10 text-center text-slate-400">
+                                <div class="text-3xl mb-1">🔍</div>
+                                <div class="text-xs font-bold text-slate-700">Nenhum item Mercari encontrado para os
+                                    filtros selecionados.</div>
+                                <div class="text-[11px] text-slate-400 mt-0.5">Tente selecionar outra caixa ou status.
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}

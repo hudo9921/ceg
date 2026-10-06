@@ -871,6 +871,10 @@ class UpdateCEGView(StaffRequiredMixin, View):
             prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
             pix_key = request.POST.get('pix_key', '').strip()
             pix_instructions = request.POST.get('pix_instructions', '').strip()
+            pix_key_frete = request.POST.get('pix_key_frete', '').strip()
+            pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
+            pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
+            pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
             description = request.POST.get('description', '').strip()
             banner_url_input = request.POST.get('banner_url', '').strip()
             remove_banner = request.POST.get('remove_banner') in ('1', 'true', 'on')
@@ -920,6 +924,10 @@ class UpdateCEGView(StaffRequiredMixin, View):
 
             ceg.pix_key = pix_key
             ceg.pix_instructions = pix_instructions
+            ceg.pix_key_frete = pix_key_frete
+            ceg.pix_instructions_frete = pix_instructions_frete
+            ceg.pix_key_taxa = pix_key_taxa
+            ceg.pix_instructions_taxa = pix_instructions_taxa
             ceg.description = description
 
             # Upload de Imagem / Foto de Banner (Arquivo, Ctrl+V Base64 ou URL)
@@ -943,10 +951,16 @@ class UpdateCEGView(StaffRequiredMixin, View):
             ceg.save()
 
             messages.success(request, f"✨ Informações e foto da CEG '{ceg.title}' foram atualizadas com sucesso!")
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
             return redirect('ceg_detail', slug=ceg.slug)
         except Exception as e:
             logger.exception(f"Erro ao atualizar informações da CEG {slug}: {e}")
             messages.error(request, f"Erro ao atualizar informações da CEG: {e}")
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
             return redirect('ceg_detail', slug=ceg.slug)
 
 

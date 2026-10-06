@@ -367,6 +367,110 @@ class Claim(models.Model):
             self.slot.status = 'PAID'
             self.slot.save(update_fields=['status'])
 
+    @property
+    def lifecycle(self) -> dict:
+        """
+        Retorna o estágio consolidado do ciclo de vida deste item:
+        - stage: int (1 a 5)
+        - code: str identificador
+        - label: str rótulo legível
+        - icon: str emoji
+        - badge_class: str classes Tailwind
+        - detail: str explicação contextual
+        """
+        slot = getattr(self, 'slot', None)
+        if not slot:
+            return {
+                'stage': 1, 'code': 'UNKNOWN', 'label': 'Desconhecido',
+                'icon': '❓', 'badge_class': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', 'detail': ''
+            }
+
+        # 1. Envio nacional / pacote
+        if slot.pacote_nacional:
+            pac = slot.pacote_nacional
+            if pac.status == 'ENTREGUE':
+                return {
+                    'stage': 5, 'code': 'DELIVERED', 'label': 'Entregue',
+                    'icon': '🎉', 'badge_class': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
+                    'detail': f'Recebido via {pac.identificador}'
+                }
+            elif pac.status == 'ENVIADO':
+                return {
+                    'stage': 5, 'code': 'SHIPPED', 'label': 'Enviado',
+                    'icon': '🚚', 'badge_class': 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300',
+                    'detail': f'Rastreio: {pac.codigo_rastreio}' if pac.codigo_rastreio else f'Pacote {pac.identificador}'
+                }
+            else:
+                return {
+                    'stage': 5, 'code': 'PACKAGING', 'label': 'Embalando',
+                    'icon': '📦', 'badge_class': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300',
+                    'detail': f'Em preparação ({pac.identificador})'
+                }
+
+        # 2. Elegível para caixinha (já conferido no Brasil e 100% quitado)
+        pode_empacotar, _ = slot.check_packaging_eligibility()
+        if pode_empacotar:
+            return {
+                'stage': 4, 'code': 'READY_CAIXINHA', 'label': 'Na Caixinha',
+                'icon': '📦', 'badge_class': 'bg-pink-100 text-pink-800 dark:bg-pink-950/70 dark:text-pink-300',
+                'detail': 'Pronto para solicitar envio nacional'
+            }
+
+        # 3. Item pendente de pagamento
+        is_paid = self.status == self.Status.PAID or slot.is_item_paid or slot.status == 'PAID'
+        if not is_paid:
+            return {
+                'stage': 1, 'code': 'PENDING_PAYMENT', 'label': 'Aguardando Pagamento',
+                'icon': '⏳', 'badge_class': 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300',
+                'detail': f'R$ {self.total_price:.2f} pendente'
+            }
+
+        # 4. Item pago, verificar logística internacional (Caixa)
+        ceg = slot.set.ceg
+        caixa = ceg.caixa
+        if caixa:
+            if caixa.status in ['ENVIADA', 'EM_TRANSITO']:
+                return {
+                    'stage': 2, 'code': 'IN_TRANSIT', 'label': 'Em Trânsito Inter',
+                    'icon': '✈️', 'badge_class': 'bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300',
+                    'detail': f'Na remessa {caixa.nome}'
+                }
+            elif caixa.status in ['NO_BRASIL', 'TRIBUTADA', 'LIBERADA']:
+                unpaid_frete = slot.frete_inter and not slot.is_frete_inter_paid
+                unpaid_taxa = slot.taxa_aduaneira and not slot.is_taxa_aduaneira_paid
+                if unpaid_frete or unpaid_taxa:
+                    return {
+                        'stage': 3, 'code': 'CUSTOMS_PENDING', 'label': 'Taxas Pendentes',
+                        'icon': '⚠️', 'badge_class': 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300',
+                        'detail': 'Pagar frete/taxa para liberar'
+                    }
+                return {
+                    'stage': 3, 'code': 'CUSTOMS_CLEARING', 'label': 'No Brasil (Conferência)',
+                    'icon': '🇧🇷', 'badge_class': 'bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300',
+                    'detail': 'Chegou ao Brasil, em conferência'
+                }
+            elif caixa.status in ['ENTREGUE', 'FINALIZADA']:
+                unpaid_frete = slot.frete_inter and not slot.is_frete_inter_paid
+                unpaid_taxa = slot.taxa_aduaneira and not slot.is_taxa_aduaneira_paid
+                if unpaid_frete or unpaid_taxa:
+                    return {
+                        'stage': 3, 'code': 'CUSTOMS_PENDING', 'label': 'Taxas Pendentes',
+                        'icon': '⚠️', 'badge_class': 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300',
+                        'detail': 'Pagar frete/taxa para liberar envio'
+                    }
+                return {
+                    'stage': 4, 'code': 'READY_CAIXINHA', 'label': 'Na Caixinha',
+                    'icon': '📦', 'badge_class': 'bg-pink-100 text-pink-800 dark:bg-pink-950/70 dark:text-pink-300',
+                    'detail': 'Pronto para solicitar envio nacional'
+                }
+
+        # 5. Quitado, aguardando formação de remessa
+        return {
+            'stage': 1, 'code': 'ITEM_PAID', 'label': 'Item Quitado',
+            'icon': '✔', 'badge_class': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
+            'detail': 'Aguardando fechamento da remessa'
+        }
+
     def cancel(self):
         self.status = self.Status.CANCELLED
         self.save(update_fields=['status'])

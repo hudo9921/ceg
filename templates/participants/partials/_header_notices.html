@@ -1,0 +1,165 @@
+    <!-- Top Header -->
+    <div
+        class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="space-y-1">
+            <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Painel do Participante</span>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Olá, {{ participant.display_name }}! 👋
+            </h1>
+            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
+                <span>👤 Nome Completo: <strong>{{ participant.name }}</strong></span>
+                <span>•</span>
+                <span>📱 WhatsApp: <strong>{{ participant.formatted_phone }}</strong></span>
+                <span>•</span>
+                {% if participant.social_handle %}
+                <span>@ Rede Social: <strong class="text-pink-600">{{ participant.social_handle }}</strong></span>
+                {% else %}
+                <button type="button" @click="profileModalOpen = true"
+                    class="text-pink-600 hover:text-pink-700 font-semibold inline-flex items-center gap-1 underline underline-offset-2">
+                    + Adicionar @ Twitter/Insta
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" @click="profileModalOpen = true"
+                class="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <span>✏️</span>
+                <span>Editar Perfil</span>
+            </button>
+            <a href="{% url 'logout_participant' %}"
+                class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition">
+                Encerrar Sessão
+            </a>
+        </div>
+    </div>
+
+    <!-- Banner de Boas-Vindas para Completar Perfil -->
+    {% if is_placeholder_name or not participant.social_handle %}
+    <div
+        class="bg-gradient-to-r from-pink-50 via-purple-50 to-pink-50 dark:from-[#131B2E] dark:via-[#131B2E] dark:to-[#131B2E] dark:bg-[#131B2E] dark:bg-none border border-pink-200 dark:border-pink-500/30 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex items-start space-x-3">
+            <div
+                class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl flex-shrink-0">
+                👤
+            </div>
+            <div>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white">
+                    {% if is_placeholder_name %}
+                    Complete o seu cadastro de participante!
+                    {% else %}
+                    Adicione seu @ no Twitter / Instagram
+                    {% endif %}
+                </h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-0.5">
+                    {% if is_placeholder_name %}
+                    Você acessou pelo WhatsApp. Defina seu <strong>Nome Completo</strong> (obrigatório) e seu
+                    <strong>Twitter/Instagram</strong> (opcional) para identificação nos photocards e claims.
+                    {% else %}
+                    Adicione seu identificador para que outros colecionadores e o organizador identifiquem suas reservas
+                    nos cards.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <button type="button" @click="profileModalOpen = true"
+            class="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 flex-shrink-0">
+            <span>✏️</span>
+            <span>{% if is_placeholder_name %}Completar Cadastro{% else %}Adicionar @ Social{% endif %}</span>
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Central de Avisos & Notificações do Participante -->
+    {% if notifications %}
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-2.5">
+                <div
+                    class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-base font-bold shadow-2xs">
+                    📢
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-black text-slate-900">Avisos & Notificações</h2>
+                        <template x-if="unreadNotificationsCount > 0">
+                            <span
+                                class="px-2 py-0.5 bg-red-100 text-red-700 font-black text-[10px] rounded-full uppercase tracking-wider animate-pulse"
+                                x-text="unreadNotificationsCount + ' novo(s)'"></span>
+                        </template>
+                    </div>
+                    <p class="text-xs text-slate-500">
+                        Atualizações sobre compras em grupo, cancelamentos de sets e estornos.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-center">
+                <template x-if="unreadNotificationsCount > 0">
+                    <button type="button" @click="markAllNotificationsRead()"
+                        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs">
+                        <span>✓</span> Marcar todos como lidos
+                    </button>
+                </template>
+                <button type="button" @click="notificationsOpen = !notificationsOpen"
+                    class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1">
+                    <span
+                        x-text="notificationsOpen ? 'Recolher' : 'Expandir (' + {{ notifications|length }} + ')'"></span>
+                    <span class="transition-transform duration-200 text-[10px]"
+                        :class="notificationsOpen ? 'rotate-180' : ''">▼</span>
+                </button>
+            </div>
+        </div>
+
+        <div x-show="notificationsOpen" x-collapse class="space-y-3 pt-1">
+            {% for notif in notifications %}
+            <div class="p-4 sm:p-5 rounded-2xl border transition-all duration-200 space-y-3"
+                :class="(allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})) ? 'border-slate-200 bg-slate-50/60 opacity-85' : 'border-amber-300 bg-amber-50/40 shadow-xs'">
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">
+                            {% if notif.notification_type == 'SET_CANCELLED' %}⚠️{% else %}ℹ️{% endif %}
+                        </span>
+                        <h3 class="text-sm font-black text-slate-900">
+                            {{ notif.title }}
+                        </h3>
+                        <span x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                            class="px-1.5 py-0.5 bg-amber-500 text-white font-black text-[9px] rounded-md uppercase tracking-wider">
+                            Novo
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-3 text-xs text-slate-400">
+                        <span class="text-[11px]">{{ notif.created_at|date:"d/m/Y \à\s H:i" }}</span>
+                        <button type="button"
+                            x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                            @click="markNotificationRead({{ notif.id }})"
+                            class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-lg text-[11px] transition shadow-2xs cursor-pointer">
+                            Marcar como lido
+                        </button>
+                        <span x-show="allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                            class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                            <span>✓</span> Lido
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Conteúdo da mensagem formatada -->
+                <div
+                    class="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans bg-white/80 p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    {{ notif.message }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Dados serializados para Alpine.js -->
+    {{ cegs_filter_list|json_script:"cegs-filter-data" }}
+    {{ mercari_filter_list|json_script:"mercari-filter-data" }}
+    {{ itens_caixinha_prontos|json_script:"caixinha-prontos-data" }}
+

@@ -512,6 +512,10 @@ class CaixaCreateView(StaffRequiredMixin, View):
         data_previsao = parse_date(request.POST.get('data_previsao', '') or '')
         data_recebimento = parse_date(request.POST.get('data_recebimento', '') or '')
         observacoes = request.POST.get('observacoes', '').strip()
+        pix_key_frete = request.POST.get('pix_key_frete', '').strip()
+        pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
+        pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
+        pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
 
         frete_inter_total, err_frete = parse_safe_decimal(request.POST.get('frete_inter_total'), "Frete Internacional")
         taxa_aduaneira_total, err_taxa = parse_safe_decimal(request.POST.get('taxa_aduaneira_total'), "Taxa Aduaneira")
@@ -540,6 +544,10 @@ class CaixaCreateView(StaffRequiredMixin, View):
                     data_recebimento=data_recebimento,
                     frete_inter_total=frete_inter_total,
                     taxa_aduaneira_total=taxa_aduaneira_total,
+                    pix_key_frete=pix_key_frete,
+                    pix_instructions_frete=pix_instructions_frete,
+                    pix_key_taxa=pix_key_taxa,
+                    pix_instructions_taxa=pix_instructions_taxa,
                     observacoes=observacoes,
                 )
                 caixa.full_clean()
@@ -583,6 +591,10 @@ class CaixaUpdateView(StaffRequiredMixin, View):
         data_previsao = parse_date(request.POST.get('data_previsao', '') or '')
         data_recebimento = parse_date(request.POST.get('data_recebimento', '') or '')
         observacoes = request.POST.get('observacoes', '').strip()
+        pix_key_frete = request.POST.get('pix_key_frete', '').strip()
+        pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
+        pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
+        pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
 
         frete_inter_total, err_frete = parse_safe_decimal(request.POST.get('frete_inter_total'), "Frete Internacional")
         taxa_aduaneira_total, err_taxa = parse_safe_decimal(request.POST.get('taxa_aduaneira_total'), "Taxa Aduaneira")
@@ -608,6 +620,10 @@ class CaixaUpdateView(StaffRequiredMixin, View):
             caixa.data_recebimento = data_recebimento
             caixa.frete_inter_total = frete_inter_total
             caixa.taxa_aduaneira_total = taxa_aduaneira_total
+            caixa.pix_key_frete = pix_key_frete
+            caixa.pix_instructions_frete = pix_instructions_frete
+            caixa.pix_key_taxa = pix_key_taxa
+            caixa.pix_instructions_taxa = pix_instructions_taxa
             caixa.observacoes = observacoes
 
             prazo_frete_str = request.POST.get('prazo_frete', '').strip()

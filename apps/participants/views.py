@@ -283,6 +283,30 @@ class MyClaimsView(View):
         caixas_dict = {}
         itens_sem_caixa_count = 0
 
+        sem_caixa_dict = {
+            'id': 'NONE',
+            'nome': 'Itens Fora de Caixas (Sem Remessa)',
+            'slug': '',
+            'origem': '',
+            'origem_display': '',
+            'status': '',
+            'status_display': 'Sem Remessa',
+            'codigo_rastreio': '',
+            'tracking_url': '',
+            'prazo_frete': None,
+            'prazo_taxa': None,
+            'items_count': 0,
+            'cegs_ids': set(),
+            'cegs_names': set(),
+            'mercari_count': 0,
+            'total_items_pending': Decimal('0.00'),
+            'total_frete_pending': Decimal('0.00'),
+            'total_taxa_pending': Decimal('0.00'),
+            'total_geral_pendente': Decimal('0.00'),
+            'pix_key': '',
+            'pix_instructions': '',
+        }
+
         for claim in claims_list:
             ceg = claim.slot.set.ceg
             group = ceg.era.group
@@ -291,7 +315,8 @@ class MyClaimsView(View):
                 c = ceg.caixa
                 if c.id not in caixas_dict:
                     caixas_dict[c.id] = {
-                        'id': c.id,
+                        'id': str(c.id),
+                        'caixa_obj': c,
                         'nome': c.nome,
                         'slug': c.slug,
                         'origem': c.origem,
@@ -304,12 +329,31 @@ class MyClaimsView(View):
                         'prazo_taxa': c.prazo_taxa,
                         'items_count': 0,
                         'cegs_ids': set(),
+                        'cegs_names': set(),
                         'mercari_count': 0,
+                        'total_items_pending': Decimal('0.00'),
+                        'total_frete_pending': Decimal('0.00'),
+                        'total_taxa_pending': Decimal('0.00'),
+                        'total_geral_pendente': Decimal('0.00'),
+                        'pix_key': '',
+                        'pix_instructions': '',
                     }
                 caixas_dict[c.id]['items_count'] += 1
                 caixas_dict[c.id]['cegs_ids'].add(ceg.id)
+                caixas_dict[c.id]['cegs_names'].add(ceg.title)
+                if not caixas_dict[c.id]['pix_key'] and ceg.pix_key:
+                    caixas_dict[c.id]['pix_key'] = ceg.pix_key
+                    caixas_dict[c.id]['pix_instructions'] = ceg.pix_instructions
+                target_caixa = caixas_dict[c.id]
             else:
                 itens_sem_caixa_count += 1
+                sem_caixa_dict['items_count'] += 1
+                sem_caixa_dict['cegs_ids'].add(ceg.id)
+                sem_caixa_dict['cegs_names'].add(ceg.title)
+                if not sem_caixa_dict['pix_key'] and ceg.pix_key:
+                    sem_caixa_dict['pix_key'] = ceg.pix_key
+                    sem_caixa_dict['pix_instructions'] = ceg.pix_instructions
+                target_caixa = sem_caixa_dict
 
             if group.id not in groups_dict:
                 groups_dict[group.id] = {
@@ -334,6 +378,7 @@ class MyClaimsView(View):
                     'count_taxa_unpaid': 0,
                     'count_inter_paid': 0,
                     'count_taxa_paid': 0,
+                    'count_any_unpaid': 0,
                     'total_frete_inter': Decimal('0.00'),
                     'total_frete_inter_pendente': Decimal('0.00'),
                     'total_frete_inter_pago': Decimal('0.00'),
@@ -349,6 +394,7 @@ class MyClaimsView(View):
             if claim.status == Claim.Status.PENDING:
                 ceg_data['total_pending'] += claim.total_price
                 ceg_data['count_pending'] += 1
+                target_caixa['total_items_pending'] += claim.total_price
             elif claim.status == Claim.Status.PAID:
                 ceg_data['total_paid'] += claim.total_price
                 ceg_data['count_paid'] += 1
@@ -366,6 +412,7 @@ class MyClaimsView(View):
                 else:
                     ceg_data['total_frete_inter_pendente'] += slot_frete
                     ceg_data['count_inter_unpaid'] += 1
+                    target_caixa['total_frete_pending'] += slot_frete
 
             if slot_taxa > 0:
                 ceg_data['total_taxa_aduaneira'] += slot_taxa
@@ -375,6 +422,7 @@ class MyClaimsView(View):
                 else:
                     ceg_data['total_taxa_aduaneira_pendente'] += slot_taxa
                     ceg_data['count_taxa_unpaid'] += 1
+                    target_caixa['total_taxa_pending'] += slot_taxa
 
             # Resumo detalhado por Tipo de Item para exibição no Acordeão
             item_def = slot.item_definition
@@ -424,6 +472,12 @@ class MyClaimsView(View):
 
         # Consolidação de Totais e Tipos de Itens por CEG
         for c_data in cegs_dict.values():
+            c_data['count_any_unpaid'] = sum(
+                1 for cl in c_data['claims']
+                if cl.status == Claim.Status.PENDING
+                or (cl.slot.frete_inter and cl.slot.frete_inter > 0 and not cl.slot.is_frete_inter_paid)
+                or (cl.slot.taxa_aduaneira and cl.slot.taxa_aduaneira > 0 and not cl.slot.is_taxa_aduaneira_paid)
+            )
             c_data['total_devido_frete_taxa'] = c_data['total_frete_inter_pendente'] + c_data['total_taxa_aduaneira_pendente']
             c_data['total_geral_pendente'] = c_data['total_pending'] + c_data['total_devido_frete_taxa']
             tipos_resumo = sorted(c_data['tipos_dict'].values(), key=lambda x: x['tipo_nome'])
@@ -437,13 +491,40 @@ class MyClaimsView(View):
             c_data['single_taxa_aduaneira'] = next(iter(taxas_set)) if len(taxas_set) == 1 else None
             c_data['has_any_rates'] = bool(fretes_set or taxas_set or c_data['total_frete_inter'] > 0 or c_data['total_taxa_aduaneira'] > 0)
 
+            # Chaves Pix específicas por categoria e instruções
+            ceg = c_data['ceg']
+            c_data['pix_key_item'] = ceg.get_pix_key_item()
+            c_data['pix_instructions_item'] = ceg.get_pix_instructions_item()
+            c_data['pix_key_frete'] = ceg.get_pix_key_frete()
+            c_data['pix_instructions_frete'] = ceg.get_pix_instructions_frete()
+            c_data['pix_key_taxa'] = ceg.get_pix_key_taxa()
+            c_data['pix_instructions_taxa'] = ceg.get_pix_instructions_taxa()
+
+            active_ceg_keys = []
+            if c_data['count_pending'] > 0 and c_data['pix_key_item']:
+                active_ceg_keys.append(c_data['pix_key_item'])
+            if c_data['count_inter_unpaid'] > 0 and c_data['pix_key_frete']:
+                active_ceg_keys.append(c_data['pix_key_frete'])
+            if c_data['count_taxa_unpaid'] > 0 and c_data['pix_key_taxa']:
+                active_ceg_keys.append(c_data['pix_key_taxa'])
+            c_data['has_distinct_pix_keys'] = len(set(active_ceg_keys)) > 1
+
+        default_pix_key = ''
+        default_pix_instructions = ''
+        for c_data in cegs_dict.values():
+            if c_data['ceg'].pix_key:
+                default_pix_key = c_data['ceg'].pix_key
+                default_pix_instructions = c_data['ceg'].pix_instructions or ''
+                break
+
         for item in itens_individuais_list:
             qtd = item.quantidade or 1
             if item.caixa:
                 c = item.caixa
                 if c.id not in caixas_dict:
                     caixas_dict[c.id] = {
-                        'id': c.id,
+                        'id': str(c.id),
+                        'caixa_obj': c,
                         'nome': c.nome,
                         'slug': c.slug,
                         'origem': c.origem,
@@ -456,19 +537,141 @@ class MyClaimsView(View):
                         'prazo_taxa': c.prazo_taxa,
                         'items_count': 0,
                         'cegs_ids': set(),
+                        'cegs_names': set(),
                         'mercari_count': 0,
+                        'total_items_pending': Decimal('0.00'),
+                        'total_frete_pending': Decimal('0.00'),
+                        'total_taxa_pending': Decimal('0.00'),
+                        'total_geral_pendente': Decimal('0.00'),
+                        'pix_key': '',
+                        'pix_instructions': '',
                     }
                 caixas_dict[c.id]['items_count'] += qtd
                 caixas_dict[c.id]['mercari_count'] += qtd
+                target_caixa = caixas_dict[c.id]
             else:
                 itens_sem_caixa_count += qtd
+                sem_caixa_dict['items_count'] += qtd
+                sem_caixa_dict['mercari_count'] += qtd
+                target_caixa = sem_caixa_dict
+
+            # Pendências financeiras do item avulso
+            if item.preco_produto and not item.produto_pago:
+                target_caixa['total_items_pending'] += item.preco_produto
+            if item.frete_inter and not item.frete_inter_pago:
+                target_caixa['total_frete_pending'] += item.frete_inter
+            if item.taxa_aduaneira and not item.taxa_aduaneira_paga:
+                target_caixa['total_taxa_pending'] += item.taxa_aduaneira
 
         caixas_list = []
         for c_id, c_data in caixas_dict.items():
             c_data['cegs_count'] = len(c_data['cegs_ids'])
+            c_data['cegs_names_list'] = sorted(list(c_data['cegs_names']))
+            if not c_data['pix_key']:
+                c_data['pix_key'] = default_pix_key
+                c_data['pix_instructions'] = default_pix_instructions
+            c_data['total_geral_pendente'] = (
+                c_data['total_items_pending'] +
+                c_data['total_frete_pending'] +
+                c_data['total_taxa_pending']
+            )
+
+            # Chaves Pix específicas para a Caixa
+            caixa_obj = c_data.get('caixa_obj')
+            if caixa_obj:
+                c_data['pix_key_frete'] = caixa_obj.get_pix_key_frete() or c_data['pix_key']
+                c_data['pix_instructions_frete'] = caixa_obj.get_pix_instructions_frete() or c_data['pix_instructions']
+                c_data['pix_key_taxa'] = caixa_obj.get_pix_key_taxa() or c_data['pix_key']
+                c_data['pix_instructions_taxa'] = caixa_obj.get_pix_instructions_taxa() or c_data['pix_instructions']
+            else:
+                c_data['pix_key_frete'] = c_data['pix_key']
+                c_data['pix_instructions_frete'] = c_data['pix_instructions']
+                c_data['pix_key_taxa'] = c_data['pix_key']
+                c_data['pix_instructions_taxa'] = c_data['pix_instructions']
+            c_data['pix_key_item'] = c_data['pix_key']
+            c_data['pix_instructions_item'] = c_data['pix_instructions']
+
+            caixa_active_keys = []
+            if c_data['total_items_pending'] > 0 and c_data['pix_key_item']:
+                caixa_active_keys.append(c_data['pix_key_item'])
+            if c_data['total_frete_pending'] > 0 and c_data['pix_key_frete']:
+                caixa_active_keys.append(c_data['pix_key_frete'])
+            if c_data['total_taxa_pending'] > 0 and c_data['pix_key_taxa']:
+                caixa_active_keys.append(c_data['pix_key_taxa'])
+            c_data['has_distinct_pix_keys'] = len(set(caixa_active_keys)) > 1
+
             caixas_list.append(c_data)
 
         caixas_list.sort(key=lambda x: x['nome'])
+
+        sem_caixa_dict['cegs_count'] = len(sem_caixa_dict['cegs_ids'])
+        sem_caixa_dict['cegs_names_list'] = sorted(list(sem_caixa_dict['cegs_names']))
+        if not sem_caixa_dict['pix_key']:
+            sem_caixa_dict['pix_key'] = default_pix_key
+            sem_caixa_dict['pix_instructions'] = default_pix_instructions
+        sem_caixa_dict['total_geral_pendente'] = (
+            sem_caixa_dict['total_items_pending'] +
+            sem_caixa_dict['total_frete_pending'] +
+            sem_caixa_dict['total_taxa_pending']
+        )
+        sem_caixa_dict['pix_key_frete'] = sem_caixa_dict['pix_key']
+        sem_caixa_dict['pix_instructions_frete'] = sem_caixa_dict['pix_instructions']
+        sem_caixa_dict['pix_key_taxa'] = sem_caixa_dict['pix_key']
+        sem_caixa_dict['pix_instructions_taxa'] = sem_caixa_dict['pix_instructions']
+        sem_caixa_dict['pix_key_item'] = sem_caixa_dict['pix_key']
+        sem_caixa_dict['pix_instructions_item'] = sem_caixa_dict['pix_instructions']
+        sem_caixa_dict['has_distinct_pix_keys'] = False
+
+        caixas_com_pendencias = [
+            c_data for c_data in caixas_list
+            if c_data['total_geral_pendente'] > 0
+        ]
+        if sem_caixa_dict['total_geral_pendente'] > 0:
+            caixas_com_pendencias.append(sem_caixa_dict)
+
+        total_geral_pendente_caixas = sum(c['total_geral_pendente'] for c in caixas_com_pendencias)
+
+        # Consolidação Mercari / Itens Avulsos
+        mercari_items_pending = []
+        mercari_total_produtos_pendente = Decimal('0.00')
+        mercari_total_frete_pendente = Decimal('0.00')
+        mercari_total_taxa_pendente = Decimal('0.00')
+
+        for it in itens_individuais_list:
+            prod_pending = it.preco_produto if (it.preco_produto and not it.produto_pago) else Decimal('0.00')
+            frete_pending = it.frete_inter if (it.frete_inter and not it.frete_inter_pago) else Decimal('0.00')
+            taxa_pending = it.taxa_aduaneira if (it.taxa_aduaneira and not it.taxa_aduaneira_paga) else Decimal('0.00')
+            total_it_pending = prod_pending + frete_pending + taxa_pending
+
+            if total_it_pending > 0:
+                mercari_total_produtos_pendente += prod_pending
+                mercari_total_frete_pendente += frete_pending
+                mercari_total_taxa_pendente += taxa_pending
+                mercari_items_pending.append({
+                    'item': it,
+                    'prod_pending': prod_pending,
+                    'frete_pending': frete_pending,
+                    'taxa_pending': taxa_pending,
+                    'total_pending': total_it_pending,
+                })
+
+        mercari_total_geral_pendente = (
+            mercari_total_produtos_pendente +
+            mercari_total_frete_pendente +
+            mercari_total_taxa_pendente
+        )
+
+        mercari_pendencias = {
+            'items': mercari_items_pending,
+            'items_count': len(mercari_items_pending),
+            'total_produtos_pendente': mercari_total_produtos_pendente,
+            'total_frete_pendente': mercari_total_frete_pendente,
+            'total_taxa_pendente': mercari_total_taxa_pendente,
+            'total_geral_pendente': mercari_total_geral_pendente,
+            'pix_key': default_pix_key,
+            'pix_instructions': default_pix_instructions,
+        }
+        total_geral_pendente_mercari = mercari_total_geral_pendente
 
         total_pending_all = sum(c['total_pending'] for c in cegs_dict.values())
         total_paid_all = sum(c['total_paid'] for c in cegs_dict.values())
@@ -485,6 +688,17 @@ class MyClaimsView(View):
                 'count_paid': c_data['count_paid'],
                 'count_inter_unpaid': c_data['count_inter_unpaid'],
                 'count_taxa_unpaid': c_data['count_taxa_unpaid'],
+                'count_any_unpaid': c_data['count_any_unpaid'],
+                'search_text': ' '.join(filter(None, [
+                    c_data['ceg'].title,
+                    c_data['group'].name,
+                    c_data.get('caixa').nome if c_data.get('caixa') else '',
+                    c_data.get('caixa').codigo_rastreio if c_data.get('caixa') else '',
+                    ' '.join([
+                        f"{cl.slot.item_definition.name} {cl.slot.item_definition.member_name or ''} set {cl.slot.set.set_number}"
+                        for cl in c_data['claims']
+                    ])
+                ])).lower(),
             }
             for c_data in cegs_dict.values()
         ]
@@ -499,9 +713,18 @@ class MyClaimsView(View):
                 'frete_inter_pago': it.frete_inter_pago,
                 'taxa_aduaneira': float(it.taxa_aduaneira or 0),
                 'taxa_aduaneira_paga': it.taxa_aduaneira_paga,
+                'search_text': f"{it.nome} {it.caixa.nome if it.caixa else ''} {it.caixa.codigo_rastreio if it.caixa else ''}".lower(),
             }
             for it in itens_individuais_list
         ]
+
+        total_any_unpaid_count = sum(c['count_any_unpaid'] for c in cegs_dict.values())
+
+        cegs_com_pendencias = [
+            c_data for c_data in cegs_dict.values()
+            if c_data['total_geral_pendente'] > 0
+        ]
+        total_geral_pendente_todas_cegs = sum(c['total_geral_pendente'] for c in cegs_com_pendencias)
 
         is_placeholder_name = participant.name.startswith('Participante ')
 
@@ -550,7 +773,8 @@ class MyClaimsView(View):
                     'valor': c_data['total_pending'],
                     'itens_count': c_data['count_pending'],
                     'prazo': ceg.prazo_pagamento_item,
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_item(),
+                    'pix_instructions': ceg.get_pix_instructions_item(),
                     'urgencia': urg,
                     'urgencia_badge': badge,
                     'urgencia_class': u_cls,
@@ -572,7 +796,8 @@ class MyClaimsView(View):
                     'valor': c_data['total_frete_inter_pendente'],
                     'itens_count': c_data['count_inter_unpaid'],
                     'prazo': prazo_frete,
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_frete(),
+                    'pix_instructions': ceg.get_pix_instructions_frete(),
                     'urgencia': urg,
                     'urgencia_badge': badge,
                     'urgencia_class': u_cls,
@@ -594,7 +819,8 @@ class MyClaimsView(View):
                     'valor': c_data['total_taxa_aduaneira_pendente'],
                     'itens_count': c_data['count_taxa_unpaid'],
                     'prazo': prazo_taxa,
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_taxa(),
+                    'pix_instructions': ceg.get_pix_instructions_taxa(),
                     'urgencia': urg,
                     'urgencia_badge': badge,
                     'urgencia_class': u_cls,
@@ -617,7 +843,8 @@ class MyClaimsView(View):
                         'valor': item.frete_inter,
                         'itens_count': 1,
                         'prazo': p_frete,
-                        'pix_key': None,
+                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else default_pix_key),
+                        'pix_instructions': (item.caixa.get_pix_instructions_frete() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
                         'urgencia_class': u_cls,
@@ -639,7 +866,8 @@ class MyClaimsView(View):
                         'valor': item.taxa_aduaneira,
                         'itens_count': 1,
                         'prazo': p_taxa,
-                        'pix_key': None,
+                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else default_pix_key),
+                        'pix_instructions': (item.caixa.get_pix_instructions_taxa() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
                         'urgencia_class': u_cls,
@@ -742,6 +970,14 @@ class MyClaimsView(View):
             'configuracao_envio': ConfiguracaoEnvio.get_solo(),
             'prazos_proximos': prazos_proximos,
             'prazos_urgentes_count': prazos_urgentes_count,
+            'total_any_unpaid_count': total_any_unpaid_count,
+            'cegs_com_pendencias': cegs_com_pendencias,
+            'total_geral_pendente_todas_cegs': total_geral_pendente_todas_cegs,
+            'caixas_com_pendencias': caixas_com_pendencias,
+            'total_geral_pendente_caixas': total_geral_pendente_caixas,
+            'mercari_pendencias': mercari_pendencias,
+            'total_geral_pendente_mercari': total_geral_pendente_mercari,
+            'total_geral_pendente_global': total_geral_pendente_todas_cegs + total_geral_pendente_mercari,
         })
 
 

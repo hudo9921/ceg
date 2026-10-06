@@ -2,7 +2,7 @@ import json
 from django.shortcuts import render
 from django.views import View
 from django.http import JsonResponse
-from apps.cegs.models import TipoItem, Caixa, ItemIndividual
+from apps.cegs.models import CEG, TipoItem, Caixa, ItemIndividual
 from apps.cegs.creations_views import StaffRequiredMixin
 from .services import AnalyticsService
 
@@ -62,6 +62,7 @@ class CEGStatusView(StaffRequiredMixin, View):
             'item_individual_statuses': ItemIndividual.Status.choices,
             'ceg_share_map': status_data.get('ceg_share_map', {}),
             'ceg_share_map_json': json.dumps(status_data.get('ceg_share_map', {})),
+            'ceg_statuses': CEG.Status.choices,
             'is_staff_user': request.user.is_authenticated and request.user.is_staff,
         })
 

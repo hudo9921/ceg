@@ -742,6 +742,12 @@ class AnalyticsService:
                     'taxa_paid_slots': taxa_paid_slots,
                     'prazo_taxa': ceg.prazo_pagamento_taxa_aduaneira if has_ceg_taxa else None,
                     'prazo_item': ceg.prazo_pagamento_item,
+                    'opens_at_iso': ceg.opens_at.strftime('%Y-%m-%dT%H:%M') if ceg.opens_at else '',
+                    'closes_at_iso': ceg.closes_at.strftime('%Y-%m-%dT%H:%M') if ceg.closes_at else '',
+                    'prazo_item_iso': ceg.prazo_pagamento_item.strftime('%Y-%m-%dT%H:%M') if ceg.prazo_pagamento_item else '',
+                    'pix_key': ceg.pix_key or '',
+                    'pix_instructions': ceg.pix_instructions or '',
+                    'description': ceg.description or '',
                 })
 
             sets_fechados.sort(key=lambda x: (x['group_name'], x['era_name'], x['set_number']))
