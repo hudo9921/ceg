@@ -3,6 +3,7 @@
 > Documento de referência do sistema para desenvolvedores e agentes de IA.
 > **Última atualização:** Outubro/2026.
 > **Manutenção Obrigatória:** Qualquer alteração em modelos, fluxos ou arquitetura deve ser refletida aqui.
+> **Ideias & Roadmap Futuro:** Consulte [docs/IDEAS_BACKLOG.md](IDEAS_BACKLOG.md) para inovações e melhorias em espera.
 
 ---
 
