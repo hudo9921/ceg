@@ -1,0 +1,34 @@
+<!-- Trilho / Carrossel Horizontal por Grupo (Estilo Deezer / Peek-a-boo) -->
+<div class="space-y-3" id="grupo-{{ group.id }}">
+    <!-- Cabeçalho do Trilho do Artista -->
+    <div class="flex items-center justify-between px-1">
+        <div class="flex items-center gap-2.5">
+            <div class="w-1.5 h-4.5 rounded-full bg-gradient-to-b from-pink-500 to-purple-600"></div>
+            <h3 class="text-base sm:text-lg font-black text-slate-800 dark:text-cyber-silver tracking-tight">
+                {{ group.name }}
+            </h3>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10">
+                {{ group.cegs_count }} CEG{{ group.cegs_count|pluralize }}
+            </span>
+        </div>
+
+        <!-- Botão para filtrar apenas este grupo -->
+        <button type="button"
+                @click="selectedGroup = '{{ group.id }}'"
+                class="text-xs font-bold text-pink-600 dark:text-cyber-neon hover:underline flex items-center gap-1 cursor-pointer">
+            <span>Ver todas</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </button>
+    </div>
+
+    <!-- Trilho com Efeito Peek-a-boo (72vw no celular / 256px no desktop) -->
+    <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar py-2 px-1">
+        {% for ceg in active_cegs %}
+            {% if ceg.era.group.id == group.id %}
+                <div class="w-[72vw] sm:w-64 flex-shrink-0 snap-start">
+                    {% include 'cegs/partials/_home_ceg_card.html' %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>

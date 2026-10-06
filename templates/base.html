@@ -596,6 +596,15 @@
         html.dark .keep-white * {
             color: #000000 !important;
         }
+
+        /* 14. Utilitário .no-scrollbar para Trilhos e Carrosséis Horizontais */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -603,238 +612,30 @@
 
     <!-- Contêiner de Navegação com Gestão de Acordeão Lateral -->
     <div x-data="adminSidebarApp()" @keydown.window.escape="adminSidebarOpen = false; mobileNavOpen = false">
-        <!-- Navbar Superior Pastel & Dark Mode -->
-        <nav class="bg-white/90 dark:bg-[#111827]/90 backdrop-blur-md border-b border-pink-100/80 dark:border-slate-800 sticky top-0 z-40 shadow-xs dark:shadow-slate-950/40 transition-colors duration-200 w-full"
-             @click.away="mobileNavOpen = false">
-            <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-14 sm:h-16 gap-1.5 sm:gap-4">
-                    
-                    <!-- LADO ESQUERDO: Brand / Logo + Menus Desktop -->
-                    <div class="flex items-center space-x-2 sm:space-x-4 min-w-0">
-                        <!-- Brand / Logo ValCegs com Mascote Macaquinho e Estilo Pastel Y2K -->
-                        <a href="{% url 'home' %}" class="group flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-pink-200/70 dark:border-slate-700 shadow-[0_2px_10px_-2px_rgba(236,72,153,0.2)] hover:shadow-[0_4px_16px_-2px_rgba(236,72,153,0.3)] hover:border-pink-300 dark:hover:border-pink-500/50 transition-all duration-200 shrink-0">
-                            <span class="text-lg sm:text-xl filter drop-shadow-xs group-hover:scale-110 transition-transform">🐵</span>
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-base sm:text-lg font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-rose-400 to-sky-500 dark:from-pink-400 dark:via-rose-300 dark:to-sky-300">ValCegs</span>
-                                <span class="hidden sm:inline-block text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-pink-100/80 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800/80">Manager</span>
-                            </div>
-                        </a>
+        <!-- Navegação Principal: Sidebar Deezer (Desktop) + Dock Flutuante Godly (Mobile) -->
+        {% include 'components/sidebar_dock_nav.html' %}
 
-                        <!-- Separador entre o Logo e os Menus de Navegação Desktop -->
-                        <div class="hidden md:block h-6 w-px bg-pink-200/50 dark:bg-slate-700/60"></div>
-
-                        <!-- Menus de Navegação DESKTOP (Ocultos no Mobile) -->
-                        <div class="hidden md:flex items-center space-x-2">
-                            <!-- 1. Link Principal: Todas as CEGs -->
-                            {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'ceg_detail' or request.path == '/' %}
-                                <a href="{% url 'home' %}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-300 dark:border-pink-500/50 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_6px_rgba(236,72,153,0.8)]"></span>
-                                    <span>Todas as CEGs</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'home' %}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-white/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-pink-600 dark:hover:text-pink-300 hover:bg-pink-50/80 dark:hover:bg-slate-700 border border-slate-200/90 dark:border-slate-700 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span class="text-xs opacity-70">📦</span>
-                                    <span>Todas as CEGs</span>
-                                </a>
-                            {% endif %}
-
-                            <!-- 2. Link Vitrine de Pronta Entrega -->
-                            {% if 'vitrine' in request.path %}
-                                <a href="{% url 'vitrine_list' %}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-300 dark:border-pink-500/50 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_6px_rgba(236,72,153,0.8)]"></span>
-                                    <span>🛍️ Vitrine</span>
-                                </a>
-                            {% else %}
-                                <a href="{% url 'vitrine_list' %}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-white/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-pink-600 dark:hover:text-pink-300 hover:bg-pink-50/80 dark:hover:bg-slate-700 border border-slate-200/90 dark:border-slate-700 shadow-2xs flex items-center gap-1.5 transition">
-                                    <span class="text-xs opacity-70">🛍️</span>
-                                    <span>Vitrine</span>
-                                </a>
-                            {% endif %}
-
-                            {% if request.user.is_authenticated and request.user.is_staff %}
-                                <!-- Botão de Destaque: Painel de Ações de Admin (Abre o Acordeão Lateral) -->
-                                <button type="button"
-                                        @click="adminSidebarOpen = true"
-                                        class="ml-1 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 dark:bg-slate-800 text-white hover:bg-pink-600 dark:hover:bg-pink-600 shadow-sm flex items-center gap-2 transition duration-200 group border border-slate-800 dark:border-slate-700 cursor-pointer">
-                                    <span class="text-pink-400 group-hover:text-white transition-colors">⚡</span>
-                                    <span>Admin</span>
-                                    <span class="px-1.5 py-0.5 text-[10px] font-black rounded-md bg-slate-800 dark:bg-slate-700 text-pink-300 group-hover:bg-pink-700 group-hover:text-white transition">▾</span>
-                                </button>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- LADO DIREITO DO TOPBAR: Tema + WhatsApp/Perfil + Botão Expansor Mobile -->
-                    <div class="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
-                        <!-- Alternador de Modo Noturno (Descansar os Olhos) -->
-                        <div x-data="themeApp()" x-init="init()" class="flex items-center">
-                            <button type="button"
-                                    @click="toggleTheme()"
-                                    :title="isDark ? 'Ativar Modo Claro' : 'Ativar Modo Noturno (Descansar os Olhos)'"
-                                    class="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-amber-300 bg-pink-50/80 hover:bg-pink-100/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-pink-200/60 dark:border-slate-700 transition-all duration-200 shadow-2xs flex items-center justify-center cursor-pointer group"
-                                    aria-label="Alternar modo claro / escuro">
-                                <!-- Ícone Sol (Modo Claro ativo) -->
-                                <svg x-show="!isDark" class="w-4 h-4 text-amber-500 group-hover:rotate-45 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                <!-- Ícone Lua (Modo Escuro ativo) -->
-                                <svg x-show="isDark" x-cloak class="w-4 h-4 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Login WhatsApp ou Perfil do Participante -->
-                        {% if logged_participant %}
-                            <div class="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
-                                <a href="{% url 'my_claims' %}" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/80 hover:bg-pink-100 dark:hover:bg-pink-900 transition shadow-2xs">
-                                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shrink-0" title="Sessão ativa"></span>
-                                    <span class="max-w-[70px] sm:max-w-[130px] truncate text-[11px] sm:text-xs font-black">{{ logged_participant.display_name }}</span>
-                                    {% if logged_participant.unread_notifications_count > 0 %}
-                                        <span class="px-1.5 py-0.2 bg-red-500 text-white rounded-full text-[9px] font-black animate-bounce" title="{{ logged_participant.unread_notifications_count }} aviso(s) não lido(s)">
-                                            {{ logged_participant.unread_notifications_count }}
-                                        </span>
-                                    {% endif %}
-                                </a>
-
-                                <a href="{% url 'logout_participant' %}" title="Sair da sessão" class="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 px-1.5 py-1 transition font-semibold">
-                                    Sair
-                                </a>
-                            </div>
-                        {% else %}
-                            <a href="{% url 'login_otp' %}"
-                               class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-700 text-white shadow-xs hover:shadow-md transition-all duration-200 shrink-0 group border border-pink-400/30"
-                               title="Entrar com WhatsApp">
-                                <svg class="w-3.5 h-3.5 text-pink-100 group-hover:scale-110 transition-transform duration-200 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                                </svg>
-                                <span>Entrar</span>
-                                <span class="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 dark:bg-black/20 px-1.5 py-0.5 rounded-md text-white/95">
-                                    <span>💬</span>
-                                    <span>WhatsApp</span>
-                                </span>
-                            </a>
-                        {% endif %}
-
-                        {% if request.user.is_authenticated and request.user.is_staff %}
-                            <!-- Botão Admin no Topo Desktop (abre o menu lateral) -->
-                            <button type="button"
-                                    @click="adminSidebarOpen = true"
-                                    class="hidden md:inline-flex items-center px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm hover:bg-amber-200 dark:hover:bg-amber-900/80 transition cursor-pointer"
-                                    title="Abrir Menu Lateral de Gestão">
-                                👑 <span class="ml-1">Admin</span> ▾
-                            </button>
-                        {% endif %}
-
-                        <!-- BOTÃO EXPANSÍVEL MOBILE (Alternar entre CEGs e Vitrine) -->
-                        <div class="md:hidden flex items-center">
-                            <button type="button"
-                                    @click="mobileNavOpen = !mobileNavOpen"
-                                    class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 cursor-pointer shadow-2xs select-none"
-                                    :class="mobileNavOpen 
-                                        ? 'bg-pink-500 text-white border-pink-600 dark:bg-pink-600 dark:border-pink-500 shadow-pink-500/20' 
-                                        : 'bg-pink-50 dark:bg-slate-800 text-pink-700 dark:text-pink-300 border-pink-200/80 dark:border-slate-700 hover:bg-pink-100 dark:hover:bg-slate-700'"
-                                    :aria-expanded="mobileNavOpen"
-                                    aria-label="Abrir menu de navegação">
-                                {% if 'vitrine' in request.path %}
-                                    <span class="text-sm">🛍️</span>
-                                    <span class="font-extrabold text-[11px] sm:text-xs">Vitrine</span>
-                                {% else %}
-                                    <span class="text-sm">📦</span>
-                                    <span class="font-extrabold text-[11px] sm:text-xs">CEGs</span>
-                                {% endif %}
-                                <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="mobileNavOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+        <!-- Topbar Mobile Slim (Identificação da marca e atalhos rápidos) -->
+        <header class="lg:hidden sticky top-0 z-30 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-xl border-b border-purple-100/70 dark:border-white/10 px-4 py-2.5 flex items-center justify-between">
+            <a href="{% url 'home' %}" class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-xs">
+                    <i data-lucide="disc-3" class="w-4 h-4"></i>
                 </div>
-            </div>
-
-            <!-- PAINEL EXPANSÍVEL PARA BAIXO (MOBILE DROPDOWN ACCORDION) -->
-            <div x-show="mobileNavOpen"
-                 x-cloak
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 -translate-y-2"
-                 x-transition:enter-end="opacity-100 translate-y-0"
-                 x-transition:leave="transition ease-in duration-150"
-                 x-transition:leave-start="opacity-100 translate-y-0"
-                 x-transition:leave-end="opacity-0 -translate-y-2"
-                 class="md:hidden border-t border-pink-100/90 dark:border-slate-800/90 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md px-3.5 py-3 shadow-xl space-y-2">
-                
-                <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
-                    <span>Navegação Rápida</span>
-                    <span>Selecione para onde ir</span>
+                <div class="flex items-baseline gap-1">
+                    <span class="font-black text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-rose-400 to-sky-500 dark:from-cyber-neon dark:via-cyber-electric dark:to-cyber-ice">ValCegs</span>
+                    <span class="text-[9px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500">Manager</span>
                 </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- Opção 1: Todas as CEGs -->
-                    <a href="{% url 'home' %}"
-                       @click="mobileNavOpen = false"
-                       class="flex flex-col p-2.5 rounded-2xl border transition relative {% if not 'vitrine' in request.path %}bg-pink-100/90 dark:bg-pink-950/70 border-pink-300 dark:border-pink-500/60 shadow-xs{% else %}bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80 hover:bg-pink-50 dark:hover:bg-slate-800{% endif %}">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xl">📦</span>
-                            {% if not 'vitrine' in request.path %}
-                                <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-pink-500 text-white font-black">Ativo</span>
-                            {% endif %}
-                        </div>
-                        <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100">Todas as CEGs</div>
-                        <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">Catálogo de Compras em Grupo e Claims</div>
-                    </a>
-
-                    <!-- Opção 2: Vitrine de Pronta Entrega -->
-                    <a href="{% url 'vitrine_list' %}"
-                       @click="mobileNavOpen = false"
-                       class="flex flex-col p-2.5 rounded-2xl border transition relative {% if 'vitrine' in request.path %}bg-pink-100/90 dark:bg-pink-950/70 border-pink-300 dark:border-pink-500/60 shadow-xs{% else %}bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80 hover:bg-pink-50 dark:hover:bg-slate-800{% endif %}">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xl">🛍️</span>
-                            {% if 'vitrine' in request.path %}
-                                <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-pink-500 text-white font-black">Ativo</span>
-                            {% endif %}
-                        </div>
-                        <div class="font-extrabold text-xs text-slate-900 dark:text-slate-100">Vitrine Pronta Entrega</div>
-                        <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">Itens disponíveis com envio imediato</div>
-                    </a>
-                </div>
-
-                {% if not logged_participant %}
-                    <!-- Acesso Rápido para Joiners / Participantes no Menu Mobile -->
-                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                        <a href="{% url 'login_otp' %}"
-                           @click="mobileNavOpen = false"
-                           class="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white text-xs font-bold hover:from-pink-600 hover:to-rose-700 transition shadow-xs">
-                            <div class="flex items-center gap-2">
-                                <span class="text-base">👤</span>
-                                <div class="text-left">
-                                    <div class="font-black text-xs">Entrar com WhatsApp</div>
-                                    <div class="text-[10px] text-pink-100 font-normal">Acompanhe suas reservas, claims e avisos</div>
-                                </div>
-                            </div>
-                            <span class="text-[10px] font-black px-2 py-1 rounded-md bg-white/20">Acessar →</span>
-                        </a>
-                    </div>
-                {% endif %}
-
+            </a>
+            <div class="flex items-center gap-2">
                 {% if request.user.is_authenticated and request.user.is_staff %}
-                    <!-- Opção 3: Painel do Organizador (Staff/Admin) -->
-                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                        <button type="button"
-                                @click="mobileNavOpen = false; adminSidebarOpen = true"
-                                class="w-full flex items-center justify-between p-2.5 rounded-xl border border-amber-300/80 dark:border-amber-700/80 bg-amber-50/90 dark:bg-amber-950/50 text-amber-900 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/60 transition shadow-2xs cursor-pointer">
-                            <div class="flex items-center gap-2">
-                                <span class="text-base">👑</span>
-                                <div class="text-left">
-                                    <div class="font-extrabold text-xs">Menu do Organizador (Admin)</div>
-                                    <div class="text-[10px] font-normal text-amber-700/80 dark:text-amber-400/80">Nova CEG, Caixinhas, Auditoria de Vendas e WhatsApp</div>
-                                </div>
-                            </div>
-                            <span class="text-xs font-black px-2 py-1 rounded-md bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200">Abrir ▾</span>
-                        </button>
-                    </div>
+                    <button type="button" @click="adminSidebarOpen = true"
+                            class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-500"></i>
+                        <span>Admin</span>
+                    </button>
                 {% endif %}
             </div>
-        </nav>
+        </header>
 
         {% if request.user.is_authenticated and request.user.is_staff %}
             <!-- GAVETA LATERAL DESLIZANTE COM ACORDEÃO (SLIDE-OVER DRAWER) -->
@@ -1129,12 +930,12 @@
                         <!-- 4. Rodapé da Gaveta -->
                         <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900 flex items-center justify-between text-xs">
                             <a href="{% url 'home' %}" class="font-bold text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 transition flex items-center gap-1.5">
-                                <span>🏠</span>
+                                <i data-lucide="home" class="w-4 h-4 text-purple-500"></i>
                                 <span>Catálogo de CEGs</span>
                             </a>
                             <a href="/admin/logout/" class="font-bold text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 transition flex items-center gap-1">
                                 <span>Sair</span>
-                                <span>→</span>
+                                <i data-lucide="log-out" class="w-4 h-4 text-rose-500"></i>
                             </a>
                         </div>
 
@@ -1144,6 +945,8 @@
         {% endif %}
     </div>
 
+    <!-- Área Principal de Conteúdo (Deslocada pela Sidebar no Desktop) -->
+    <div class="lg:pl-20 transition-all duration-300 min-h-screen flex flex-col flex-1 w-full">
     <!-- Flash Messages -->
     {% if messages %}
         <div class="max-w-4xl mx-auto px-4 mt-4 w-full">
@@ -1160,17 +963,19 @@
     {% endif %}
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <main class="flex-grow max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 w-full pb-24 lg:pb-8">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md border-t border-pink-100 dark:border-slate-800 py-6 mt-12 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+    <footer class="bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-md border-t border-purple-100/70 dark:border-white/5 py-6 mt-12 text-center text-xs text-slate-500 dark:text-cyber-silver transition-colors pb-24 lg:pb-6">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
             <p><strong>ValCegs Manager</strong> — Plataforma de Compras em Grupo, Claims e Photocard Splits.</p>
             <p class="text-slate-400 dark:text-slate-500">Desenvolvido com Django & Tailwind CSS</p>
         </div>
     </footer>
+
+    </div>
 
     {% block extra_scripts %}{% endblock %}
 </body>

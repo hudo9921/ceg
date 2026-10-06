@@ -1,0 +1,141 @@
+<!-- Barra de Busca Inteligente e Filtros (Grupo, Era, Membro/Bias, Tipo e Ordenação) -->
+<div class="w-full bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-purple-100/70 dark:border-white/10 shadow-xs space-y-3.5 transition-colors">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        
+        <!-- 1. Busca Textual -->
+        <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Buscar CEG:</span>
+            </label>
+            <div class="relative">
+                <input type="text"
+                       x-model="searchQuery"
+                       placeholder="Nome, era, item..."
+                       class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl pl-8 pr-7 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none"></i>
+                <button type="button"
+                        x-show="searchQuery"
+                        x-cloak
+                        @click="searchQuery = ''"
+                        class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Filtro por Grupo -->
+        <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="music-2" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Grupo:</span>
+            </label>
+            <select x-model="selectedGroup"
+                    @change="selectedEra = ''"
+                    class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
+                <option value="">Todos os Grupos</option>
+                {% for group in open_groups %}
+                    <option value="{{ group.id }}">{{ group.name }} ({{ group.cegs_count }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 3. Filtro por Era -->
+        <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="disc-3" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Era:</span>
+            </label>
+            <select x-model="selectedEra"
+                    class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
+                <option value="">Todas as Eras</option>
+                {% for era in open_eras %}
+                    <option value="{{ era.id }}"
+                            x-show="!selectedGroup || selectedGroup == '{{ era.group_id }}'">
+                        {% if not selectedGroup %}[{{ era.group_name }}] {% endif %}{{ era.name }} ({{ era.cegs_count }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 4. Filtro por Membro (Bias!) -->
+        <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="heart" class="w-3.5 h-3.5 text-pink-400"></i>
+                <span>Membro (Bias):</span>
+            </label>
+            <select x-model="selectedMember"
+                    class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
+                <option value="">Todos os Membros</option>
+                {% for m in open_members %}
+                    <option value="{{ m|lower }}">{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 5. Filtro por Tipo de Item -->
+        <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Tipo de Item:</span>
+            </label>
+            <select x-model="selectedTipo"
+                    class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
+                <option value="">Qualquer tipo</option>
+                {% if count_mistas > 0 %}
+                    <option value="mista">Apenas CEGs Mistas ({{ count_mistas }})</option>
+                {% endif %}
+                {% for t in pool_tipos_item %}
+                    {% if t.count_apenas > 0 %}
+                        <option value="apenas_{{ t.id }}">Apenas {{ t.nome }} ({{ t.count_apenas }})</option>
+                    {% endif %}
+                    {% if t.count_contem > 0 %}
+                        <option value="contem_{{ t.id }}">Contém {{ t.nome }} ({{ t.count_contem }})</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 6. Ordenação -->
+        <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Ordenar:</span>
+            </label>
+            <select x-model="sortBy"
+                    @change="sortCards()"
+                    class="w-full bg-purple-50/40 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500 transition cursor-pointer">
+                <option value="recentes">Mais Recentes</option>
+                <option value="preco_asc">Menor Preço</option>
+                <option value="preco_desc">Maior Preço</option>
+                <option value="vagas_desc">Mais Vagas Disponíveis</option>
+                <option value="vagas_asc">Quase Esgotando</option>
+            </select>
+        </div>
+
+    </div>
+
+    <!-- Barra de Feedback Dinâmico quando há Filtros Ativos -->
+    <div x-show="hasActiveFilters()"
+         x-cloak
+         x-transition
+         class="pt-3 border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 text-slate-600 dark:text-cyber-silver font-semibold">
+            <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+            <span>Filtro ativo: exibindo resultados focados</span>
+            <span x-show="selectedMember" class="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold text-[11px]">
+                Membro: <span x-text="selectedMember"></span>
+            </span>
+            <span x-show="searchQuery" class="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-cyber-elevated text-purple-700 dark:text-cyber-electric font-bold text-[11px]">
+                Busca: "<span x-text="searchQuery"></span>"
+            </span>
+        </div>
+        
+        <button type="button"
+                @click="clearFilters()"
+                class="px-3 py-1 rounded-full bg-slate-100 dark:bg-cyber-elevated text-slate-600 dark:text-cyber-silver hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            <span>Limpar filtros e voltar aos carrosséis</span>
+        </button>
+    </div>
+</div>

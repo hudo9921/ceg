@@ -173,6 +173,17 @@ Implementado na branch `embelezamento`:
   - `photocard_sleeve_card.html`: Card de photocard colecionável em proporção `aspect-[2/3]` com chips Lucide e semáforo financeiro integrado.
   - `claim_confirmation_modal.html`: Modal de confirmação de claim com vidro acrílico, gradiente de malha acionado por `--era-accent` e temporizador pulsante.
 
+---
 
+## 10. Vitrine da Home: Deezer Streaming Layout & Busca Inteligente
 
-
+- **Layout Híbrido:** Sidebar vertical retrátil fixa à esquerda no desktop (`lg:pl-20`) e Dock flutuante translúcido no rodapé para mobile.
+- **Modo Vitrine Padrão (Sem filtros ativos):**
+  - **Barra de Chips de Artista (`_home_chips_bar.html`):** Pílulas no topo com mini-foto do grupo e contagem de CEGs abertas.
+  - **Hero Spotlight (`_home_hero_spotlight.html`):** Banner flutuante com degradê Y2K/Obsidian e botões em pílula.
+  - **Trilhos Horizontais por Grupo (`_home_group_carousel.html`):** Cada artista ganha um carrossel nativo com rolagem suave (`snap-x snap-mandatory no-scrollbar`) e efeito *peek-a-boo* cortando 20% do próximo card no mobile.
+  - **Card de CEG Toploader (`_home_ceg_card.html`):** Card em moldura sleeve com badges translúcidos, indicador de slots (`layers` 4/5) e preço em fonte mono tabular.
+- **Modo Busca Focada (Quando o usuário pesquisa ou filtra):**
+  - Permite filtrar cirurgicamente por **Membro (Bias)**, **Grupo**, **Era**, **Tipo de Item** e **Busca Textual**.
+  - Os carrosséis dão lugar instantaneamente a uma grade responsiva com as CEGs correspondentes e botão para limpar filtros e retornar à vitrine.
+- **Bottom Sheet Mobile (`_home_bottom_sheet.html`):** Ao tocar no card no celular, uma gaveta ergonômica sobe da base da tela com as vagas, integrantes disponíveis e botão no alcance do polegar.
