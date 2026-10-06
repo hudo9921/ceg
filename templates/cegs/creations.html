@@ -3031,7 +3031,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
         openCropStudioForCeg(startIndex = 0) {
-            const src = this.cegBannerPreview || this.cegBannerUrl;
+            const src = this.cegBannerPreview || this.cegBannerBase64 || this.cegBannerUrl;
             if (!src) {
                 alert('Por favor, selecione ou envie a foto/banner da CEG no Passo 1 primeiro para poder recortar as fotos dos itens.');
                 return;
@@ -3052,36 +3052,47 @@ document.addEventListener('alpine:init', () => {
                 this.cropperInstance = null;
             }
 
-            this.$nextTick(() => {
-                const img = document.getElementById('crop-studio-target-image');
-                if (img) {
-                    img.style.display = 'block';
-                    if (img.complete && img.naturalWidth > 0) {
-                        this.initCropperInstance();
-                    }
-                }
-            });
+            // Aguarda a transição de abertura do modal (150ms) para dimensões finais no DOM
+            setTimeout(() => {
+                this.onCropStudioImageLoad();
+            }, 150);
+        },
+        onCropStudioImageLoad() {
+            if (!this.cropStudioOpen) return;
+            const img = document.getElementById('crop-studio-target-image');
+            if (!img) return;
+
+            if (img.complete && img.naturalWidth > 0) {
+                this.initCropperInstance();
+            } else {
+                img.onload = () => {
+                    this.initCropperInstance();
+                };
+            }
         },
         initCropperInstance() {
-            this.cropStudioImageReady = true;
-            this.$nextTick(() => {
-                const img = document.getElementById('crop-studio-target-image');
-                if (!img) return;
+            if (!this.cropStudioOpen) return;
+            const img = document.getElementById('crop-studio-target-image');
+            if (!img) return;
 
-                if (this.cropperInstance) {
-                    try { this.cropperInstance.destroy(); } catch (e) {}
-                    this.cropperInstance = null;
-                }
+            if (this.cropperInstance) {
+                try { this.cropperInstance.destroy(); } catch (e) {}
+                this.cropperInstance = null;
+            }
 
-                if (typeof Cropper === 'undefined') {
-                    console.error('Cropper.js ainda não foi carregado.');
-                    return;
-                }
+            if (typeof Cropper === 'undefined') {
+                console.warn('Cropper.js ainda não disponível. Aguardando...');
+                setTimeout(() => this.initCropperInstance(), 150);
+                return;
+            }
 
+            try {
                 this.cropperInstance = new Cropper(img, {
-                    aspectRatio: this.cropAspectRatio,
+                    aspectRatio: this.cropAspectRatio || (2 / 3),
                     viewMode: 1,
-                    autoCropArea: 0.6,
+                    dragMode: 'crop',
+                    autoCrop: true,
+                    autoCropArea: 0.7,
                     responsive: true,
                     restore: false,
                     checkCrossOrigin: false,
@@ -3090,11 +3101,21 @@ document.addEventListener('alpine:init', () => {
                     rotatable: true,
                     movable: true,
                     guides: true,
-                    highlight: false,
+                    center: true,
+                    highlight: true,
                     cropBoxMovable: true,
                     cropBoxResizable: true,
+                    ready: () => {
+                        this.cropStudioImageReady = true;
+                        if (this.cropperInstance) {
+                            this.cropperInstance.crop();
+                        }
+                    }
                 });
-            });
+            } catch (e) {
+                console.error('Erro ao inicializar Cropper.js:', e);
+                this.cropStudioImageReady = true;
+            }
         },
         setCropAspectRatio(ratio) {
             this.cropAspectRatio = ratio;

@@ -3,8 +3,51 @@
 <!-- ========================================================================= -->
 
 <!-- Carregamento do Cropper.js (CDN leve e de alta performance) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" integrity="sha512-UtLOu9C7NuthZtYM4f6llC+KUuUug953WJCN0h54DuIIa511iAtWqWK/pSm++6ngWJKNwCmpv84E01fgHMdVWg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" integrity="sha512-JyCZjCOZoyeQZSd5+WY47h3J454IK4Z60PZKmrYhY6qnyx424VUhr04DsQiSc6NTf73cUJLSiFVLgcCu88pxGQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<style>
+/* Estilização de Alta Visibilidade e Contraste para o Cropper no Tema Escuro */
+.cropper-container {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 68vh !important;
+}
+.cropper-view-box {
+    outline: 2.5px solid #f43f5e !important;
+    outline-color: rgba(244, 63, 94, 0.95) !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 0 16px rgba(244, 63, 94, 0.6) !important;
+    border-radius: 4px;
+}
+.cropper-face {
+    background-color: transparent !important;
+}
+.cropper-modal {
+    background-color: #020617 !important;
+    opacity: 0.8 !important;
+}
+.cropper-line {
+    background-color: #f43f5e !important;
+}
+.cropper-dashed {
+    border-color: rgba(255, 255, 255, 0.9) !important;
+    border-style: dashed !important;
+}
+.cropper-point {
+    background-color: #f43f5e !important;
+    width: 10px !important;
+    height: 10px !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 50% !important;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.9) !important;
+    opacity: 1 !important;
+}
+.cropper-point.point-se {
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 3px !important;
+}
+</style>
 
 <div x-show="cropStudioOpen"
      x-cloak
@@ -111,20 +154,20 @@
             </div>
 
             <!-- Imagem e Container do Cropper -->
-            <div class="flex-1 min-h-[300px] lg:min-h-0 bg-slate-900/60 rounded-2xl border border-slate-800/80 overflow-hidden relative flex items-center justify-center">
-                <div x-show="!cropStudioImageReady" class="text-center p-8 space-y-3">
-                    <div class="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                    <p class="text-xs text-slate-400 font-bold">Carregando imagem da CEG no estúdio...</p>
+            <div class="flex-1 min-h-[350px] lg:min-h-0 bg-slate-900/60 rounded-2xl border border-slate-800/80 overflow-hidden relative flex flex-col items-center justify-center p-2">
+                <!-- Spinner enquanto a imagem não estiver pronta -->
+                <div x-show="!cropStudioImageReady" class="absolute inset-0 z-10 bg-slate-950/85 flex flex-col items-center justify-center space-y-3">
+                    <div class="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs text-slate-300 font-bold">Carregando imagem no estúdio...</p>
                 </div>
 
                 <!-- Imagem Alvo do Cropper.js -->
-                <div class="w-full h-full max-h-[70vh] flex items-center justify-center p-2" x-show="cropStudioImageReady">
+                <div class="w-full h-full min-h-[320px] max-h-[68vh] flex items-center justify-center relative">
                     <img id="crop-studio-target-image"
                          :src="cropStudioSourceUrl"
                          alt="Imagem para recorte"
-                         class="max-w-full max-h-full block"
-                         @load="initCropperInstance()"
-                         style="display: none;" />
+                         class="block max-w-full max-h-[66vh] object-contain"
+                         @load="onCropStudioImageLoad()" />
                 </div>
             </div>
         </div>
