@@ -3,6 +3,7 @@
 > Documento de referência do sistema para desenvolvedores e agentes de IA.
 > **Última atualização:** Outubro/2026.
 > **Manutenção Obrigatória:** Qualquer alteração em modelos, fluxos ou arquitetura deve ser refletida aqui.
+> **Ideias & Roadmap Futuro:** Consulte [docs/IDEAS_BACKLOG.md](IDEAS_BACKLOG.md) para inovações e melhorias em espera.
 
 ---
 
@@ -96,4 +97,66 @@ Cada slot claimado passa por 5 estágios visuais no painel do participante:
 - **Framework CSS:** Tailwind CSS (classes utilitárias, Dark Mode nativo com classe `dark`).
 - **Framework JS Reativo:** Alpine.js (para filtros reativos instantâneos, acordeões, modais e cópia de Pix sem recarregar página).
 - **Modularização de Templates:**
-  - O template central `templates/participants/my_claims.html` é mantido compacto e desacoplado através de parciais na pasta `templates/participants/partials/`.
+  - **Portal do Participante:** `templates/participants/my_claims.html` é mantido compacto e desacoplado através de parciais em `templates/participants/partials/` (`_quick_pix.html`, `_semaforo_prazos.html`, `_caixinha_tab.html`, etc.).
+  - **Módulo de CEGs & Gestão:** Componentes complexos reutilizáveis residem em `templates/cegs/partials/` (ex: `_crop_studio_modal.html`), evitando templates monolíticos com mais de 200 linhas.
+
+---
+
+## 7. Estúdio de Recorte de Photocards (Modo Esteira)
+
+O **Estúdio de Recorte de Photocards** permite que administradores e GOMs recortem a imagem principal/banner oficial da CEG para extrair e associar fotos individuais a cada integrante/photocard (`CEGItemDefinition`).
+
+### Principais Características:
+- **Fluxo Produtivo em Esteira:** Interface com visualização simultânea da imagem original e lista vertical dos integrantes com miniaturas ao vivo e status (Pendente / Recortado).
+- **Proporção Oficial:** Padrão travado em `2:3` (formato padrão de photocard de K-pop ~55mm x 85mm), com alternância rápida para `1:1` (quadrado) e `Livre`.
+- **Controles de Precisão:** Zoom in/out, rotação 90°, reset e ajuste fino por teclas direcionais.
+- **Teclas de Atalho:**
+  - `Enter`: Salva o recorte do integrante atual e avança para o próximo.
+  - `ESC`: Fecha o estúdio preservando os recortes já concluídos.
+- **Dualidade de Operação:**
+  1. **Na Criação da CEG (`creations.html`):** Atua como um sub-modal sobre o formulário de nova CEG. Armazena os recortes em Base64 Data URI no array Alpine em memória (`items[i].image_base64`). Ao salvar a CEG, o backend converte e otimiza via `process_image_upload(folder='items')`.
+  2. **Na Página de Gestão (`detail.html`):** Permite recortar e associar fotos a qualquer momento para CEGs existentes. Salva cada recorte via AJAX POST para `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando a imagem nos cards de slots sem recarregar a página.
+- **Resiliência e Fallback:** O frontend gera WebP otimizado via canvas do navegador; caso o canvas esteja restrito por CORS, as coordenadas `{x, y, width, height}` são enviadas ao backend para corte direto com o Pillow (`crop_image_from_coordinates`).
+
+---
+
+## 8. Galeria do Participante: Cards Sleeve (2:3) & CEG Header Slim
+
+O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com uma visualização de itens otimizada para colecionadores, eliminando o desperdício de espaço vertical e valorizando as fotos recortadas dos photocards:
+
+### 8.1. CEG Header Slim (Barra Horizontal Compacta ~38px)
+- **Compactação Inteligente:** Substitui o antigo cabeçalho de múltiplos blocos e linhas empilhadas por uma barra horizontal única (`px-4 py-2.5`).
+- **Navegação & Expansão:** Chevron rotativo com clique direto em qualquer ponto da barra para alternar expansão/colapso dos itens (`toggleCeg`).
+- **Resumo Financeiro & Pix:** Exibe o total pendente na CEG e breakdown seletivo (`Frete a Pagar: R$ XX` e `Taxa a Pagar: R$ XX`), com botão de cópia de chave Pix em 1 clique (ou botões segregados caso a CEG possua chaves distintas de Frete e Taxa).
+
+### 8.2. Cards de Photocard Estilo Sleeve (`aspect-[2/3]`)
+- **Proporção Colecionável Oficial:** Proporção `2:3` idêntica às sleeves e pastas de photocards de K-pop (55mm x 85mm).
+- **Densidade de Visualização:** Grid responsivo denso (`grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2.5 sm:gap-3`), exibindo de 6 a 8 itens por linha em telas desktop contra apenas 4 no modelo anterior.
+- **Overlays Integrados sobre a Foto:**
+  - **Top Bar Overlay:** Chip com `Set #X` e badge compacto com o estágio do ciclo de vida (`claim.lifecycle.icon` + label).
+  - **Bottom Gradient Overlay:** Integrante destacado em rosa vibrante (`text-pink-300`), preço em tipografia mono, nome do item em fonte reduzida e **Semáforo de Pagamentos em 3 Chips Miniaturas** (`📦 Item`, `✈️ Frete`, `🏛️ Taxa`) com estados de Quitado (`✔`), Pendente (`⏳ R$ XX`) ou Não Lançado (`—`).
+  - **Ação Contextual Rápida:** Botão de solicitar envio nacional caso o item esteja no estágio `READY_CAIXINHA`.
+- **Prévia Detalhada:** Clique no card aciona `openPreview(...)`, exibindo modal com código de rastreio, chave Pix, data de reserva e transportadora.
+
+### 8.3. Grid Flow Contínuo de Pastas & Photocards (Gatefold Album & Alta Densidade)
+- **Grid Unificado de Alta Densidade (Até 6 Colunas):** Adota `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo visualizar muitos photocards simultaneamente na tela com a estética de um binder/fichário real de colecionador.
+- **Card da Pasta Fechada (2:3 Sleeve com Ambient Blur):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`). Exibe a capa com cascata de fallback inteligente (`Banner da CEG` ➔ `Banner da Era` ➔ `Logo/Imagem do Grupo` ➔ `Photocard`), mantendo banners panorâmicos inteiros sem cortar nenhum integrante (`object-contain`) com as margens verticais preenchidas suavemente pelo reflexo desfocado da própria foto (`ambient blur` com `object-cover blur-md scale-110 opacity-70 dark:opacity-40`). O degradê escuro fica restrito à base inferior (`h-28`), mantendo legibilidade perfeita do texto.
+- **Card da Pasta Aberta (Gatefold Album `col-span-2 aspect-[4/3]`):**
+  - Ao abrir, a pasta expande horizontalmente para ocupar **2 colunas** (`col-span-2`).
+  - Graças à proporção matemática `aspect-[4/3]`, a altura vertical do card duplo coincide exatamente com a altura dos cards `aspect-[2/3]` da mesma linha ($2W \div 1.5W = 4/3$), mantendo a linha nivelada sem degraus nem quebras.
+  - **Linha do Topo Unificada (Largura Total):** Grupo/Era badge, Título completo da CEG (com link externo ↗), badge de contagem de cards e Botão "▲ Fechar".
+  - **Corpo Dividido em 2 Partes Nativas (Sem Abas):**
+    - **Lado Esquerdo (Logística & Remessa):** Caixa Internacional de Origem (com bandeira e link direto de rastreio), Status do Envio e Semáforo de Urgência de Prazos.
+    - **Lado Direito (Financeiro & Checkout):** Extrato completo de valores a pagar sem cortes (`📦 Itens`, `✈️ Frete a Pagar`, `🏛️ Taxa a Pagar`, `Total a Pagar nesta CEG`), e Botões de Copiar Pix (ou 3 botões dedicados caso haja chaves distintas).
+- **Card de Photocard (Formato 1 — Colecionador com Foto Limpa + Rodapé de Informações):**
+  - **Topo / Foto (`flex-1`):** A imagem do photocard fica 100% limpa e visível, sem nenhum degradê escuro cobrindo o integrante. Mantém no topo apenas chips sutis de Set # e Ciclo de Vida.
+  - **Base / Rodapé de Dados:** Painel inferior sólido com Nome do Integrante + Preço na linha 1, e Semáforo de Pagamentos em 3 chips (`✔ Pago/Item`, `✔ Frete`, `✔ Taxa`) na linha 2.
+  - **Nivelamento:** O container possui `h-full`, alinhando a base do card perfeitamente com a base do card da CEG na mesma linha.
+- **Expansão em Fluxo Contínuo (Inline Flow Grid):**
+  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, empurrando naturalmente as próximas pastas e itens para as colunas e linhas seguintes.
+  - Ao recolher a pasta, ela volta para 1 coluna (`aspect-[2/3]`) e os photocards recolhem instantaneamente.
+- **Multi-Expansão Simultânea:** Permite abrir e fechar várias pastas livremente. O cabeçalho oferece botões rápidos "📂 Expandir Todas" e "📁 Recolher Todas".
+- **Alternância Flexível:** O participante pode alternar com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem pastas) ou para a visão clássica de `📋 Tabela`.
+
+
+

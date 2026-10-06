@@ -15,9 +15,10 @@
 # 1. Testes de Participantes / Visão / Claims / Prazos (< 3s)
 python manage.py test apps.participants.tests.ParticipantPrazosProximosTests.test_distinct_pix_keys_for_item_frete_taxa
 python manage.py test apps.participants.tests.ParticipantPrazosProximosTests
-python manage.py test apps.participants.tests.ParticipantMyClaimsTests
+python manage.py test apps.participants.tests.ParticipantProfileTests
 
-# 2. Testes de CEGs / Criação / Edição (< 3s)
+# 2. Testes de CEGs / Criação / Edição / Recorte (< 3s)
+python manage.py test apps.cegs.tests_crop_studio
 python manage.py test apps.cegs.tests.CEGModelTest
 python manage.py test apps.cegs.tests.CEGUpdateViewTest
 
@@ -47,6 +48,7 @@ python manage.py test apps.cegs
 | **Minha Caixinha / Pedir Envio** | `PacoteNacional`, `ItemSlot` | `apps/participants/caixinha_views.py` | `templates/participants/partials/_caixinha_tab.html` |
 | **Caixas & Remessas Internacionais** | `Caixa`, `ItemRateCaixa` | `apps/cegs/caixas_views.py` | `templates/cegs/caixas_dashboard.html`<br>`templates/cegs/caixa_detail.html`<br>`templates/cegs/caixa_form.html` |
 | **CEGs (Grupos de Compra)** | `CEG`, `ItemSlot`, `ItemDefinition`, `Set` | `apps/cegs/views.py`, `creations_views.py` | `templates/cegs/detail.html`<br>`templates/cegs/creations.html` |
+| **Estúdio de Recorte de Photocards** | `CEG`, `CEGItemDefinition` | `apps/cegs/views.py:CropCEGItemPhotoView`<br>`apps/cegs/image_utils.py:crop_image_from_coordinates` | `templates/cegs/partials/_crop_studio_modal.html`<br>`templates/cegs/creations.html`<br>`templates/cegs/detail.html` |
 | **Compras Avulsas (Mercari JP)** | `ItemIndividual` | `apps/cegs/mercari_views.py` | `templates/cegs/mercari_dashboard.html`<br>`templates/participants/partials/_mercari_section.html` |
 | **Analytics & BI** | — | `apps/analytics/views.py`, `services.py` | `templates/analytics/` |
 
@@ -81,6 +83,33 @@ python manage.py test apps.cegs
 ### 3.4. Concorrência no Segundo Zero
 - Reservas de slots utilizam `select_for_update()` com transações atômicas para evitar overclaiming.
 - Quando múltiplos usuários disputam o mesmo slot, os excedentes são alocados em Sets subsequentes ou enfileirados na Lista de Espera com timestamp de precisão em milissegundos.
+
+### 3.5. Estúdio de Recorte de Photocards (Cropper.js & Esteira de Integrantes)
+- Permite recortar a imagem oficial/banner da CEG para associar fotos a cada integrante (`CEGItemDefinition`).
+- Proporção padrão: `2:3` (formato oficial de photocard K-pop ~55mm x 85mm), com alternância para `1:1` e `Livre`.
+- **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
+- **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
+
+### 3.6. Galeria do Participante: Cards Sleeve & Gatefold Album no Grid Flow Contínuo
+- **Grid Unificado de Alta Densidade (Até 6 Colunas):** O grid utiliza `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo que os photocards voltem ao formato compacto de binder/fichário real com muitos cards visíveis por linha.
+- **Card da Pasta Fechada (2:3 Sleeve com Ambient Blur):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`). Exibe a capa com cascata de fallback inteligente (`Banner da CEG` ➔ `Banner da Era` ➔ `Logo/Imagem do Grupo` ➔ `Photocard`), mantendo banners panorâmicos inteiros sem cortar nenhum integrante (`object-contain`) com as margens verticais preenchidas suavemente pelo reflexo desfocado da própria foto (`ambient blur` com `object-cover blur-md scale-110 opacity-70 dark:opacity-40`). O degradê escuro fica restrito à base inferior (`h-28`), mantendo legibilidade perfeita do texto.
+- **Card da Pasta Aberta (Gatefold Album `col-span-2 aspect-[4/3]`):**
+  - Ao abrir, a pasta expande horizontalmente para ocupar **2 colunas** (`col-span-2`).
+  - Graças à proporção matemática `aspect-[4/3]`, a altura vertical do card duplo coincide exatamente com a altura dos cards `aspect-[2/3]` da mesma linha ($2W \div 1.5W = 4/3$), mantendo a linha nivelada sem degraus nem quebras.
+  - **Linha do Topo Unificada (Largura Total):** Grupo/Era badge, Título completo da CEG (com link externo ↗), badge de contagem de cards e Botão "▲ Fechar".
+  - **Corpo Dividido em 2 Partes Nativas (Sem Abas):**
+    - **Lado Esquerdo (Logística & Remessa):** Caixa Internacional de Origem (com bandeira e link direto de rastreio), Status do Envio e Semáforo de Urgência de Prazos.
+    - **Lado Direito (Financeiro & Checkout):** Extrato completo de valores a pagar sem cortes (`📦 Itens`, `✈️ Frete a Pagar`, `🏛️ Taxa a Pagar`, `Total a Pagar nesta CEG`), e Botões de Copiar Pix (ou 3 botões dedicados caso haja chaves distintas).
+- **Card de Photocard (Formato 1 — Colecionador com Foto Limpa + Rodapé de Informações):**
+  - **Topo / Foto (`flex-1`):** A imagem do photocard fica 100% limpa e visível, sem nenhum degradê escuro cobrindo o integrante. Mantém no topo apenas chips sutis de Set # e Ciclo de Vida.
+  - **Base / Rodapé de Dados:** Painel inferior sólido com Nome do Integrante + Preço na linha 1, e Semáforo de Pagamentos em 3 chips (`✔ Pago/Item`, `✔ Frete`, `✔ Taxa`) na linha 2.
+  - **Nivelamento:** O container possui `h-full`, alinhando a base do card perfeitamente com a base do card da CEG na mesma linha.
+- **Expansão em Fluxo Contínuo (Inline Flow Grid):**
+  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, empurrando naturalmente as próximas pastas e photocards para as colunas e linhas seguintes.
+  - Ao recolher a pasta, ela volta para 1 coluna (`aspect-[2/3]`) e os photocards recolhem instantaneamente.
+- **Multi-Expansão e Controle Rápido:** Várias pastas podem ser abertas ao mesmo tempo, fluindo livremente pelo grid. Botões rápidos no topo permitem "📂 Expandir Todas" e "📁 Recolher Todas" com 1 clique.
+- **Busca com Auto-Expansão:** Digitar na busca textual expande automaticamente as pastas cujos itens correspondem ao termo pesquisado.
+- **Alternância para Modo Completo ou Tabela:** Suporta alternância com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem separação de pastas) ou `📋 Tabela`.
 
 ---
 

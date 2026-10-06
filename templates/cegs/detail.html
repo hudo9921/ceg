@@ -596,6 +596,15 @@
          editPhotoDragOver: false,
          removeBannerFlag: false,
          editPhotoError: '',
+         // Estado do Estúdio de Recorte de Itens / Photocards
+         cropStudioOpen: false,
+         cropStudioSaving: false,
+         cropStudioImageReady: false,
+         cropStudioSourceUrl: '{{ ceg.display_image_url|default:''|escapejs }}',
+         cropStudioItems: [],
+         cropStudioCurrentIndex: 0,
+         cropAspectRatio: 2/3,
+         cropperInstance: null,
          handleBannerFile(file) {
              if (!file || file.type.indexOf('image') === -1) return;
              this.editPhotoError = '';
@@ -1319,6 +1328,206 @@
     copyPix(key) {
     navigator.clipboard.writeText(key);
     },
+    openCropStudioFromDetail(bannerUrlOrIndex, startIndex = 0) {
+        let src = typeof bannerUrlOrIndex === 'string' && bannerUrlOrIndex ? bannerUrlOrIndex : '{{ ceg.display_image_url|default:''|escapejs }}';
+        let sIndex = typeof bannerUrlOrIndex === 'number' ? bannerUrlOrIndex : (startIndex || 0);
+        if (!src) {
+            alert('Esta CEG ainda não possui uma foto/banner cadastrado. Edite a CEG e anexe uma imagem primeiro.');
+            return;
+        }
+        const defsEl = document.getElementById('ceg-items-definitions-data');
+        if (!this.cropStudioItems || this.cropStudioItems.length === 0) {
+            this.cropStudioItems = defsEl ? JSON.parse(defsEl.textContent || '[]') : [];
+        }
+        if (!this.cropStudioItems || this.cropStudioItems.length === 0) {
+            alert('Nenhum photocard/item cadastrado nesta CEG para recortar.');
+            return;
+        }
+
+        this.cropStudioSourceUrl = src;
+        this.cropStudioCurrentIndex = Math.max(0, Math.min(sIndex, this.cropStudioItems.length - 1));
+        this.cropStudioImageReady = false;
+        this.cropStudioOpen = true;
+
+        if (this.cropperInstance) {
+            try { this.cropperInstance.destroy(); } catch (e) {}
+            this.cropperInstance = null;
+        }
+
+        // Aguarda a transição de abertura do modal (150ms) para dimensões finais no DOM
+        setTimeout(() => {
+            this.onCropStudioImageLoad();
+        }, 150);
+    },
+    onCropStudioImageLoad() {
+        if (!this.cropStudioOpen) return;
+        const img = document.getElementById('crop-studio-target-image');
+        if (!img) return;
+
+        if (img.complete && img.naturalWidth > 0) {
+            this.initCropperInstance();
+        } else {
+            img.onload = () => {
+                this.initCropperInstance();
+            };
+        }
+    },
+    initCropperInstance() {
+        if (!this.cropStudioOpen) return;
+        const img = document.getElementById('crop-studio-target-image');
+        if (!img) return;
+
+        if (this.cropperInstance) {
+            try { this.cropperInstance.destroy(); } catch (e) {}
+            this.cropperInstance = null;
+        }
+
+        if (typeof Cropper === 'undefined') {
+            console.warn('Cropper.js ainda não disponível. Aguardando...');
+            setTimeout(() => this.initCropperInstance(), 150);
+            return;
+        }
+
+        try {
+            this.cropperInstance = new Cropper(img, {
+                aspectRatio: this.cropAspectRatio || (2 / 3),
+                viewMode: 1,
+                dragMode: 'crop',
+                autoCrop: true,
+                autoCropArea: 0.7,
+                responsive: true,
+                restore: false,
+                checkCrossOrigin: false,
+                zoomable: true,
+                scalable: false,
+                rotatable: true,
+                movable: true,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                ready: () => {
+                    this.cropStudioImageReady = true;
+                    if (this.cropperInstance) {
+                        this.cropperInstance.crop();
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Erro ao inicializar Cropper.js:', e);
+            this.cropStudioImageReady = true;
+        }
+    },
+    setCropAspectRatio(ratio) {
+        this.cropAspectRatio = ratio;
+        if (this.cropperInstance) {
+            this.cropperInstance.setAspectRatio(ratio);
+        }
+    },
+    cropperZoom(delta) {
+        if (this.cropperInstance) {
+            this.cropperInstance.zoom(delta);
+        }
+    },
+    cropperRotate(deg) {
+        if (this.cropperInstance) {
+            this.cropperInstance.rotate(deg);
+        }
+    },
+    cropperReset() {
+        if (this.cropperInstance) {
+            this.cropperInstance.reset();
+        }
+    },
+    selectCropStudioIndex(idx) {
+        if (idx >= 0 && idx < this.cropStudioItems.length) {
+            this.cropStudioCurrentIndex = idx;
+        }
+    },
+    async cropCurrentItemAndNext() {
+        if (!this.cropperInstance) return;
+        const item = this.cropStudioItems[this.cropStudioCurrentIndex];
+        if (!item) return;
+
+        const canvas = this.cropperInstance.getCroppedCanvas({
+            maxWidth: 800,
+            maxHeight: 1200,
+            fillColor: '#fff',
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+
+        if (!canvas) {
+            alert('Não foi possível gerar o recorte. Verifique a seleção.');
+            return;
+        }
+
+        let base64 = '';
+        try {
+            base64 = canvas.toDataURL('image/webp', 0.85);
+        } catch (e) {
+            try {
+                base64 = canvas.toDataURL('image/jpeg', 0.85);
+            } catch (err) {
+                console.error('Erro ao converter canvas em Base64:', err);
+            }
+        }
+
+        if (!base64) {
+            alert('Erro ao processar imagem para envio.');
+            return;
+        }
+
+        this.cropStudioSaving = true;
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            const url = `/ceg/{{ ceg.slug }}/item/${item.id}/crop/`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    image_base64: base64
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                item.image_url = data.image_url;
+                item.image_base64 = data.image_url;
+                if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+                    this.cropStudioCurrentIndex++;
+                } else {
+                    this.closeCropStudio();
+                    window.location.reload();
+                }
+            } else {
+                alert(data.message || 'Erro ao salvar recorte.');
+            }
+        } catch (err) {
+            console.error('Erro na requisição AJAX de crop:', err);
+            alert('Erro ao conectar com o servidor para salvar o recorte.');
+        } finally {
+            this.cropStudioSaving = false;
+        }
+    },
+    skipCropStudioItem() {
+        if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+            this.cropStudioCurrentIndex++;
+        } else {
+            this.closeCropStudio();
+        }
+    },
+    closeCropStudio() {
+        this.cropStudioOpen = false;
+        if (this.cropperInstance) {
+            try { this.cropperInstance.destroy(); } catch (e) {}
+            this.cropperInstance = null;
+        }
+    },
     formatCountdown() {
         if (this.secondsLeft <= 0) {
             this.isStandby = false;
@@ -1476,6 +1685,11 @@
                                 <span>📢</span> Copiar Vagas Abertas
                             </button>
                             {% if user.is_staff %}
+                            <button type="button" @click="openCropStudioFromDetail()"
+                                class="px-3.5 py-1 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-black rounded-md transition shadow flex items-center gap-1.5 cursor-pointer"
+                                title="Recortar fotos dos integrantes a partir da imagem desta CEG">
+                                <span>✂️</span> Recortar Fotos
+                            </button>
                             <button type="button" @click="editCegModalOpen = true"
                                 class="px-3 py-1 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-md transition shadow flex items-center gap-1.5 cursor-pointer">
                                 <span>✏️</span> Editar CEG
@@ -1593,6 +1807,11 @@
                         <button type="button" @click="feeModalOpen = true"
                             class="self-start sm:self-auto px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
                             <span>✏️</span> Atualizar Taxas & Prazos
+                        </button>
+                        <button type="button" @click="openCropStudioFromDetail()"
+                            class="self-start sm:self-auto px-3.5 py-1.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-black rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer"
+                            title="Recortar fotos dos integrantes a partir da imagem desta CEG">
+                            <span>✂️</span> Recortar Fotos dos Itens
                         </button>
                         <button type="button" @click="editCegModalOpen = true"
                             class="self-start sm:self-auto px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer">
@@ -2446,6 +2665,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Imagem do Photocard (se houver) -->
+                        {% if slot.item_definition.image_url %}
+                        <div class="rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 aspect-[2/3] max-h-44 w-full relative group/img cursor-pointer"
+                             @click="zoomImageUrl = '{{ slot.item_definition.image_url|escapejs }}'"
+                             title="Clique para ver foto ampliada">
+                            <img src="{{ slot.item_definition.image_url }}" alt="{{ slot.item_definition.name }}"
+                                 class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-[11px] text-white font-bold gap-1">
+                                🔍 Ver Ampliado
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <!-- Item Name -->
                         <div>
@@ -5546,7 +5778,27 @@
 </div>
 {% endif %}
 
-</div>
+{% if user.is_staff %}
+<!-- Dados serializados das definições de itens da CEG para o Estúdio de Recorte -->
+<script id="ceg-items-definitions-data" type="application/json">
+[
+    {% for idef in ceg.item_definitions.all %}
+    {
+        "id": {{ idef.id }},
+        "name": "{{ idef.name|escapejs }}",
+        "member_name": "{{ idef.member_name|default:''|escapejs }}",
+        "item_type": "{{ idef.item_type }}",
+        "image_url": "{{ idef.image_url|default:''|escapejs }}",
+        "default_price": "{{ idef.default_price|floatformat:2 }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
 
+<!-- Estúdio de Recorte de Photocards para Organizador -->
+{% include 'cegs/partials/_crop_studio_modal.html' %}
+{% endif %}
+
+</div>
 
 {% endblock %}

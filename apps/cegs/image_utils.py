@@ -74,7 +74,7 @@ def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallb
     Garante que nunca ocorra erro 500 ou estouro de tamanho de URL no banco de dados (máx 500 chars).
     Retorna a URL final da imagem salva no storage (R2/S3) ou uma URL externa válida.
     """
-    prefix = 'ceg_' if 'cegs' in folder else ('era_' if 'eras' in folder else ('group_' if 'groups' in folder else 'img_'))
+    prefix = 'item_' if 'item' in folder else ('ceg_' if 'cegs' in folder else ('era_' if 'eras' in folder else ('group_' if 'groups' in folder else 'img_')))
     max_bytes = max_size_mb * 1024 * 1024
 
     # Se o usuário colou um Data URI no campo de URL (ex: "data:image/jpeg;base64,..."),
@@ -137,3 +137,97 @@ def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallb
             return cleaned_fallback
 
     return ''
+
+
+def crop_image_from_coordinates(
+    source_url_or_path: str = '',
+    source_bytes: bytes = None,
+    x: float = 0,
+    y: float = 0,
+    width: float = 0,
+    height: float = 0,
+    folder: str = 'items',
+    quality: int = 85
+) -> str:
+    """
+    Recorta uma sub-região retangular da imagem original informada usando Pillow.
+    Aceita:
+    - source_bytes: bytes diretos da imagem.
+    - source_url_or_path: URL externa (http/https), Data URI Base64 ou caminho no storage/media.
+    Retorna a URL da imagem recortada salva no storage.
+    """
+    if not HAS_PIL:
+        logger.error("Pillow não está disponível para recortar imagem.")
+        return ''
+
+    raw_bytes = source_bytes
+
+    if not raw_bytes and source_url_or_path:
+        cleaned_src = str(source_url_or_path).strip()
+        if cleaned_src.startswith('data:image/') or ';base64,' in cleaned_src:
+            try:
+                b64_part = cleaned_src.split(',', 1)[1] if ',' in cleaned_src else cleaned_src
+                b64_part = b64_part.replace('\n', '').replace('\r', '').replace(' ', '')
+                raw_bytes = base64.b64decode(b64_part)
+            except Exception as e:
+                logger.warning(f"Falha ao decodificar base64 em crop_image: {e}")
+        elif cleaned_src.startswith('http://') or cleaned_src.startswith('https://'):
+            try:
+                import urllib.request
+                req = urllib.request.Request(cleaned_src, headers={'User-Agent': 'KpopCEGManager/1.0'})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    raw_bytes = resp.read()
+            except Exception as e:
+                logger.warning(f"Falha ao baixar imagem remota para crop ({cleaned_src}): {e}")
+        else:
+            # Caminho no storage local ou default_storage
+            storage_path = cleaned_src.lstrip('/')
+            if storage_path.startswith('media/'):
+                storage_path = storage_path[6:]
+            try:
+                if default_storage.exists(storage_path):
+                    with default_storage.open(storage_path, 'rb') as f:
+                        raw_bytes = f.read()
+            except Exception as e:
+                logger.warning(f"Falha ao abrir imagem no storage ({storage_path}): {e}")
+
+    if not raw_bytes:
+        logger.error("Bytes da imagem original não encontrados para efetuar o recorte.")
+        return ''
+
+    try:
+        with Image.open(io.BytesIO(raw_bytes)) as img:
+            img = ImageOps.exif_transpose(img)
+            img_w, img_h = img.size
+
+            # Coordenadas seguras dentro das dimensões da imagem
+            crop_x = max(0, min(int(round(x)), img_w - 1))
+            crop_y = max(0, min(int(round(y)), img_h - 1))
+            crop_w = max(10, int(round(width)))
+            crop_h = max(10, int(round(height)))
+
+            crop_right = min(crop_x + crop_w, img_w)
+            crop_bottom = min(crop_y + crop_h, img_h)
+
+            cropped = img.crop((crop_x, crop_y, crop_right, crop_bottom))
+
+            has_alpha = cropped.mode in ('RGBA', 'LA') or (cropped.mode == 'P' and 'transparency' in cropped.info)
+            out_io = io.BytesIO()
+
+            if has_alpha:
+                ext = '.webp'
+                cropped.save(out_io, format='WEBP', quality=quality, method=4)
+            else:
+                ext = '.jpg'
+                if cropped.mode != 'RGB':
+                    cropped = cropped.convert('RGB')
+                cropped.save(out_io, format='JPEG', quality=quality, optimize=True)
+
+            prefix = 'item_'
+            safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
+            saved_path = default_storage.save(safe_filename, ContentFile(out_io.getvalue()))
+            return default_storage.url(saved_path)
+    except Exception as e:
+        logger.error(f"Erro ao recortar imagem com Pillow: {e}")
+        return ''
+

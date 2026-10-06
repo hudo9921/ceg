@@ -15,6 +15,7 @@ from .views import (
     CreateAvulsoItemView,
     UpdateAvulsoItemView,
     DeleteAvulsoItemView,
+    CropCEGItemPhotoView,
 )
 from .creations_views import (
     CreationsHubView,
@@ -93,6 +94,7 @@ urlpatterns = [
     path('ceg/<slug:slug>/avulsos/adicionar/', CreateAvulsoItemView.as_view(), name='create_avulso_item'),
     path('ceg/<slug:slug>/avulsos/<int:item_def_id>/editar/', UpdateAvulsoItemView.as_view(), name='update_avulso_item'),
     path('ceg/<slug:slug>/avulsos/<int:item_def_id>/excluir/', DeleteAvulsoItemView.as_view(), name='delete_avulso_item'),
+    path('ceg/<slug:slug>/item/<int:item_def_id>/crop/', CropCEGItemPhotoView.as_view(), name='crop_ceg_item_photo'),
     path('ceg/<slug:slug>/delete/', DeleteCEGView.as_view(), name='delete_ceg'),
     path('ceg/<slug:slug>/alocar-massa/', CEGBulkAllocatorView.as_view(), name='ceg_bulk_allocator'),
     path('ceg/<slug:slug>/alocar-massa/api/', CEGBulkAllocatorAPIView.as_view(), name='ceg_bulk_allocator_api'),
