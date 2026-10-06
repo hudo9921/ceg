@@ -15,7 +15,7 @@
 # 1. Testes de Participantes / Visão / Claims / Prazos (< 3s)
 python manage.py test apps.participants.tests.ParticipantPrazosProximosTests.test_distinct_pix_keys_for_item_frete_taxa
 python manage.py test apps.participants.tests.ParticipantPrazosProximosTests
-python manage.py test apps.participants.tests.ParticipantMyClaimsTests
+python manage.py test apps.participants.tests.ParticipantProfileTests
 
 # 2. Testes de CEGs / Criação / Edição / Recorte (< 3s)
 python manage.py test apps.cegs.tests_crop_studio
@@ -89,6 +89,11 @@ python manage.py test apps.cegs
 - Proporção padrão: `2:3` (formato oficial de photocard K-pop ~55mm x 85mm), com alternância para `1:1` e `Livre`.
 - **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
 - **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
+
+### 3.6. Galeria do Participante & Cards Sleeve (2:3)
+- **CEG Header Slim:** Cabeçalho de CEG em barra horizontal única compacta (~38px), agrupando título, era, remessa, prazo, contagem de itens, saldo pendente (com breakdown de frete e taxa) e botão de cópia de Pix em 1 clique.
+- **Card Sleeve (2:3):** 100% da área útil é o photocard com proporção oficial 2:3. Contém overlays escuros foscos no topo (Set # e Ciclo de Vida) e gradiente inferior (Integrante em rosa `text-pink-300`, Preço mono, Nome do item e Semáforo em 3 Chips Miniaturas para Item, Frete e Taxa).
+- **Grid de Alta Densidade:** `grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2.5 sm:gap-3`, exibindo de 6 a 8 itens por linha em desktop e maximizando a área de visualização sem desperdício de espaço.
 
 ---
 

@@ -118,3 +118,24 @@ O **Estúdio de Recorte de Photocards** permite que administradores e GOMs recor
   2. **Na Página de Gestão (`detail.html`):** Permite recortar e associar fotos a qualquer momento para CEGs existentes. Salva cada recorte via AJAX POST para `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando a imagem nos cards de slots sem recarregar a página.
 - **Resiliência e Fallback:** O frontend gera WebP otimizado via canvas do navegador; caso o canvas esteja restrito por CORS, as coordenadas `{x, y, width, height}` são enviadas ao backend para corte direto com o Pillow (`crop_image_from_coordinates`).
 
+---
+
+## 8. Galeria do Participante: Cards Sleeve (2:3) & CEG Header Slim
+
+O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com uma visualização de itens otimizada para colecionadores, eliminando o desperdício de espaço vertical e valorizando as fotos recortadas dos photocards:
+
+### 8.1. CEG Header Slim (Barra Horizontal Compacta ~38px)
+- **Compactação Inteligente:** Substitui o antigo cabeçalho de múltiplos blocos e linhas empilhadas por uma barra horizontal única (`px-4 py-2.5`).
+- **Navegação & Expansão:** Chevron rotativo com clique direto em qualquer ponto da barra para alternar expansão/colapso dos itens (`toggleCeg`).
+- **Resumo Financeiro & Pix:** Exibe o total pendente na CEG e breakdown seletivo (`Frete a Pagar: R$ XX` e `Taxa a Pagar: R$ XX`), com botão de cópia de chave Pix em 1 clique (ou botões segregados caso a CEG possua chaves distintas de Frete e Taxa).
+
+### 8.2. Cards de Photocard Estilo Sleeve (`aspect-[2/3]`)
+- **Proporção Colecionável Oficial:** Proporção `2:3` idêntica às sleeves e pastas de photocards de K-pop (55mm x 85mm).
+- **Densidade de Visualização:** Grid responsivo denso (`grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2.5 sm:gap-3`), exibindo de 6 a 8 itens por linha em telas desktop contra apenas 4 no modelo anterior.
+- **Overlays Integrados sobre a Foto:**
+  - **Top Bar Overlay:** Chip com `Set #X` e badge compacto com o estágio do ciclo de vida (`claim.lifecycle.icon` + label).
+  - **Bottom Gradient Overlay:** Integrante destacado em rosa vibrante (`text-pink-300`), preço em tipografia mono, nome do item em fonte reduzida e **Semáforo de Pagamentos em 3 Chips Miniaturas** (`📦 Item`, `✈️ Frete`, `🏛️ Taxa`) com estados de Quitado (`✔`), Pendente (`⏳ R$ XX`) ou Não Lançado (`—`).
+  - **Ação Contextual Rápida:** Botão de solicitar envio nacional caso o item esteja no estágio `READY_CAIXINHA`.
+- **Prévia Detalhada:** Clique no card aciona `openPreview(...)`, exibindo modal com código de rastreio, chave Pix, data de reserva e transportadora.
+
+
