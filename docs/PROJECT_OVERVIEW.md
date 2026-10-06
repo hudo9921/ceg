@@ -142,7 +142,7 @@ O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com um
 - **Grid Unificado & Proporção 2:3:** A galeria adota uma proporção única (`aspect-[2/3]`) tanto para os cards de pastas (fechadas e abertas) quanto para os photocards, mantendo alinhamento estético uniforme e sem quebras de layout.
 - **Escala Confortável (3 a 5 Colunas):** Adota `grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5`, proporcionando cards de ~250-280px de largura e ~375-420px de altura em telas desktop. Essa escala confere presença marcante para a arte dos photocards e amplo respiro para as informações da CEG aberta.
 - **Expansão em Fluxo Contínuo (Inline Flow Grid):**
-  - Clicar em uma pasta transforma a capa no **Card de Resumo da CEG** (mesma célula 2:3, exibindo Era/Grupo, link da CEG ↗, remessa/caixa com rastreio, prazo de urgência, total a pagar na CEG, breakdown de frete e taxa, botão Pix em 1 clique e botão "▲ Fechar" no topo).
+  - Clicar em uma pasta transforma a capa no **Card de Resumo da CEG** (mesma célula 2:3, com botão "▲ Fechar" e alternância de abas: `💰 Pagamento` com extrato financeiro detalhado e botão Pix sem cortes, e `✈️ Remessa` com caixa internacional, rastreio, status do frete e semáforo de prazos).
   - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, **empurrando suavemente** as próximas pastas e itens para as colunas e linhas seguintes.
   - Ao recolher a pasta, os photocards são ocultados e todos os itens posteriores refluem para a esquerda/cima instantaneamente.
 - **Multi-Expansão Simultânea:** Permite abrir e fechar várias pastas livremente. O cabeçalho oferece botões rápidos "📂 Expandir Todas" e "📁 Recolher Todas".
