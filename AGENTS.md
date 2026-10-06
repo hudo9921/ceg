@@ -92,8 +92,9 @@ python manage.py test apps.cegs
 
 ### 3.6. Galeria do Participante: Cards Sleeve (2:3) & Grid Flow Contínuo de Pastas
 - **Grid Unificado & Proporção 2:3 Única:** Todas as pastas (fechadas ou abertas) e todos os photocards habitam o mesmo grid responsivo (`aspect-[2/3]`), sem quebras ou estantes separadas.
+- **Dimensões & Escala Espaçosa (3 a 5 Colunas):** O grid utiliza `grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5`, garantindo cards grandes (~250-280px de largura e ~375-420px de altura em telas desktop) para que tanto a arte dos photocards quanto todas as informações do card de resumo respirem com generosidade e clareza visual.
 - **Expansão em Fluxo Contínuo (Inline Flow Grid):**
-  - Clicar na pasta de uma CEG transforma seu card no **Card de Resumo da CEG** (mesma célula 2:3, exibindo Era/Grupo, link da CEG ↗, remessa/caixa, prazo em destaque, saldo pendente total, breakdown de frete e taxa, botão Pix em 1 clique e botão "▲ Fechar").
+  - Clicar na pasta de uma CEG transforma seu card no **Card de Resumo da CEG** (mesma célula 2:3, exibindo Era/Grupo, link da CEG ↗, remessa/caixa, prazo em destaque, saldo pendente total, breakdown de frete e taxa, botão Pix em 1 clique e botão "▲ Fechar" no topo).
   - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, **empurrando naturalmente** as próximas pastas e photocards para as colunas e linhas seguintes.
   - Ao recolher a pasta, os photocards são ocultados e todos os itens posteriores refluem para a esquerda/cima instantaneamente.
 - **Multi-Expansão e Controle Rápido:** Várias pastas podem ser abertas ao mesmo tempo, fluindo livremente pelo grid. Botões rápidos no topo permitem "📂 Expandir Todas" e "📁 Recolher Todas" com 1 clique.
