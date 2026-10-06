@@ -138,13 +138,18 @@ O painel de reservas do participante (`/me/` ➔ `_cegs_list.html`) conta com um
   - **Ação Contextual Rápida:** Botão de solicitar envio nacional caso o item esteja no estágio `READY_CAIXINHA`.
 - **Prévia Detalhada:** Clique no card aciona `openPreview(...)`, exibindo modal com código de rastreio, chave Pix, data de reserva e transportadora.
 
-### 8.3. Grid Flow Contínuo de Pastas & Photocards (2:3)
-- **Grid Unificado & Proporção 2:3:** A galeria adota uma proporção única (`aspect-[2/3]`) tanto para os cards de pastas (fechadas e abertas) quanto para os photocards, mantendo alinhamento estético uniforme e sem quebras de layout.
-- **Escala Confortável (3 a 5 Colunas):** Adota `grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5`, proporcionando cards de ~250-280px de largura e ~375-420px de altura em telas desktop. Essa escala confere presença marcante para a arte dos photocards e amplo respiro para as informações da CEG aberta.
+### 8.3. Grid Flow Contínuo de Pastas & Photocards (Gatefold Album & Alta Densidade)
+- **Grid Unificado de Alta Densidade (Até 6 Colunas):** Adota `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo visualizar muitos photocards simultaneamente na tela com a estética de um binder/fichário real de colecionador.
+- **Card da Pasta Fechada (2:3 Sleeve):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`), idêntica a um photocard normal com capa da CEG, integrante/banner, badge de Era e contagem de itens.
+- **Card da Pasta Aberta (Gatefold Album `col-span-2 aspect-[4/3]`):**
+  - Ao abrir, a pasta expande horizontalmente para ocupar **2 colunas** (`col-span-2`).
+  - Graças à proporção matemática `aspect-[4/3]`, a altura vertical do card duplo coincide exatamente com a altura dos cards `aspect-[2/3]` da mesma linha ($2W \div 1.5W = 4/3$), mantendo a linha nivelada sem degraus nem quebras.
+  - **Layout Interno em 2 Colunas Lado a Lado (Sem Abas):**
+    - **Lado Esquerdo (Identidade & Logística):** Badge de Era/Grupo, Título da CEG (2 linhas com link externo), Caixa Internacional de Origem (com bandeira e link direto de rastreio), Status do Envio e Semáforo de Urgência de Prazos.
+    - **Lado Direito (Financeiro & Checkout):** Botão "▲ Fechar" no topo, Extrato completo sem cortes (`📦 Itens`, `✈️ Frete a Pagar`, `🏛️ Taxa a Pagar`, `Total a Pagar nesta CEG`), e Botões de Copiar Pix (ou 3 botões dedicados caso haja chaves distintas).
 - **Expansão em Fluxo Contínuo (Inline Flow Grid):**
-  - Clicar em uma pasta transforma a capa no **Card de Resumo da CEG** (mesma célula 2:3, com botão "▲ Fechar" e alternância de abas: `💰 Pagamento` com extrato financeiro detalhado e botão Pix sem cortes, e `✈️ Remessa` com caixa internacional, rastreio, status do frete e semáforo de prazos).
-  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, **empurrando suavemente** as próximas pastas e itens para as colunas e linhas seguintes.
-  - Ao recolher a pasta, os photocards são ocultados e todos os itens posteriores refluem para a esquerda/cima instantaneamente.
+  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, empurrando naturalmente as próximas pastas e itens para as colunas e linhas seguintes.
+  - Ao recolher a pasta, ela volta para 1 coluna (`aspect-[2/3]`) e os photocards recolhem instantaneamente.
 - **Multi-Expansão Simultânea:** Permite abrir e fechar várias pastas livremente. O cabeçalho oferece botões rápidos "📂 Expandir Todas" e "📁 Recolher Todas".
 - **Alternância Flexível:** O participante pode alternar com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem pastas) ou para a visão clássica de `📋 Tabela`.
 

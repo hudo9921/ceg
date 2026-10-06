@@ -90,13 +90,18 @@ python manage.py test apps.cegs
 - **Na Criação (`creations.html`):** Opera em memória salvando Base64 Data URI em `items[i].image_base64`. É persistido no storage via `process_image_upload` ao submeter `create_ceg`.
 - **No Detalhe (`detail.html`):** Opera sobre os itens existentes e salva via endpoint AJAX `/ceg/<slug>/item/<id>/crop/` (`CropCEGItemPhotoView`), atualizando o card do slot sem recarregar a página inteira.
 
-### 3.6. Galeria do Participante: Cards Sleeve (2:3) & Grid Flow Contínuo de Pastas
-- **Grid Unificado & Proporção 2:3 Única:** Todas as pastas (fechadas ou abertas) e todos os photocards habitam o mesmo grid responsivo (`aspect-[2/3]`), sem quebras ou estantes separadas.
-- **Dimensões & Escala Espaçosa (3 a 5 Colunas):** O grid utiliza `grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4.5`, garantindo cards grandes (~250-280px de largura e ~375-420px de altura em telas desktop) para que tanto a arte dos photocards quanto todas as informações do card de resumo respirem com generosidade e clareza visual.
+### 3.6. Galeria do Participante: Cards Sleeve & Gatefold Album no Grid Flow Contínuo
+- **Grid Unificado de Alta Densidade (Até 6 Colunas):** O grid utiliza `grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4`, permitindo que os photocards voltem ao formato compacto de binder/fichário real com muitos cards visíveis por linha.
+- **Card da Pasta Fechada (2:3 Sleeve):** Fechada, a pasta ocupa exatamente 1 célula compacta (`aspect-[2/3]`), idêntica a um photocard normal com capa da CEG, integrante/banner, badge de Era e contagem de itens.
+- **Card da Pasta Aberta (Gatefold Album `col-span-2 aspect-[4/3]`):**
+  - Ao abrir, a pasta expande horizontalmente para ocupar **2 colunas** (`col-span-2`).
+  - Graças à proporção matemática `aspect-[4/3]`, a altura vertical do card duplo coincide exatamente com a altura dos cards `aspect-[2/3]` da mesma linha ($2W \div 1.5W = 4/3$), mantendo a linha nivelada sem degraus nem quebras.
+  - **Layout Interno em 2 Colunas Lado a Lado (Sem Abas):**
+    - **Lado Esquerdo (Identidade & Logística):** Badge de Era/Grupo, Título da CEG (2 linhas com link externo), Caixa Internacional de Origem (com bandeira e link direto de rastreio), Status do Envio e Semáforo de Urgência de Prazos.
+    - **Lado Direito (Financeiro & Checkout):** Botão "▲ Fechar" no topo, Extrato completo sem cortes (`📦 Itens`, `✈️ Frete a Pagar`, `🏛️ Taxa a Pagar`, `Total a Pagar nesta CEG`), e Botões de Copiar Pix (ou 3 botões dedicados caso haja chaves distintas).
 - **Expansão em Fluxo Contínuo (Inline Flow Grid):**
-  - Clicar na pasta de uma CEG transforma seu card no **Card de Resumo da CEG** (mesma célula 2:3, com botão "▲ Fechar" e alternância rápida em abas reativas: `💰 Pagamento` com extrato de valores pendentes de Itens/Frete/Taxa e botão Pix sem cortes; e `✈️ Remessa` com detalhes da caixa internacional, rastreio, status do frete e semáforo de prazos).
-  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, **empurrando naturalmente** as próximas pastas e photocards para as colunas e linhas seguintes.
-  - Ao recolher a pasta, os photocards são ocultados e todos os itens posteriores refluem para a esquerda/cima instantaneamente.
+  - Os photocards pertencentes àquela CEG são injetados nas células subsequentes do grid, empurrando naturalmente as próximas pastas e photocards para as colunas e linhas seguintes.
+  - Ao recolher a pasta, ela volta para 1 coluna (`aspect-[2/3]`) e os photocards recolhem instantaneamente.
 - **Multi-Expansão e Controle Rápido:** Várias pastas podem ser abertas ao mesmo tempo, fluindo livremente pelo grid. Botões rápidos no topo permitem "📂 Expandir Todas" e "📁 Recolher Todas" com 1 clique.
 - **Busca com Auto-Expansão:** Digitar na busca textual expande automaticamente as pastas cujos itens correspondem ao termo pesquisado.
 - **Alternância para Modo Completo ou Tabela:** Suporta alternância com 1 clique para `✨ Ver Todos os Photocards Juntos` (modo unificado sem separação de pastas) ou `📋 Tabela`.
