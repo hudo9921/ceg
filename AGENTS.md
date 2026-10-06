@@ -149,7 +149,10 @@ Ao trabalhar em páginas com templates ricos (especialmente `my_claims.html` e `
 1. **Nunca crie blocos monolíticos de mais de 200 linhas** no arquivo principal.
 2. Divida as seções lógicas em `templates/<app>/partials/_<nome_do_componente>.html`.
 3. Utilize `{% include 'app/partials/_componente.html' %}` no arquivo principal.
-4. Mantenha o estado global reativo compartilhado pelo componente pai do **Alpine.js** (`x-data="myClaimsApp()"`).
+4. Mantenha o estado global reativo compartilhado pelo componente pai do **Alpine.js** (`x-data="..."`).
+5. **Parciais de `detail.html`:**
+   - `_detail_header.html`: Capa/Banner Deezer com ambient blur, badges de grupo/era, status da remessa, dados Pix e painel das 3 fases de pagamento (100% Lucide Icons).
+   - `_detail_bulk_toolbar.html`: Barra flutuante (sticky) de ações em lote para staff (pagamentos em massa, alteração de tipos, preço e exclusão com Lucide Icons).
 
 ---
 
