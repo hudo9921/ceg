@@ -31,13 +31,28 @@
 - `_home_app_script.html`: Lógica reativa Alpine.js (`homeApp`) para filtragem in-place sem interromper carrosséis.
 
 ### 2.2. Detalhe da CEG & Claims (`detail.html` — 104 linhas)
-- `_detail_header.html`: Capa panorâmica com ambient blur, status da remessa, dados Pix e painel das 3 fases de pagamento.
+- `_detail_header.html`: Orquestrador da capa panorâmica com ambient blur e dados gerais:
+  - `_detail_header_banner.html`: Capa panorâmica imersiva, sleeve glass gradient e botão de edição.
+  - `_detail_header_info.html`: Títulos, badges de status, botões de ação staff e cartão Pix com 1-clique cópia.
+  - `_detail_header_shipping.html`: Cartão de remessa internacional vinculada e atalhos de rastreio.
+  - `_detail_header_phases.html`: Painel interativo das 3 fases financeiras (Item, Frete Inter, Taxa Aduaneira).
+  - `_detail_header_countdown.html`: Contagens regressivas de abertura, banner de enquete e abertura no Segundo Zero.
+- `_detail_tabs_bar.html`: Abas dinâmicas de cada Set e controle de vagas abertas com badges translúcidos.
+- `_detail_sets_grid.html`: Orquestrador de sets e progresso de ocupação:
+  - `_detail_slot_card.html`: Toploaders 2:3 com efeito acrílico, zoom e seleção interativa.
+  - `_detail_slot_shipping_box.html`: Mini painel tabular de status e rateio de Frete Inter e Taxa.
+  - `_detail_slot_action.html`: Botão de compra/reserva com estado de seleção e badges de quitação.
+  - `_detail_slot_payment_status.html`: Toggles de quitação para staff e visualizador de histórico de claims.
+- `_detail_avulsos_grid.html`: Orquestrador de itens avulsos e exclusivos:
+  - `_detail_avulsos_slot_row.html`: Linha de unidade física com gestão de estoque e reserva.
+- `_detail_polling_grid.html`: Orquestrador da grade de enquete de demanda:
+  - `_detail_polling_card.html`: Card toploader de candidato da enquete com acordeão de auditoria de votos.
+  - `_detail_polling_vote_modal.html`: Barra flutuante de votação múltipla e modal de submissão de votos.
+- `_detail_claim_modal.html`: Orquestrador de checkout e reservas:
+  - `_detail_claim_bar.html`: Barra sticky inferior com contador de photocards selecionados e totalizador.
+  - `_detail_claim_bulk_modal.html`: Modal de carrinho multi-slot com submissão atômica e cópia Pix instantânea.
+  - `_detail_claim_single_modal.html`: Modal de reserva de slot individual com fallback.
 - `_detail_bulk_toolbar.html`: Toolbar flutuante sticky de ações em lote para staff (pagamentos, preços, exclusão e checkout).
-- `_detail_polling_grid.html`: Grade de votação da enquete de demanda com auditoria em microssegundos.
-- `_detail_tabs_bar.html`: Abas dinâmicas de cada Set e controle de vagas abertas.
-- `_detail_sets_grid.html`: Toploaders 2:3 compactados em 5 cards/linha no desktop com zoom e botão universal de compra.
-- `_detail_avulsos_grid.html`: Seção de itens exclusivos com gestão de estoque e unidades físicas.
-- `_detail_claim_modal.html`: Barra flutuante de checkout multi-slot e modal em acrílico com confirmação atômica.
 - `_detail_share_modal.html`: Modal de divulgação de vagas abertas com contagem ao vivo de caracteres Twitter/X.
 - `_detail_admin_modals.html`: Suite completa de modais administrativos (Editar CEG, Prazos/Taxas, Slot, Disputa, Avulsos).
 - `_detail_app_script.html`: Motor Alpine.js (`cegDetailApp`) com carrinho `$store.claimSelection` e contadores.

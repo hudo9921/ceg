@@ -1,6 +1,6 @@
 <!-- ==========================================
      GRADE DE SETS & SLOTS FÍSICOS
-     100% Lucide Icons & Sleeve Card Design
+     100% Lucide Icons & Sleeve Card Design (< 200 linhas)
      ========================================== -->
 <div class="space-y-8">
     {% for set in sets %}
@@ -8,7 +8,7 @@
          class="bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-xl rounded-3xl border border-purple-100/80 dark:border-white/10 overflow-hidden shadow-soft transition-colors">
         
         <!-- Set Header -->
-        <div class="bg-purple-50/70 dark:bg-cyber-elevated/70 px-6 py-4 border-b border-purple-100/80 dark:border-white/10 flex flex-wrap justify-between items-center gap-3">
+        <div class="bg-purple-50/70 dark:bg-white/[0.03] px-6 py-4 border-b border-purple-100/80 dark:border-white/10 flex flex-wrap justify-between items-center gap-3">
             <div class="flex items-center space-x-3">
                 <span class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 text-white font-black text-sm flex items-center justify-center shadow-xs">
                     #{{ set.set_number }}
@@ -22,12 +22,12 @@
             </div>
 
             <div class="flex items-center space-x-3 text-xs">
-                <span class="font-bold text-slate-600 dark:text-slate-300">
+                <span class="font-bold text-slate-600 dark:text-slate-300 font-mono">
                     {{ set.reserved_count }}/{{ set.slots_count }} preenchidos
                 </span>
                 {% if set.is_full %}
                 <span class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 text-white font-black rounded-xl shadow-xs text-xs">
-                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span>Set 100% Fechado</span>
                 </span>
                 {% else %}
@@ -43,9 +43,9 @@
                                     { id: {{ s.id }}, itemDefId: {{ s.item_definition.id }} },
                                 {% endfor %}
                             ])"
-                    class="px-2.5 py-1 bg-purple-100 dark:bg-cyber-elevated text-purple-700 dark:text-cyber-neon hover:bg-purple-200 dark:hover:bg-white/10 rounded-xl border border-purple-200 dark:border-white/10 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs active:scale-95"
+                    class="px-2.5 py-1 bg-purple-100 dark:bg-white/[0.06] text-purple-700 dark:text-pink-300 hover:bg-purple-200 dark:hover:bg-white/10 rounded-xl border border-purple-200 dark:border-white/10 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs active:scale-95"
                     title="Selecionar todos os itens deste Set para ações em lote">
-                    <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="check-square" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span class="hidden sm:inline">Selecionar Set</span>
                 </button>
 
@@ -75,7 +75,7 @@
                             })"
                     class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-800/60 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs active:scale-95"
                     title="Excluir Set #{{ set.set_number }} da CEG">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span class="hidden sm:inline">Excluir Set</span>
                 </button>
                 {% endif %}
@@ -85,422 +85,7 @@
         <!-- Slots Grid (5 Cards por linha no Desktop) -->
         <div class="p-4 sm:p-5 grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 sm:gap-3.5">
             {% for slot in set.slots.all %}
-            <div class="border rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between space-y-2.5 transition-all duration-200
-                    {% if slot.status == 'AVAILABLE' %}
-                        border-slate-200 dark:border-white/10 hover:border-pink-300 dark:hover:border-cyber-neon hover:shadow-md bg-white dark:bg-cyber-surface
-                    {% elif slot.status == 'RESERVED' %}
-                        border-amber-200 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/30
-                    {% elif slot.status == 'PAID' %}
-                        border-blue-200 dark:border-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30
-                    {% else %}
-                        border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 opacity-60
-                    {% endif %}"
-                 x-show="!onlyAvailableSlots || status === 'AVAILABLE'"
-                 x-data="{
-                         slotId: {{ slot.id }},
-                         status: '{{ slot.status }}',
-                         isItemPaid: {{ slot.is_item_paid|yesno:'true,false' }},
-                         isInterPaid: {{ slot.is_frete_inter_paid|yesno:'true,false' }},
-                         isTaxaPaid: {{ slot.is_taxa_aduaneira_paid|yesno:'true,false' }},
-                         loading: false,
-                         onBulkPaymentUpdated(detail) {
-                             if (!detail || !detail.slots) return;
-                             const s = detail.slots.find(item => item.id === this.slotId);
-                             if (s) {
-                                 this.status = s.status;
-                                 this.isItemPaid = s.is_item_paid;
-                                 this.isInterPaid = s.is_frete_inter_paid;
-                                 this.isTaxaPaid = s.is_taxa_aduaneira_paid;
-                             }
-                         },
-                         async toggle(field) {
-                             if (this.loading) return;
-                             this.loading = true;
-                             try {
-                                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
-                                 const res = await fetch('/slots/' + this.slotId + '/toggle-payment/', {
-                                     method: 'POST',
-                                     headers: {
-                                         'Content-Type': 'application/json',
-                                         'X-CSRFToken': csrf
-                                     },
-                                     body: JSON.stringify({ field: field })
-                                 });
-                                 const data = await res.json();
-                                 if (data.success) {
-                                     this.status = data.status;
-                                     this.isItemPaid = data.is_item_paid;
-                                     this.isInterPaid = data.is_frete_inter_paid;
-                                     this.isTaxaPaid = data.is_taxa_aduaneira_paid;
-                                 } else {
-                                     alert(data.message || 'Erro ao alterar status');
-                                 }
-                             } catch(e) {
-                                 alert('Erro de conexão ao alterar status: ' + e);
-                             } finally {
-                                 this.loading = false;
-                             }
-                         }
-                     }" :class="{
-                         'border-slate-200 dark:border-white/10 hover:border-pink-300 dark:hover:border-cyber-neon hover:shadow-md bg-white dark:bg-cyber-surface': status === 'AVAILABLE' && !$store.claimSelection.slots.some(s => s.id === slotId),
-                         'ring-2 ring-pink-500 dark:ring-cyber-neon border-pink-400 bg-pink-50/60 dark:bg-cyber-elevated shadow-md scale-[1.01]': status === 'AVAILABLE' && $store.claimSelection.slots.some(s => s.id === slotId),
-                         'border-amber-300 dark:border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/30 shadow-2xs': status === 'RESERVED',
-                         'border-blue-300 dark:border-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30 shadow-2xs': status === 'PAID',
-                         'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 opacity-60': status === 'CANCELLED',
-                         'cursor-pointer': status === 'AVAILABLE' && !isStandby,
-                        }"
-                        {% if user.is_staff %}@slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"{% endif %}
-                        @bulk-claim-add-selected.window="if ($event.detail.ids.includes(slotId) && status === 'AVAILABLE') {
-                            if (!$store.claimSelection.slots.some(s => s.id === slotId)) {
-                                $store.claimSelection.slots.push({
-                                    id: {{ slot.id }},
-                                    name: '{{ slot.item_definition.name|escapejs }}',
-                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                    setNumber: {{ set.set_number }},
-                                    price: '{{ slot.price|floatformat:2 }}',
-                                    frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
-                                    taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                                });
-                            }
-                        }"
-                        @click="if (!isStandby && status === 'AVAILABLE') {
-                            $store.claimSelection.toggle({
-                                id: {{ slot.id }},
-                                name: '{{ slot.item_definition.name|escapejs }}',
-                                member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                setNumber: {{ set.set_number }},
-                                price: '{{ slot.price|floatformat:2 }}',
-                                frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
-                                taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                            });
-                        }">
-
-                <!-- Top Tag / Member / Item Type -->
-                <div class="flex justify-between items-start gap-1">
-                    <div class="flex items-center gap-1 flex-wrap">
-                        {% if user.is_staff %}
-                        <input type="checkbox" :checked="selectedSlotIds.includes({{ slot.id }})"
-                            @click.stop="toggleSlotSelection({{ slot.id }}, {{ slot.item_definition.id }})"
-                            class="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-2xs"
-                            title="Selecionar para edição ou exclusão em massa">
-                        {% endif %}
-                        {% if slot.item_definition.member_name %}
-                        <span class="text-[11px] font-black text-pink-600 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/70 px-1.5 py-0.5 rounded-md border border-pink-100 dark:border-pink-800/60 shadow-2xs truncate max-w-[85px]">
-                            {{ slot.item_definition.member_name }}
-                        </span>
-                        {% endif %}
-                        <span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if slot.item_definition.item_type == 'POB' or 'pob' in slot.item_definition.tipo_item_nome|lower %}bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60{% elif slot.item_definition.item_type == 'ALBUM' or 'álbum' in slot.item_definition.tipo_item_nome|lower or 'album' in slot.item_definition.tipo_item_nome|lower %}bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700/60{% elif slot.item_definition.item_type == 'INCLUSION' or 'inclus' in slot.item_definition.tipo_item_nome|lower %}bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60{% elif 'lucky' in slot.item_definition.tipo_item_nome|lower or 'fansign' in slot.item_definition.tipo_item_nome|lower %}bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700/60{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %}">
-                            <i data-lucide="tag" class="w-2.5 h-2.5 shrink-0"></i>
-                            <span class="truncate max-w-[70px]">{{ slot.item_definition.tipo_item_nome }}</span>
-                        </span>
-                    </div>
-
-                    <div class="flex items-center gap-1 shrink-0">
-                        {% if user.is_staff %}
-                        <button type="button" @click.stop="openManageSlotModal({
-                                            id: {{ slot.id }},
-                                            itemDefId: {{ slot.item_definition.id }},
-                                            name: '{{ slot.item_definition.name|escapejs }}',
-                                            member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                            itemType: '{{ slot.item_definition.item_type }}',
-                                            tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
-                                            setNumber: {{ set.set_number }},
-                                            price: '{{ slot.price|stringformat:" .2f" }}', status: status,
-                            statusDisplay: status==='PAID' ? 'Confirmado / Pago' : (status==='RESERVED'
-                            ? 'Reservado' : 'Disponível' ), claimedById: '{{ slot.claimed_by.id|default:'' }}' ,
-                            claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}' ,
-                            claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}' ,
-                            isItemPaid: isItemPaid })"
-                            class="w-6 h-6 flex items-center justify-center bg-purple-50 dark:bg-cyber-elevated hover:bg-purple-100 dark:hover:bg-white/10 text-purple-700 dark:text-cyber-neon text-xs rounded-lg border border-purple-200 dark:border-white/10 transition shadow-2xs cursor-pointer active:scale-95"
-                            title="Editar item (tipo, nome, valor) ou gerenciar reserva">
-                            <i data-lucide="pencil" class="w-3 h-3"></i>
-                        </button>
-                        {% endif %}
-                        <div class="text-right">
-                            <span class="text-xs font-black text-slate-900 dark:text-white font-mono whitespace-nowrap">
-                                R$ {{ slot.price|floatformat:2 }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Imagem do Photocard (se houver) -->
-                {% if slot.item_definition.image_url %}
-                <div class="rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 aspect-[2/3] w-full relative group/img cursor-pointer"
-                     @click.stop="openZoom('{{ slot.item_definition.image_url|escapejs }}', '{{ slot.item_definition.name|escapejs }}')"
-                     title="Clique para ver foto ampliada">
-                    <img src="{{ slot.item_definition.image_url }}" alt="{{ slot.item_definition.name }}"
-                         class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
-                    <div class="absolute inset-0 bg-slate-950/50 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-[10px] text-white font-bold gap-1 backdrop-blur-xs">
-                        <i data-lucide="maximize-2" class="w-3 h-3"></i>
-                        <span>Ampliar</span>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Item Name -->
-                <div>
-                    <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-1" title="{{ slot.item_definition.name }}">
-                        {{ slot.item_definition.name }}
-                    </h3>
-                </div>
-
-                <!-- Valores de Frete e Taxa no Card -->
-                <div class="grid grid-cols-2 gap-1.5 p-2 bg-slate-50/80 dark:bg-cyber-elevated/60 rounded-xl border border-slate-200/80 dark:border-white/5 text-[10px]">
-                    <!-- Frete Inter -->
-                    <div class="flex flex-col min-w-0 justify-between">
-                        <div class="flex items-center justify-between gap-1">
-                            <span class="text-[8.5px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 truncate flex items-center gap-0.5">
-                                <i data-lucide="plane" class="w-2.5 h-2.5 shrink-0"></i>
-                                <span>Inter</span>
-                            </span>
-                            <span x-show="isInterPaid"
-                                class="text-[8.5px] font-black text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-1 py-0.5 rounded leading-none whitespace-nowrap shrink-0">
-                                ✔ Paga
-                            </span>
-                            <span x-show="!isInterPaid"
-                                class="text-[8.5px] font-medium text-slate-400 leading-none whitespace-nowrap shrink-0">
-                                Pendente
-                            </span>
-                        </div>
-                        <span class="font-extrabold text-[11px] mt-0.5 font-mono {% if slot.frete_inter is not None and slot.frete_inter > 0 or ceg.frete_inter is not None and ceg.frete_inter > 0 %}text-slate-900 dark:text-white{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
-                            {% if slot.frete_inter is not None and slot.frete_inter > 0 %}
-                            R$ {{ slot.frete_inter|floatformat:2 }}
-                            {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
-                            R$ {{ ceg.frete_inter|floatformat:2 }}
-                            {% elif slot.frete_inter is not None and not ceg.caixa %}
-                            R$ {{ slot.frete_inter|floatformat:2 }}
-                            {% else %}
-                            A definir
-                            {% endif %}
-                        </span>
-                    </div>
-
-                    <!-- Taxa Aduaneira -->
-                    <div class="flex flex-col min-w-0 justify-between border-l border-slate-200 dark:border-white/10 pl-1.5">
-                        <div class="flex items-center justify-between gap-1">
-                            <span class="text-[8.5px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 truncate flex items-center gap-0.5">
-                                <i data-lucide="landmark" class="w-2.5 h-2.5 shrink-0"></i>
-                                <span>Taxa</span>
-                            </span>
-                            <span x-show="isTaxaPaid"
-                                class="text-[8.5px] font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950 px-1 py-0.5 rounded leading-none whitespace-nowrap shrink-0">
-                                ✔ Paga
-                            </span>
-                            <span x-show="!isTaxaPaid"
-                                class="text-[8.5px] font-medium text-slate-400 leading-none whitespace-nowrap shrink-0">
-                                Pendente
-                            </span>
-                        </div>
-                        <span class="font-extrabold text-[11px] mt-0.5 font-mono {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 or ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}text-slate-900 dark:text-white{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
-                            {% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}
-                            R$ {{ slot.taxa_aduaneira|floatformat:2 }}
-                            {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
-                            R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
-                            {% elif slot.taxa_aduaneira is not None and not ceg.caixa %}
-                            R$ {{ slot.taxa_aduaneira|floatformat:2 }}
-                            {% else %}
-                            A definir
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Status / Action Button -->
-                <div class="pt-2 border-t border-slate-100 dark:border-white/5">
-                    {% if slot.claimed_by %}
-                    <!-- Bloco quando RESERVADO -->
-                    <div x-show="status === 'RESERVED'"
-                        class="text-center py-1.5 px-2 bg-amber-100/80 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-500/40 rounded-xl text-amber-900 dark:text-amber-300 text-xs font-semibold">
-                        <span class="font-bold flex items-center justify-center gap-1">
-                            <i data-lucide="lock" class="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0"></i>
-                            <span>Reservado</span>
-                        </span>
-                        <div class="text-[10px] text-amber-700 dark:text-amber-200 truncate font-mono font-bold mt-0.5">
-                            {% if slot.claimed_by.social_handle %}
-                            {{ slot.claimed_by.social_handle }}
-                            {% else %}
-                            {{ slot.claimed_by.display_name }}
-                            {% endif %}
-                        </div>
-                        {% if user.is_staff %}
-                        <button type="button" @click="openManageSlotModal({
-                                                id: {{ slot.id }},
-                                                itemDefId: {{ slot.item_definition.id }},
-                                                name: '{{ slot.item_definition.name|escapejs }}',
-                                                member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                                itemType: '{{ slot.item_definition.item_type }}',
-                                                tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
-                                                setNumber: {{ set.set_number }},
-                                                price: '{{ slot.price|stringformat:" .2f" }}', status: status,
-                            statusDisplay: 'Reservado' , claimedById: '{{ slot.claimed_by.id|default:'' }}' ,
-                            claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}' ,
-                            claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}' ,
-                            isItemPaid: isItemPaid })"
-                            class="mt-1 text-[9px] font-bold text-amber-900 dark:text-amber-300 hover:text-purple-700 dark:hover:text-amber-100 underline flex items-center justify-center gap-0.5 w-full cursor-pointer">
-                            <i data-lucide="refresh-cw" class="w-2.5 h-2.5"></i>
-                            <span>Trocar / Remover</span>
-                        </button>
-                        {% endif %}
-                    </div>
-
-                    <!-- Bloco quando PAGO -->
-                    <div x-show="status === 'PAID'"
-                        class="text-center py-1.5 px-2 bg-blue-100/80 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-500/40 rounded-xl text-blue-900 dark:text-blue-300 text-xs font-semibold">
-                        <span class="font-bold flex items-center justify-center gap-1">
-                            <i data-lucide="check-circle" class="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0"></i>
-                            <span>Confirmado / Pago</span>
-                        </span>
-                        <div class="text-[10px] text-blue-700 dark:text-blue-200 truncate font-mono font-bold mt-0.5">
-                            {% if slot.claimed_by.social_handle %}
-                            {{ slot.claimed_by.social_handle }}
-                            {% else %}
-                            {{ slot.claimed_by.display_name }}
-                            {% endif %}
-                        </div>
-                        {% if user.is_staff %}
-                        <button type="button" @click="openManageSlotModal({
-                                                id: {{ slot.id }},
-                                                itemDefId: {{ slot.item_definition.id }},
-                                                name: '{{ slot.item_definition.name|escapejs }}',
-                                                member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                                itemType: '{{ slot.item_definition.item_type }}',
-                                                tipoItemId: '{{ slot.item_definition.tipo_item_id|default:'' }}',
-                                                setNumber: {{ set.set_number }},
-                                                price: '{{ slot.price|stringformat:" .2f" }}', status: status,
-                            statusDisplay: 'Confirmado / Pago' ,
-                            claimedById: '{{ slot.claimed_by.id|default:'' }}' ,
-                            claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}' ,
-                            claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}' ,
-                            isItemPaid: isItemPaid })"
-                            class="mt-1 text-[9px] font-bold text-blue-900 dark:text-blue-300 hover:text-purple-700 dark:hover:text-blue-100 underline flex items-center justify-center gap-0.5 w-full cursor-pointer">
-                            <i data-lucide="refresh-cw" class="w-2.5 h-2.5"></i>
-                            <span>Trocar / Remover</span>
-                        </button>
-                        {% endif %}
-                    </div>
-
-                    {% else %}
-                    <!-- Slot sem claim (Disponível) -->
-                    <div>
-                        <div x-show="isStandby">
-                            <button type="button" disabled
-                                class="w-full py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[11px] sm:text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1 border border-slate-200 dark:border-white/5">
-                                <i data-lucide="clock" class="w-3 h-3 shrink-0"></i>
-                                <span>Aguarde abertura</span>
-                            </button>
-                        </div>
-                        <div x-show="!isStandby">
-                            {% if logged_participant or user.is_authenticated %}
-                            <!-- Usuário autenticado ou participante logado: indicador de seleção e compra -->
-                            <button type="button"
-                                @click.stop="if (!isStandby) { $store.claimSelection.toggle({
-                                    id: {{ slot.id }},
-                                    name: '{{ slot.item_definition.name|escapejs }}',
-                                    member: '{{ slot.item_definition.member_name|default:''|escapejs }}',
-                                    setNumber: {{ set.set_number }},
-                                    price: '{{ slot.price|floatformat:2 }}',
-                                    frete: '{% if slot.frete_inter is not None and slot.frete_inter > 0 %}{{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
-                                    taxa: '{% if slot.taxa_aduaneira is not None and slot.taxa_aduaneira > 0 %}{{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
-                                }); }"
-                                class="w-full py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95"
-                                :class="$store.claimSelection.slots.some(s => s.id === slotId)
-                                                 ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-xs'
-                                                 : 'bg-slate-100 dark:bg-cyber-elevated text-slate-700 dark:text-slate-200 border border-dashed border-slate-300 dark:border-white/10 hover:border-pink-300 hover:text-pink-600 dark:hover:text-cyber-neon'">
-                                <i :data-lucide="$store.claimSelection.slots.some(s => s.id === slotId) ? 'check' : 'shopping-bag'" class="w-3 h-3 shrink-0"></i>
-                                <span class="truncate" x-text="$store.claimSelection.slots.some(s => s.id === slotId) ? 'Selecionado' : 'Comprar / Reservar'"></span>
-                            </button>
-                            {% else %}
-                            <!-- Visitante não logado: link para login -->
-                            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
-                                class="w-full py-1.5 sm:py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-black rounded-xl transition shadow-xs flex items-center justify-center gap-1 cursor-pointer text-center active:scale-95">
-                                <i data-lucide="log-in" class="w-3 h-3 shrink-0"></i>
-                                <span class="truncate">Entrar p/ Reservar</span>
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Caso o slot passe para PAID ou RESERVED dinamicamente -->
-                    <div x-show="status === 'PAID'"
-                        class="text-center py-1.5 px-2 bg-blue-100/80 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-500/40 rounded-xl text-blue-900 dark:text-blue-300 text-xs font-semibold">
-                        <span class="font-bold flex items-center justify-center gap-1">
-                            <i data-lucide="check-circle" class="w-3 h-3"></i>
-                            <span>Confirmado / Pago</span>
-                        </span>
-                    </div>
-                    <div x-show="status === 'RESERVED'"
-                        class="text-center py-1.5 px-2 bg-amber-100/80 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-500/40 rounded-xl text-amber-900 dark:text-amber-300 text-xs font-semibold">
-                        <span class="font-bold flex items-center justify-center gap-1">
-                            <i data-lucide="lock" class="w-3 h-3"></i>
-                            <span>Reservado</span>
-                        </span>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Bloco de Status de Pagamento & Check Marks -->
-                {% if user.is_staff %}
-                <!-- Check Marks Interativos para o Organizador -->
-                <div class="mt-2 pt-2 border-t border-slate-100 dark:border-white/5 bg-slate-50/80 dark:bg-slate-900/60 -mx-3 -mb-3 sm:-mx-3.5 sm:-mb-3.5 p-2 rounded-b-2xl">
-                    <div class="grid grid-cols-3 gap-1 text-[9px] font-bold">
-                        <button type="button" @click.stop="toggle('item')" :disabled="loading"
-                            :class="isItemPaid ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white dark:bg-cyber-surface text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-emerald-300'"
-                            class="py-1 px-0.5 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                            title="Item: R$ {{ slot.price|floatformat:2 }}">
-                            <span x-text="isItemPaid ? '✔' : '○'"></span>
-                            <span>Item</span>
-                        </button>
-                        <button type="button" @click.stop="toggle('inter')" :disabled="loading"
-                            :class="isInterPaid ? 'bg-sky-600 text-white border-sky-600 shadow-xs' : 'bg-white dark:bg-cyber-surface text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-sky-300'"
-                            class="py-1 px-0.5 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                            title="Frete Internacional">
-                            <span x-text="isInterPaid ? '✔' : '○'"></span>
-                            <span>Inter</span>
-                        </button>
-                        <button type="button" @click.stop="toggle('taxa')" :disabled="loading"
-                            :class="isTaxaPaid ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-cyber-surface text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-purple-300'"
-                            class="py-1 px-0.5 border rounded-lg transition flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50 active:scale-95"
-                            title="Taxa Aduaneira">
-                            <span x-text="isTaxaPaid ? '✔' : '○'"></span>
-                            <span>Taxa</span>
-                        </button>
-                    </div>
-                </div>
-                {% elif slot.claimed_by %}
-                <!-- Badges de Status Informativos para Participantes -->
-                <div class="mt-1 pt-2 border-t border-slate-100 dark:border-white/5 grid grid-cols-3 gap-0.5 text-[9px] font-semibold text-slate-600 dark:text-slate-400 text-center">
-                    <div class="py-0.5 px-0.5 rounded-md bg-slate-50 dark:bg-cyber-elevated border border-slate-100 dark:border-white/5"
-                        :class="isItemPaid ? 'text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50/60 dark:bg-emerald-950/60 border-emerald-100 dark:border-emerald-900/60' : 'text-slate-400'">
-                        <span x-text="isItemPaid ? '✔ Item' : '○ Item'"></span>
-                    </div>
-                    <div class="py-0.5 px-0.5 rounded-md bg-slate-50 dark:bg-cyber-elevated border border-slate-100 dark:border-white/5"
-                        :class="isInterPaid ? 'text-sky-700 dark:text-sky-400 font-bold bg-sky-50/60 dark:bg-sky-950/60 border-sky-100 dark:border-sky-900/60' : 'text-slate-400'">
-                        <span x-text="isInterPaid ? '✔ Inter' : '○ Inter'"></span>
-                    </div>
-                    <div class="py-0.5 px-0.5 rounded-md bg-slate-50 dark:bg-cyber-elevated border border-slate-100 dark:border-white/5"
-                        :class="isTaxaPaid ? 'text-purple-700 dark:text-purple-400 font-bold bg-purple-50/60 dark:bg-purple-950/60 border-purple-100 dark:border-purple-900/60' : 'text-slate-400'">
-                        <span x-text="isTaxaPaid ? '✔ Taxa' : '○ Taxa'"></span>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if user.is_staff %}
-                <!-- Histórico de Claim deste Slot (staff only) -->
-                <template x-if="claimLogsBySlot[{{ slot.id }}] && claimLogsBySlot[{{ slot.id }}].length > 0">
-                    <div class="mt-2 pt-2 border-t border-slate-100 dark:border-white/5 -mx-3 -mb-3 sm:-mx-3.5 sm:-mb-3.5 px-3 pb-2.5 sm:px-3.5 bg-slate-50/60 dark:bg-slate-900/60 rounded-b-2xl flex justify-center">
-                        <button type="button"
-                            @click.stop="openSlotLogsModal({{ slot.id }}, '{{ slot.item_definition.name|escapejs }}', {{ set.set_number }})"
-                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[9px] font-bold text-purple-700 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated hover:bg-purple-100 border border-purple-200 dark:border-white/10 transition cursor-pointer shadow-2xs active:scale-95"
-                            title="Ver histórico de tentativas e disputa de claim">
-                            <i data-lucide="history" class="w-2.5 h-2.5"></i>
-                            <span x-text="'Histórico (' + claimLogsBySlot[{{ slot.id }}].length + ')'"></span>
-                        </button>
-                    </div>
-                </template>
-                {% endif %}
-            </div>
-
+                {% include 'cegs/partials/_detail_slot_card.html' %}
             {% empty %}
             <div class="col-span-full py-8 text-center text-slate-400 dark:text-slate-500 text-sm">
                 Nenhum slot gerado para este Set ainda.

@@ -1,0 +1,133 @@
+<!-- ==========================================
+     HEADER DA CEG: AS 3 FASES DE PAGAMENTO
+     Acrílico Bipolar com Semáforo de Prazos & Ações Staff
+     ========================================== -->
+<div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-purple-800/40 shadow-sm space-y-3">
+    <!-- Barra Superior: Título & Ações Rápidas de Staff -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-800/60 pb-3">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300">
+                <i data-lucide="credit-card" class="w-4 h-4" stroke-width="1.75"></i>
+            </div>
+            <div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-purple-200">
+                    Etapas de Pagamento da CEG (3 Fases)
+                </h3>
+                <p class="text-[11px] text-slate-300">Acompanhe os prazos e valores de cada etapa desta compra em grupo.</p>
+            </div>
+        </div>
+
+        {% if user.is_staff %}
+        <!-- Ações Administrativas Rápidas para Staff -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <a href="{% url 'ceg_bulk_allocator' slug=ceg.slug %}"
+               class="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black rounded-xl transition shadow flex items-center gap-1 cursor-pointer active:scale-95"
+               title="Alocar Joiners em Massa para sets subsequentes">
+                <i data-lucide="users" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                <span>Alocar Joiners</span>
+            </a>
+            <button type="button" @click="openLogsModal()"
+                    class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl transition shadow flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="Ver auditoria de concorrência e fila de espera">
+                <i data-lucide="list-ordered" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                <span>Fila & Logs</span>
+            </button>
+            <button type="button" @click="feeModalOpen = true"
+                    class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="Atualizar valores e prazos">
+                <i data-lucide="receipt" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                <span>Taxas & Prazos</span>
+            </button>
+            <button type="button" @click="openDeleteCegModal()"
+                    class="px-2.5 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 text-xs font-bold rounded-xl transition border border-rose-700/50 flex items-center gap-1 cursor-pointer active:scale-95"
+                    title="Excluir esta CEG permanentemente">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Grade das 3 Fases de Pagamento -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <!-- Fase 1: Item / Photocard -->
+        <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-pink-300 tracking-wider">1. Pagamento do Item</span>
+                <span class="text-[9px] bg-pink-500/20 text-pink-200 font-bold px-1.5 py-0.5 rounded">Fase 1</span>
+            </div>
+            <div class="text-xs text-slate-300 font-medium">
+                Valor individual de cada slot / photocard
+            </div>
+            <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                {% if ceg.prazo_pagamento_item %}
+                <span class="text-amber-300 flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3 text-amber-400" stroke-width="1.75"></i>
+                    <span>Prazo: {{ ceg.prazo_pagamento_item|date:"d/m/Y às H:i" }}</span>
+                </span>
+                {% else %}
+                <span class="text-slate-400 font-normal">Sem prazo limite estipulado</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Fase 2: Frete Internacional -->
+        <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-sky-300 tracking-wider">2. Frete Internacional</span>
+                <span class="text-[9px] bg-sky-500/20 text-sky-200 font-bold px-1.5 py-0.5 rounded">Fase 2</span>
+            </div>
+            <div class="text-sm font-black text-white font-mono">
+                {% if ceg.has_multiple_frete_rates %}
+                <span>R$ {{ ceg.min_frete_inter|floatformat:2 }} ~ R$ {{ ceg.max_frete_inter|floatformat:2 }}</span>
+                <span class="block text-[10px] font-medium text-sky-200/90 mt-0.5 font-sans">Valores variados por tipo</span>
+                {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}
+                R$ {{ ceg.frete_inter|floatformat:2 }}
+                {% elif ceg.frete_inter is not None and not ceg.caixa %}
+                R$ {{ ceg.frete_inter|floatformat:2 }}
+                {% else %}
+                <span class="text-slate-400 text-xs font-normal font-sans">Aguardando pesagem da remessa</span>
+                {% endif %}
+            </div>
+            <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                {% if ceg.prazo_pagamento_frete_inter %}
+                <span class="text-sky-300 flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3 text-sky-400" stroke-width="1.75"></i>
+                    <span>Prazo: {{ ceg.prazo_pagamento_frete_inter|date:"d/m/Y às H:i" }}</span>
+                </span>
+                {% else %}
+                <span class="text-slate-400 font-normal">Prazo a definir</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Fase 3: Taxa Aduaneira -->
+        <div class="bg-white/5 backdrop-blur-md p-3.5 rounded-xl border border-white/10 space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase text-emerald-300 tracking-wider">3. Taxa Aduaneira</span>
+                <span class="text-[9px] bg-emerald-500/20 text-emerald-200 font-bold px-1.5 py-0.5 rounded">Fase 3</span>
+            </div>
+            <div class="text-sm font-black text-white font-mono">
+                {% if ceg.has_multiple_taxa_rates %}
+                <span>R$ {{ ceg.min_taxa_aduaneira|floatformat:2 }} ~ R$ {{ ceg.max_taxa_aduaneira|floatformat:2 }}</span>
+                <span class="block text-[10px] font-medium text-emerald-200/90 mt-0.5 font-sans">Valores variados por tipo</span>
+                {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}
+                R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                {% elif ceg.taxa_aduaneira is not None and not ceg.caixa %}
+                R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                {% else %}
+                <span class="text-slate-400 text-xs font-normal font-sans">Aguardando Receita Federal</span>
+                {% endif %}
+            </div>
+            <div class="text-[11px] pt-1.5 border-t border-white/10 font-bold">
+                {% if ceg.prazo_pagamento_taxa_aduaneira %}
+                <span class="text-emerald-300 flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3 text-emerald-400" stroke-width="1.75"></i>
+                    <span>Prazo: {{ ceg.prazo_pagamento_taxa_aduaneira|date:"d/m/Y às H:i" }}</span>
+                </span>
+                {% else %}
+                <span class="text-slate-400 font-normal">Prazo a definir</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

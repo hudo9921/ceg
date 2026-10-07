@@ -1,0 +1,49 @@
+<!-- ==========================================
+     HEADER DA CEG: FOTO / BANNER DE CAPA
+     Design Cinematográfico com Ambient Blur & Reflexo Toploader
+     ========================================== -->
+{% if ceg.display_image_url %}
+<div class="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 dark:border-white/10 shadow-lg bg-slate-950 flex items-center justify-center group min-h-[220px] max-h-[480px] transition-all">
+    <!-- 1. Camada de Fundo com Blur Ambiente Profundo -->
+    <img src="{{ ceg.display_image_url }}" alt=""
+         class="absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 dark:opacity-40 scale-125 pointer-events-none select-none transition-transform duration-700 group-hover:scale-130"
+         aria-hidden="true">
+    <div class="absolute inset-0 bg-slate-950/25 pointer-events-none"></div>
+
+    <!-- 2. Reflexo Superior de Proteção Acrílica / Sleeve -->
+    <div class="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/30 to-transparent pointer-events-none z-20 opacity-70"></div>
+
+    <!-- 3. Imagem Principal Nítida e Sem Cortes -->
+    <img src="{{ ceg.display_image_url }}" alt="{{ ceg.title }}"
+         class="relative z-10 max-h-[480px] w-auto max-w-full object-contain mx-auto select-none drop-shadow-2xl transition-transform duration-500 group-hover:scale-[1.01]">
+
+    <!-- 4. Gradiente de Fusão Inferior para Contraste -->
+    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent pointer-events-none z-20"></div>
+
+    <!-- 5. Barra Inferior Sobreposta no Banner -->
+    <div class="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-5 sm:right-5 flex items-end justify-between gap-2 z-30">
+        <div class="text-white drop-shadow-md">
+            <span class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl bg-black/60 dark:bg-black/80 backdrop-blur-md border border-white/20 shadow-xs">
+                <i data-lucide="disc" class="w-3.5 h-3.5 text-pink-400" stroke-width="1.75"></i>
+                <span>{{ ceg.era.group.name }} &bull; {{ ceg.era.name }}</span>
+            </span>
+        </div>
+        {% if user.is_staff %}
+        <button type="button" @click="editCegModalOpen = true"
+                class="px-3.5 py-1.5 bg-black/75 hover:bg-black text-white text-xs font-bold rounded-xl backdrop-blur-md shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer border border-white/25 active:scale-95">
+            <i data-lucide="image" class="w-3.5 h-3.5 text-pink-400" stroke-width="1.75"></i>
+            <span>Alterar Foto</span>
+        </button>
+        {% endif %}
+    </div>
+</div>
+{% elif user.is_staff %}
+<!-- Estado Vazio para Staff: Adicionar Foto -->
+<div @click="editCegModalOpen = true"
+     class="w-full py-8 border-2 border-dashed border-pink-200 hover:border-pink-400 dark:border-white/10 dark:hover:border-pink-500/50 bg-pink-50/40 hover:bg-pink-50/80 dark:bg-white/[0.02] dark:hover:bg-white/[0.05] rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-center gap-2.5 text-xs font-bold text-pink-600 dark:text-pink-400 cursor-pointer transition shadow-2xs">
+    <div class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/60 flex items-center justify-center text-pink-600 dark:text-pink-400">
+        <i data-lucide="image-plus" class="w-5 h-5" stroke-width="1.75"></i>
+    </div>
+    <span>Adicionar Foto / Banner de Capa para esta CEG</span>
+</div>
+{% endif %}

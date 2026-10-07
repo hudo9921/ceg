@@ -1,0 +1,177 @@
+<!-- ==========================================
+     MODAL DE RESERVA INDIVIDUAL (SINGLE-SLOT FALLBACK)
+     Reserva Rápida de 1 Photocard (< 200 linhas)
+     ========================================== -->
+<div x-show="modalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+    @keydown.escape.window="closeClaimModal()">
+
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl max-w-2xl sm:max-w-3xl w-full p-6 sm:p-7 shadow-2xl space-y-4 transform transition-all max-h-[92vh] flex flex-col border border-slate-100 dark:border-white/10"
+        @click.away="closeClaimModal()">
+
+        <!-- Header do Modal -->
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-white/10 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300 flex items-center justify-center text-lg font-black border border-pink-100 dark:border-pink-800/60 shadow-2xs">
+                    <i data-lucide="zap" class="w-5 h-5" stroke-width="1.75"></i>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300">
+                            Confirmar Reserva
+                        </span>
+                        <span class="text-xs font-bold text-slate-400 dark:text-slate-500"
+                            x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber : ''"></span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight mt-0.5"
+                        x-text="selectedSlot ? selectedSlot.name : ''"></h3>
+                </div>
+            </div>
+            <button type="button" @click="closeClaimModal()"
+                class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm font-bold flex items-center justify-center transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
+            </button>
+        </div>
+
+        <!-- Corpo Rolável -->
+        <div class="overflow-y-auto pr-1 sm:pr-2 space-y-4 flex-1">
+            <!-- Valores das Fases + Alerta -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div class="md:col-span-7 grid grid-cols-3 gap-2 p-2 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/5 text-center text-xs">
+                    <div class="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase">1. Item</span>
+                        <span class="font-black text-slate-900 dark:text-white text-xs sm:text-sm font-mono"
+                            x-text="selectedSlot ? 'R$ ' + selectedSlot.price : ''"></span>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                        <span class="block text-[10px] font-bold text-sky-500 uppercase">2. Inter</span>
+                        <span class="font-black text-sky-900 dark:text-sky-300 text-xs sm:text-sm font-mono"
+                            x-text="selectedSlot && selectedSlot.frete ? 'R$ ' + selectedSlot.frete : 'A definir'"></span>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                        <span class="block text-[10px] font-bold text-purple-500 uppercase">3. Taxa</span>
+                        <span class="font-black text-purple-900 dark:text-purple-300 text-xs sm:text-sm font-mono"
+                            x-text="selectedSlot && selectedSlot.taxa ? 'R$ ' + selectedSlot.taxa : 'A definir'"></span>
+                    </div>
+                </div>
+
+                <div class="md:col-span-5 p-3 bg-pink-50 dark:bg-pink-950/40 border border-pink-100/90 dark:border-pink-800/50 rounded-2xl text-pink-900 dark:text-pink-300 text-xs flex items-center gap-2.5">
+                    <i data-lucide="zap" class="w-5 h-5 text-pink-500 shrink-0" stroke-width="1.75"></i>
+                    <p class="text-[11px] leading-snug">
+                        <strong>Slot único!</strong> O primeiro a confirmar garante a reserva no sistema.
+                    </p>
+                </div>
+            </div>
+
+            {% if user.is_staff %}
+            <!-- Admin: Escolher Participante -->
+            <div class="p-3 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 rounded-2xl space-y-1.5">
+                <span class="text-xs font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
+                    <span>Modo Organizador (Admin)</span>
+                </span>
+                <select @change="selectParticipantForClaim($event.target.value)"
+                    class="w-full bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white cursor-pointer">
+                    <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                    <template x-for="p in allParticipants" :key="p.id">
+                        <option :value="p.id" x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp"></option>
+                    </template>
+                </select>
+            </div>
+            {% elif logged_participant %}
+            <!-- Participante Logado -->
+            <div class="p-3 bg-pink-50/80 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800/60 rounded-2xl space-y-1">
+                <span class="text-[11px] font-black text-pink-900 dark:text-pink-300 uppercase flex items-center gap-1">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-pink-600" stroke-width="1.75"></i>
+                    <span>Reservando com sua Conta: {{ logged_participant.name }} ({{ logged_participant.formatted_phone }})</span>
+                </span>
+            </div>
+            {% endif %}
+
+            <!-- Formulário -->
+            <form id="claimSlotForm" @submit.prevent="submitClaimForm()" class="space-y-3">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nome Completo *</label>
+                        <input type="text" name="name" required x-model="formName" placeholder="Ex: Beatriz Silva"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Apelido (opcional)</label>
+                        <input type="text" name="username" x-model="formUsername" placeholder="Ex: Bia"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">WhatsApp (com DDD) *</label>
+                        <input type="tel" name="whatsapp" required x-model="formWhatsapp" placeholder="Ex: 11999998888"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">@ Twitter ou Instagram</label>
+                        <input type="text" name="social_handle" x-model="formSocial" placeholder="Ex: @jihyolover"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observações (opcional)</label>
+                        <textarea id="claimNotesField" name="notes" rows="2" placeholder="Alguma observação para o organizador?"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"></textarea>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Painel de Resultado -->
+            <div x-show="claimResult" x-cloak class="mt-2">
+                <template x-if="claimResult && claimResult.ok">
+                    <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl space-y-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" stroke-width="1.75"></i>
+                            <span class="font-black text-emerald-900 dark:text-emerald-200 text-sm">Reserva Confirmada!</span>
+                        </div>
+                        <p class="text-xs text-emerald-800 dark:text-emerald-300 leading-snug" x-text="claimResult.message"></p>
+                        <template x-if="claimResult.pixKey">
+                            <div class="mt-2 p-3 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/60 rounded-xl space-y-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Chave Pix para pagamento:</span>
+                                <div class="font-mono text-xs sm:text-sm font-black text-slate-900 dark:text-white break-all" x-text="claimResult.pixKey"></div>
+                                <button type="button" @click="navigator.clipboard.writeText(claimResult.pixKey); alert('Chave Pix copiada!')"
+                                    class="mt-1 text-[11px] text-pink-700 dark:text-pink-300 hover:underline font-bold cursor-pointer flex items-center gap-1">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                                    <span>Copiar Pix</span>
+                                </button>
+                            </div>
+                        </template>
+                        <button type="button" @click="window.location.reload()"
+                            class="w-full mt-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md">
+                            <span>Ver minha reserva</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.75"></i>
+                        </button>
+                    </div>
+                </template>
+                <template x-if="claimResult && !claimResult.ok">
+                    <div class="p-4 bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-800/60 rounded-2xl">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500" stroke-width="1.75"></i>
+                            <span class="font-black text-rose-900 dark:text-rose-200 text-sm">Erro na Reserva</span>
+                        </div>
+                        <p class="text-xs text-rose-800 dark:text-rose-300" x-text="claimResult.message"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3 flex-shrink-0">
+            <button type="button" @click="closeClaimModal()" :disabled="claimLoading"
+                class="px-5 py-2.5 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50">
+                Cancelar
+            </button>
+            <button type="button" @click="submitClaimForm()"
+                :disabled="claimLoading || (claimResult && claimResult.ok)"
+                class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95">
+                <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin" x-show="claimLoading"></i>
+                <i data-lucide="check" class="w-3.5 h-3.5" stroke-width="1.75" x-show="!claimLoading"></i>
+                <span x-text="claimLoading ? 'Processando...' : 'Confirmar Reserva Única'"></span>
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,162 @@
+<!-- ==========================================
+     MODAL DE CHECKOUT MULTI-SLOT (BULK CLAIM)
+     Confirmação Atômica com Proteção Concorrente (< 200 linhas)
+     ========================================== -->
+<div x-show="$store.claimSelection.modalOpen" x-cloak
+    class="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
+    @keydown.escape.window="$store.claimSelection.modalOpen = false; closeBulkClaimModal()">
+    <div class="bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 w-full sm:max-w-lg sm:rounded-3xl shadow-2xl overflow-hidden transition-all"
+        @click.away="$store.claimSelection.modalOpen = false; closeBulkClaimModal()"
+        x-data="{ pixCopied: false }">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-pink-600 to-rose-600 dark:from-pink-700 dark:to-purple-800 px-6 py-4 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shadow-2xs">
+                    <i data-lucide="shopping-bag" class="w-5 h-5" stroke-width="1.75"></i>
+                </div>
+                <div>
+                    <h3 class="text-base sm:text-lg font-black leading-tight">Confirmar Reserva / Compra</h3>
+                    <p class="text-xs text-pink-100 dark:text-purple-200"
+                        x-text="participantSelectedSlots.length + ' item' + (participantSelectedSlots.length > 1 ? 's' : '') + ' selecionado' + (participantSelectedSlots.length > 1 ? 's' : '')">
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="$store.claimSelection.modalOpen = false; closeBulkClaimModal()"
+                class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
+            </button>
+        </div>
+
+        <!-- Formulário de Confirmação (quando ainda não submetido) -->
+        <template x-if="!bulkClaimResults">
+            <div class="p-5 sm:p-6 space-y-4">
+                <!-- Lista de itens selecionados -->
+                <div class="space-y-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Itens a Reservar
+                    </span>
+                    <div class="bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/10 divide-y divide-slate-100 dark:divide-white/5 max-h-44 overflow-y-auto">
+                        <template x-for="s in participantSelectedSlots" :key="s.id">
+                            <div class="flex items-center justify-between px-3.5 py-2.5 text-xs">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span
+                                        class="text-[10px] font-black text-pink-600 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/60 px-1.5 py-0.5 rounded-md border border-pink-100 dark:border-pink-800/50 shrink-0"
+                                        x-text="'Set #' + s.setNumber"></span>
+                                    <span class="font-bold text-slate-800 dark:text-slate-100 truncate" x-text="s.name"></span>
+                                    <span class="text-slate-900 dark:text-white font-black font-mono shrink-0" x-text="'R$ ' + s.price"></span>
+                                </div>
+                                <button type="button" @click="toggleParticipantSlot(s)"
+                                    class="text-slate-400 hover:text-rose-500 p-1 shrink-0 ml-2 cursor-pointer transition"
+                                    title="Remover item">
+                                    <i data-lucide="x" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {% if user.is_staff %}
+                <!-- Admin: Selecionar Participante Cadastrado -->
+                <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-700/50 space-y-1">
+                    <span class="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">Modo Admin — Selecionar Joiner</span>
+                    <select @change="selectParticipantForBulk($event.target.value)"
+                        class="w-full bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white cursor-pointer">
+                        <option value="">-- Escolher Participante Cadastrado --</option>
+                        <template x-for="p in allParticipants" :key="p.id">
+                            <option :value="p.id" x-text="p.name + (p.whatsapp ? ' (' + p.whatsapp + ')' : '')"></option>
+                        </template>
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Totais Consolidados -->
+                <div class="p-3.5 bg-pink-50/70 dark:bg-pink-950/30 rounded-2xl border border-pink-200/70 dark:border-pink-800/40 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Total a Pagar (Fase 1)</span>
+                        <span class="text-lg font-black text-pink-600 dark:text-pink-300 font-mono" x-text="'R$ ' + participantSelectedTotal.toFixed(2)"></span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Total de Vagas</span>
+                        <span class="text-sm font-black text-slate-800 dark:text-white font-mono" x-text="participantSelectedSlots.length"></span>
+                    </div>
+                </div>
+
+                <!-- Opções de Envio: Envio Imediato vs Caixinha -->
+                <div class="space-y-2">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Preferência de Envio Nacional
+                    </span>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-1"
+                            :class="bulkEntregaTipo === 'ENVIO' ? 'border-pink-500 bg-pink-50/60 dark:bg-pink-950/40 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]'">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-slate-800 dark:text-white">Envio Imediato</span>
+                                <input type="radio" name="bulk_entrega_tipo" value="ENVIO" x-model="bulkEntregaTipo" class="text-pink-600 focus:ring-pink-500">
+                            </div>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400">Ao chegar no Brasil</span>
+                        </label>
+                        <label class="p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-1"
+                            :class="bulkEntregaTipo === 'CAIXINHA' ? 'border-pink-500 bg-pink-50/60 dark:bg-pink-950/40 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]'">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-slate-800 dark:text-white">Guardar na Caixinha</span>
+                                <input type="radio" name="bulk_entrega_tipo" value="CAIXINHA" x-model="bulkEntregaTipo" class="text-pink-600 focus:ring-pink-500">
+                            </div>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400">Juntar mais compras</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Botão de Confirmação -->
+                <button type="button" @click="submitBulkClaim()"
+                    :disabled="bulkClaimLoading || participantSelectedSlots.length === 0"
+                    class="w-full py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="bulkClaimLoading"></i>
+                    <i data-lucide="check" class="w-4 h-4" stroke-width="1.75" x-show="!bulkClaimLoading"></i>
+                    <span x-text="bulkClaimLoading ? 'Processando Reservas...' : 'Confirmar Reserva de ' + participantSelectedSlots.length + ' Item(ns)'"></span>
+                </button>
+            </div>
+        </template>
+
+        <!-- Resultados Pós-Envio -->
+        <template x-if="bulkClaimResults">
+            <div class="p-5 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-black text-base">
+                    <i data-lucide="check-circle" class="w-5 h-5" stroke-width="1.75"></i>
+                    <span>Reserva Concluída!</span>
+                </div>
+                <div class="divide-y divide-slate-100 dark:divide-white/5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
+                    <template x-for="r in bulkClaimResults" :key="r.slot_id">
+                        <div class="flex items-center justify-between p-3 text-xs">
+                            <span class="font-bold text-slate-800 dark:text-slate-200" x-text="r.name"></span>
+                            <span class="font-bold text-[10px] px-2 py-0.5 rounded-full"
+                                :class="r.success ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'"
+                                x-text="r.message"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Chave Pix para Pagamento Rápido -->
+                <template x-if="bulkClaimSummary && bulkClaimSummary.pix_key">
+                    <div class="p-3.5 bg-sky-50 dark:bg-sky-950/40 rounded-2xl border border-sky-200 dark:border-sky-800/40 space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-sky-800 dark:text-sky-300">Chave Pix da CEG:</span>
+                            <button type="button" @click="navigator.clipboard.writeText(bulkClaimSummary.pix_key); pixCopied = true; setTimeout(() => pixCopied = false, 2000)"
+                                class="text-[11px] font-bold text-sky-700 dark:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer">
+                                <i :data-lucide="pixCopied ? 'check' : 'copy'" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                                <span x-text="pixCopied ? 'Copiado!' : 'Copiar Chave'"></span>
+                            </button>
+                        </div>
+                        <div class="font-mono text-sky-900 dark:text-sky-200 break-all font-bold bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-sky-100 dark:border-white/5 select-all" x-text="bulkClaimSummary.pix_key"></div>
+                    </div>
+                </template>
+
+                <button type="button" @click="$store.claimSelection.modalOpen = false; closeBulkClaimModal(); $nextTick(() => window.location.reload())"
+                    class="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-95 shadow-md">
+                    <i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>
+                    <span>Concluir e Atualizar Página</span>
+                </button>
+            </div>
+        </template>
+    </div>
+</div>

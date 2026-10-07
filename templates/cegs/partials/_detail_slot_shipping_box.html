@@ -1,0 +1,29 @@
+<!-- Resumo de Frete e Taxa do Slot Individual -->
+<div class="grid grid-cols-2 gap-1.5 p-2 bg-slate-50/80 dark:bg-white/[0.03] rounded-xl border border-slate-200/80 dark:border-white/5 text-[10px]">
+    <div class="flex flex-col min-w-0 justify-between">
+        <div class="flex items-center justify-between gap-1">
+            <span class="text-[8.5px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 truncate flex items-center gap-0.5">
+                <i data-lucide="plane" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
+                <span>Inter</span>
+            </span>
+            <span x-show="isInterPaid" class="text-[8.5px] font-black text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 px-1 py-0.5 rounded leading-none whitespace-nowrap">✔ Paga</span>
+            <span x-show="!isInterPaid" class="text-[8.5px] font-medium text-slate-400 leading-none whitespace-nowrap">Pendente</span>
+        </div>
+        <span class="font-extrabold text-[11px] mt-0.5 font-mono {% if slot.frete_inter or ceg.frete_inter %}text-slate-900 dark:text-white{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+            {% if slot.frete_inter %}R$ {{ slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter %}R$ {{ ceg.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}
+        </span>
+    </div>
+    <div class="flex flex-col min-w-0 justify-between border-l border-slate-200 dark:border-white/10 pl-1.5">
+        <div class="flex items-center justify-between gap-1">
+            <span class="text-[8.5px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 truncate flex items-center gap-0.5">
+                <i data-lucide="landmark" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
+                <span>Taxa</span>
+            </span>
+            <span x-show="isTaxaPaid" class="text-[8.5px] font-black text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950 px-1 py-0.5 rounded leading-none whitespace-nowrap">✔ Paga</span>
+            <span x-show="!isTaxaPaid" class="text-[8.5px] font-medium text-slate-400 leading-none whitespace-nowrap">Pendente</span>
+        </div>
+        <span class="font-extrabold text-[11px] mt-0.5 font-mono {% if slot.taxa_aduaneira or ceg.taxa_aduaneira %}text-slate-900 dark:text-white{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+            {% if slot.taxa_aduaneira %}R$ {{ slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}
+        </span>
+    </div>
+</div>

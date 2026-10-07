@@ -1,0 +1,106 @@
+<!-- ==========================================
+     HEADER DA CEG: TÍTULO, BADGES & CARD PIX
+     Soft Y2K e Cyber-Luxury com Cópia Rápida Pix
+     ========================================== -->
+<div class="flex flex-col lg:flex-row justify-between gap-6 items-start">
+    <!-- Coluna da Esquerda: Metadados, Título e Descrição -->
+    <div class="space-y-3.5 max-w-3xl flex-1 w-full">
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- Badge Grupo & Era -->
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-100/90 dark:bg-white/[0.06] text-pink-700 dark:text-pink-300 text-xs font-black rounded-xl uppercase tracking-wider border border-pink-200/70 dark:border-white/10 shadow-2xs">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-500" stroke-width="1.75"></i>
+                <span>{{ ceg.era.group.name }} &bull; {{ ceg.era.name }}</span>
+            </span>
+
+            <!-- Status Operacional da CEG -->
+            {% if ceg.status == 'OPEN' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-black rounded-xl uppercase tracking-wider border border-emerald-200/60 dark:border-emerald-500/30 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Aberta</span>
+            </span>
+            {% elif ceg.status == 'SCHEDULED' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100/80 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-black rounded-xl uppercase tracking-wider border border-amber-200/60 dark:border-amber-500/30 shadow-2xs">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500" stroke-width="1.75"></i>
+                <span>Agendada (Standby)</span>
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black rounded-xl uppercase tracking-wider border border-slate-200 dark:border-white/10 shadow-2xs">
+                <span>{{ ceg.get_status_display }}</span>
+            </span>
+            {% endif %}
+
+            <!-- Badge de Caixa Vinculada (se houver) -->
+            {% if ceg.caixa %}
+            <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}"
+               class="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-100/80 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 text-xs font-black rounded-xl uppercase tracking-wider hover:bg-sky-200/80 dark:hover:bg-sky-900/50 transition border border-sky-200/60 dark:border-sky-500/30 shadow-2xs"
+               title="Remessa internacional vinculada">
+                <i data-lucide="package" class="w-3.5 h-3.5 text-sky-500" stroke-width="1.75"></i>
+                <span>{{ ceg.caixa.nome }}</span>
+            </a>
+            {% endif %}
+
+            <!-- Botões de Ação do Topo -->
+            <div class="flex items-center gap-2 ml-auto flex-wrap">
+                <button type="button" @click="openShareModal()"
+                        class="px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-black rounded-xl transition shadow-xs hover:shadow flex items-center gap-1.5 cursor-pointer select-none active:scale-95"
+                        title="Gerar texto pronto com vagas para redes sociais">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                    <span>Divulgar Vagas</span>
+                </button>
+
+                {% if user.is_staff %}
+                <button type="button" @click="openCropStudioFromDetail()"
+                        class="px-3.5 py-1.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-black rounded-xl transition shadow-xs hover:shadow flex items-center gap-1.5 cursor-pointer active:scale-95"
+                        title="Recortar fotos dos integrantes a partir da imagem desta CEG">
+                    <i data-lucide="scissors" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                    <span>Recortar Fotos</span>
+                </button>
+                <button type="button" @click="editCegModalOpen = true"
+                        class="px-3.5 py-1.5 bg-purple-100 dark:bg-white/[0.06] text-pink-700 dark:text-pink-300 hover:bg-purple-200 dark:hover:bg-white/10 text-xs font-black rounded-xl transition border border-purple-200/80 dark:border-white/10 flex items-center gap-1.5 cursor-pointer active:scale-95">
+                    <i data-lucide="pencil" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                    <span>Editar CEG</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Título Principal da CEG -->
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            {{ ceg.title }}
+        </h1>
+
+        <!-- Descrição / Informações da Compra -->
+        {% if ceg.description %}
+        <p class="text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed whitespace-pre-line pt-1">
+            {{ ceg.description }}
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Coluna da Direita: Card Acrílico de Pagamento Pix -->
+    {% if ceg.pix_key %}
+    <div class="bg-gradient-to-br from-slate-900 via-purple-950/70 to-slate-900 text-white rounded-2xl p-4 sm:p-5 w-full lg:w-80 shadow-md border border-purple-500/30 space-y-3 flex-shrink-0 self-start">
+        <div class="flex justify-between items-center text-xs font-black">
+            <span class="text-slate-400 uppercase tracking-wider text-[10px] font-bold">Chave Pix da CEG</span>
+            <span class="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-400/30 text-[10px] font-mono font-bold">PIX</span>
+        </div>
+        <div>
+            <div class="text-[11px] text-slate-400">Titular / Chave:</div>
+            <div class="font-mono text-xs sm:text-sm font-bold truncate text-pink-300 select-all bg-black/50 px-2.5 py-1.5 rounded-xl border border-white/10 mt-1">
+                {{ ceg.pix_key }}
+            </div>
+        </div>
+        <button type="button" @click="copyPix('{{ ceg.pix_key }}')"
+                class="w-full py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+            <span>Copiar Chave Pix</span>
+        </button>
+        {% if ceg.pix_instructions %}
+        <p class="text-[10px] text-slate-300 leading-snug border-t border-white/10 pt-2 flex items-start gap-1">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-pink-400 shrink-0 mt-0.5" stroke-width="1.75"></i>
+            <span>{{ ceg.pix_instructions }}</span>
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
