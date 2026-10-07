@@ -84,21 +84,24 @@
                 {{ ceg.title }}
             </h3>
 
-            <!-- Integrantes disponíveis (Chips miniaturas + Gatilho Ver Todas) -->
-            <div class="mt-1.5 flex flex-wrap gap-1 items-center overflow-hidden max-h-5">
-                {% for item in ceg.grouped_available_items|slice:":3" %}
-                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-pink-50/80 dark:bg-white/[0.04] text-pink-700 dark:text-pink-300 border border-pink-200/60 dark:border-white/10 truncate max-w-[80px]"
-                          title="{{ item.member_name|default:item.item_name }} ({{ item.sets_text }})">
-                        {{ item.member_name|default:item.item_name }}
-                    </span>
-                {% endfor %}
-                {% if ceg.grouped_available_items|length > 3 %}
+            <!-- Integrantes disponíveis (Chips miniaturas + Gatilho Universal de Vagas) -->
+            <div class="mt-1.5 flex flex-wrap gap-1 items-center overflow-hidden max-h-6">
+                {% for item in ceg.preview_chips %}
                     <button type="button"
                             @click.stop="openBottomSheet({{ ceg.id }})"
-                            title="Ver todos os {{ ceg.grouped_available_items|length }} itens disponíveis nesta CEG"
-                            class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-pink-100 hover:bg-pink-200 dark:bg-pink-950/60 dark:hover:bg-pink-900/80 text-pink-700 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/40 cursor-pointer transition hover:scale-105 active:scale-95 shadow-2xs flex items-center gap-0.5">
-                        <span>+{{ ceg.grouped_available_items|length|add:"-3" }}</span>
-                        <span class="underline">vagas</span>
+                            title="{{ item.display_name|default:item.member_name|default:item.item_name }} ({{ item.sets_text }}) - Clique para ver vagas"
+                            class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-pink-50/80 dark:bg-white/[0.04] hover:bg-pink-100 dark:hover:bg-white/[0.08] text-pink-700 dark:text-pink-300 border border-pink-200/60 dark:border-white/10 truncate max-w-[82px] cursor-pointer transition active:scale-95">
+                        {{ item.display_name|default:item.member_name|default:item.item_name }}
+                    </button>
+                {% endfor %}
+
+                {% if ceg.preview_remaining_count > 0 %}
+                    <button type="button"
+                            @click.stop="openBottomSheet({{ ceg.id }})"
+                            title="Ver todas as {{ ceg.available_slots_count }} vagas disponíveis nesta CEG"
+                            class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-pink-100 hover:bg-pink-200 dark:bg-pink-950/70 dark:hover:bg-pink-900/90 text-pink-700 dark:text-pink-300 border border-pink-200/90 dark:border-pink-800/50 cursor-pointer transition hover:scale-105 active:scale-95 shadow-2xs flex items-center gap-0.5">
+                        <span>+{{ ceg.preview_remaining_count }}</span>
+                        <span class="underline">vaga{{ ceg.preview_remaining_count|pluralize:"s" }}</span>
                     </button>
                 {% endif %}
             </div>

@@ -842,6 +842,28 @@ class CEG(models.Model):
         self._grouped_available_items = value
 
     @property
+    def preview_chips(self) -> list:
+        if not hasattr(self, '_preview_chips'):
+            from apps.cegs.services import enrich_cegs_with_availability
+            enrich_cegs_with_availability([self])
+        return getattr(self, '_preview_chips', self.grouped_available_items[:2])
+
+    @preview_chips.setter
+    def preview_chips(self, value: list):
+        self._preview_chips = value
+
+    @property
+    def preview_remaining_count(self) -> int:
+        if not hasattr(self, '_preview_remaining_count'):
+            from apps.cegs.services import enrich_cegs_with_availability
+            enrich_cegs_with_availability([self])
+        return getattr(self, '_preview_remaining_count', max(0, self.available_slots_count - len(self.preview_chips)))
+
+    @preview_remaining_count.setter
+    def preview_remaining_count(self, value: int):
+        self._preview_remaining_count = value
+
+    @property
     def frete_rates_summary(self):
         """Retorna resumo das taxas de frete internacional configuradas para os slots desta CEG via agregação direta."""
         if not hasattr(self, '_frete_rates_summary'):

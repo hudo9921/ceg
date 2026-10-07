@@ -1208,6 +1208,28 @@ class CEGAvailabilityCardTests(TestCase):
         self.assertEqual(items['Nayeon']['sets_text'], 'Set #1')
         self.assertEqual(items['Momo']['sets_text'], 'Set #2')
 
+    def test_preview_chips_and_remaining_count(self):
+        """Verifica que preview_chips limita a 2 chips e calcula preview_remaining_count com precisão."""
+        from apps.cegs.services import enrich_cegs_with_availability
+        enrich_cegs_with_availability([self.ceg_single])
+
+        self.assertEqual(len(self.ceg_single.preview_chips), 2)
+        self.assertEqual(self.ceg_single.preview_remaining_count, 0)
+
+        # CEG com 3 integrantes disponíveis e 5 slots disponíveis
+        def_sana = CEGItemDefinition.objects.create(
+            ceg=self.ceg_single, name='Photocard Sana', member_name='Sana', default_price=45.00, order_index=3
+        )
+        set3 = CEGSet.objects.create(ceg=self.ceg_single, set_number=3)
+        set3.generate_slots() # slots para Nayeon, Momo e Sana (todos AVAILABLE)
+
+        # Agora temos 2 (dos sets anteriores) + 3 (do set 3) = 5 slots disponíveis
+        enrich_cegs_with_availability([self.ceg_single])
+        self.assertEqual(self.ceg_single.available_slots_count, 5)
+        self.assertEqual(len(self.ceg_single.preview_chips), 2)
+        # 5 slots no total - 2 exibidos no preview = 3 vagas restantes no botão
+        self.assertEqual(self.ceg_single.preview_remaining_count, 3)
+
     def test_varied_price_enrichment(self):
         """Verifica que itens com preços diferentes ativam a flag has_different_prices."""
         from apps.cegs.services import enrich_cegs_with_availability
@@ -1228,27 +1250,21 @@ class CEGAvailabilityCardTests(TestCase):
         self.assertEqual(len(self.ceg_full.grouped_available_items), 0)
 
     def test_home_view_renders_availability_cards(self):
-        """Verifica que a Home renderiza os blocos expansíveis de itens sobrando e os avisos de preço."""
+        """Verifica que a Home renderiza os cards de CEG com chips de integrantes e preço mínimo."""
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
 
-        # Verifica presença de elementos do accordion
-        self.assertIn('Itens sobrando', content)
-        self.assertIn('Ver quais faltam', content)
+        # Verifica presença de integrantes nos chips
+        self.assertIn('Nayeon', content)
+        self.assertIn('Momo', content)
 
-        # CEG de preço único deve exibir o valor
-        self.assertIn('R$ 45,00 cada', content)
+        # Preço formatado deve ser exibido
+        self.assertIn('45.00', content)
 
-        # CEG de preços variados deve exibir instrução para consultar
-        self.assertIn('valores variados', content)
-
-        # Sets das vagas devem ser informados
-        self.assertIn('Set #1', content)
-        self.assertIn('Set #2', content)
-
-        # CEG 100% preenchida
-        self.assertIn('100% preenchida', content)
+        # Vagas disponíveis e modal de consulta rápida
+        self.assertIn('vagas', content)
+        self.assertIn('openBottomSheet', content)
 
     def test_home_only_shows_cegs_with_vacant_items_in_sets(self):
         """

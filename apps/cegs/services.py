@@ -742,6 +742,8 @@ def enrich_cegs_with_availability(cegs_list):
 
         grouped_items.sort(key=lambda x: x['display_name'].lower())
         ceg.grouped_available_items = grouped_items
+        ceg.preview_chips = grouped_items[:2]
+        ceg.preview_remaining_count = max(0, ceg.available_slots_count - len(ceg.preview_chips))
 
         # Dados consolidados para o Gerador de Divulgação (Twitter / WhatsApp / Telegram)
         ceg_share_items = {}
