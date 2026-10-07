@@ -1,25 +1,25 @@
-    <!-- ABORDAGEM 2: TABS DE NAVEGAÇÃO PRINCIPAL -->
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
+    <!-- TABS DE NAVEGAÇÃO PRINCIPAL -->
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 dark:border-white/10 pb-3">
         <div class="flex items-center gap-2 sm:gap-3">
             <button type="button" @click="activeMainTab = 'reservas'"
-                    class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center gap-2 border shadow-xs cursor-pointer select-none"
+                    class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 border shadow-xs cursor-pointer select-none"
                     :class="activeMainTab === 'reservas' 
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-md' 
-                        : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'">
-                <span>📂</span>
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-md' 
+                        : 'bg-white text-slate-600 dark:bg-cyber-surface dark:text-cyber-silver border-slate-200/80 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5'">
+                <i data-lucide="folder" class="w-4 h-4"></i>
                 <span>Minhas Reservas / CEGs</span>
                 <span class="px-2 py-0.5 rounded-full text-[11px] font-bold"
-                      :class="activeMainTab === 'reservas' ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'">
+                      :class="activeMainTab === 'reservas' ? 'bg-white/20 text-white dark:bg-slate-950/20 dark:text-slate-950' : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-cyber-silver'">
                     {{ total_claims_count|add:itens_individuais_count }}
                 </span>
             </button>
 
             <button type="button" @click="activeMainTab = 'caixinha'"
-                    class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center gap-2 border shadow-xs cursor-pointer select-none relative"
+                    class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 border shadow-xs cursor-pointer select-none relative"
                     :class="activeMainTab === 'caixinha' 
                         ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-500 shadow-md shadow-pink-500/20' 
-                        : 'bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-pink-50/50 dark:hover:bg-pink-950/20'">
-                <span>📦</span>
+                        : 'bg-white text-slate-700 dark:bg-cyber-surface dark:text-cyber-silver border-slate-200/80 dark:border-white/10 hover:bg-pink-50/50 dark:hover:bg-pink-950/20'">
+                <i data-lucide="package" class="w-4 h-4"></i>
                 <span>Minha Caixinha / Pedir Envio</span>
                 {% if total_caixinha_disponivel > 0 %}
                 <span class="px-2 py-0.5 rounded-full text-[11px] font-black animate-pulse"
@@ -27,16 +27,15 @@
                     {{ total_caixinha_disponivel }} pronto(s)
                 </span>
                 {% elif pacotes_em_andamento %}
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-cyber-silver">
                     {{ pacotes_em_andamento|length }} envio(s)
                 </span>
                 {% endif %}
             </button>
         </div>
 
-        <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <div class="text-xs text-slate-500 dark:text-cyber-silver font-medium">
             <span x-show="activeMainTab === 'reservas'">Acompanhe suas reservas, claims e pagamentos</span>
             <span x-show="activeMainTab === 'caixinha'">Itens prontos com o organizador e pedidos de envio nacional</span>
         </div>
     </div>
-

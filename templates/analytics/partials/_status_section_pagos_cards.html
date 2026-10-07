@@ -1,0 +1,185 @@
+<!-- GRADE DE CARDS DE SETS PAGOS E TERMINADOS -->
+{% if sets_pagos %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for s in sets_pagos %}
+            <div x-show="isPagoSetVisible(
+                     {{ s.is_terminado|yesno:'true,false' }},
+                     {{ s.has_frete|yesno:'true,false' }},
+                     {{ s.frete_inter_paid|yesno:'true,false' }},
+                     {{ s.frete_inter_pending|yesno:'true,false' }},
+                     {{ s.has_taxa|yesno:'true,false' }},
+                     {{ s.taxa_aduaneira_paid|yesno:'true,false' }},
+                     {{ s.taxa_aduaneira_pending|yesno:'true,false' }}
+                 ) && matchItem('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }}', '{{ s.group_id }}', '{{ s.era_id }}')"
+                 x-transition
+                 class="border rounded-2xl p-4 transition shadow-2xs flex flex-col justify-between space-y-3
+                     {% if s.is_terminado %}bg-gradient-to-br from-amber-50/40 via-yellow-50/20 to-white dark:from-amber-950/20 dark:via-yellow-950/10 dark:to-transparent border-amber-300 dark:border-amber-700/60 ring-1 ring-amber-200 dark:ring-amber-800/40{% else %}bg-emerald-50/15 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-800/40 hover:border-emerald-300 dark:hover:border-emerald-700/60{% endif %}">
+                <!-- Header do Card -->
+                <div class="flex justify-between items-start gap-3">
+                    <div class="flex items-start gap-3 min-w-0">
+                        {% if s.banner_url or s.image_url %}
+                            <img src="{{ s.banner_url|default:s.image_url }}" alt="{{ s.ceg_title }}"
+                                 @click="zoomPhoto = '{{ s.banner_url|default:s.image_url }}'"
+                                 class="w-12 h-12 rounded-xl object-cover border border-emerald-200 dark:border-emerald-800/40 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
+                                 title="Clique para ampliar o banner da CEG" />
+                        {% else %}
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-base flex-shrink-0"
+                                 title="{{ s.group_name }}">
+                                {% if s.is_terminado %}
+                                    <i data-lucide="award" class="w-5 h-5 text-amber-500"></i>
+                                {% else %}
+                                    <i data-lucide="banknote" class="w-5 h-5 text-emerald-600"></i>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300">
+                                    {{ s.group_name }}
+                                </span>
+                                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                    {{ s.era_name }}
+                                </span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                                    Set #{{ s.set_number }}
+                                </span>
+                                {% if s.is_terminado %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-2xs flex items-center gap-1">
+                                        <i data-lucide="award" class="w-3 h-3"></i>
+                                        <span>SET TERMINADO</span>
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                                        ✓ Item Pago
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white mt-1 leading-snug">
+                                {{ s.ceg_clean_title|default:s.ceg_title }}
+                            </h3>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <button type="button"
+                                @click="openEditCegModalById('{{ s.ceg_id }}')"
+                                class="px-2 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs border border-slate-200 dark:border-white/10 transition flex items-center gap-1 cursor-pointer"
+                                title="Editar Informações da CEG">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <a href="/ceg/{{ s.ceg_slug }}/"
+                           class="px-2 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs border border-slate-200 dark:border-white/10 transition flex items-center gap-1 cursor-pointer">
+                            <span>Ver</span>
+                            <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Valores do Set -->
+                <div class="p-2.5 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-white/5 text-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-400 block font-bold uppercase">Valor dos Itens</span>
+                        <span class="font-black text-slate-900 dark:text-white">R$ {{ s.set_total_value|floatformat:2 }}</span>
+                    </div>
+                    <span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-1">
+                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                        <span>100% Quitado</span>
+                    </span>
+                </div>
+
+                <!-- Acompanhamento de Frete Internacional e Taxa Aduaneira -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <!-- Frete Internacional -->
+                    <div class="p-2.5 rounded-xl border flex flex-col justify-between
+                        {% if not s.has_frete %}bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400
+                        {% elif s.frete_inter_paid %}bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200
+                        {% else %}bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200{% endif %}">
+                        <div class="text-[10px] font-bold uppercase flex items-center justify-between gap-1">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="plane" class="w-3 h-3"></i>
+                                <span>Frete Inter</span>
+                            </span>
+                            {% if s.has_frete %}
+                                {% if s.frete_inter_paid %}
+                                    <span class="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-white shadow-2xs">Quitado</span>
+                                {% else %}
+                                    <span class="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-white shadow-2xs">Em Aberto</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="mt-1">
+                            {% if not s.has_frete %}
+                                <span class="text-[11px] font-semibold text-slate-400">Sem frete</span>
+                            {% elif s.frete_inter_paid %}
+                                <span class="font-black text-emerald-700 dark:text-emerald-300 text-xs block">✓ 100% Pago</span>
+                                <span class="text-[10px] text-emerald-600 dark:text-emerald-400">R$ {{ s.frete_inter|floatformat:2 }}/slot</span>
+                            {% else %}
+                                <span class="font-black text-amber-700 dark:text-amber-300 text-xs block">⏰ Pendente</span>
+                                <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">{{ s.frete_inter_paid_slots }}/{{ s.total_slots }} pagos</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Taxa Aduaneira -->
+                    <div class="p-2.5 rounded-xl border flex flex-col justify-between
+                        {% if not s.has_taxa %}bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400
+                        {% elif s.taxa_aduaneira_paid %}bg-purple-50/80 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/40 text-purple-900 dark:text-purple-200
+                        {% else %}bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800/40 text-orange-900 dark:text-orange-200{% endif %}">
+                        <div class="text-[10px] font-bold uppercase flex items-center justify-between gap-1">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="landmark" class="w-3 h-3"></i>
+                                <span>Taxa</span>
+                            </span>
+                            {% if s.has_taxa %}
+                                {% if s.taxa_aduaneira_paid %}
+                                    <span class="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-white shadow-2xs">Quitada</span>
+                                {% else %}
+                                    <span class="text-[8px] font-black uppercase px-1 py-0.2 rounded bg-orange-200 dark:bg-orange-800 text-orange-900 dark:text-white shadow-2xs">Em Aberto</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="mt-1">
+                            {% if not s.has_taxa %}
+                                <span class="text-[11px] font-semibold text-slate-400">Sem taxa</span>
+                            {% elif s.taxa_aduaneira_paid %}
+                                <span class="font-black text-purple-700 dark:text-purple-300 text-xs block">✓ 100% Paga</span>
+                                <span class="text-[10px] text-purple-600 dark:text-purple-400">R$ {{ s.taxa_aduaneira|floatformat:2 }}/slot</span>
+                            {% else %}
+                                <span class="font-black text-orange-700 dark:text-orange-300 text-xs block">⏰ Pendente</span>
+                                <span class="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">{{ s.taxa_paid_slots }}/{{ s.total_slots }} pagos</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Banner de Set Terminado -->
+                {% if s.is_terminado %}
+                    <div class="p-2 bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-950/50 dark:to-yellow-950/40 border border-amber-300/80 dark:border-amber-700/50 rounded-xl text-center text-xs font-black text-amber-950 dark:text-amber-200 flex items-center justify-center gap-1.5 shadow-2xs">
+                        <i data-lucide="award" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span>Set Terminado: Tudo 100% Quitado!</span>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <!-- Empty State quando o filtro em pagos não encontra sets -->
+        <div x-show="hasNoVisiblePagos()"
+             x-cloak
+             class="col-span-full p-8 text-center bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+            <i data-lucide="search" class="w-8 h-8 mx-auto text-slate-400"></i>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum set encontrado para este filtro!</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500">Não há sets com o status de frete ou taxa selecionado no momento.</p>
+            <button type="button"
+                    @click="pagosSubFilter = 'all'"
+                    class="px-4 py-2 bg-slate-900 dark:bg-white/10 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-xs">
+                Mostrar todos os {{ sets_pagos|length }} sets pagos
+            </button>
+        </div>
+    </div>
+{% else %}
+    <div class="p-8 text-center bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2">
+        <i data-lucide="package" class="w-8 h-8 mx-auto text-slate-400"></i>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum set 100% pago cadastrado!</h3>
+        <p class="text-xs text-slate-400 dark:text-slate-500">Assim que todos os itens de um set forem pagos, ele aparecerá aqui com o controle de frete e taxa.</p>
+    </div>
+{% endif %}

@@ -1869,19 +1869,19 @@ class ItemIndividual(models.Model):
             if pac.status == 'ENTREGUE':
                 return {
                     'stage': 5, 'code': 'DELIVERED', 'label': 'Entregue',
-                    'icon': '🎉', 'badge_class': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
+                    'icon': '🎉', 'badge_class': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border dark:border-emerald-500/40',
                     'detail': f'Recebido via {pac.identificador}'
                 }
             elif pac.status == 'ENVIADO':
                 return {
                     'stage': 5, 'code': 'SHIPPED', 'label': 'Enviado',
-                    'icon': '🚚', 'badge_class': 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300',
+                    'icon': '🚚', 'badge_class': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300 dark:border dark:border-blue-500/40',
                     'detail': f'Rastreio: {pac.codigo_rastreio}' if pac.codigo_rastreio else f'Pacote {pac.identificador}'
                 }
             else:
                 return {
                     'stage': 5, 'code': 'PACKAGING', 'label': 'Embalando',
-                    'icon': '📦', 'badge_class': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300',
+                    'icon': '📦', 'badge_class': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border dark:border-indigo-500/40',
                     'detail': f'Em preparação ({pac.identificador})'
                 }
 
@@ -1889,14 +1889,14 @@ class ItemIndividual(models.Model):
         if pode_empacotar:
             return {
                 'stage': 4, 'code': 'READY_CAIXINHA', 'label': 'Na Caixinha',
-                'icon': '📦', 'badge_class': 'bg-pink-100 text-pink-800 dark:bg-pink-950/70 dark:text-pink-300',
+                'icon': '📦', 'badge_class': 'bg-pink-100 text-pink-800 dark:bg-pink-500/20 dark:text-pink-300 dark:border dark:border-pink-500/40',
                 'detail': 'Pronto para solicitar envio nacional'
             }
 
         if not self.produto_pago:
             return {
                 'stage': 1, 'code': 'PENDING_PAYMENT', 'label': 'Aguardando Pagamento',
-                'icon': '⏳', 'badge_class': 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300',
+                'icon': '⏳', 'badge_class': 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 dark:border dark:border-amber-500/40',
                 'detail': f'R$ {self.preco_produto:.2f}' if self.preco_produto else 'Pagar produto'
             }
 
@@ -1905,7 +1905,7 @@ class ItemIndividual(models.Model):
             if caixa.status in ['ENVIADA', 'EM_TRANSITO']:
                 return {
                     'stage': 2, 'code': 'IN_TRANSIT', 'label': 'Em Trânsito Inter',
-                    'icon': '✈️', 'badge_class': 'bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300',
+                    'icon': '✈️', 'badge_class': 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 dark:border dark:border-sky-500/40',
                     'detail': f'Na remessa {caixa.nome}'
                 }
             elif caixa.status in ['NO_BRASIL', 'TRIBUTADA', 'LIBERADA']:
@@ -1914,12 +1914,12 @@ class ItemIndividual(models.Model):
                 if unpaid_frete or unpaid_taxa:
                     return {
                         'stage': 3, 'code': 'CUSTOMS_PENDING', 'label': 'Taxas Pendentes',
-                        'icon': '⚠️', 'badge_class': 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300',
+                        'icon': '⚠️', 'badge_class': 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 dark:border dark:border-purple-500/40',
                         'detail': 'Pagar frete/taxa para liberar'
                     }
                 return {
                     'stage': 3, 'code': 'CUSTOMS_CLEARING', 'label': 'No Brasil (Conferência)',
-                    'icon': '🇧🇷', 'badge_class': 'bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300',
+                    'icon': '🇧🇷', 'badge_class': 'bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300 dark:border dark:border-teal-500/40',
                     'detail': 'Em conferência pela GOM'
                 }
             elif caixa.status in ['ENTREGUE', 'FINALIZADA']:
@@ -1928,31 +1928,31 @@ class ItemIndividual(models.Model):
                 if unpaid_frete or unpaid_taxa:
                     return {
                         'stage': 3, 'code': 'CUSTOMS_PENDING', 'label': 'Taxas Pendentes',
-                        'icon': '⚠️', 'badge_class': 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300',
+                        'icon': '⚠️', 'badge_class': 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 dark:border dark:border-purple-500/40',
                         'detail': 'Pagar frete/taxa para liberar envio'
                     }
                 return {
                     'stage': 4, 'code': 'READY_CAIXINHA', 'label': 'Na Caixinha',
-                    'icon': '📦', 'badge_class': 'bg-pink-100 text-pink-800 dark:bg-pink-950/70 dark:text-pink-300',
+                    'icon': '📦', 'badge_class': 'bg-pink-100 text-pink-800 dark:bg-pink-500/20 dark:text-pink-300 dark:border dark:border-pink-500/40',
                     'detail': 'Pronto para solicitar envio nacional'
                 }
 
         if self.status == 'WAREHOUSE':
             return {
                 'stage': 1, 'code': 'WAREHOUSE', 'label': 'Na Warehouse JP',
-                'icon': '🏢', 'badge_class': 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300',
+                'icon': '🏢', 'badge_class': 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300 dark:border dark:border-blue-500/40',
                 'detail': 'Aguardando consolidação de caixa'
             }
         elif self.status == 'EM_CONSOLIDACAO':
             return {
                 'stage': 1, 'code': 'CONSOLIDATION', 'label': 'Em Consolidação',
-                'icon': '📦', 'badge_class': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300',
+                'icon': '📦', 'badge_class': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border dark:border-indigo-500/40',
                 'detail': 'Montando remessa para envio'
             }
 
         return {
             'stage': 1, 'code': 'COMPRADO', 'label': 'Item Comprado',
-            'icon': '🛒', 'badge_class': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
+            'icon': '🛒', 'badge_class': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border dark:border-emerald-500/40',
             'detail': 'Comprado no Japão / Mercari'
         }
 

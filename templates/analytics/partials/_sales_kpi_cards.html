@@ -1,0 +1,75 @@
+<!-- 4 Cards de Métricas Financeiras Principais (KPIs) -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Faturamento Total das Vendas -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Faturamento Total</span>
+            <span class="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+            </span>
+        </div>
+        <div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                R$ {{ summary.total_sales|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
+                <span>✓ {{ summary.collection_rate }}% recebido</span>
+                <span class="text-slate-400 font-normal">({{ summary.total_claims }} vendas)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recebido (Pago) vs A Receber (Pendente) -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Recebido / Pendente</span>
+            <span class="p-2 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl">
+                <i data-lucide="credit-card" class="w-5 h-5"></i>
+            </span>
+        </div>
+        <div>
+            <div class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
+                R$ {{ summary.total_paid|floatformat:2 }}
+            </div>
+            <div class="text-xs font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                R$ {{ summary.total_pending|floatformat:2 }} a receber
+            </div>
+        </div>
+    </div>
+
+    <!-- Volume de Vendas (Quantidade de Claims) -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Volume de Claims</span>
+            <span class="p-2 bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 rounded-xl">
+                <i data-lucide="flame" class="w-5 h-5"></i>
+            </span>
+        </div>
+        <div>
+            <div class="text-2xl sm:text-3xl font-black text-pink-600 dark:text-pink-400">
+                {{ summary.total_claims }}
+            </div>
+            <div class="text-[11px] text-slate-400 font-semibold mt-0.5">
+                De {{ summary.total_participants }} compradores únicos
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Médio por Venda -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span class="text-xs font-bold uppercase tracking-wider">Ticket Médio</span>
+            <span class="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                <i data-lucide="tag" class="w-5 h-5"></i>
+            </span>
+        </div>
+        <div>
+            <div class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
+                R$ {{ summary.avg_ticket_per_claim|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-slate-400 font-semibold mt-0.5">
+                R$ {{ summary.avg_ticket_per_buyer|floatformat:2 }} por participante
+            </div>
+        </div>
+    </div>
+</div>

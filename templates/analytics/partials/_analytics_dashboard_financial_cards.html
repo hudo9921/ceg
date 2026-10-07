@@ -1,0 +1,102 @@
+<!-- Cartões Financeiros e Potencial de Venda -->
+<div>
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-emerald-500"></i>
+            <span>Faturamento e Potencial de Venda</span>
+        </h2>
+        <span class="text-xs text-slate-400 dark:text-slate-500">Valores em Reais (R$)</span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- 1. Faturado (Confirmado / Pago) -->
+        <div class="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border-2 border-emerald-100 dark:border-emerald-500/20 shadow-sm space-y-2 relative overflow-hidden group hover:border-emerald-300 dark:hover:border-emerald-500/40 transition">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Faturado (Confirmado)</span>
+                <span class="p-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                R$ {{ summary.total_paid|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 font-medium flex items-center gap-1">
+                <i data-lucide="check" class="w-3 h-3 text-emerald-500"></i>
+                <span>Pagamentos Pix confirmados</span>
+            </div>
+            <div class="h-1 bg-emerald-500 rounded-full w-full"></div>
+        </div>
+
+        <!-- 2. Falta Pagar (Pendente) -->
+        <div class="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border-2 border-amber-100 dark:border-amber-500/20 shadow-sm space-y-2 relative overflow-hidden group hover:border-amber-300 dark:hover:border-amber-500/40 transition">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Falta Pagar (Pendente)</span>
+                <span class="p-1.5 bg-amber-50 dark:bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-amber-500 dark:text-amber-400 tracking-tight">
+                R$ {{ summary.total_pending|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-amber-700/80 dark:text-amber-300/80 font-medium flex items-center gap-1">
+                <i data-lucide="hourglass" class="w-3 h-3 text-amber-500"></i>
+                <span>Aguardando comprovante Pix</span>
+            </div>
+            <div class="h-1 bg-amber-500 rounded-full w-full"></div>
+        </div>
+
+        <!-- 3. Já Vendido (Pago + Pendente) -->
+        <div class="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border-2 border-blue-100 dark:border-blue-500/20 shadow-sm space-y-2 relative overflow-hidden group hover:border-blue-300 dark:hover:border-blue-500/40 transition">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Total Já Vendido</span>
+                <span class="p-1.5 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400">
+                    <i data-lucide="tag" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
+                R$ {{ summary.total_sold|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-blue-700/80 dark:text-blue-300/80 font-medium flex items-center gap-1">
+                <i data-lucide="layers" class="w-3 h-3 text-blue-500"></i>
+                <span>Confirmado + Pendente</span>
+            </div>
+            <div class="h-1 bg-blue-500 rounded-full w-full"></div>
+        </div>
+
+        <!-- 4. Para Vender (Restante no Inventário) -->
+        <div class="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm space-y-2 relative overflow-hidden group hover:border-slate-400 dark:hover:border-slate-700 transition">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Para Vender (Livre)</span>
+                <span class="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
+                    <i data-lucide="package" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-700 dark:text-slate-200 tracking-tight">
+                R$ {{ summary.total_remaining_to_sell|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                <i data-lucide="inbox" class="w-3 h-3"></i>
+                <span>{{ summary.available_slots }} slots disponíveis</span>
+            </div>
+            <div class="h-1 bg-slate-300 dark:bg-slate-700 rounded-full w-full"></div>
+        </div>
+
+        <!-- 5. Potencial Total da CEG -->
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 p-5 rounded-2xl border-2 border-purple-200 dark:border-purple-500/30 shadow-sm space-y-2 relative overflow-hidden group hover:border-purple-300 dark:hover:border-purple-500/50 transition">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wide">Potencial Total</span>
+                <span class="p-1.5 bg-purple-100 dark:bg-purple-500/20 rounded-lg text-purple-700 dark:text-purple-400">
+                    <i data-lucide="gem" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-purple-900 dark:text-purple-300 tracking-tight">
+                R$ {{ summary.total_inventory_value|floatformat:2 }}
+            </div>
+            <div class="text-[11px] text-purple-700 dark:text-purple-400/80 font-medium flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3 h-3 text-purple-500"></i>
+                <span>Capacidade 100% dos slots</span>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full w-full"></div>
+        </div>
+    </div>
+</div>

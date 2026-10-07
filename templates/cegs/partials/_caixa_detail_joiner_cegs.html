@@ -1,0 +1,174 @@
+<!-- Visão do Participante: CEGs do Joiner nesta Remessa -->
+{% if participant and participant_cegs %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+            <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="archive" class="w-5 h-5 text-sky-500"></i>
+                <span>Seus Itens &amp; CEGs nesta Remessa</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Acompanhe abaixo os seus slots e itens em cada compra em grupo desta remessa.
+            </p>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        {% for p_ceg in participant_cegs %}
+            <div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm overflow-hidden">
+                <!-- Cabeçalho da CEG do Participante -->
+                <div class="p-5 sm:p-6 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        {% if p_ceg.ceg.display_image_url %}
+                            <img src="{{ p_ceg.ceg.display_image_url }}"
+                                 alt="{{ p_ceg.ceg.title }}"
+                                 @click="openZoom('{{ p_ceg.ceg.display_image_url }}')"
+                                 class="w-14 h-14 object-cover rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:opacity-80 transition shrink-0">
+                        {% else %}
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center text-white text-xl font-black shadow-2xs shrink-0">
+                                <i data-lucide="disc" class="w-7 h-7"></i>
+                            </div>
+                        {% endif %}
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 font-bold rounded-full text-[10px]">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                                    <span>{{ p_ceg.ceg.get_shipping_status_display }}</span>
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                    {{ p_ceg.ceg.era.group.name }}{% if p_ceg.ceg.era.name %} &bull; {{ p_ceg.ceg.era.name }}{% endif %}
+                                </span>
+                            </div>
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                                <a href="{% url 'ceg_detail' slug=p_ceg.ceg.slug %}" class="hover:text-sky-600 dark:hover:text-sky-400 hover:underline" title="{{ p_ceg.ceg.title }}">
+                                    {{ p_ceg.ceg.display_title }}
+                                </a>
+                            </h3>
+                        </div>
+                    </div>
+
+                    <!-- Resumo financeiro desta CEG para o participante -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10">
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Itens</span>
+                            <span class="font-black text-slate-900 dark:text-white font-mono">R$ {{ p_ceg.total_items_pending|floatformat:2 }}</span>
+                        </div>
+                        <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10">
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Frete</span>
+                            <span class="font-black text-sky-600 dark:text-sky-400 font-mono">R$ {{ p_ceg.total_frete_pending|floatformat:2 }}</span>
+                        </div>
+                        <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10">
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Taxa</span>
+                            <span class="font-black text-purple-600 dark:text-purple-400 font-mono">R$ {{ p_ceg.total_taxa_pending|floatformat:2 }}</span>
+                        </div>
+                        <div class="px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800">
+                            <span class="text-[10px] text-pink-600 dark:text-pink-400 uppercase font-bold block">Total CEG</span>
+                            <span class="font-black text-pink-700 dark:text-pink-300 font-mono">R$ {{ p_ceg.total_geral_ceg|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Itens / Slots do Participante nesta CEG -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
+                                <th class="py-3 px-4">Set</th>
+                                <th class="py-3 px-4">Item / Inclusão</th>
+                                <th class="py-3 px-4">Integrante</th>
+                                <th class="py-3 px-4">Preço Item</th>
+                                <th class="py-3 px-4">Frete Inter</th>
+                                <th class="py-3 px-4">Taxa Aduaneira</th>
+                                <th class="py-3 px-4">Envio Nacional</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                            {% for claim in p_ceg.claims %}
+                                <tr class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
+                                    <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-300 font-mono">
+                                        Set {{ claim.slot.set.set_number }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="font-bold text-slate-900 dark:text-white">
+                                            {{ claim.slot.item_definition.name }}
+                                        </div>
+                                        {% if claim.slot.item_definition.tipo_item %}
+                                            <span class="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                                                <i data-lucide="tag" class="w-2.5 h-2.5"></i>
+                                                <span>{{ claim.slot.item_definition.tipo_item.nome }}</span>
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if claim.slot.member %}
+                                            <span class="font-bold text-slate-800 dark:text-slate-200">
+                                                {{ claim.slot.member.name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-slate-400 italic">Sem integrante</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="font-mono font-bold text-slate-900 dark:text-white">
+                                            R$ {{ claim.total_price|floatformat:2 }}
+                                        </div>
+                                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                            {% if claim.status == 'PAID' %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                            {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                            {% if claim.status == 'PAID' %}✓ Pago{% else %}⏳ Pendente{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}
+                                            <div class="font-mono font-bold text-slate-900 dark:text-white">
+                                                R$ {{ claim.slot.frete_inter|floatformat:2 }}
+                                            </div>
+                                            <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                {% if claim.slot.is_frete_inter_paid %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                {% if claim.slot.is_frete_inter_paid %}✓ Pago{% else %}⏳ Pendente{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                                                {% if caixa.prazo_frete %}Isento{% else %}A definir{% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}
+                                            <div class="font-mono font-bold text-slate-900 dark:text-white">
+                                                R$ {{ claim.slot.taxa_aduaneira|floatformat:2 }}
+                                            </div>
+                                            <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                                {% if claim.slot.is_taxa_aduaneira_paid %}bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300
+                                                {% else %}bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300{% endif %}">
+                                                {% if claim.slot.is_taxa_aduaneira_paid %}✓ Paga{% else %}⏳ Pendente{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                                                {% if caixa.status == 'LIBERADA' or caixa.status == 'ENTREGUE' or caixa.status == 'FINALIZADA' %}Isenta{% else %}A definir{% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if claim.slot.pacote_nacional %}
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-300 font-bold text-[11px] font-mono">
+                                                <i data-lucide="package" class="w-3 h-3"></i>
+                                                <span>Pacote #{{ claim.slot.pacote_nacional.id }}</span>
+                                            </span>
+                                        {% else %}
+                                            <span class="text-slate-400 dark:text-slate-500 text-[11px]">
+                                                Aguardando chegada
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

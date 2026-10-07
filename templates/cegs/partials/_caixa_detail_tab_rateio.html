@@ -1,0 +1,176 @@
+<!-- Painel de Rateio e Lançamento de Fretes e Taxas por Tipo de Item -->
+{% if is_staff_user %}
+<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm p-6 sm:p-8 space-y-6" id="painel-rateio">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/10">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <i data-lucide="sliders" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+                <h2 class="text-lg font-black text-slate-900 dark:text-white">
+                    Rateio de Frete Internacional & Taxa Aduaneira por Tipo de Item
+                </h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Declare os prazos gerais de pagamento da remessa e os valores unitários de frete/taxa por tipo de item. Ao lançar, todos os itens individuais e CEGs desta caixa receberão os valores e prazos correspondentes.
+            </p>
+        </div>
+
+        <button type="button" @click="addTipoModalOpen = true"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800 cursor-pointer">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>Novo Tipo de Item</span>
+        </button>
+    </div>
+
+    <form action="{% url 'caixa_distribute_rates' slug=caixa.slug %}" method="POST" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Seção de Prazos Gerais da Caixa (Itens Individuais e CEGs) -->
+        <div class="bg-gradient-to-r from-slate-50 via-blue-50/40 to-purple-50/40 dark:from-cyber-obsidian dark:via-[#1A2035] dark:to-cyber-obsidian p-5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+            <div class="flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i>
+                <div>
+                    <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                        Prazos Gerais de Pagamento da Caixa (Itens Individuais e CEGs)
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                        Os prazos de pagamento são definidos para a remessa como um todo e propagados para todos os compradores desta caixa.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="plane" class="w-3.5 h-3.5 text-sky-500"></i>
+                            <span>Prazo Pagamento do Frete Internacional:</span>
+                        </span>
+                        {% if caixa.prazo_frete %}
+                            <span class="text-[10px] font-bold {% if is_caixa_frete_expired %}text-red-600 dark:text-red-400{% else %}text-sky-600 dark:text-sky-400{% endif %}">
+                                {% if is_caixa_frete_expired %}⚠️ Expirado{% else %}⏰ Em aberto{% endif %}
+                            </span>
+                        {% endif %}
+                    </label>
+                    <input type="datetime-local"
+                           name="caixa_prazo_frete"
+                           value="{{ caixa.prazo_frete|date:'Y-m-d\TH:i' }}"
+                           class="w-full bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 shadow-xs">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="landmark" class="w-3.5 h-3.5 text-purple-500"></i>
+                            <span>Prazo Pagamento da Taxa Aduaneira:</span>
+                        </span>
+                        {% if caixa.prazo_taxa %}
+                            <span class="text-[10px] font-bold {% if is_caixa_taxa_expired %}text-red-600 dark:text-red-400{% else %}text-purple-600 dark:text-purple-400{% endif %}">
+                                {% if is_caixa_taxa_expired %}⚠️ Expirado{% else %}⏰ Em aberto{% endif %}
+                            </span>
+                        {% endif %}
+                    </label>
+                    <input type="datetime-local"
+                           name="caixa_prazo_taxa"
+                           value="{{ caixa.prazo_taxa|date:'Y-m-d\TH:i' }}"
+                           class="w-full bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-purple-500 shadow-xs">
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Valores Unitários por Tipo de Item -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold border-b border-slate-200 dark:border-white/10 pb-2">
+                        <th class="py-2.5 px-3">Tipo de Item</th>
+                        <th class="py-2.5 px-3 text-center">Itens nesta Caixa</th>
+                        <th class="py-2.5 px-3">Frete Inter Unit. (R$)</th>
+                        <th class="py-2.5 px-3">Taxa Aduaneira Unit. (R$)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                    {% for row in item_rates_data %}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                        <i data-lucide="tag" class="w-3 h-3 inline"></i>
+                                        <span>{{ row.tipo.nome }}</span>
+                                    </span>
+                                    {% if row.total_count == 0 %}
+                                        <button type="button" @click="deleteTipo({{ row.tipo.id }}, '{{ row.tipo.nome }}')"
+                                                title="Excluir este tipo de item"
+                                                class="text-slate-300 hover:text-red-500 p-1 rounded-md transition text-xs cursor-pointer">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                {% if row.tipo.descricao %}
+                                    <div class="text-[10px] text-slate-400 mt-0.5">{{ row.tipo.descricao }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3 text-center">
+                                <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold font-mono {% if row.total_count > 0 %}bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+                                    {{ row.total_count }} unid(s)
+                                </span>
+                                {% if row.count_mercari or row.count_cegs %}
+                                    <div class="text-[9px] text-slate-400 mt-0.5">
+                                        {% if row.count_cegs %}{{ row.count_cegs }} em CEG{% endif %}
+                                        {% if row.count_mercari and row.count_cegs %} &bull; {% endif %}
+                                        {% if row.count_mercari %}{{ row.count_mercari }} Mercari{% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="relative w-36">
+                                    <span class="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">R$</span>
+                                    <input type="number" step="0.01" min="0"
+                                           name="frete_unitario_{{ row.tipo.id }}"
+                                           value="{{ row.frete_unitario_str }}"
+                                           placeholder="0.00"
+                                           class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 font-mono">
+                                </div>
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="relative w-36">
+                                    <span class="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">R$</span>
+                                    <input type="number" step="0.01" min="0"
+                                           name="taxa_unitaria_{{ row.tipo.id }}"
+                                           value="{{ row.taxa_unitaria_str }}"
+                                           placeholder="0.00"
+                                           class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-purple-500 font-mono">
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-white/10">
+            <div class="space-y-1">
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    💡 Ao salvar, o sistema atualizará automaticamente todos os itens desta remessa e recalculará os totais da caixa.
+                </p>
+                <div class="flex flex-wrap items-center gap-3 text-xs pt-1">
+                    <span class="text-slate-500 dark:text-slate-400 font-bold">Totais Atuais da Caixa:</span>
+                    <div class="bg-slate-50 dark:bg-cyber-obsidian px-2.5 py-1 rounded-xl border border-slate-200 dark:border-white/10 font-mono">
+                        <span class="text-slate-400 text-[10px] font-bold block">FRETE TOTAL</span>
+                        <span class="font-black text-slate-900 dark:text-white">R$ {{ caixa.frete_inter_total|default:"0.00" }}</span>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-cyber-obsidian px-2.5 py-1 rounded-xl border border-slate-200 dark:border-white/10 font-mono">
+                        <span class="text-slate-400 text-[10px] font-bold block">TAXA TOTAL</span>
+                        <span class="font-black text-slate-900 dark:text-white">R$ {{ caixa.taxa_aduaneira_total|default:"0.00" }}</span>
+                    </div>
+                </div>
+            </div>
+            <button type="submit"
+                    onclick="return confirm('Confirmar o lançamento e rateio desses valores de frete/taxa e prazos para TODOS os itens desta caixa?')"
+                    class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white text-xs font-black shadow-md shadow-sky-500/20 transition cursor-pointer flex items-center justify-center gap-2">
+                <i data-lucide="check-check" class="w-4 h-4"></i>
+                <span>Lançar e Ratear Fretes, Taxas & Prazos nos Itens</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endif %}

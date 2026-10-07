@@ -1,22 +1,36 @@
     <!-- Top Header -->
-    <div
-        class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all duration-300">
         <div class="space-y-1">
-            <span class="text-xs font-bold text-pink-600 uppercase tracking-wide">Painel do Participante</span>
-            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Olá, {{ participant.display_name }}! 👋
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-black text-pink-600 dark:text-pink-400 uppercase tracking-widest bg-pink-50 dark:bg-pink-950/40 px-2.5 py-0.5 rounded-full border border-pink-200/60 dark:border-pink-500/30">
+                Painel do Participante
+            </span>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <span>Olá, {{ participant.display_name }}! 👋</span>
+                <span class="inline-flex items-center justify-center text-pink-500 dark:text-pink-400">
+                    <i data-lucide="sparkles" class="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]"></i>
+                </span>
             </h1>
-            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-1">
-                <span>👤 Nome Completo: <strong>{{ participant.name }}</strong></span>
-                <span>•</span>
-                <span>📱 WhatsApp: <strong>{{ participant.formatted_phone }}</strong></span>
-                <span>•</span>
+            <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-cyber-silver pt-1">
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 dark:text-cyber-silver"></i>
+                    <span>Nome Completo: <strong class="text-slate-800 dark:text-white">{{ participant.name }}</strong></span>
+                </span>
+                <span class="text-slate-300 dark:text-white/20">•</span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 dark:text-cyber-silver"></i>
+                    <span>WhatsApp: <strong class="text-slate-800 dark:text-white">{{ participant.formatted_phone }}</strong></span>
+                </span>
+                <span class="text-slate-300 dark:text-white/20">•</span>
                 {% if participant.social_handle %}
-                <span>@ Rede Social: <strong class="text-pink-600">{{ participant.social_handle }}</strong></span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="at-sign" class="w-3.5 h-3.5 text-pink-500 dark:text-pink-400"></i>
+                    <span>Rede Social: <strong class="text-pink-600 dark:text-pink-400">{{ participant.social_handle }}</strong></span>
+                </span>
                 {% else %}
                 <button type="button" @click="profileModalOpen = true"
-                    class="text-pink-600 hover:text-pink-700 font-semibold inline-flex items-center gap-1 underline underline-offset-2">
-                    + Adicionar @ Twitter/Insta
+                    class="text-pink-600 dark:text-pink-400 hover:text-pink-700 font-semibold inline-flex items-center gap-1 underline underline-offset-2 cursor-pointer transition">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                    <span>Adicionar @ Twitter/Insta</span>
                 </button>
                 {% endif %}
             </div>
@@ -24,13 +38,14 @@
 
         <div class="flex items-center gap-2">
             <button type="button" @click="profileModalOpen = true"
-                class="px-4 py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                <span>✏️</span>
+                class="px-4 py-2 bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/40 dark:hover:bg-pink-900/40 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 <span>Editar Perfil</span>
             </button>
             <a href="{% url 'logout_participant' %}"
-                class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition">
-                Encerrar Sessão
+                class="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-cyber-silver hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                <span>Encerrar Sessão</span>
             </a>
         </div>
     </div>
@@ -38,11 +53,11 @@
     <!-- Banner de Boas-Vindas para Completar Perfil -->
     {% if is_placeholder_name or not participant.social_handle %}
     <div
-        class="bg-gradient-to-r from-pink-50 via-purple-50 to-pink-50 dark:from-[#131B2E] dark:via-[#131B2E] dark:to-[#131B2E] dark:bg-[#131B2E] dark:bg-none border border-pink-200 dark:border-pink-500/30 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        class="bg-gradient-to-r from-pink-50/90 via-purple-50/50 to-pink-50/90 dark:from-cyber-surface dark:via-cyber-surface dark:to-cyber-surface border border-pink-200/90 dark:border-pink-500/30 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div class="flex items-start space-x-3">
             <div
-                class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl flex-shrink-0">
-                👤
+                class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center flex-shrink-0 shadow-xs">
+                <i data-lucide="user-check" class="w-5 h-5"></i>
             </div>
             <div>
                 <h3 class="text-sm font-black text-slate-900 dark:text-white">
@@ -52,7 +67,7 @@
                     Adicione seu @ no Twitter / Instagram
                     {% endif %}
                 </h3>
-                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-0.5">
+                <p class="text-xs text-slate-600 dark:text-cyber-silver leading-relaxed pt-0.5">
                     {% if is_placeholder_name %}
                     Você acessou pelo WhatsApp. Defina seu <strong>Nome Completo</strong> (obrigatório) e seu
                     <strong>Twitter/Instagram</strong> (opcional) para identificação nos photocards e claims.
@@ -64,8 +79,8 @@
             </div>
         </div>
         <button type="button" @click="profileModalOpen = true"
-            class="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5 flex-shrink-0">
-            <span>✏️</span>
+            class="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 dark:bg-pink-500 dark:hover:bg-pink-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
+            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
             <span>{% if is_placeholder_name %}Completar Cadastro{% else %}Adicionar @ Social{% endif %}</span>
         </button>
     </div>
@@ -73,24 +88,24 @@
 
     <!-- Central de Avisos & Notificações do Participante -->
     {% if notifications %}
-    <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 sm:p-6 shadow-xs space-y-4">
         <div
-            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
             <div class="flex items-center gap-2.5">
                 <div
-                    class="w-8 h-8 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-base font-bold shadow-2xs">
-                    📢
+                    class="w-8 h-8 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center shadow-xs">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h2 class="text-base font-black text-slate-900">Avisos & Notificações</h2>
+                        <h2 class="text-base font-black text-slate-900 dark:text-white">Avisos & Notificações</h2>
                         <template x-if="unreadNotificationsCount > 0">
                             <span
-                                class="px-2 py-0.5 bg-red-100 text-red-700 font-black text-[10px] rounded-full uppercase tracking-wider animate-pulse"
+                                class="px-2 py-0.5 bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300 font-black text-[10px] rounded-full uppercase tracking-wider animate-pulse border border-red-200 dark:border-red-800/50"
                                 x-text="unreadNotificationsCount + ' novo(s)'"></span>
                         </template>
                     </div>
-                    <p class="text-xs text-slate-500">
+                    <p class="text-xs text-slate-500 dark:text-cyber-silver">
                         Atualizações sobre compras em grupo, cancelamentos de sets e estornos.
                     </p>
                 </div>
@@ -99,16 +114,17 @@
             <div class="flex items-center gap-2 self-end sm:self-center">
                 <template x-if="unreadNotificationsCount > 0">
                     <button type="button" @click="markAllNotificationsRead()"
-                        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shadow-2xs">
-                        <span>✓</span> Marcar todos como lidos
+                        class="px-3 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5 shadow-xs">
+                        <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                        <span>Marcar todos como lidos</span>
                     </button>
                 </template>
-                <button type="button" @click="notificationsOpen = !notificationsOpen"
-                    class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1">
+                <button type="button" @click="toggleNotifications()"
+                    class="px-3 py-1.5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-cyber-silver font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5">
                     <span
                         x-text="notificationsOpen ? 'Recolher' : 'Expandir (' + {{ notifications|length }} + ')'"></span>
-                    <span class="transition-transform duration-200 text-[10px]"
-                        :class="notificationsOpen ? 'rotate-180' : ''">▼</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"
+                        :class="notificationsOpen ? 'rotate-180' : ''"></i>
                 </button>
             </div>
         </div>
@@ -116,14 +132,16 @@
         <div x-show="notificationsOpen" x-collapse class="space-y-3 pt-1">
             {% for notif in notifications %}
             <div class="p-4 sm:p-5 rounded-2xl border transition-all duration-200 space-y-3"
-                :class="(allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})) ? 'border-slate-200 bg-slate-50/60 opacity-85' : 'border-amber-300 bg-amber-50/40 shadow-xs'">
+                :class="(allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})) ? 'border-slate-200/80 dark:border-white/5 bg-slate-50/60 dark:bg-white/[0.02] opacity-85' : 'border-amber-300 dark:border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20 shadow-xs'">
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                        <span class="text-lg">
-                            {% if notif.notification_type == 'SET_CANCELLED' %}⚠️{% else %}ℹ️{% endif %}
-                        </span>
-                        <h3 class="text-sm font-black text-slate-900">
+                        {% if notif.notification_type == 'SET_CANCELLED' %}
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+                        {% else %}
+                        <i data-lucide="info" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i>
+                        {% endif %}
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white">
                             {{ notif.title }}
                         </h3>
                         <span x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
@@ -132,24 +150,26 @@
                         </span>
                     </div>
 
-                    <div class="flex items-center gap-3 text-xs text-slate-400">
+                    <div class="flex items-center gap-3 text-xs text-slate-400 dark:text-cyber-silver">
                         <span class="text-[11px]">{{ notif.created_at|date:"d/m/Y \à\s H:i" }}</span>
                         <button type="button"
                             x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
                             @click="markNotificationRead({{ notif.id }})"
-                            class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-lg text-[11px] transition shadow-2xs cursor-pointer">
-                            Marcar como lido
+                            class="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 font-bold rounded-lg text-[11px] transition shadow-xs cursor-pointer flex items-center gap-1">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                            <span>Marcar como lido</span>
                         </button>
                         <span x-show="allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
-                            class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                            <span>✓</span> Lido
+                            class="text-[11px] text-slate-400 dark:text-cyber-silver font-medium flex items-center gap-1">
+                            <i data-lucide="check" class="w-3 h-3 text-emerald-500"></i>
+                            <span>Lido</span>
                         </span>
                     </div>
                 </div>
 
                 <!-- Conteúdo da mensagem formatada -->
                 <div
-                    class="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans bg-white/80 p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed font-sans bg-white/80 dark:bg-white/[0.03] p-3.5 rounded-xl border border-slate-200/80 dark:border-white/10 shadow-xs">
                     {{ notif.message }}
                 </div>
             </div>
@@ -162,4 +182,3 @@
     {{ cegs_filter_list|json_script:"cegs-filter-data" }}
     {{ mercari_filter_list|json_script:"mercari-filter-data" }}
     {{ itens_caixinha_prontos|json_script:"caixinha-prontos-data" }}
-

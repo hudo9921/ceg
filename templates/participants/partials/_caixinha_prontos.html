@@ -1,0 +1,190 @@
+    <!-- Header da Caixinha -->
+    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-6 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="space-y-1">
+                <span class="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wide">Logística Nacional & Encomendas</span>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center shadow-xs">
+                        <i data-lucide="package" class="w-4 h-4"></i>
+                    </div>
+                    <span>Minha Caixinha</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-cyber-silver max-w-2xl leading-relaxed">
+                    Aqui ficam guardados seus photocards e itens que já chegaram no Brasil e tiveram todas as taxas quitadas. 
+                    Quando estiver pronto(a) para receber, basta preencher o formulário da GOM e solicitar o envio nacional abaixo.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 flex items-center gap-1.5 shadow-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>{{ total_caixinha_disponivel }} pronto(s) para envio</span>
+                </span>
+                {% if itens_caixinha_bloqueados %}
+                <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60 flex items-center gap-1.5 shadow-xs">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>{{ itens_caixinha_bloqueados|length }} em trânsito/pendência</span>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD DO FORMULÁRIO GOOGLE DA GOM (ENDEREÇO EXTERNO) -->
+    <div class="bg-gradient-to-r from-pink-50/90 via-rose-50/60 to-purple-50/90 dark:from-cyber-surface dark:via-cyber-surface dark:to-cyber-surface rounded-2xl border-2 border-pink-300/80 dark:border-pink-500/40 p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Formulário de Envio Nacional</h3>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                            Etapa Obrigatória
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-cyber-silver max-w-xl leading-relaxed">
+                        Não coletamos dados de endereço nesta plataforma. Para que o organizador possa cotar seu frete e enviar sua encomenda com segurança, acesse o formulário oficial da GOM:
+                    </p>
+                    {% if configuracao_envio.instrucoes_envio %}
+                    <p class="text-[11px] text-slate-500 dark:text-cyber-silver bg-white/70 dark:bg-white/[0.04] p-2.5 rounded-xl border border-pink-200/50 dark:border-white/10 font-medium leading-relaxed flex items-start gap-1.5">
+                        <i data-lucide="info" class="w-3.5 h-3.5 text-pink-500 flex-shrink-0 mt-0.5"></i>
+                        <span><strong>Instruções do Organizador:</strong> {{ configuracao_envio.instrucoes_envio }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="w-full sm:w-auto flex-shrink-0">
+                {% if configuracao_envio.link_formulario_google %}
+                <a href="{{ configuracao_envio.link_formulario_google }}" target="_blank" rel="noopener noreferrer"
+                   class="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs hover:shadow-md transition flex items-center justify-center gap-2 group cursor-pointer select-none">
+                    <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                    <span>Preencher Formulário de Envio (Google Forms)</span>
+                    <i data-lucide="external-link" class="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
+                </a>
+                {% else %}
+                <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 text-center flex items-center gap-1.5">
+                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-500"></i>
+                    <span>Link do formulário ainda não cadastrado pelo organizador.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ITENS PRONTOS PARA SOLICITAÇÃO -->
+    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 sm:p-6 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-bold shadow-xs">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Itens Prontos para Envio</h3>
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px] rounded-full uppercase tracking-wider">
+                            {{ total_caixinha_disponivel }} disponível(is)
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-cyber-silver">
+                        Itens quitados e já presentes no estoque da GOM. Selecione os que deseja agrupar no próximo envio.
+                    </p>
+                </div>
+            </div>
+
+            {% if total_caixinha_disponivel > 0 %}
+            <div class="flex items-center gap-2 self-end sm:self-center">
+                <button type="button" @click="toggleSelectAllCaixinha()"
+                        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+                    <span x-text="selectedCaixinhaUids.length === caixinhaProntos.length ? 'Desmarcar Todos' : 'Selecionar Todos'"></span>
+                </button>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    <span x-text="selectedCaixinhaUids.length"></span> de {{ total_caixinha_disponivel }} selecionado(s)
+                </span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if total_caixinha_disponivel > 0 %}
+        <form method="post" action="{% url 'solicitar_envio_nacional' %}" class="space-y-5">
+            {% csrf_token %}
+            <input type="hidden" name="selected_uids" :value="selectedCaixinhaUids.join(',')">
+
+            <!-- Grid de Itens Prontos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {% for item in itens_caixinha_prontos %}
+                <div class="border rounded-2xl p-3.5 transition cursor-pointer flex items-start gap-3 select-none"
+                     @click="toggleCaixinhaItem('{{ item.uid }}')"
+                     :class="selectedCaixinhaUids.includes('{{ item.uid }}') 
+                         ? 'border-pink-400 bg-pink-50/40 dark:bg-pink-950/20 dark:border-pink-500/50 shadow-xs ring-1 ring-pink-300 dark:ring-pink-500/30' 
+                         : 'border-slate-200/80 dark:border-white/10 bg-white dark:bg-cyber-surface hover:bg-slate-50/60 dark:hover:bg-white/[0.03]'">
+                    
+                    <input type="checkbox" :value="'{{ item.uid }}'"
+                           :checked="selectedCaixinhaUids.includes('{{ item.uid }}')"
+                           @click.stop="toggleCaixinhaItem('{{ item.uid }}')"
+                           class="mt-1 rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
+
+                    <div class="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200/80 dark:border-white/10 bg-slate-100 dark:bg-white/5">
+                        {% if item.imagem %}
+                        <img src="{{ item.imagem }}" alt="{{ item.titulo }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <i data-lucide="package" class="w-6 h-6 text-slate-400 dark:text-cyber-silver"></i>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-1 min-w-0 space-y-1">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="px-1.5 py-0.2 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-cyber-silver text-[10px] font-black rounded uppercase">
+                                {{ item.tipo_item }}
+                            </span>
+                            <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                                <span>Pronto</span>
+                            </span>
+                        </div>
+                        <h4 class="text-xs font-black text-slate-900 dark:text-white truncate" title="{{ item.titulo }}">
+                            {{ item.titulo }}
+                        </h4>
+                        <p class="text-[11px] text-slate-500 dark:text-cyber-silver truncate">
+                            {{ item.origem }}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Campo de Observações do Joiner -->
+            <div class="space-y-1.5 pt-2">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                    Observações ou Instruções para o Envio <span class="text-slate-400 font-normal">(Opcional)</span>
+                </label>
+                <textarea name="observacoes" rows="2"
+                          placeholder="Ex: Juntar com encomenda de outra pessoa, cuidado com photocard frágil, preferência por transportadora, etc."
+                          class="w-full p-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-cyber-surface focus:ring-2 focus:ring-pink-500 focus:outline-none transition"></textarea>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 dark:border-white/10">
+                <p class="text-xs text-slate-500 dark:text-cyber-silver">
+                    Ao solicitar, o pacote será criado com status <strong class="text-slate-700 dark:text-slate-300">Solicitado</strong> e a GOM fará a cotação do frete.
+                </p>
+                <button type="submit"
+                        :disabled="selectedCaixinhaUids.length === 0"
+                        class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Solicitar Envio (<span x-text="selectedCaixinhaUids.length"></span> selecionado(s))</span>
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div class="p-8 text-center text-slate-400 dark:text-cyber-silver space-y-2">
+            <i data-lucide="package-open" class="w-10 h-10 mx-auto text-slate-300 dark:text-white/20 mb-2"></i>
+            <div class="text-sm font-bold text-slate-700 dark:text-slate-300">Sua caixinha não possui itens prontos para empacotar no momento.</div>
+            <p class="text-xs text-slate-400 dark:text-cyber-silver max-w-md mx-auto">
+                Assim que suas compras chegarem ao Brasil e tiverem todas as taxas quitadas, elas aparecerão aqui disponíveis para você solicitar o envio.
+            </p>
+        </div>
+        {% endif %}
+    </div>

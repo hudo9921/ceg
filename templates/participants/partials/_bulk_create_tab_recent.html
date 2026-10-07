@@ -1,0 +1,99 @@
+<!-- ABA 3: PARTICIPANTES CADASTRADOS RECENTEMENTE -->
+<div x-show="activeTab === 'recent'" x-transition class="space-y-6">
+
+    <div class="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <i data-lucide="history" class="w-4 h-4 text-indigo-500"></i>
+                    <span>Últimos Participantes Cadastrados</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Exibindo os participantes mais recentes no sistema com dados de contato direto.
+                </p>
+            </div>
+            <a href="/admin/participants/participant/" target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition border border-slate-200/80 dark:border-slate-700/80">
+                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                <span>Ver Todos no Django Admin</span>
+                <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Nome / Identificação</th>
+                        <th class="px-4 py-3 text-left">Telefone Formatado</th>
+                        <th class="px-4 py-3 text-left">DDI / Origem</th>
+                        <th class="px-4 py-3 text-left">Twitter / X</th>
+                        <th class="px-4 py-3 text-left">Cadastrado em</th>
+                        <th class="px-4 py-3 text-right">Contato</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                    {% for p in recent_participants %}
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-slate-900 dark:text-slate-100">{{ p.name }}</div>
+                            {% if p.username %}
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">@{{ p.username }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-mono font-medium text-slate-800 dark:text-slate-200">
+                            {{ p.formatted_phone }}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if p.whatsapp|slice:":2" == "55" %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded text-[11px] font-bold">
+                                🇧🇷 Brasil (+55)
+                            </span>
+                            {% elif p.whatsapp|slice:":1" == "1" %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 rounded text-[11px] font-bold">
+                                🇺🇸 EUA (+1)
+                            </span>
+                            {% elif p.whatsapp|slice:":2" == "82" %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 rounded text-[11px] font-bold">
+                                🇰🇷 Coreia (+82)
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 rounded text-[11px] font-bold">
+                                🌍 Internacional
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-indigo-600 dark:text-indigo-400">
+                            {% if p.social_handle %}
+                            <a href="https://x.com/{{ p.social_handle|cut:'@' }}" target="_blank" class="hover:underline inline-flex items-center gap-1">
+                                <span>{{ p.social_handle }}</span>
+                                <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-slate-300 dark:text-slate-600 font-normal">Não informado</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-slate-400 dark:text-slate-500 text-[11px]">
+                            {{ p.created_at|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="https://wa.me/{{ p.whatsapp }}" target="_blank"
+                               class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 rounded-lg text-[11px] font-bold transition">
+                                <i data-lucide="message-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                <span>WhatsApp</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                            Nenhum participante cadastrado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

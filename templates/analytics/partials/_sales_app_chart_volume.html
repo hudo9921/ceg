@@ -1,0 +1,80 @@
+<script>
+function renderSalesVolumeChart(app) {
+    const ctx = document.getElementById('salesVolumeChart');
+    if (!ctx) return null;
+    if (app.volumeChart) app.volumeChart.destroy();
+
+    const labels = (app.chartData.monthly && app.chartData.monthly.labels) || [];
+    const claimsCount = (app.chartData.monthly && app.chartData.monthly.claims_count) || [];
+
+    const c2d = ctx.getContext('2d');
+    let gradient = 'rgba(236, 72, 153, 0.15)';
+    if (c2d) {
+        const g = c2d.createLinearGradient(0, 0, 0, 260);
+        g.addColorStop(0, 'rgba(236, 72, 153, 0.35)');
+        g.addColorStop(1, 'rgba(236, 72, 153, 0.01)');
+        gradient = g;
+    }
+
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '# de Vendas (Claims)',
+                    data: claimsCount,
+                    borderColor: '#ec4899',
+                    backgroundColor: gradient,
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ec4899',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    tension: 0.35
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.y || 0;
+                            return 'Volume: ' + val + (val === 1 ? ' venda' : ' vendas');
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { weight: 'bold', size: 11 } }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Qtd Vendas (Claims)',
+                        font: { weight: 'bold', size: 11 }
+                    },
+                    ticks: {
+                        precision: 0,
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            }
+        }
+    });
+}
+</script>

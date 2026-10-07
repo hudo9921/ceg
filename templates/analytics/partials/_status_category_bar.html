@@ -1,0 +1,35 @@
+<!-- BARRA SELETORA DE CATEGORIA (GERAL / CEGS / MERCARI) -->
+<div class="bg-white dark:bg-[#14121B] p-2.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-1.5 overflow-x-auto">
+        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 px-2 flex items-center gap-1.5">
+            <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+            <span>Categoria:</span>
+        </span>
+        <button type="button"
+                @click="setCategory('all')"
+                class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                :class="selectedCategory === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'">
+            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+            <span>Geral (CEGs + Mercari)</span>
+        </button>
+        <button type="button"
+                @click="setCategory('ceg')"
+                class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                :class="selectedCategory === 'ceg' ? 'bg-pink-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Apenas CEGs</span>
+        </button>
+        <button type="button"
+                @click="setCategory('mercari')"
+                class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                :class="selectedCategory === 'mercari' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'">
+            <span>🇯🇵</span>
+            <span>Apenas Caixa Mercari</span>
+        </button>
+    </div>
+    <div class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 px-2">
+        <span x-show="selectedCategory === 'all'">Exibindo CEGs e Remessas Mercari</span>
+        <span x-show="selectedCategory === 'ceg'">Exibindo exclusivamente CEGs</span>
+        <span x-show="selectedCategory === 'mercari'">Exibindo exclusivamente Itens Mercari</span>
+    </div>
+</div>

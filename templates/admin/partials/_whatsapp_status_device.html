@@ -1,0 +1,72 @@
+<!-- Coluna Esquerda: QR Code ou Status Conectado -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <i data-lucide="smartphone" class="w-5 h-5 text-pink-500 stroke-[2]"></i>
+        <span>Status do Aparelho</span>
+    </h2>
+
+    <!-- Estado Conectado -->
+    <div x-show="state === 'open'" class="text-center py-6">
+        <div class="w-20 h-20 mx-auto mb-4 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center border border-emerald-200 dark:border-emerald-800/80 shadow-inner">
+            <i data-lucide="check" class="w-10 h-10 stroke-[2.5]"></i>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 dark:text-white mb-1.5">
+            WhatsApp Conectado e Pronto!
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6 leading-relaxed">
+            O bot está ativo e pronto para disparar códigos OTP de login, notificações de claims e avisos de pagamentos aos joiners.
+        </p>
+
+        <form method="post" onsubmit="return confirm('Tem certeza que deseja desconectar o WhatsApp desta instância?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="logout">
+            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition shadow-2xs cursor-pointer">
+                <i data-lucide="unplug" class="w-4 h-4 stroke-[2]"></i>
+                <span>Desconectar / Trocar de Aparelho</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Estado Aguardando QR Code -->
+    <div x-show="state !== 'open'" class="text-center py-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-pink-600 dark:text-pink-400 mb-2">
+            Escaneie o QR Code abaixo
+        </p>
+
+        <div class="inline-block p-4 bg-white border-2 border-dashed border-pink-300 dark:border-pink-500/50 rounded-2xl shadow-md mb-4 keep-white">
+            <template x-if="qrBase64">
+                <img :src="qrBase64" alt="QR Code WhatsApp" class="w-64 h-64 mx-auto rounded-lg" />
+            </template>
+            <template x-if="!qrBase64">
+                <div class="w-64 h-64 mx-auto flex flex-col items-center justify-center text-slate-400">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-pink-500 mb-2 stroke-[2]"></i>
+                    <span class="text-xs font-medium">Gerando QR Code...</span>
+                </div>
+            </template>
+        </div>
+
+        <!-- Pairing Code (se disponível) -->
+        <template x-if="pairingCode">
+            <div class="mb-4 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Ou conecte por código de pareamento:</span>
+                <span class="text-lg font-mono font-bold tracking-widest text-slate-800 dark:text-slate-100" x-text="pairingCode"></span>
+            </div>
+        </template>
+
+        <!-- Instruções de Conexão -->
+        <div class="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-left border border-slate-200 dark:border-slate-700/80 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+            <p class="font-bold text-slate-800 dark:text-slate-200 mb-1">Como conectar no seu celular:</p>
+            <p>1. Abra o WhatsApp no seu smartphone.</p>
+            <p>2. Toque em <strong>Mais opções</strong> (Android: 3 pontinhos) ou <strong>Configurações</strong> (iPhone).</p>
+            <p>3. Toque em <strong>Aparelhos conectados</strong> &rarr; <strong>Conectar um aparelho</strong>.</p>
+            <p>4. Aponte a câmera para o QR Code acima.</p>
+        </div>
+
+        <div class="mt-4 flex justify-center gap-3">
+            <button @click="refreshStatus()" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition cursor-pointer">
+                <i data-lucide="refresh-cw" :class="loading ? 'animate-spin' : ''" class="w-3.5 h-3.5 stroke-[2]"></i>
+                <span>Atualizar QR Code</span>
+            </button>
+        </div>
+    </div>
+</div>

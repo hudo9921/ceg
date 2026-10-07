@@ -1,0 +1,179 @@
+<tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+    <!-- Data e Hora -->
+    <td class="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+        <span class="font-bold text-slate-800 dark:text-white">{{ log.created_at|date:"d/m/Y" }}</span>
+        <span class="text-slate-400 dark:text-slate-500 block text-[10px]">{{ log.created_at|date:"H:i:s" }}</span>
+    </td>
+
+    <!-- Tipo de Evento com Badge -->
+    <td class="py-3 px-4 whitespace-nowrap">
+        {% if log.event_type == 'ACCOUNT_CREATED' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
+                <i data-lucide="user-plus" class="w-3 h-3"></i>
+                <span>Cadastro</span>
+            </span>
+        {% elif log.event_type == 'CLAIM_SUCCESS' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                <i data-lucide="trophy" class="w-3 h-3"></i>
+                <span>Claim Vencedor</span>
+            </span>
+        {% elif log.event_type == 'CLAIM_ATTEMPT' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                <i data-lucide="clock" class="w-3 h-3"></i>
+                <span>Tentativa Claim</span>
+            </span>
+        {% elif log.event_type == 'CLAIM_CANCELLED' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+                <i data-lucide="x" class="w-3 h-3"></i>
+                <span>Cancelamento</span>
+            </span>
+        {% elif log.event_type == 'PAYMENT_ITEM' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800/40">
+                <i data-lucide="package" class="w-3 h-3"></i>
+                <span>Pagamento Item</span>
+            </span>
+        {% elif log.event_type == 'PAYMENT_FRETE_INTER' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/40">
+                <i data-lucide="plane" class="w-3 h-3"></i>
+                <span>Frete Inter</span>
+            </span>
+        {% elif log.event_type == 'PAYMENT_TAXA' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-yellow-50 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800/40">
+                <i data-lucide="landmark" class="w-3 h-3"></i>
+                <span>Taxa Aduaneira</span>
+            </span>
+        {% elif log.event_type == 'PAYMENT_FRETE_NACIONAL' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                <i data-lucide="truck" class="w-3 h-3"></i>
+                <span>Frete Nacional</span>
+            </span>
+        {% elif log.event_type == 'PACKAGE_REQUESTED' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                <i data-lucide="mail" class="w-3 h-3"></i>
+                <span>Solicitação Envio</span>
+            </span>
+        {% elif log.event_type == 'PACKAGE_SENT' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">
+                <i data-lucide="truck" class="w-3 h-3"></i>
+                <span>Pacote Despachado</span>
+            </span>
+        {% elif log.event_type == 'PACKAGE_DELIVERED' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                <i data-lucide="gift" class="w-3 h-3"></i>
+                <span>Pacote Entregue</span>
+            </span>
+        {% elif log.event_type == 'SLOT_ASSIGNED' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/10">
+                <i data-lucide="link" class="w-3 h-3"></i>
+                <span>Vínculo Slot</span>
+            </span>
+        {% elif log.event_type == 'SLOT_RELEASED' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/10">
+                <i data-lucide="unlock" class="w-3 h-3"></i>
+                <span>Liberação Slot</span>
+            </span>
+        {% else %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                <i data-lucide="settings" class="w-3 h-3"></i>
+                <span>{{ log.get_event_type_display }}</span>
+            </span>
+        {% endif %}
+    </td>
+
+    <!-- Participante -->
+    <td class="py-3 px-4 whitespace-nowrap">
+        {% if log.participant %}
+            <a href="{% url 'consulta_joiner' %}?participant_id={{ log.participant.id }}" class="font-bold text-pink-600 dark:text-pink-400 hover:underline block">
+                {{ log.participant.name }}
+            </a>
+            {% if log.participant.formatted_phone %}
+                <a href="https://wa.me/{{ log.participant.whatsapp }}" target="_blank" class="text-[10px] text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 block">
+                    {{ log.participant.formatted_phone }}
+                </a>
+            {% endif %}
+        {% elif log.participant_name %}
+            <span class="font-bold text-slate-800 dark:text-white block">{{ log.participant_name }}</span>
+            {% if log.participant_phone %}
+                <span class="text-[10px] text-slate-400 dark:text-slate-500 block">{{ log.participant_phone }}</span>
+            {% endif %}
+        {% else %}
+            <span class="text-slate-400 dark:text-slate-600 italic">—</span>
+        {% endif %}
+    </td>
+
+    <!-- Alvo / CEG / Remessa / Pacote -->
+    <td class="py-3 px-4">
+        {% if log.ceg %}
+            <a href="{% url 'ceg_detail' log.ceg.slug %}" class="font-semibold text-slate-800 dark:text-slate-200 hover:text-pink-600 dark:hover:text-pink-400 line-clamp-1 block" title="{{ log.ceg.title }}">
+                {{ log.ceg.title|truncatechars:28 }}
+            </a>
+        {% endif %}
+
+        {% if log.slot %}
+            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">
+                Slot #{{ log.slot.id }} · Set {{ log.slot.set.set_number }} · {{ log.slot.item_definition.name }}
+            </span>
+        {% elif log.item_individual %}
+            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">
+                Mercari #{{ log.item_individual.id }} · {{ log.item_individual.nome }}
+            </span>
+        {% elif log.pacote_nacional %}
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 block w-max">
+                <i data-lucide="package" class="w-3 h-3"></i>
+                <span>Pacote {{ log.pacote_nacional.identificador }}</span>
+            </span>
+        {% elif not log.ceg %}
+            <span class="text-slate-400 dark:text-slate-600 italic text-[11px]">—</span>
+        {% endif %}
+    </td>
+
+    <!-- Ação / Mudança -->
+    <td class="py-3 px-4">
+        <span class="text-xs text-slate-800 dark:text-slate-200 font-medium block">{{ log.action_label }}</span>
+        {% if log.old_value or log.new_value %}
+            <div class="flex items-center gap-1.5 text-[10px] mt-0.5 text-slate-500 dark:text-slate-400">
+                {% if log.old_value %}
+                    <span class="line-through opacity-70">{{ log.old_value }}</span>
+                    <span>➔</span>
+                {% endif %}
+                <span class="font-bold {% if 'pago' in log.new_value|lower %}text-emerald-600 dark:text-emerald-400{% elif 'pendente' in log.new_value|lower %}text-amber-600 dark:text-amber-400{% else %}text-slate-900 dark:text-white{% endif %}">
+                    {{ log.new_value }}
+                </span>
+            </div>
+        {% endif %}
+    </td>
+
+    <!-- Operador / Usuário -->
+    <td class="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400 font-medium">
+        {% if log.actor %}
+            <span class="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-700 dark:text-slate-300">
+                <i data-lucide="shield" class="w-3 h-3 text-pink-500"></i>
+                <span>{{ log.actor_name }}</span>
+            </span>
+        {% else %}
+            <span class="text-[11px] text-slate-400 dark:text-slate-500">
+                {{ log.actor_name|default:"Sistema" }}
+            </span>
+        {% endif %}
+    </td>
+
+    <!-- Botão Ver Detalhes -->
+    <td class="py-3 px-4 text-right whitespace-nowrap">
+        <button type="button"
+                @click="openDetails({
+                    id: {{ log.id }},
+                    event_type: '{{ log.get_event_type_display|escapejs }}',
+                    created_at: '{{ log.created_at|date:"d/m/Y H:i:s" }}',
+                    action_label: '{{ log.action_label|escapejs }}',
+                    actor_name: '{{ log.actor_name|default:"Sistema"|escapejs }}',
+                    participant_name: '{{ log.participant_name|default:""|escapejs }}',
+                    participant_phone: '{{ log.participant_phone|default:""|escapejs }}',
+                    old_value: '{{ log.old_value|default:""|escapejs }}',
+                    new_value: '{{ log.new_value|default:""|escapejs }}',
+                    metadata: {{ log.metadata|default:"{}"|safe }}
+                })"
+                class="px-2.5 py-1 text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:text-pink-800 dark:hover:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-950/40 rounded-lg transition border border-pink-200 dark:border-pink-800/40 cursor-pointer">
+            Detalhes
+        </button>
+    </td>
+</tr>

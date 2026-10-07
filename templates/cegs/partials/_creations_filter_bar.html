@@ -1,0 +1,45 @@
+<!-- BARRA DE FILTRO DE CATEGORIAS (GERAL, APENAS CEGS, APENAS MERCARI) -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/95 dark:bg-cyber-surface/95 p-4 rounded-2xl border border-purple-100/80 dark:border-white/10 shadow-xs backdrop-blur-md">
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5 mr-1">
+            <i data-lucide="target" class="w-3.5 h-3.5 text-pink-500"></i>
+            <span>Categoria:</span>
+        </span>
+        <div class="inline-flex p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-transparent dark:border-white/5">
+            <button type="button" @click="setCategory('all')"
+                    :class="currentCategory === 'all' ? 'bg-white dark:bg-cyber-elevated text-slate-900 dark:text-white shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold'"
+                    class="px-3.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="globe" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span>Geral (CEGs + Mercari)</span>
+            </button>
+            <button type="button" @click="setCategory('ceg')"
+                    :class="currentCategory === 'ceg' ? 'bg-white dark:bg-cyber-elevated text-pink-600 dark:text-cyber-neon shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-pink-600 dark:hover:text-cyber-neon font-bold'"
+                    class="px-3.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-500"></i>
+                <span>Apenas CEGs</span>
+            </button>
+            <button type="button" @click="setCategory('mercari')"
+                    :class="currentCategory === 'mercari' ? 'bg-white dark:bg-cyber-elevated text-rose-600 dark:text-rose-400 shadow-xs font-black' : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 font-bold'"
+                    class="px-3.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-rose-500"></i>
+                <span>Apenas Caixa Mercari</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Botões de Ação Rápida -->
+    <div class="flex items-center gap-2">
+        <button type="button" @click="openModal('item_individual')"
+                x-show="currentCategory === 'all' || currentCategory === 'mercari'"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer hover:scale-[1.02]">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Novo Item Mercari</span>
+        </button>
+        <button type="button" @click="openModal('ceg')"
+                x-show="currentCategory === 'all' || currentCategory === 'ceg'"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer hover:scale-[1.02]">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Nova CEG</span>
+        </button>
+    </div>
+</div>

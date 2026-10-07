@@ -1,0 +1,44 @@
+<!-- Header com Gradiente Moderno e Badges Informativas -->
+<div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 text-white p-6 sm:p-8 rounded-2xl shadow-xl border border-white/10">
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+            <div class="flex items-center gap-2">
+                <a href="{% url 'creations_hub' %}" class="inline-flex items-center gap-1.5 text-xs text-pink-300 hover:text-white transition group">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5"></i>
+                    <span>Voltar ao Hub de Criações</span>
+                </a>
+                <span class="text-white/30">•</span>
+                <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <i data-lucide="users" class="w-3 h-3"></i>
+                    <span>Gestão de Joiners</span>
+                </span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5">
+                <span>Cadastro de Participantes em Massa</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Importe compradores de uma só vez colando do Excel/Google Sheets ou preenchendo a grade interativa.
+                Suporta números brasileiros (DDD 9 dígitos) e internacionais (+DDI de qualquer país) e handles do Twitter/X.
+            </p>
+        </div>
+
+        <!-- Resumo e Estatísticas Rápidas -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
+            <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
+                <span class="block text-2xl font-black text-pink-300">{{ total_participants }}</span>
+                <span class="text-[10px] uppercase font-bold text-slate-300">Total Cadastrados</span>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
+                <span class="block text-2xl font-black text-indigo-300">{{ with_twitter }}</span>
+                <span class="text-[10px] uppercase font-bold text-slate-300">Com Twitter / X</span>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 col-span-2 sm:col-span-1">
+                <span class="block text-2xl font-black text-emerald-300 flex items-center justify-center gap-1">
+                    <i data-lucide="globe" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Global</span>
+                </span>
+                <span class="text-[10px] uppercase font-bold text-slate-300">BR + Internacional</span>
+            </div>
+        </div>
+    </div>
+</div>

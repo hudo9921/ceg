@@ -1,0 +1,155 @@
+<!-- Scripts Reativos do Alocador de Joiners -->
+{% include 'cegs/partials/_allocator_app_matrix.html' %}
+
+<script>
+function bulkAllocatorApp() {
+    return Object.assign({
+        activeTab: 'matrix',
+        cegSlug: '',
+        matrix: { sets: [], items: [], total_slots: 0, occupied_slots: 0, paid_slots: 0 },
+        participants: [],
+
+        // Matriz
+        matrixFilter: '',
+        activeSlotPicker: null,
+        pickerQuery: '',
+        pickerIsPaid: false,
+        pendingMatrixUpdates: {},
+        matrixSaving: false,
+
+        // Colagem
+        pasteRawText: '',
+        pasteOptions: {
+            auto_next_set: true,
+            overwrite: false,
+            auto_create_participants: true,
+            default_is_paid: false
+        },
+        parsing: false,
+        parseResult: { rows: [], summary: { total: 0, ready: 0, conflicts: 0, errors: 0 } },
+        executing: false,
+
+        init() {
+            const dataEl = document.getElementById('allocator-data');
+            if (dataEl) {
+                try {
+                    const parsed = JSON.parse(dataEl.textContent || '{}');
+                    this.cegSlug = parsed.cegSlug || '';
+                    this.matrix = parsed.matrix || { sets: [], items: [] };
+                    this.participants = parsed.participants || [];
+                } catch(e) {
+                    console.error("Erro ao carregar dados do alocador:", e);
+                }
+            }
+            this.refreshIcons();
+        },
+
+        refreshIcons() {
+            this.$nextTick(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+        },
+
+        changeCeg(newSlug) {
+            if (newSlug) {
+                window.location.href = '/ceg/' + newSlug + '/alocar-massa/';
+            }
+        },
+
+        loadSamplePaste() {
+            const firstItem = (this.matrix.items && this.matrix.items[0]) ? this.matrix.items[0] : null;
+            const secondItem = (this.matrix.items && this.matrix.items[1]) ? this.matrix.items[1] : null;
+
+            const name1 = firstItem ? (firstItem.member_name || firstItem.name) : 'Integrante 1';
+            const name2 = secondItem ? (secondItem.member_name || secondItem.name) : 'Integrante 2';
+
+            this.pasteRawText = `Set 1 | ${name1} | Bia Silva | 11988887777 | Pago\n${name2} | @joiner_kpop | 11977776666 | Pendente`;
+        },
+
+        async parsePastedLines() {
+            if (!this.pasteRawText.trim() || this.parsing) return;
+            this.parsing = true;
+
+            try {
+                const res = await fetch('/ceg/' + this.cegSlug + '/alocar-massa/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'parse_text',
+                        raw_text: this.pasteRawText,
+                        auto_next_set: this.pasteOptions.auto_next_set,
+                        overwrite: this.pasteOptions.overwrite,
+                        default_is_paid: this.pasteOptions.default_is_paid
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.parseResult = data;
+                    this.refreshIcons();
+                } else {
+                    alert(data.message || 'Erro ao analisar linhas.');
+                }
+            } catch(e) {
+                alert('Erro ao conectar com o servidor: ' + e);
+            } finally {
+                this.parsing = false;
+            }
+        },
+
+        async executeBulkAllocation() {
+            if (!this.parseResult.rows || this.executing) return;
+            const readyRows = this.parseResult.rows.filter(r => r.status === 'READY');
+            if (readyRows.length === 0) {
+                alert('Não há linhas válidas prontas para gravação.');
+                return;
+            }
+
+            if (!confirm(`Confirma a alocação de ${readyRows.length} slot(s) nesta CEG?`)) return;
+
+            this.executing = true;
+            try {
+                const res = await fetch('/ceg/' + this.cegSlug + '/alocar-massa/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'execute_bulk',
+                        rows: readyRows,
+                        overwrite: this.pasteOptions.overwrite,
+                        auto_create_participants: this.pasteOptions.auto_create_participants
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    let msg = `Sucesso! ${data.allocated_count} slot(s) alocado(s).`;
+                    if (data.new_participants_count > 0) {
+                        msg += ` ${data.new_participants_count} novo(s) participante(s) cadastrado(s).`;
+                    }
+                    alert(msg);
+
+                    if (data.updated_matrix) {
+                        this.matrix = data.updated_matrix;
+                    }
+                    this.pasteRawText = '';
+                    this.parseResult = { rows: [], summary: { total: 0, ready: 0, conflicts: 0, errors: 0 } };
+                    this.activeTab = 'matrix';
+                    this.refreshIcons();
+                } else {
+                    alert(data.message || 'Erro ao executar alocação.');
+                }
+            } catch(e) {
+                alert('Erro ao conectar com o servidor: ' + e);
+            } finally {
+                this.executing = false;
+            }
+        }
+    }, bulkAllocatorMatrixMixin());
+}
+</script>

@@ -1,0 +1,188 @@
+{% include 'analytics/partials/_status_app_share.html' %}
+{% include 'analytics/partials/_status_app_mercari.html' %}
+{% include 'analytics/partials/_status_app_ceg.html' %}
+{% include 'analytics/partials/_status_app_filters.html' %}
+
+<script>
+function cegStatusState() {
+    return {
+        selectedCategory: '{{ category|default:"all" }}',
+        selectedGroup: '{{ selected_group|default:"" }}',
+        selectedEra: '{{ selected_era|default:"" }}',
+        searchQuery: '{{ search_query|default:""|escapejs }}',
+        activeCardFilter: 'all',
+        pagosSubFilter: 'all',
+        zoomPhoto: null,
+        itemDragOver: false,
+        editItemModalOpen: false,
+        editingItem: {},
+        itemImagePreview: '',
+        itemImageBase64: '',
+        itemImageUrl: '',
+        newTipoModalOpen: false,
+        newTipoNome: '',
+        newTipoDescricao: '',
+        addSetModalOpen: false,
+        addSetCegId: '',
+        addSetCegTitle: '',
+        addSetNumber: '',
+        addSetNotes: '',
+        addSetIsActive: true,
+        editCegModalOpen: false,
+        editingCeg: {},
+        cegBannerPreview: '',
+        cegBannerBase64: '',
+        cegBannerUrl: '',
+        removeBannerFlag: false,
+        cegBannerError: '',
+        cegDragOver: false,
+        tiposItem: JSON.parse(document.getElementById('tipos-item-data')?.textContent || '[]'),
+        mercariItems: JSON.parse(document.getElementById('mercari-items-data')?.textContent || '[]'),
+        filterOptions: JSON.parse(document.getElementById('filter-options-data')?.textContent || '{"groups":[],"eras":[]}'),
+        setsIncomplete: JSON.parse(document.getElementById('sets-incomplete-data')?.textContent || '[]'),
+        setsFechados: JSON.parse(document.getElementById('sets-fechados-data')?.textContent || '[]'),
+        setsPagos: JSON.parse(document.getElementById('sets-pagos-data')?.textContent || '[]'),
+        setsTerminados: JSON.parse(document.getElementById('sets-terminados-data')?.textContent || '[]'),
+        cegsOverview: JSON.parse(document.getElementById('cegs-overview-data')?.textContent || '[]'),
+        cegShareMap: JSON.parse(document.getElementById('ceg-share-map-data')?.textContent || '{}'),
+        shareModalOpen: false,
+        shareCopied: false,
+        shareEmoji: '🟢',
+        shareShowSoldOut: false,
+        shareIncludePrice: false,
+        currentShareCeg: null
+    };
+}
+
+function cegStatusApp() {
+    return Object.assign(
+        cegStatusState(),
+        cegStatusFilterMethods(),
+        cegStatusShareMethods(),
+        cegStatusMercariMethods(),
+        cegStatusCegMethods(),
+        {
+            onFilterChange() { this.updateUrl(); },
+            onGroupChange() {
+                if (this.selectedGroup && this.selectedEra) {
+                    const eraObj = this.filterOptions.eras.find(e => String(e.id) === String(this.selectedEra));
+                    if (!eraObj || String(eraObj.group_id) !== String(this.selectedGroup)) {
+                        this.selectedEra = '';
+                    }
+                }
+                this.updateUrl();
+            },
+            setCategory(cat) {
+                this.selectedCategory = cat;
+                this.updateUrl();
+            },
+            clearFilters() {
+                this.selectedCategory = 'all';
+                this.selectedGroup = '';
+                this.selectedEra = '';
+                this.searchQuery = '';
+                this.activeCardFilter = 'all';
+                this.pagosSubFilter = 'all';
+                this.updateUrl();
+            },
+            updateUrl() {
+                const params = new URLSearchParams();
+                if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
+                if (this.selectedGroup) params.set('group', this.selectedGroup);
+                if (this.selectedEra) params.set('era', this.selectedEra);
+                if (this.searchQuery && this.searchQuery.trim()) params.set('search', this.searchQuery.trim());
+                const qs = params.toString();
+                const newUrl = window.location.pathname + (qs ? ('?' + qs) : '');
+                window.history.replaceState({}, '', newUrl);
+            },
+            setCardFilter(filterName) {
+                if (this.activeCardFilter === filterName && filterName !== 'all') {
+                    this.activeCardFilter = 'all';
+                } else {
+                    this.activeCardFilter = filterName;
+                }
+            },
+            getFilterBannerText() {
+                if (this.activeCardFilter === 'active_cegs') return 'Exibindo apenas CEGs Ativas (com vagas a serem preenchidas)';
+                if (this.activeCardFilter === 'incomplete') return 'Exibindo apenas Sets com Vagas Abertas';
+                if (this.activeCardFilter === 'fechados' || this.activeCardFilter === 'completed') return 'Exibindo apenas Sets 100% Fechados (aguardando pagamento do item)';
+                if (this.activeCardFilter === 'pagos') return 'Exibindo apenas Sets 100% Pagos';
+                if (this.activeCardFilter === 'terminados') return 'Exibindo apenas Sets Terminados (Tudo 100% Pago)';
+                return '';
+            },
+            getPagosFilterLabel() {
+                if (this.pagosSubFilter === 'frete_pago') return '✈️ Frete Internacional Quitado';
+                if (this.pagosSubFilter === 'frete_aberto') return '⏳ Frete Internacional Em Aberto (Pendente)';
+                if (this.pagosSubFilter === 'taxa_paga') return '🏛️ Taxa Aduaneira Quitada';
+                if (this.pagosSubFilter === 'taxa_aberto') return '⏳ Taxa Aduaneira Em Aberto (Pendente)';
+                if (this.pagosSubFilter === 'terminados') return '🏆 Sets Terminados (Tudo 100% Pago)';
+                return '';
+            },
+            isPagoSetVisible(isTerminado, hasFrete, fretePago, fretePending, hasTaxa, taxaPaga, taxaPending) {
+                if (this.activeCardFilter === 'terminados') return Boolean(isTerminado);
+                if (this.pagosSubFilter === 'frete_pago') return Boolean(hasFrete && fretePago);
+                if (this.pagosSubFilter === 'frete_aberto') return Boolean(hasFrete && fretePending);
+                if (this.pagosSubFilter === 'taxa_paga') return Boolean(hasTaxa && taxaPaga);
+                if (this.pagosSubFilter === 'taxa_aberto') return Boolean(hasTaxa && taxaPending);
+                if (this.pagosSubFilter === 'terminados') return Boolean(isTerminado);
+                return true;
+            },
+            hasNoVisiblePagos() {
+                const visible = this.setsPagos.filter(s => {
+                    if (!this.matchSetObj(s)) return false;
+                    return this.isPagoSetVisible(s.is_terminado, s.has_frete, s.frete_inter_paid, s.frete_inter_pending, s.has_taxa, s.taxa_aduaneira_paid, s.taxa_aduaneira_pending);
+                });
+                return visible.length === 0;
+            },
+            isCegRowVisible(isAtiva, hasIncomplete, closedSetsCnt, paidSetsCnt, finishedSetsCnt) {
+                if (this.activeCardFilter === 'active_cegs') return Boolean(isAtiva);
+                if (this.activeCardFilter === 'incomplete') return Boolean(hasIncomplete);
+                if (this.activeCardFilter === 'fechados' || this.activeCardFilter === 'completed') return Number(closedSetsCnt) > 0;
+                if (this.activeCardFilter === 'pagos') return Number(paidSetsCnt) > 0;
+                if (this.activeCardFilter === 'terminados') return Number(finishedSetsCnt) > 0;
+                return true;
+            },
+            getCegTableSubtext() {
+                const count = this.visibleCegsCount;
+                if (this.activeCardFilter === 'active_cegs') return `Filtrando: ${count} CEG(s) ativa(s) (com vagas)`;
+                if (this.activeCardFilter === 'incomplete') return `Filtrando: ${count} CEG(s) com vagas abertas`;
+                if (this.activeCardFilter === 'fechados' || this.activeCardFilter === 'completed') return `Filtrando: ${count} CEG(s) com sets fechados`;
+                if (this.activeCardFilter === 'pagos') return `Filtrando: ${count} CEG(s) com sets 100% pagos`;
+                if (this.activeCardFilter === 'terminados') return `Filtrando: ${count} CEG(s) com sets terminados`;
+                return `Exibindo ${count} de ${this.cegsOverview.length} CEG(s)`;
+            },
+            init() {
+                window.addEventListener('paste', (e) => {
+                    if (this.editItemModalOpen) {
+                        const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                        if (!items) return;
+                        for (let i = 0; i < items.length; i++) {
+                            if (items[i].type.indexOf('image') !== -1) {
+                                const imageFile = items[i].getAsFile();
+                                if (imageFile) {
+                                    e.preventDefault();
+                                    this.handleFileChange({ target: { files: [imageFile] } });
+                                    break;
+                                }
+                            }
+                        }
+                    } else if (this.editCegModalOpen) {
+                        const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                        if (!items) return;
+                        for (let i = 0; i < items.length; i++) {
+                            if (items[i].type.indexOf('image') !== -1) {
+                                const imageFile = items[i].getAsFile();
+                                if (imageFile) {
+                                    e.preventDefault();
+                                    this.handleCegBannerFile({ target: { files: [imageFile] } });
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    );
+}
+</script>

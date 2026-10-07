@@ -1,0 +1,63 @@
+<!-- CARDS DE MÉTRICAS GLOBAIS DE LOGÍSTICA -->
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+    <!-- Total de Pacotes -->
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+        <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Total Geral</div>
+        <div class="text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_pacotes }}</div>
+        <div class="text-[11px] text-slate-500 dark:text-slate-400">Todos os envios</div>
+    </div>
+
+    <!-- Solicitados pelo Joiner -->
+    <a href="{% url 'envios_nacionais' %}?status=SOLICITADO"
+       class="bg-pink-50/70 dark:bg-slate-900 p-4 rounded-2xl border border-pink-200 dark:border-pink-500/40 shadow-sm space-y-1 block hover:border-pink-400 transition">
+        <div class="text-[11px] font-bold text-pink-700 dark:text-pink-400 uppercase tracking-wider flex items-center justify-between">
+            <span>Solicitados</span>
+            {% if stats.solicitados_count > 0 %}
+                <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+            {% endif %}
+        </div>
+        <div class="text-2xl font-black text-pink-900 dark:text-pink-300">{{ stats.solicitados_count|default:0 }}</div>
+        <div class="text-[11px] text-pink-600 dark:text-slate-400">Aguardando cotação</div>
+    </a>
+
+    <!-- Em Preparação -->
+    <a href="{% url 'envios_nacionais' %}?status=EM_PREPARACAO"
+       class="bg-amber-50/70 dark:bg-slate-900 p-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 shadow-sm space-y-1 block hover:border-amber-400 transition">
+        <div class="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Embalando</div>
+        <div class="text-2xl font-black text-amber-900 dark:text-amber-300">{{ stats.em_preparacao_count }}</div>
+        <div class="text-[11px] text-amber-600 dark:text-slate-400">Na bancada</div>
+    </a>
+
+    <!-- Enviados -->
+    <a href="{% url 'envios_nacionais' %}?status=ENVIADO"
+       class="bg-blue-50/70 dark:bg-slate-900 p-4 rounded-2xl border border-blue-200 dark:border-blue-500/40 shadow-sm space-y-1 block hover:border-blue-400 transition">
+        <div class="text-[11px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">A Caminho</div>
+        <div class="text-2xl font-black text-blue-900 dark:text-blue-300">{{ stats.enviados_count }}</div>
+        <div class="text-[11px] text-blue-600 dark:text-slate-400">Com rastreio ativo</div>
+    </a>
+
+    <!-- Entregues -->
+    <a href="{% url 'envios_nacionais' %}?status=ENTREGUE"
+       class="bg-emerald-50/70 dark:bg-slate-900 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/40 shadow-sm space-y-1 block hover:border-emerald-400 transition">
+        <div class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Entregues</div>
+        <div class="text-2xl font-black text-emerald-900 dark:text-emerald-300">{{ stats.entregues_count }}</div>
+        <div class="text-[11px] text-emerald-600 dark:text-slate-400">Chegaram ao destino</div>
+    </a>
+
+    <!-- Total de Itens Físicos -->
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+        <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Itens Totais</div>
+        <div class="text-2xl font-black text-slate-900 dark:text-white">{{ stats.total_itens }}</div>
+        <div class="text-[11px] text-slate-500 dark:text-slate-400">PCs e avulsos</div>
+    </div>
+
+    <!-- Avaliação Média -->
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+        <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Satisfação</div>
+        <div class="text-2xl font-black text-amber-500 flex items-center gap-1">
+            <span>{{ stats.avaliacao_media }}</span>
+            <i data-lucide="star" class="w-4 h-4 fill-amber-500 text-amber-500"></i>
+        </div>
+        <div class="text-[11px] text-slate-500 dark:text-slate-400">{{ stats.total_avaliacoes }} avaliação(ões)</div>
+    </div>
+</div>

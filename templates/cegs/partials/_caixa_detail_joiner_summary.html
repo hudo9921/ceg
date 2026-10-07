@@ -1,0 +1,139 @@
+<!-- Resumo Financeiro da sua Remessa (Para o Participante / Joiner) -->
+{% if participant %}
+    <div class="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 via-pink-50/40 to-purple-50/40 dark:from-cyber-surface dark:via-pink-950/20 dark:to-purple-950/20 border border-pink-200/90 dark:border-white/10 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-pink-100 dark:border-white/10 pb-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-pink-100 dark:bg-pink-950/70 text-pink-600 dark:text-pink-300 flex items-center justify-center font-bold shadow-2xs border border-pink-200/60 dark:border-pink-800/60">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        Resumo Financeiro da sua Remessa
+                    </div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">
+                        Olá, {{ participant.display_name }}!
+                    </h3>
+                </div>
+            </div>
+
+            {% if participant_total_geral_pendente > 0 and participant_pix_key %}
+                <button type="button" @click="copyToClipboard('{{ participant_pix_key }}', 'Chave Pix copiada com sucesso!')"
+                        class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span>Copiar Chave Pix</span>
+                </button>
+            {% elif participant_total_geral_pendente == 0 and participant_claims or participant_itens_individuais %}
+                <span class="px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                    <span>Tudo quitado nesta remessa!</span>
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Grid de Métricas: Itens Pendentes | Frete a pagar | Taxa a pagar | Total a Pagar -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- 1. Itens Pendentes -->
+            <div class="p-3.5 rounded-2xl bg-white dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">
+                    Itens Pendentes
+                </span>
+                <div class="mt-1 flex items-baseline justify-between">
+                    <span class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
+                        R$ {{ participant_pending_items_total|floatformat:2 }}
+                    </span>
+                    <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 font-mono">
+                        {{ participant_pending_items_count }} item(ns)
+                    </span>
+                </div>
+            </div>
+
+            <!-- 2. Frete a Pagar -->
+            <div class="p-3.5 rounded-2xl bg-white dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">
+                    Frete a Pagar
+                </span>
+                <div class="mt-1 flex items-baseline justify-between">
+                    <span class="text-base sm:text-lg font-black text-sky-600 dark:text-sky-400 font-mono">
+                        R$ {{ participant_frete_pendente_total|floatformat:2 }}
+                    </span>
+                    {% if participant_frete_pendente_total == 0 and participant_frete_pago_total > 0 %}
+                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                            <i data-lucide="check" class="w-3 h-3"></i> Quitado
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 3. Taxa a Pagar -->
+            <div class="p-3.5 rounded-2xl bg-white dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">
+                    Taxa a Pagar
+                </span>
+                <div class="mt-1 flex items-baseline justify-between">
+                    <span class="text-base sm:text-lg font-black text-purple-600 dark:text-purple-400 font-mono">
+                        R$ {{ participant_taxa_pendente_total|floatformat:2 }}
+                    </span>
+                    {% if participant_taxa_pendente_total == 0 and participant_taxa_paga_total > 0 %}
+                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                            <i data-lucide="check" class="w-3 h-3"></i> Quitada
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 4. Total a Pagar nesta Remessa -->
+            <div class="p-3.5 rounded-2xl bg-pink-50/80 dark:bg-pink-950/40 border border-pink-300 dark:border-pink-800/80 shadow-2xs">
+                <span class="text-[10px] uppercase font-bold text-pink-700 dark:text-pink-300 block">
+                    Total a Pagar nesta Caixa
+                </span>
+                <div class="mt-1 flex items-baseline justify-between">
+                    <span class="text-lg sm:text-xl font-black text-pink-700 dark:text-pink-300 font-mono">
+                        R$ {{ participant_total_geral_pendente|floatformat:2 }}
+                    </span>
+                    {% if participant_total_devido_frete_taxa > 0 %}
+                        <span class="text-[10px] font-bold text-pink-600 dark:text-pink-400 font-mono" title="Frete + Taxa pendentes">
+                            (F+T: R$ {{ participant_total_devido_frete_taxa|floatformat:2 }})
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if participant_pix_key and participant_total_geral_pendente > 0 %}
+            <div class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="space-y-0.5">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="key" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
+                        <strong>Chave Pix:</strong>
+                        <code class="font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60">{{ participant_pix_key }}</code>
+                    </div>
+                    {% if participant_pix_instructions %}
+                        <span class="text-[11px] block text-amber-700 dark:text-amber-400">{{ participant_pix_instructions }}</span>
+                    {% endif %}
+                </div>
+                <button type="button" @click="copyToClipboard('{{ participant_pix_key }}', 'Chave Pix copiada com sucesso!')"
+                        class="px-3.5 py-1.5 rounded-xl bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-bold hover:bg-amber-300 dark:hover:bg-amber-700 transition shrink-0 cursor-pointer flex items-center gap-1">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span>Copiar Chave</span>
+                </button>
+            </div>
+        {% endif %}
+    </div>
+{% elif not is_staff_user %}
+    <div class="p-6 rounded-3xl bg-white/90 dark:bg-cyber-surface/90 border border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div class="space-y-1">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="user-check" class="w-4 h-4 text-pink-500"></i>
+                <span>Você tem itens nesta remessa?</span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Identifique-se com seu WhatsApp para ver exatamente quais dos seus itens estão nesta caixa e os valores pendentes de frete e taxa.
+            </p>
+        </div>
+        <a href="{% url 'login_otp' %}?next={{ request.path }}"
+           class="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs shadow-xs transition shrink-0 flex items-center gap-1.5">
+            <span>Acessar Minhas Reservas</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+    </div>
+{% endif %}

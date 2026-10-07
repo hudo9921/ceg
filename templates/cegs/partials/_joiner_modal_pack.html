@@ -1,0 +1,130 @@
+<!-- MODAL 1: EMPACOTAMENTO DOS ITENS SELECIONADOS -->
+<div x-show="packagingModalOpen" x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#14121B] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-6"
+         @click.away="packagingModalOpen = false">
+
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-pink-100 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 flex items-center justify-center">
+                    <i data-lucide="package" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Empacotar Itens Selecionados</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Agrupar <strong class="text-pink-600 dark:text-pink-400" x-text="selectedUids.length"></strong> item(ns) em envio nacional</p>
+                </div>
+            </div>
+            <button type="button" @click="packagingModalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold">
+                ✕
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'empacotar_itens' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
+            <input type="hidden" name="selected_uids" :value="selectedUids.join(',')">
+
+            <!-- Escolha: Novo Pacote vs Pacote Existente -->
+            {% if pacotes %}
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Destino do Empacotamento:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="border rounded-xl p-3 cursor-pointer transition flex items-center gap-2"
+                               :class="packagingAction === 'novo_pacote' ? 'bg-pink-50 dark:bg-pink-950/30 border-pink-400 text-pink-700 dark:text-pink-300 font-bold' : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400'">
+                            <input type="radio" name="action_type" value="novo_pacote" x-model="packagingAction" class="text-pink-600 focus:ring-pink-500">
+                            <span class="text-xs">Criar Novo Pacote</span>
+                        </label>
+                        <label class="border rounded-xl p-3 cursor-pointer transition flex items-center gap-2"
+                               :class="packagingAction === 'adicionar_existente' ? 'bg-pink-50 dark:bg-pink-950/30 border-pink-400 text-pink-700 dark:text-pink-300 font-bold' : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400'">
+                            <input type="radio" name="action_type" value="adicionar_existente" x-model="packagingAction" class="text-pink-600 focus:ring-pink-500">
+                            <span class="text-xs">Pacote Existente</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Se escolher Adicionar a Pacote Existente -->
+                <div x-show="packagingAction === 'adicionar_existente'" class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Selecione o Pacote Existente:</label>
+                    <select name="pacote_id" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        {% for p in pacotes %}
+                            {% if p.status == 'EM_PREPARACAO' %}
+                                <option value="{{ p.id }}">{{ p.identificador }} ({{ p.transportadora }}) — {{ p.total_itens }} itens atuais</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            {% else %}
+                <input type="hidden" name="action_type" value="novo_pacote">
+            {% endif %}
+
+            <!-- Campos de Criação de Novo Pacote -->
+            <div x-show="packagingAction === 'novo_pacote'" class="space-y-3.5">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Identificador do Pacote (Opcional):</label>
+                    <input type="text" name="identificador" placeholder="Ex: PAC-2026-0001 (Automático se vazio)"
+                           class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-pink-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Modalidade / Envio:</label>
+                        <input type="text" name="transportadora" list="transportadoras-list" placeholder="Mini Envios, PAC, Sedex..." value="Correios Mini Envios"
+                               class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-pink-500">
+                        <datalist id="transportadoras-list">
+                            <option value="Correios Mini Envios">
+                            <option value="Carta Registrada">
+                            <option value="Correios PAC">
+                            <option value="Correios Sedex">
+                            <option value="Jadlog">
+                            <option value="Entrega em Mãos">
+                        </datalist>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Valor Frete Nacional (R$):</label>
+                        <input type="text" name="valor_frete_nacional" placeholder="Ex: 18,50"
+                               class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-pink-500">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="is_frete_pago" id="check-frete-pago" class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
+                    <label for="check-frete-pago" class="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                        O comprador já realizou o pagamento do frete nacional
+                    </label>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Código de Rastreamento (se já tiver em mãos):</label>
+                    <input type="text" name="codigo_rastreio" placeholder="Ex: NL123456789BR"
+                           class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono uppercase text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-pink-500">
+                </div>
+
+                <div class="p-3 bg-pink-50/60 dark:bg-pink-950/20 rounded-xl border border-pink-100 dark:border-pink-800/30 flex items-center gap-2">
+                    <input type="checkbox" name="marcar_enviado" value="1" id="check-marcar-enviado" class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
+                    <label for="check-marcar-enviado" class="text-xs font-bold text-pink-900 dark:text-pink-300 cursor-pointer select-none">
+                        Marcar como ENVIADO NACIONALMENTE agora (já despachei o card físico)
+                    </label>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Anotações Internas / Observações:</label>
+                    <textarea name="observacoes" rows="2" placeholder="Notas sobre endereço, brindes inclusos, etc."
+                              class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-pink-500"></textarea>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-2">
+                <button type="button" @click="packagingModalOpen = false"
+                        class="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-1.5">
+                    <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                    <span>Confirmar Empacotamento</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

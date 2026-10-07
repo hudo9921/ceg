@@ -1,0 +1,49 @@
+<!-- Cabeçalho Hero da Vitrine -->
+<div class="relative overflow-hidden bg-gradient-to-br from-pink-500 via-rose-500 to-purple-600 rounded-3xl p-6 sm:p-10 text-white shadow-xl shadow-pink-500/10">
+    <!-- Detalhes de Fundo / Ambient Glow -->
+    <div class="absolute -right-10 -bottom-10 w-48 h-48 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+    <div class="absolute right-12 top-6 opacity-20 select-none pointer-events-none">
+        <i data-lucide="sparkles" class="w-16 h-16 sm:w-24 sm:h-24"></i>
+    </div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase tracking-wider text-pink-100 border border-white/20">
+                <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+                <span>Pronta Entrega</span>
+                <span>&bull;</span>
+                <span>Envio Imediato</span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight drop-shadow-xs">
+                Vitrine ValCegs
+            </h1>
+            <p class="text-sm sm:text-base text-pink-100/90 font-medium leading-relaxed">
+                Photocards, álbuns e itens exclusivos a pronta entrega no Brasil. Garanta seus faves sem esperar o frete internacional!
+            </p>
+        </div>
+
+        <!-- Ações da GOM (Staff) e Resumo de Itens -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {% if is_staff_user %}
+                <a href="{% url 'vitrine_create' %}"
+                   class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white text-pink-600 hover:bg-pink-50 font-black text-sm shadow-lg shadow-black/10 hover:scale-[1.02] active:scale-[0.98] transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Adicionar Item</span>
+                </a>
+            {% endif %}
+
+            <!-- Card Contador Rápido -->
+            <div class="bg-black/20 backdrop-blur-md rounded-2xl px-5 py-2.5 border border-white/15 flex items-center justify-around sm:justify-start gap-4 text-center">
+                <div>
+                    <span class="text-xl sm:text-2xl font-black block leading-none">{{ total_disponiveis }}</span>
+                    <span class="text-[10px] font-bold text-pink-200 uppercase tracking-wider">Disponíveis</span>
+                </div>
+                <div class="h-6 w-px bg-white/20"></div>
+                <div>
+                    <span class="text-xl sm:text-2xl font-black block leading-none">{{ total_vendidos }}</span>
+                    <span class="text-[10px] font-bold text-pink-200 uppercase tracking-wider">Vendidos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

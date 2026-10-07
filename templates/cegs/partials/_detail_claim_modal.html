@@ -1,0 +1,464 @@
+<!-- ==========================================
+     BARRA FLUTUANTE & MODAL DE RESERVA / COMPRA
+     100% Lucide Icons & Suporte a Dark Mode (Cyber-Luxury / Y2K)
+     ========================================== -->
+
+<!-- ===== 1. BARRA FLUTUANTE DE CHECKOUT / SELEÇÃO ===== -->
+<div x-data="{}" x-show="!isStandby && $store.claimSelection.slots.length > 0" x-cloak
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100"
+    x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100"
+    x-transition:leave-end="translate-y-full opacity-0"
+    class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 dark:bg-cyber-surface/95 backdrop-blur-xl border-t border-pink-500/40 dark:border-cyber-neon/40 shadow-2xl px-4 py-3 sm:px-6">
+    <div class="max-w-5xl mx-auto flex items-center gap-3 flex-wrap sm:flex-nowrap">
+        <!-- Itens selecionados (resumo em chips) -->
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-black text-pink-300 dark:text-cyber-neon shrink-0"
+                    x-text="$store.claimSelection.slots.length + ' item' + ($store.claimSelection.slots.length > 1 ? 's' : '') + ' selecionado' + ($store.claimSelection.slots.length > 1 ? 's' : '')"></span>
+                <div class="flex items-center gap-1.5 flex-wrap max-h-16 overflow-y-auto no-scrollbar">
+                    <template x-for="s in $store.claimSelection.slots" :key="s.id">
+                        <span
+                            class="text-[10px] font-bold text-white bg-pink-600/70 dark:bg-cyber-elevated px-2 py-0.5 rounded-lg border border-pink-500/50 dark:border-white/10 flex items-center gap-1 shadow-2xs">
+                            <span x-text="'Set #' + s.setNumber + ' · ' + (s.member ? s.member : s.name)"></span>
+                            <button type="button" @click.stop="$store.claimSelection.toggle(s)"
+                                class="text-pink-200 hover:text-white ml-0.5 cursor-pointer flex items-center transition"
+                                title="Remover da seleção">
+                                <i data-lucide="x" class="w-3 h-3"></i>
+                            </button>
+                        </span>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" @click="$store.claimSelection.clear()"
+                class="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer">
+                Limpar
+            </button>
+            <button type="button" @click="$store.claimSelection.openModal(); $dispatch('sync-claim-selection')"
+                :disabled="$store.claimSelection.slots.length === 0"
+                class="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-sm font-black rounded-xl transition shadow-lg shadow-pink-600/25 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95">
+                <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                <span
+                    x-text="'Finalizar Compra (' + $store.claimSelection.slots.length + ($store.claimSelection.slots.length > 1 ? ' itens)' : ' item)')"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 2. MODAL DE CONFIRMAÇÃO DE CHECKOUT MULTI-SLOT ===== -->
+<div x-show="$store.claimSelection.modalOpen" x-cloak
+    class="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
+    @keydown.escape.window="$store.claimSelection.modalOpen = false; closeBulkClaimModal()">
+    <div class="bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 w-full sm:max-w-lg sm:rounded-3xl shadow-2xl overflow-hidden transition-all"
+        @click.away="$store.claimSelection.modalOpen = false; closeBulkClaimModal()"
+        x-data="{ pixCopied: false }">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-pink-600 to-rose-600 dark:from-pink-700 dark:to-purple-800 px-6 py-4 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shadow-2xs">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base sm:text-lg font-black leading-tight">Confirmar Reserva / Compra</h3>
+                    <p class="text-xs text-pink-100 dark:text-purple-200"
+                        x-text="participantSelectedSlots.length + ' item' + (participantSelectedSlots.length > 1 ? 's' : '') + ' selecionado' + (participantSelectedSlots.length > 1 ? 's' : '')">
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="$store.claimSelection.modalOpen = false; closeBulkClaimModal()"
+                class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Formulário de Confirmação (quando ainda não submetido) -->
+        <template x-if="!bulkClaimResults">
+            <div class="p-5 sm:p-6 space-y-4">
+                <!-- Lista de itens selecionados -->
+                <div class="space-y-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Itens a Reservar
+                    </span>
+                    <div class="bg-slate-50 dark:bg-cyber-elevated/70 rounded-2xl border border-slate-200 dark:border-white/10 divide-y divide-slate-100 dark:divide-white/5 max-h-44 overflow-y-auto">
+                        <template x-for="s in participantSelectedSlots" :key="s.id">
+                            <div class="flex items-center justify-between px-3.5 py-2.5 text-xs">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span
+                                        class="text-[10px] font-black text-pink-600 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/60 px-1.5 py-0.5 rounded-md border border-pink-100 dark:border-pink-800/50 shrink-0"
+                                        x-text="'Set #' + s.setNumber"></span>
+                                    <span class="font-bold text-slate-800 dark:text-slate-100 truncate" x-text="s.name"></span>
+                                    <span class="text-slate-900 dark:text-white font-black font-mono shrink-0" x-text="'R$ ' + s.price"></span>
+                                </div>
+                                <button type="button" @click="toggleParticipantSlot(s)"
+                                    class="text-slate-400 hover:text-rose-500 p-1 shrink-0 ml-2 cursor-pointer transition"
+                                    title="Remover item">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Dados do participante -->
+                <div class="space-y-2 pt-1">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Seus Dados de Contato
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-1">Nome Completo *</label>
+                            <input type="text" x-model="formName" required placeholder="Seu nome"
+                                class="w-full px-3 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-1">WhatsApp (com DDD) *</label>
+                            <input type="tel" x-model="formWhatsapp" required placeholder="55 11 99999-9999"
+                                class="w-full px-3 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-1">@ Rede Social (Twitter/IG)</label>
+                            <input type="text" x-model="formSocial" placeholder="@seuperfil"
+                                class="w-full px-3 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-1">Apelido / Username</label>
+                            <input type="text" x-model="formUsername" placeholder="Ex: Bia, Hudo"
+                                class="w-full px-3 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Concorrência -->
+                <div class="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-cyber-elevated/70 p-3 rounded-2xl border border-slate-200/80 dark:border-white/5 flex items-start gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-pink-500 shrink-0 mt-0.5"></i>
+                    <span>Em caso de disputa de clique no mesmo milissegundo, o sistema garante a prioridade atômica ou posiciona seu pedido na fila de espera com transparência total.</span>
+                </div>
+
+                <!-- Botão Confirmar -->
+                <button type="button" @click="submitBulkClaim()"
+                    :disabled="bulkClaimLoading || !formName || !formWhatsapp"
+                    class="w-full py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white text-sm font-black rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-pink-600/25 active:scale-95">
+                    <i data-lucide="check" class="w-4 h-4" x-show="!bulkClaimLoading"></i>
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="bulkClaimLoading"></i>
+                    <span x-text="bulkClaimLoading ? 'Processando Reserva...' : 'Confirmar Reserva Agora'"></span>
+                </button>
+            </div>
+        </template>
+
+        <!-- ===== RESULTADOS DO CHECKOUT ===== -->
+        <template x-if="bulkClaimResults">
+            <div class="p-5 sm:p-6 space-y-4">
+                <!-- Resumo em Três Caixas -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-3">
+                        <div class="text-xl font-black text-emerald-600 dark:text-emerald-400" x-text="bulkClaimSummary.succeeded"></div>
+                        <div class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1 mt-0.5">
+                            <i data-lucide="check-circle" class="w-3 h-3"></i>
+                            <span>Garantidos</span>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-3">
+                        <div class="text-xl font-black text-amber-600 dark:text-amber-400" x-text="bulkClaimSummary.waiting_list"></div>
+                        <div class="text-[10px] font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1 mt-0.5">
+                            <i data-lucide="clock" class="w-3 h-3"></i>
+                            <span>Fila Espera</span>
+                        </div>
+                    </div>
+                    <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-2xl p-3">
+                        <div class="text-xl font-black text-rose-600 dark:text-rose-400" x-text="bulkClaimSummary.failed"></div>
+                        <div class="text-[10px] font-bold text-rose-700 dark:text-rose-300 flex items-center justify-center gap-1 mt-0.5">
+                            <i data-lucide="x-circle" class="w-3 h-3"></i>
+                            <span>Esgotados</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhes por item -->
+                <div class="space-y-2 max-h-52 overflow-y-auto">
+                    <template x-for="r in bulkClaimResults" :key="r.slot_id">
+                        <div class="flex items-start gap-3 p-3 rounded-2xl border text-xs" :class="{
+                                         'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60': r.success,
+                                         'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60': r.is_waiting_list && !r.success,
+                                         'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60': !r.success && !r.is_waiting_list,
+                                     }">
+                            <div class="mt-0.5 shrink-0">
+                                <template x-if="r.success">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+                                </template>
+                                <template x-if="r.is_waiting_list && !r.success">
+                                    <i data-lucide="clock" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                                </template>
+                                <template x-if="!r.success && !r.is_waiting_list">
+                                    <i data-lucide="x-circle" class="w-4 h-4 text-rose-600 dark:text-rose-400"></i>
+                                </template>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-black text-slate-800 dark:text-slate-100"
+                                    x-text="r.item_name + ' (Set #' + r.set_number + ')'"></div>
+                                <div class="text-slate-600 dark:text-slate-400 mt-0.5" x-text="r.message"></div>
+                                <div x-show="r.is_waiting_list && r.position"
+                                    class="text-[10px] font-bold text-amber-700 dark:text-amber-300 mt-1"
+                                    x-text="'Posição na fila: #' + r.position"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Chave Pix se houver sucesso -->
+                <template x-if="bulkClaimSummary.succeeded > 0 && bulkClaimSummary.pix_key">
+                    <div class="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 rounded-2xl p-3.5 text-xs space-y-2">
+                        <div class="font-black text-sky-800 dark:text-sky-300 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <i data-lucide="qr-code" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i>
+                                <span>Chave Pix para Pagamento</span>
+                            </span>
+                            <button type="button" @click="navigator.clipboard.writeText(bulkClaimSummary.pix_key); pixCopied = true; setTimeout(() => pixCopied = false, 2000)"
+                                class="text-[11px] font-bold text-sky-700 dark:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer">
+                                <i :data-lucide="pixCopied ? 'check' : 'copy'" class="w-3.5 h-3.5"></i>
+                                <span x-text="pixCopied ? 'Copiado!' : 'Copiar Chave'"></span>
+                            </button>
+                        </div>
+                        <div class="font-mono text-sky-900 dark:text-sky-200 break-all font-bold bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-sky-100 dark:border-white/5 select-all" x-text="bulkClaimSummary.pix_key"></div>
+                    </div>
+                </template>
+
+                <button type="button" @click="$store.claimSelection.modalOpen = false; closeBulkClaimModal(); $nextTick(() => window.location.reload())"
+                    class="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-sm font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-95 shadow-md">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Concluir e Atualizar Página</span>
+                </button>
+            </div>
+        </template>
+    </div>
+</div>
+
+<!-- ===== 3. MODAL DE RESERVA INDIVIDUAL (FALLBACK SINGLE-SLOT) ===== -->
+<div x-show="modalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+    @keydown.escape.window="closeClaimModal()">
+
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl max-w-2xl sm:max-w-3xl w-full p-6 sm:p-7 shadow-2xl space-y-4 transform transition-all max-h-[92vh] flex flex-col border border-slate-100 dark:border-white/10"
+        @click.away="closeClaimModal()">
+
+        <!-- Header do Modal -->
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-white/10 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span
+                    class="w-10 h-10 rounded-2xl bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-cyber-neon flex items-center justify-center text-lg font-black border border-pink-100 dark:border-pink-800/60 shadow-2xs">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300">
+                            Confirmar Reserva
+                        </span>
+                        <span class="text-xs font-bold text-slate-400 dark:text-slate-500"
+                            x-text="selectedSlot ? 'Set #' + selectedSlot.setNumber : ''"></span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight mt-0.5"
+                        x-text="selectedSlot ? selectedSlot.name : ''"></h3>
+                </div>
+            </div>
+            <button type="button" @click="closeClaimModal()"
+                class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-cyber-elevated hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm font-bold flex items-center justify-center transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Corpo Rolável com Espaçamento Balanceado -->
+        <div class="overflow-y-auto pr-1 sm:pr-2 space-y-4 flex-1">
+            <!-- Informações Superiores: Valores das Fases + Alerta de Concorrência -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <!-- Fases de Pagamento -->
+                <div
+                    class="md:col-span-7 grid grid-cols-3 gap-2 p-2 bg-slate-50 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200/80 dark:border-white/5 text-center text-xs">
+                    <div class="bg-white dark:bg-cyber-surface p-2 rounded-xl border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase">1. Item</span>
+                        <span class="font-black text-slate-900 dark:text-white text-xs sm:text-sm font-mono"
+                            x-text="selectedSlot ? 'R$ ' + selectedSlot.price : ''"></span>
+                    </div>
+                    <div class="bg-white dark:bg-cyber-surface p-2 rounded-xl border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                        <span class="block text-[10px] font-bold text-sky-500 uppercase">2. Frete Inter</span>
+                        <span class="font-black text-sky-900 dark:text-sky-300 text-xs sm:text-sm font-mono"
+                            x-text="selectedSlot && selectedSlot.frete ? 'R$ ' + selectedSlot.frete : 'A definir'"></span>
+                    </div>
+                    <div class="bg-white dark:bg-cyber-surface p-2 rounded-xl border border-slate-200/60 dark:border-white/10 shadow-2xs">
+                        <span class="block text-[10px] font-bold text-purple-500 uppercase">3. Taxa</span>
+                        <span class="font-black text-purple-900 dark:text-purple-300 text-xs sm:text-sm font-mono"
+                            x-text="selectedSlot && selectedSlot.taxa ? 'R$ ' + selectedSlot.taxa : 'A definir'"></span>
+                    </div>
+                </div>
+
+                <!-- Alerta de Concorrência -->
+                <div
+                    class="md:col-span-5 p-3 bg-pink-50 dark:bg-pink-950/40 border border-pink-100/90 dark:border-pink-800/50 rounded-2xl text-pink-900 dark:text-pink-300 text-xs flex items-center gap-2.5">
+                    <i data-lucide="zap" class="w-5 h-5 text-pink-500 shrink-0"></i>
+                    <p class="text-[11px] leading-snug">
+                        <strong>Slot único!</strong> O primeiro participante a clicar em Confirmar garantirá a reserva no sistema.
+                    </p>
+                </div>
+            </div>
+
+            {% if user.is_staff %}
+            <!-- Bloco do Administrador: Escolher Participante Cadastrado -->
+            <div class="p-3 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 rounded-2xl space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="text-xs font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
+                        <span>Modo Organizador (Admin)</span>
+                    </span>
+                    <span
+                        class="text-[10px] bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-200 font-bold px-2 py-0.5 rounded-full">Admin</span>
+                </div>
+                <p class="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
+                    Selecione um participante cadastrado para autopreencher os dados abaixo:
+                </p>
+                <select @change="selectParticipantForClaim($event.target.value)"
+                    class="w-full bg-white dark:bg-cyber-surface border border-amber-300 dark:border-amber-700/60 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm cursor-pointer">
+                    <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                    <template x-for="p in allParticipants" :key="p.id">
+                        <option :value="p.id"
+                            x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                        </option>
+                    </template>
+                </select>
+            </div>
+            {% elif logged_participant %}
+            <!-- Bloco do Participante Logado -->
+            <div
+                class="p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/40 dark:to-purple-950/40 border border-pink-200 dark:border-pink-800/60 rounded-2xl space-y-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-black text-pink-900 dark:text-pink-300 uppercase flex items-center gap-1">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-pink-600 dark:text-cyber-neon"></i>
+                        <span>Reservando com sua Conta</span>
+                    </span>
+                    <span
+                        class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Autenticado</span>
+                    </span>
+                </div>
+                <div class="text-xs text-slate-900 dark:text-white font-bold">
+                    {{ logged_participant.name }}
+                    {% if logged_participant.username %}
+                    <span class="text-pink-600 dark:text-cyber-neon font-black">({{ logged_participant.username }})</span>
+                    {% endif %}
+                    <span class="text-slate-500 dark:text-slate-400 font-normal">• {{ logged_participant.formatted_phone }}</span>
+                </div>
+                {% if logged_participant.social_handle %}
+                <div class="text-[11px] text-pink-700 dark:text-pink-300 font-mono">
+                    {{ logged_participant.social_handle }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Formulário -->
+            <form id="claimSlotForm" @submit.prevent="submitClaimForm()" class="space-y-3.5">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nome Completo do Participante *</label>
+                        <input type="text" name="name" required x-model="formName"
+                            placeholder="Ex: Beatriz Silva"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        <span class="text-[10px] text-slate-400">Para conferência do pagamento Pix.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Como prefere ser chamado(a)? <span class="text-slate-400 font-normal text-[11px]">(opcional)</span></label>
+                        <input type="text" name="username" x-model="formUsername"
+                            placeholder="Ex: Bia, Hudo"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        <span class="text-[10px] text-slate-400">Apelido que aparece no card do slot.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">WhatsApp (com DDD) *</label>
+                        <input type="tel" name="whatsapp" required x-model="formWhatsapp"
+                            placeholder="Ex: 11999998888"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        <span class="text-[10px] text-slate-400">Para consulta das suas reservas sem senha via OTP.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Seu @ no Twitter ou Instagram</label>
+                        <input type="text" name="social_handle" x-model="formSocial"
+                            placeholder="Ex: @jihyolover"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        <span class="text-[10px] text-slate-400">Identificador público no card do slot.</span>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observações (opcional)</label>
+                        <textarea id="claimNotesField" name="notes" rows="2"
+                            placeholder="Alguma observação especial para o organizador?"
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition"></textarea>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Painel de Resultado -->
+            <div x-show="claimResult" x-cloak class="mt-2">
+                <template x-if="claimResult && claimResult.ok">
+                    <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl space-y-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+                            <span class="font-black text-emerald-900 dark:text-emerald-200 text-sm">Reserva Confirmada!</span>
+                        </div>
+                        <p class="text-xs text-emerald-800 dark:text-emerald-300 leading-snug" x-text="claimResult.message"></p>
+                        <template x-if="claimResult.pixKey">
+                            <div class="mt-2 p-3 bg-white dark:bg-cyber-surface border border-emerald-200 dark:border-emerald-800/60 rounded-xl space-y-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Chave Pix para pagamento:</span>
+                                <div class="font-mono text-xs sm:text-sm font-black text-slate-900 dark:text-white break-all"
+                                    x-text="claimResult.pixKey"></div>
+                                <button type="button" @click="navigator.clipboard.writeText(claimResult.pixKey); alert('Chave Pix copiada!')"
+                                    class="mt-1 text-[11px] text-pink-700 dark:text-cyber-neon hover:underline font-bold cursor-pointer flex items-center gap-1">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>Copiar Pix</span>
+                                </button>
+                            </div>
+                        </template>
+                        <button type="button" @click="window.location.reload()"
+                            class="w-full mt-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md">
+                            <span>Ver minha reserva</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </template>
+                <template x-if="claimResult && !claimResult.ok">
+                    <div class="p-4 bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-800/60 rounded-2xl">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500"></i>
+                            <span class="font-black text-rose-900 dark:text-rose-200 text-sm">Erro na Reserva</span>
+                        </div>
+                        <p class="text-xs text-rose-800 dark:text-rose-300" x-text="claimResult.message"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Footer Fixo -->
+        <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3 flex-shrink-0">
+            <button type="button" @click="closeClaimModal()" :disabled="claimLoading"
+                class="px-5 py-2.5 bg-slate-100 dark:bg-cyber-elevated hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-50">
+                Cancelar
+            </button>
+            <button type="button" @click="submitClaimForm()"
+                :disabled="claimLoading || (claimResult && claimResult.ok)"
+                class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 active:scale-95">
+                <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin" x-show="claimLoading"></i>
+                <i data-lucide="check" class="w-3.5 h-3.5" x-show="!claimLoading"></i>
+                <span x-text="claimLoading ? 'Processando...' : 'Confirmar Reserva Única'"></span>
+            </button>
+        </div>
+    </div>
+</div>

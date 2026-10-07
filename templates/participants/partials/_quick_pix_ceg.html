@@ -1,0 +1,190 @@
+<!-- CONTEÚDO DO ACORDEÃO QUICK PIX: 1. POR CEG -->
+<div x-show="quickPixOpen && quickPixTab === 'ceg'" x-collapse class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+    {% for c_data in cegs_com_pendencias %}
+    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-4 shadow-xs space-y-3 flex flex-col justify-between hover:border-pink-300 dark:hover:border-cyber-neon/40 transition-all">
+        <div class="space-y-2">
+            <div class="flex items-start justify-between gap-2">
+                <div class="space-y-0.5 min-w-0">
+                    <span class="text-[10px] font-black text-pink-600 dark:text-cyber-neon uppercase tracking-wider block truncate">
+                        {{ c_data.group.name }}
+                    </span>
+                    <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white line-clamp-1" title="{{ c_data.ceg.title }}">
+                        {{ c_data.ceg.title }}
+                    </h4>
+                </div>
+                <span class="text-xs font-black text-amber-700 dark:text-amber-300 font-mono px-2 py-0.5 bg-amber-50 dark:bg-amber-950/60 rounded-lg border border-amber-200 dark:border-amber-800/60 whitespace-nowrap shrink-0">
+                    R$ {{ c_data.total_geral_pendente|floatformat:2 }}
+                </span>
+            </div>
+
+            <!-- Breakdown das pendências da CEG -->
+            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                {% if c_data.total_pending > 0 %}
+                <button type="button"
+                    @click.stop="filterByCegPayment('{{ c_data.ceg.id }}', '{{ c_data.caixa_id|default:'' }}', 'PENDING')"
+                    class="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 rounded-md font-semibold text-[10px] cursor-pointer transition flex items-center gap-1 active:scale-95"
+                    title="Filtrar itens com valor de item pendente">
+                    <i data-lucide="package" class="w-3 h-3 text-amber-600 dark:text-amber-400"></i>
+                    <span>Item: R$ {{ c_data.total_pending|floatformat:2 }}</span>
+                    <i data-lucide="search" class="w-2.5 h-2.5 opacity-60"></i>
+                </button>
+                {% endif %}
+                {% if c_data.total_frete_inter_pendente > 0 %}
+                <button type="button"
+                    @click.stop="filterByCegPayment('{{ c_data.ceg.id }}', '{{ c_data.caixa_id|default:'' }}', 'INTER_UNPAID')"
+                    class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 rounded-md font-semibold text-[10px] cursor-pointer transition flex items-center gap-1 active:scale-95"
+                    title="Filtrar itens com frete internacional a pagar">
+                    <i data-lucide="plane" class="w-3 h-3 text-blue-600 dark:text-blue-400"></i>
+                    <span>Frete: R$ {{ c_data.total_frete_inter_pendente|floatformat:2 }}</span>
+                    <i data-lucide="search" class="w-2.5 h-2.5 opacity-60"></i>
+                </button>
+                {% endif %}
+                {% if c_data.total_taxa_aduaneira_pendente > 0 %}
+                <button type="button"
+                    @click.stop="filterByCegPayment('{{ c_data.ceg.id }}', '{{ c_data.caixa_id|default:'' }}', 'TAXA_UNPAID')"
+                    class="px-2 py-0.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 rounded-md font-semibold text-[10px] cursor-pointer transition flex items-center gap-1 active:scale-95"
+                    title="Filtrar itens com taxa aduaneira a pagar">
+                    <i data-lucide="landmark" class="w-3 h-3 text-purple-600 dark:text-purple-400"></i>
+                    <span>Taxa: R$ {{ c_data.total_taxa_aduaneira_pendente|floatformat:2 }}</span>
+                    <i data-lucide="search" class="w-2.5 h-2.5 opacity-60"></i>
+                </button>
+                {% endif %}
+            </div>
+
+            {% if c_data.ceg.pix_instructions %}
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 bg-slate-50 dark:bg-white/5 p-2 rounded-lg border border-slate-100 dark:border-white/5 flex items-start gap-1.5">
+                <i data-lucide="pin" class="w-3 h-3 text-amber-500 shrink-0 mt-0.5"></i>
+                <span>{{ c_data.ceg.pix_instructions }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Chave Pix e Ação -->
+        <div class="pt-2 border-t border-purple-100/60 dark:border-white/10 space-y-2">
+            {% if c_data.has_distinct_pix_keys %}
+            <!-- Chaves Pix Específicas por Categoria -->
+            <div class="space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                    Chaves Pix por Categoria:
+                </span>
+                {% if c_data.total_pending > 0 and c_data.pix_key_item %}
+                <div class="p-2 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-800/50 space-y-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                            <i data-lucide="package" class="w-3 h-3 text-amber-600 dark:text-amber-400"></i>
+                            <span>Pix Itens:</span>
+                            <span class="font-mono">R$ {{ c_data.total_pending|floatformat:2 }}</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-mono text-slate-700 dark:text-slate-300 select-all truncate">
+                            {{ c_data.pix_key_item }}
+                        </span>
+                        <button type="button" @click="copyPix('{{ c_data.pix_key_item }}', '{{ c_data.ceg.id }}_item')"
+                            class="px-2 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                            <i data-lucide="check" class="w-3 h-3 stroke-[3]" x-show="copiedPixCegId === '{{ c_data.ceg.id }}_item'"></i>
+                            <i data-lucide="copy" class="w-3 h-3" x-show="copiedPixCegId !== '{{ c_data.ceg.id }}_item'"></i>
+                            <span class="text-[10px]" x-text="copiedPixCegId === '{{ c_data.ceg.id }}_item' ? 'Copiada!' : 'Copiar'"></span>
+                        </button>
+                    </div>
+                    {% if c_data.pix_instructions_item %}
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 italic flex items-center gap-1">
+                        <i data-lucide="pin" class="w-2.5 h-2.5 text-amber-500"></i>
+                        <span>{{ c_data.pix_instructions_item }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if c_data.total_frete_inter_pendente > 0 and c_data.pix_key_frete %}
+                <div class="p-2 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-200/80 dark:border-blue-800/50 space-y-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1">
+                            <i data-lucide="plane" class="w-3 h-3 text-blue-600 dark:text-blue-400"></i>
+                            <span>Pix Frete:</span>
+                            <span class="font-mono">R$ {{ c_data.total_frete_inter_pendente|floatformat:2 }}</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-mono text-slate-700 dark:text-slate-300 select-all truncate">
+                            {{ c_data.pix_key_frete }}
+                        </span>
+                        <button type="button" @click="copyPix('{{ c_data.pix_key_frete }}', '{{ c_data.ceg.id }}_frete')"
+                            class="px-2 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                            <i data-lucide="check" class="w-3 h-3 stroke-[3]" x-show="copiedPixCegId === '{{ c_data.ceg.id }}_frete'"></i>
+                            <i data-lucide="copy" class="w-3 h-3" x-show="copiedPixCegId !== '{{ c_data.ceg.id }}_frete'"></i>
+                            <span class="text-[10px]" x-text="copiedPixCegId === '{{ c_data.ceg.id }}_frete' ? 'Copiada!' : 'Copiar'"></span>
+                        </button>
+                    </div>
+                    {% if c_data.pix_instructions_frete %}
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 italic flex items-center gap-1">
+                        <i data-lucide="pin" class="w-2.5 h-2.5 text-blue-500"></i>
+                        <span>{{ c_data.pix_instructions_frete }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if c_data.total_taxa_aduaneira_pendente > 0 and c_data.pix_key_taxa %}
+                <div class="p-2 bg-purple-50/70 dark:bg-purple-950/30 rounded-xl border border-purple-200/80 dark:border-purple-800/50 space-y-1">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1">
+                            <i data-lucide="landmark" class="w-3 h-3 text-purple-600 dark:text-purple-400"></i>
+                            <span>Pix Taxa:</span>
+                            <span class="font-mono">R$ {{ c_data.total_taxa_aduaneira_pendente|floatformat:2 }}</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-mono text-slate-700 dark:text-slate-300 select-all truncate">
+                            {{ c_data.pix_key_taxa }}
+                        </span>
+                        <button type="button" @click="copyPix('{{ c_data.pix_key_taxa }}', '{{ c_data.ceg.id }}_taxa')"
+                            class="px-2 py-1 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                            <i data-lucide="check" class="w-3 h-3 stroke-[3]" x-show="copiedPixCegId === '{{ c_data.ceg.id }}_taxa'"></i>
+                            <i data-lucide="copy" class="w-3 h-3" x-show="copiedPixCegId !== '{{ c_data.ceg.id }}_taxa'"></i>
+                            <span class="text-[10px]" x-text="copiedPixCegId === '{{ c_data.ceg.id }}_taxa' ? 'Copiada!' : 'Copiar'"></span>
+                        </button>
+                    </div>
+                    {% if c_data.pix_instructions_taxa %}
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 italic flex items-center gap-1">
+                        <i data-lucide="pin" class="w-2.5 h-2.5 text-purple-500"></i>
+                        <span>{{ c_data.pix_instructions_taxa }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <!-- Chave Pix Única (Padrão) -->
+            {% if c_data.ceg.pix_key %}
+            <div class="flex items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                <span class="text-[11px] font-mono text-slate-700 dark:text-slate-300 select-all truncate">
+                    {{ c_data.ceg.pix_key }}
+                </span>
+                <button type="button" @click="copyPix('{{ c_data.ceg.pix_key }}', '{{ c_data.ceg.id }}')"
+                    class="px-2.5 py-1 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                    <i data-lucide="check" class="w-3 h-3 stroke-[3]" x-show="copiedPixCegId === '{{ c_data.ceg.id }}'"></i>
+                    <i data-lucide="copy" class="w-3 h-3" x-show="copiedPixCegId !== '{{ c_data.ceg.id }}'"></i>
+                    <span class="text-[11px]" x-text="copiedPixCegId === '{{ c_data.ceg.id }}' ? 'Copiada!' : 'Pix'"></span>
+                </button>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="flex items-center justify-between gap-2 pt-0.5">
+                <button type="button"
+                    @click="filterByCegPayment('{{ c_data.ceg.id }}', '{{ c_data.caixa_id|default:'' }}')"
+                    class="text-[11px] font-bold text-pink-600 dark:text-cyber-neon hover:underline flex items-center gap-1 cursor-pointer">
+                    <span>Ver {{ c_data.claims|length }} item(ns)</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-6 flex flex-col items-center justify-center gap-2">
+        <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500 opacity-80"></i>
+        <span>Nenhuma pendência de pagamento em CEGs no momento.</span>
+    </div>
+    {% endfor %}
+</div>

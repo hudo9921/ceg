@@ -1,0 +1,93 @@
+<script>
+function cegStatusMercariMethods() {
+    return {
+        openEditItem(itemId) {
+            const item = this.mercariItems.find(i => i.id === itemId);
+            if (!item) return;
+            this.editingItem = Object.assign({}, item);
+            this.itemImagePreview = item.image_url || '';
+            this.itemImageBase64 = '';
+            this.itemImageUrl = item.image_url || '';
+            this.editItemModalOpen = true;
+        },
+        closeEditModal() {
+            this.editItemModalOpen = false;
+            this.editingItem = {};
+            this.itemImagePreview = '';
+            this.itemImageBase64 = '';
+            this.itemImageUrl = '';
+        },
+        handleFileChange(event) {
+            const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+            const file = files && files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.itemImagePreview = e.target.result;
+                    this.itemImageBase64 = e.target.result;
+                    this.itemImageUrl = '';
+                };
+                reader.readAsDataURL(file);
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fileInput = document.querySelector('#edit_item_status_form input[name="foto_arquivo"]');
+                    if (fileInput) fileInput.files = dt.files;
+                } catch(err) {}
+            }
+        },
+        handleUrlChange() {
+            if (this.itemImageUrl) {
+                this.itemImagePreview = this.itemImageUrl;
+                this.itemImageBase64 = '';
+            }
+        },
+        clearImage() {
+            this.itemImagePreview = '';
+            this.itemImageBase64 = '';
+            this.itemImageUrl = '';
+            if (this.editingItem) {
+                this.editingItem.image_url = '';
+            }
+            const fileInput = document.querySelector('#edit_item_status_form input[name="foto_arquivo"]');
+            if (fileInput) fileInput.value = '';
+        },
+        async submitNewTipo() {
+            if (!this.newTipoNome.trim()) {
+                alert('Por favor informe o nome do tipo de item.');
+                return;
+            }
+            const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrf = csrfEl ? csrfEl.value : '';
+            const formData = new FormData();
+            formData.append('nome', this.newTipoNome.trim());
+            formData.append('descricao', this.newTipoDescricao.trim());
+            try {
+                const res = await fetch('/tipos-item/criar/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (!this.tiposItem.some(t => t.id === data.tipo.id)) {
+                        this.tiposItem.push(data.tipo);
+                    }
+                    this.editingItem.tipo_item_id = data.tipo.id;
+                    this.newTipoNome = '';
+                    this.newTipoDescricao = '';
+                    this.newTipoModalOpen = false;
+                } else {
+                    alert(data.message || 'Erro ao criar tipo de item.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao conectar com o servidor.');
+            }
+        }
+    };
+}
+</script>

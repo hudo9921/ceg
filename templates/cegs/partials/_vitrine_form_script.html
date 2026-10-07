@@ -1,0 +1,68 @@
+<script>
+function vitrineFormApp() {
+    const erasMap = JSON.parse('{{ eras_by_group_json|escapejs }}' || '{}');
+    const membersMap = JSON.parse('{{ members_by_group_json|escapejs }}' || '{}');
+
+    return {
+        selectedGroup: '{% if item and item.group_id %}{{ item.group_id }}{% endif %}',
+        selectedEra: '{% if item and item.era_id %}{{ item.era_id }}{% endif %}',
+        selectedMember: '{% if item and item.integrante %}{{ item.integrante|escapejs }}{% endif %}',
+        imageUrlInput: '{% if item %}{{ item.display_image_url }}{% endif %}',
+        filePreview: null,
+
+        init() {
+            this.$nextTick(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+            this.$watch('previewSrc', () => {
+                this.$nextTick(() => {
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                });
+            });
+        },
+
+        get previewSrc() {
+            return this.filePreview || this.imageUrlInput || '';
+        },
+
+        get filteredEras() {
+            if (!this.selectedGroup || !erasMap[this.selectedGroup]) {
+                let all = [];
+                for (const gId in erasMap) {
+                    all = all.concat(erasMap[gId]);
+                }
+                return all;
+            }
+            return erasMap[this.selectedGroup] || [];
+        },
+
+        get filteredMembers() {
+            if (this.selectedGroup && membersMap[this.selectedGroup]) {
+                return membersMap[this.selectedGroup];
+            }
+            return [];
+        },
+
+        onGroupChange() {
+            this.selectedEra = '';
+        },
+
+        handleFileChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.filePreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                this.filePreview = null;
+            }
+        }
+    };
+}
+</script>

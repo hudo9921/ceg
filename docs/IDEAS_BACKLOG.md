@@ -35,3 +35,50 @@
     - **⏰ Agendadas:** Exibição cronológica por data de abertura.
     - **📁 Encerradas / Concluídas:** Histórico com paginação server-side via Django `Paginator` (ex: 12 a 18 CEGs por página com parâmetros `?page=X`), preservando links diretos e SEO.
 - **Status:** Guardado para implementação futura.
+
+---
+
+## ✨ 3. Experiência Visual Premium & Micro-interações de Luxo
+
+### 🎴 3.1. Efeito Foil Holográfico 3D & Tilt nos Photocards
+- **Contexto:** Simular a sensação física de segurar um photocard raro (POB, Lucky Draw) sob a luz do ambiente.
+- **Mecânica:**
+  - Inclinação tridimensional sutil no hover via CSS `perspective` e coordenadas de mouse (`rotateX`, `rotateY`).
+  - Camada de brilho furta-cor com gradiente arco-íris e `mix-blend-mode: color-dodge` que se desloca dinamicamente acompanhando a posição do cursor.
+- **Status:** Guardado para implementação futura.
+
+### 💡 3.2. Spotlight Borders (Bordas de Holofote no Cursor)
+- **Contexto:** Elevar o acabamento de cards de CEG, Caixas e painéis gerenciais no estilo Linear/Raycast.
+- **Mecânica:** As bordas dos cards possuem iluminação dinâmica que se acende suavemente apenas no ponto focal mais próximo do cursor do mouse, criando um rastro luminoso elegante.
+- **Status:** Guardado para implementação futura.
+
+### 🔢 3.3. Odômetro Rolante de Dígitos (Rolling Numbers)
+- **Contexto:** Atualização visual sofisticada de valores monetários (R$), contadores de slots e ocupação de sets.
+- **Mecânica:** Os números não alternam bruscamente de valor; os dígitos deslizam verticalmente com física de amortecimento estilo odômetro de relógio de luxo.
+- **Status:** Guardado para implementação futura.
+
+### 📳 3.4. Micro-haptics no Mobile (Vibração Tátil)
+- **Contexto:** Feedback tátil nativo ao usar a plataforma pelo smartphone.
+- **Mecânica:** Utilizar a Web Vibration API (`navigator.vibrate(8-10ms)`) em momentos chave de interação: confirmação de reserva de slot, cópia de chave Pix e seleção de itens na Caixinha.
+- **Status:** Guardado para implementação futura.
+
+### ⌨️ 3.5. Command Palette Global (`Ctrl + K` / `Cmd + K`)
+- **Contexto:** Atalho universal para power users e organizadoras navegarem instantaneamente entre qualquer grupo, integrante, CEG ou remessa.
+- **Mecânica:** Modal flutuante estilo Spotlight com busca difusa instantânea, comandos de atalho rápido e navegação 100% por teclado.
+- **Status:** Guardado para implementação futura.
+
+### 🎬 3.6. View Transitions API (Morfismo Fluido entre Telas)
+- **Contexto:** Eliminar o piscar de recarregamento ao navegar entre a Vitrine da Home e a Página de Detalhe da CEG.
+- **Mecânica:** Transição morphing nativa onde a imagem do card de capa viaja suavemente até o topo da tela de detalhe.
+- **Status:** Guardado para implementação futura.
+
+### 🎉 3.7. Partículas de Confetti Y2K / Sparkles
+- **Contexto:** Celebrar a vitória de conseguir um slot concorrido no Segundo Zero.
+- **Mecânica:** Explosão minimalista e elegante de estrelinhas pastéis cintilantes via `canvas-confetti` ultraleve ao concluir a reserva com sucesso.
+- **Status:** Guardado para implementação futura.
+
+### 🔊 3.8. Micro-sonoplastia Opcional (Audio Feedback Tátil)
+- **Contexto:** Reforçar a sensação tátil da interface com sons de alta fidelidade e volume ultrassuave (estilo Apple Pay / Nintendo Switch).
+- **Mecânica:** Efeito sonoro de "tick" suave em abas e "chime" discreto ao confirmar pagamentos, com controle liga/desliga obrigatório no perfil.
+- **Status:** Guardado para implementação futura.
+

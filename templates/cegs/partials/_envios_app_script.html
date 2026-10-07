@@ -1,0 +1,44 @@
+<!-- MOTOR REATIVO ALPINE.JS DE ENVIOS NACIONAIS -->
+<script>
+    function enviosApp() {
+        return {
+            dispatchModalOpen: false,
+            dispatchPacoteId: '',
+            dispatchPacoteIdentificador: '',
+            dispatchTransportadora: '',
+            dispatchCodigoRastreio: '',
+
+            editPacoteModalOpen: false,
+            editPacoteId: '',
+            editPacoteIdentificador: '',
+            editPacoteTransportadora: '',
+            editPacoteCodigoRastreio: '',
+            editPacoteValorFrete: '',
+            editPacoteIsFretePago: false,
+            editPacoteStatus: '',
+            editPacoteObservacoes: '',
+
+            configModalOpen: false,
+
+            openDispatchModal(id, identificador, transportadora, codigo) {
+                this.dispatchPacoteId = id;
+                this.dispatchPacoteIdentificador = identificador;
+                this.dispatchTransportadora = transportadora || 'Correios Mini Envios';
+                this.dispatchCodigoRastreio = codigo || '';
+                this.dispatchModalOpen = true;
+            },
+
+            openEditPacoteModal(id, identificador, transportadora, codigo, valor, pago, status, obs) {
+                this.editPacoteId = id;
+                this.editPacoteIdentificador = identificador;
+                this.editPacoteTransportadora = transportadora || '';
+                this.editPacoteCodigoRastreio = codigo || '';
+                this.editPacoteValorFrete = valor || '';
+                this.editPacoteIsFretePago = !!pago;
+                this.editPacoteStatus = status || 'SOLICITADO';
+                this.editPacoteObservacoes = obs || '';
+                this.editPacoteModalOpen = true;
+            }
+        };
+    }
+</script>

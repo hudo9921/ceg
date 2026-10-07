@@ -5,17 +5,17 @@
 {% block content %}
 <div class="max-w-md mx-auto py-8">
 
-    <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
         
         <!-- Header -->
-        <div class="text-center space-y-2">
-            <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-sm">
-                💬
+        <div class="text-center space-y-2.5">
+            <div class="w-14 h-14 bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 rounded-2xl flex items-center justify-center mx-auto border border-pink-200 dark:border-pink-900/40 shadow-xs">
+                <i data-lucide="message-circle" class="w-7 h-7 stroke-[2]"></i>
             </div>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {% if next_url %}Identificação Rápida{% else %}Consulta Sem Senha{% endif %}
             </h1>
-            <p class="text-xs text-slate-500 leading-relaxed">
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
                 {% if next_url %}
                     Informe seu WhatsApp para confirmar suas reservas com 1 clique e acompanhar seus claims.
                 {% else %}
@@ -25,8 +25,8 @@
         </div>
 
         {% if next_url %}
-            <div class="p-3 bg-pink-50 border border-pink-200 rounded-xl text-xs text-pink-900 flex items-center gap-2">
-                <span class="text-base">⚡</span>
+            <div class="p-3.5 bg-pink-50 dark:bg-pink-950/40 border border-pink-200/80 dark:border-pink-900/60 rounded-2xl text-xs text-pink-900 dark:text-pink-200 flex items-center gap-2.5 shadow-2xs">
+                <i data-lucide="zap" class="w-4 h-4 text-pink-500 shrink-0 stroke-[2]"></i>
                 <div>
                     <strong>Pronto para reservar:</strong> Após confirmar o código de acesso, você voltará diretamente para a CEG!
                 </div>
@@ -41,28 +41,30 @@
                 <input type="hidden" name="phone" value="{{ phone }}">
                 {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
-                <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs text-center space-y-1">
-                    <div>Código de 6 dígitos enviado para:</div>
-                    <div class="text-sm font-mono font-black text-emerald-950">{{ formatted_phone|default:phone }}</div>
+                <div class="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl text-emerald-900 dark:text-emerald-200 text-xs text-center space-y-1">
+                    <div class="text-[11px] font-medium text-emerald-800 dark:text-emerald-300">Código de 6 dígitos enviado para:</div>
+                    <div class="text-sm font-mono font-black text-emerald-950 dark:text-emerald-100">{{ formatted_phone|default:phone }}</div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5 text-center">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 text-center">
                         Digite o Código de 6 Dígitos
                     </label>
                     <input type="text" name="code" maxlength="6" pattern="[0-9]{6}" required autofocus
                            placeholder="Ex: 123456"
-                           class="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                           class="w-full text-center text-3xl font-mono font-black tracking-widest px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
                 </div>
 
                 <button type="submit"
-                        class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-black text-sm rounded-xl shadow-md transition">
-                    ✨ Confirmar e Continuar
+                        class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-pink-500/25 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="sparkles" class="w-4 h-4 stroke-[2]"></i>
+                    <span>Confirmar e Continuar</span>
                 </button>
 
-                <div class="pt-2 text-center text-xs text-slate-400">
-                    <a href="{% url 'login_otp' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="hover:text-pink-600">
-                        ← Digitar outro número de WhatsApp
+                <div class="pt-2 text-center text-xs text-slate-400 dark:text-slate-500">
+                    <a href="{% url 'login_otp' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="inline-flex items-center gap-1.5 hover:text-pink-600 dark:hover:text-pink-400 transition">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 stroke-[2]"></i>
+                        <span>Digitar outro número de WhatsApp</span>
                     </a>
                 </div>
             </form>
@@ -74,30 +76,30 @@
                 <input type="hidden" name="action" value="send_otp">
                 {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                         <span>Número de WhatsApp</span>
-                        <span class="text-[11px] font-bold text-pink-600" x-show="recognizedFormat" x-text="recognizedFormat"></span>
+                        <span class="text-[11px] font-bold text-pink-600 dark:text-pink-400" x-show="recognizedFormat" x-text="recognizedFormat"></span>
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-base">
-                            💬
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500 pointer-events-none">
+                            <i data-lucide="phone" class="w-4 h-4 stroke-[2]"></i>
                         </span>
                         <input type="tel" name="phone" required autofocus
                                x-model="rawPhone"
                                @input="formatPreview()"
                                value="{{ phone|default:'' }}"
                                placeholder="Ex: 11 91234-5678 ou +1 202 555-0199"
-                               class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition">
+                               class="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
                     </div>
-                    <span class="text-[11px] text-slate-400 mt-1 block">
-                        Aceita qualquer formato: com DDD, espaços, traço, parênteses ou internacional com '+'.
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 block">
+                        Aceita qualquer formato: com DDD, espaços, traço, parênteses ou internacional (+DDI).
                     </span>
                 </div>
 
                 <button type="submit"
-                        class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                    <span>📲</span>
+                        class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-pink-500/25 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="send" class="w-4 h-4 stroke-[2]"></i>
                     <span>Receber Código de 6 Dígitos</span>
                 </button>
             </form>
@@ -109,6 +111,11 @@
                     recognizedFormat: '',
                     init() {
                         this.formatPreview();
+                        this.$nextTick(() => {
+                            if (typeof lucide !== 'undefined') {
+                                lucide.createIcons();
+                            }
+                        });
                     },
                     formatPreview() {
                         const val = this.rawPhone.trim();
@@ -117,11 +124,11 @@
                             return;
                         }
                         if (val.startsWith('+')) {
-                            this.recognizedFormat = '🌍 Internacional (+DDI)';
+                            this.recognizedFormat = 'Internacional (+DDI)';
                         } else {
                             const digits = val.replace(/\D/g, '');
                             if (digits.length >= 10) {
-                                this.recognizedFormat = '🇧🇷 Brasil (DDD identificado)';
+                                this.recognizedFormat = 'Brasil (DDD identificado)';
                             } else if (digits.length > 0) {
                                 this.recognizedFormat = 'Digite o DDD + número';
                             } else {
@@ -134,8 +141,9 @@
             </script>
         {% endif %}
 
-        <div class="border-t border-slate-100 pt-4 text-center text-[11px] text-slate-400">
-            🔒 Seus dados são protegidos e usados apenas para a gestão de reservas de K-pop.
+        <div class="border-t border-slate-100 dark:border-slate-800 pt-4 text-center text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 stroke-[2]"></i>
+            <span>Seus dados são protegidos e usados apenas para a gestão de reservas de K-pop.</span>
         </div>
 
     </div>

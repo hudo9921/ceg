@@ -1,0 +1,92 @@
+<!-- TABELAS DE ANÁLISE COMPLEMENTAR: Top Itens Mais Vendidos & Principais Compradores -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Top Itens / Photocards mais vendidos -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-white/10 pb-3">
+            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+                <span>Top Itens & Photocards Mais Vendidos</span>
+            </h3>
+            <span class="text-xs text-slate-400 font-bold">Por volume</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold">
+                    <tr>
+                        <th class="py-2.5 px-3">Item / Membro</th>
+                        <th class="py-2.5 px-3 text-center">Vendas</th>
+                        <th class="py-2.5 px-3 text-right">Faturamento</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                    {% for item in top_items %}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-2.5 px-3">
+                                <div class="font-bold text-slate-900 dark:text-white">{{ item.name }}</div>
+                                <div class="text-[10px] text-slate-400">
+                                    {{ item.member_name }} • {{ item.group_name }}
+                                </div>
+                            </td>
+                            <td class="py-2.5 px-3 text-center font-black text-pink-600 dark:text-pink-400">
+                                {{ item.total_claims }}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-black text-emerald-600 dark:text-emerald-400">
+                                R$ {{ item.total_revenue|floatformat:2 }}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-slate-400">Nenhuma venda encontrada para o filtro.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Maiores Compradores -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-white/10 pb-3">
+            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="crown" class="w-4 h-4 text-yellow-500"></i>
+                <span>Maiores Compradores</span>
+            </h3>
+            <span class="text-xs text-slate-400 font-bold">Por investimento</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold">
+                    <tr>
+                        <th class="py-2.5 px-3">Participante</th>
+                        <th class="py-2.5 px-3 text-center">Claims</th>
+                        <th class="py-2.5 px-3 text-right">Total Gasto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                    {% for b in top_buyers %}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-2.5 px-3">
+                                <div class="font-bold text-slate-900 dark:text-white">{{ b.display_name }}</div>
+                                <div class="text-[10px] text-slate-400">
+                                    {% if b.social_handle %}{{ b.social_handle }} • {% endif %}{{ b.whatsapp }}
+                                </div>
+                            </td>
+                            <td class="py-2.5 px-3 text-center font-black text-purple-600 dark:text-purple-400">
+                                {{ b.claims_count }}
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-black text-emerald-600 dark:text-emerald-400">
+                                R$ {{ b.total_spent|floatformat:2 }}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-slate-400">Nenhum comprador encontrado para o filtro.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

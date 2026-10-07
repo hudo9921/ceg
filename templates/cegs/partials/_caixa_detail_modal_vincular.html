@@ -1,0 +1,118 @@
+<!-- Modais para Vincular CEGs e Itens Mercari à Caixa (Alpine.js) -->
+{% if is_staff_user %}
+    <!-- 1. Modal para Vincular CEGs -->
+    {% if cegs_sem_caixa %}
+        <div x-show="linkModalOpen" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+             @keydown.escape.window="linkModalOpen = false">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-white/10 space-y-4"
+                 @click.away="linkModalOpen = false">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="link" class="w-4 h-4 text-sky-500"></i>
+                        <h3 class="font-black text-slate-900 dark:text-white text-base">Vincular CEGs a esta Caixa</h3>
+                    </div>
+                    <button type="button" @click="linkModalOpen = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 cursor-pointer">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form action="{% url 'caixa_link_cegs' slug=caixa.slug %}" method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <p class="text-xs text-slate-600 dark:text-slate-300">
+                        Selecione uma ou mais CEGs sem caixa para atrelar à remessa <b>{{ caixa.nome }}</b>:
+                    </p>
+
+                    <div class="max-h-64 overflow-y-auto space-y-2 border border-slate-200 dark:border-white/10 rounded-2xl p-3 bg-slate-50 dark:bg-cyber-obsidian no-scrollbar">
+                        {% for c in cegs_sem_caixa %}
+                            <label class="flex items-center gap-3 p-2.5 bg-white dark:bg-cyber-surface rounded-xl border border-slate-200 dark:border-white/10 hover:border-sky-400 cursor-pointer transition">
+                                <input type="checkbox" name="ceg_ids" value="{{ c.id }}"
+                                       class="rounded text-sky-600 focus:ring-sky-500 w-4 h-4 shrink-0">
+                                {% if c.display_image_url %}
+                                    <img src="{{ c.display_image_url }}" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-white/10 shrink-0">
+                                {% else %}
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-xs font-black shrink-0">
+                                        <i data-lucide="disc" class="w-5 h-5"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="text-xs flex-1 min-w-0">
+                                    <div class="font-bold text-slate-900 dark:text-white truncate">{{ c.display_title }}</div>
+                                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">{{ c.era.group.name }} &bull; {{ c.get_status_display }}</div>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/10">
+                        <button type="button" @click="linkModalOpen = false"
+                                class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-md shadow-sky-500/20 transition cursor-pointer flex items-center gap-1.5">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>Vincular Selecionadas</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- 2. Modal para Vincular Itens Mercari -->
+    {% if itens_individuais_sem_caixa %}
+        <div x-show="linkItemModalOpen" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+             @keydown.escape.window="linkItemModalOpen = false">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-white/10 space-y-4"
+                 @click.away="linkItemModalOpen = false">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shopping-bag" class="w-4 h-4 text-rose-500"></i>
+                        <h3 class="font-black text-slate-900 dark:text-white text-base">Vincular Itens Mercari a esta Caixa</h3>
+                    </div>
+                    <button type="button" @click="linkItemModalOpen = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 cursor-pointer">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form action="{% url 'caixa_link_itens' slug=caixa.slug %}" method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <p class="text-xs text-slate-600 dark:text-slate-300">
+                        Selecione um ou mais itens avulsos do Mercari para atrelar à remessa <b>{{ caixa.nome }}</b>:
+                    </p>
+
+                    <div class="max-h-64 overflow-y-auto space-y-2 border border-slate-200 dark:border-white/10 rounded-2xl p-3 bg-slate-50 dark:bg-cyber-obsidian no-scrollbar">
+                        {% for it in itens_individuais_sem_caixa %}
+                            <label class="flex items-center gap-3 p-2.5 bg-white dark:bg-cyber-surface rounded-xl border border-slate-200 dark:border-white/10 hover:border-rose-400 cursor-pointer transition">
+                                <input type="checkbox" name="item_ids" value="{{ it.id }}"
+                                       class="rounded text-rose-600 focus:ring-rose-500 w-4 h-4 shrink-0">
+                                {% if it.image_display_url %}
+                                    <img src="{{ it.image_display_url }}" alt="" class="w-9 h-9 object-cover rounded-lg border border-slate-200 dark:border-white/10 shrink-0">
+                                {% endif %}
+                                <div class="text-xs flex-1 min-w-0">
+                                    <div class="font-bold text-slate-900 dark:text-white truncate">{{ it.nome }}</div>
+                                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                        {{ it.comprador.display_name }} &bull; Qtd: {{ it.quantidade }} &bull; {{ it.get_status_display }}
+                                    </div>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/10">
+                        <button type="button" @click="linkItemModalOpen = false"
+                                class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-500/20 transition cursor-pointer flex items-center gap-1.5">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>Vincular Selecionados à Caixa</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}

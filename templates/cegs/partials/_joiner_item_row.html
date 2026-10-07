@@ -1,0 +1,146 @@
+<!-- DETALHES, THUMBNAIL E INFORMAÇÕES DO ITEM -->
+<div class="flex items-start sm:items-center space-x-3.5 flex-1">
+    <!-- Se já foi enviado ou entregue: badge fixo, bloqueado para seleção -->
+    <template x-if="item.pacote_status === 'ENVIADO' || item.pacote_status === 'ENTREGUE'">
+        <div class="mt-1 sm:mt-0 w-5 h-5 rounded-md bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 flex items-center justify-center text-[10px] font-black border border-emerald-300 dark:border-emerald-800/50 shadow-2xs select-none"
+             title="Item já enviado nacionalmente (não pode ser empacotado novamente)">
+            ✓
+        </div>
+    </template>
+
+    <!-- Se não pode empacotar (e não foi enviado): cadeado com motivo de bloqueio -->
+    <template x-if="item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE' && !item.pode_empacotar">
+        <div class="mt-1 sm:mt-0 w-5 h-5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-400 flex items-center justify-center text-[11px] font-black border border-slate-300 dark:border-white/10 shadow-2xs select-none cursor-not-allowed"
+             :title="item.motivo_bloqueio || 'Bloqueado para empacotamento'">
+            <i data-lucide="lock" class="w-3 h-3"></i>
+        </div>
+    </template>
+
+    <!-- Se pode empacotar: checkbox ativo para empacotamento -->
+    <template x-if="item.pode_empacotar">
+        <input type="checkbox" :value="item.uid"
+               @change="toggleItemSelection(item.uid)"
+               :checked="selectedUids.includes(item.uid)"
+               class="mt-1 sm:mt-0 rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
+    </template>
+
+    <!-- Thumbnail / Foto com link para a CEG ou anúncio original -->
+    <div class="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm relative"
+         :class="item.image_url ? 'bg-slate-900' : 'bg-slate-100 dark:bg-white/5'">
+        <template x-if="item.type === 'slot'">
+            <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
+               class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
+               :title="'Abrir CEG: ' + item.ceg_titulo">
+                <template x-if="item.image_url">
+                    <img :src="item.image_url" :alt="item.nome"
+                         class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
+                </template>
+                <template x-if="!item.image_url">
+                    <i data-lucide="layers" class="w-6 h-6 text-slate-400 opacity-60"></i>
+                </template>
+            </a>
+        </template>
+        <template x-if="item.type === 'mercari'">
+            <div class="w-full h-full flex items-center justify-center">
+                <template x-if="item.link_pedido">
+                    <a :href="item.link_pedido" target="_blank"
+                       class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
+                       title="Abrir anúncio Mercari">
+                        <template x-if="item.image_url">
+                            <img :src="item.image_url" :alt="item.nome"
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
+                        </template>
+                        <template x-if="!item.image_url">
+                            <i data-lucide="shopping-bag" class="w-6 h-6 text-pink-500 opacity-60"></i>
+                        </template>
+                    </a>
+                </template>
+                <template x-if="!item.link_pedido">
+                    <div class="w-full h-full flex items-center justify-center">
+                        <template x-if="item.image_url">
+                            <img :src="item.image_url" :alt="item.nome"
+                                 class="w-full h-full object-contain">
+                        </template>
+                        <template x-if="!item.image_url">
+                            <i data-lucide="shopping-bag" class="w-6 h-6 text-pink-500 opacity-60"></i>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <!-- Textos & Detalhes com Links Diretos -->
+    <div class="space-y-0.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+            <span class="px-2 py-0.2 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-[10px] font-black rounded-md uppercase"
+                  x-text="item.tipo_item"></span>
+            <span class="text-xs font-bold text-pink-600 dark:text-pink-400" x-text="item.group_name"></span>
+            <template x-if="item.era_name">
+                <span class="text-xs text-slate-400 dark:text-slate-500" x-text="'• ' + item.era_name"></span>
+            </template>
+        </div>
+
+        <!-- Nome do Item com Link Clicável -->
+        <div>
+            <template x-if="item.type === 'slot'">
+                <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
+                   class="text-sm font-black text-slate-900 dark:text-white hover:text-pink-600 dark:hover:text-pink-400 transition inline-flex items-center gap-1.5 group"
+                   :title="'Acessar CEG: ' + item.ceg_titulo">
+                    <span x-text="item.nome"></span>
+                    <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-pink-600 transition"></i>
+                </a>
+            </template>
+            <template x-if="item.type === 'mercari'">
+                <div>
+                    <template x-if="item.link_pedido">
+                        <a :href="item.link_pedido" target="_blank"
+                           class="text-sm font-black text-slate-900 dark:text-white hover:text-pink-600 dark:hover:text-pink-400 transition inline-flex items-center gap-1.5 group"
+                           title="Acessar anúncio do produto original">
+                            <span x-text="item.nome"></span>
+                            <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-pink-600 transition"></i>
+                        </a>
+                    </template>
+                    <template x-if="!item.link_pedido">
+                        <span class="text-sm font-black text-slate-900 dark:text-white" x-text="item.nome"></span>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Subtítulo: CEG & Caixa com Links -->
+        <div class="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2">
+            <template x-if="item.type === 'slot'">
+                <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
+                   class="font-medium text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 hover:underline inline-flex items-center gap-1"
+                   :title="'Abrir CEG: ' + item.ceg_titulo">
+                    <span x-text="item.ceg_titulo"></span>
+                    <i data-lucide="external-link" class="w-2.5 h-2.5 text-slate-400"></i>
+                </a>
+            </template>
+            <template x-if="item.type === 'mercari'">
+                <span class="font-medium text-slate-600 dark:text-slate-300" x-text="item.ceg_titulo"></span>
+            </template>
+            <span>•</span>
+            <template x-if="item.caixa_id">
+                <a :href="'/caixas/' + item.caixa_id + '/'" target="_blank"
+                   class="text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 hover:underline"
+                   :title="'Ver detalhes da caixa ' + item.caixa_nome"
+                   x-text="'Caixa: ' + item.caixa_nome"></a>
+            </template>
+            <template x-if="!item.caixa_id">
+                <span class="text-slate-500 dark:text-slate-400" x-text="'Caixa: ' + item.caixa_nome"></span>
+            </template>
+        </div>
+
+        <!-- Aviso de Bloqueio de Empacotamento se não elegível -->
+        <template x-if="!item.pode_empacotar && item.motivo_bloqueio && item.pacote_status !== 'ENVIADO' && item.pacote_status !== 'ENTREGUE'">
+            <div class="pt-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                    <i data-lucide="lock" class="w-3 h-3 text-amber-600"></i>
+                    <span x-text="item.motivo_bloqueio"></span>
+                </span>
+            </div>
+        </template>
+    </div>
+</div>

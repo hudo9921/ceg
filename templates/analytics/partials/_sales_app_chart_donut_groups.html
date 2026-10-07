@@ -1,0 +1,97 @@
+<script>
+function renderSalesDonutChart(app) {
+    const ctx = document.getElementById('salesDonutChart');
+    if (!ctx) return null;
+    if (app.donutChart) app.donutChart.destroy();
+
+    const donutLabels = (app.chartData.donut && app.chartData.donut.labels) || ['Pago (Confirmado)', 'Pendente (Aguardando Pix)'];
+    const donutData = (app.chartData.donut && app.chartData.donut.data) || [0, 0];
+    const hasData = donutData.some(v => v > 0);
+
+    return new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: hasData ? donutLabels : ['Sem dados no período'],
+            datasets: [{
+                data: hasData ? donutData : [1],
+                backgroundColor: hasData
+                    ? ['rgba(16, 185, 129, 0.9)', 'rgba(245, 158, 11, 0.9)']
+                    : ['rgba(226, 232, 240, 0.8)'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { weight: 'bold', size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (!hasData) return 'Nenhuma venda registrada no período';
+                            const v = ctx.parsed || 0;
+                            return ctx.label + ': R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+}
+
+function renderSalesGroupsChart(app) {
+    const ctx = document.getElementById('salesGroupsChart');
+    if (!ctx) return null;
+    if (app.groupsChart) app.groupsChart.destroy();
+
+    const groupLabels = (app.chartData.groups && app.chartData.groups.labels) || [];
+    const groupSales = (app.chartData.groups && app.chartData.groups.sales) || [];
+    const hasData = groupLabels.length > 0 && groupSales.some(v => v > 0);
+
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: hasData ? groupLabels : ['Sem dados'],
+            datasets: [{
+                label: 'Faturamento Total (R$)',
+                data: hasData ? groupSales : [0],
+                backgroundColor: 'rgba(147, 51, 234, 0.8)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return 'Total: R$ ' + (ctx.parsed.x || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(v) { return 'R$ ' + v; }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { font: { weight: 'bold', size: 11 } }
+                }
+            }
+        }
+    });
+}
+</script>

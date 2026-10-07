@@ -1,0 +1,119 @@
+<!-- SEÇÃO 5: GESTÃO OPERACIONAL DE ITENS INDIVIDUAIS (MERCARI / JAPÃO) - PIPELINE -->
+<div x-show="selectedCategory === 'all' || selectedCategory === 'mercari'"
+     x-transition
+     class="bg-white dark:bg-[#14121B] rounded-2xl border border-amber-200 dark:border-amber-800/40 shadow-sm overflow-hidden space-y-6 p-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-100 dark:border-white/5 pb-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60">
+                    🇯🇵 Japão / Mercari
+                </span>
+                <h2 class="text-lg font-black text-slate-900 dark:text-white">
+                    Itens Individuais & Remessas Mercari
+                </h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Acompanhamento do status físico e financeiro (frete internacional e taxa) de cada item individual comprado.
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            {% if mercari_status %}
+                <span class="px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-xl">
+                    {{ mercari_status.total_itens }} item(ns) / {{ mercari_status.total_unidades }} unidade(s)
+                </span>
+            {% endif %}
+            <a href="{% url 'creations_hub' %}?category=mercari"
+               class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Novo Item</span>
+            </a>
+        </div>
+    </div>
+
+    {% if mercari_status and mercari_status.total_itens > 0 %}
+        <!-- Pipeline de Status dos Itens Mercari -->
+        <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
+            <div class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-center">
+                <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Comprado</div>
+                <div class="text-base font-black text-slate-900 dark:text-white">{{ mercari_status.by_status.COMPRADO|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-950/20 text-center">
+                <div class="text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase">Warehouse</div>
+                <div class="text-base font-black text-blue-900 dark:text-blue-100">{{ mercari_status.by_status.WAREHOUSE|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800/40 bg-indigo-50 dark:bg-indigo-950/20 text-center">
+                <div class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 uppercase">Consolidação</div>
+                <div class="text-base font-black text-indigo-900 dark:text-indigo-100">{{ mercari_status.by_status.EM_CONSOLIDACAO|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/40 bg-sky-50 dark:bg-sky-950/20 text-center">
+                <div class="text-[10px] font-bold text-sky-700 dark:text-sky-300 uppercase">Enviado</div>
+                <div class="text-base font-black text-sky-900 dark:text-sky-100">{{ mercari_status.by_status.ENVIADO|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20 text-center">
+                <div class="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">No Brasil</div>
+                <div class="text-base font-black text-amber-900 dark:text-amber-100">{{ mercari_status.by_status.NO_BRASIL|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-rose-200 dark:border-rose-800/40 bg-rose-50 dark:bg-rose-950/20 text-center">
+                <div class="text-[10px] font-bold text-rose-700 dark:text-rose-300 uppercase">Tributado</div>
+                <div class="text-base font-black text-rose-900 dark:text-rose-100">{{ mercari_status.by_status.TRIBUTADO|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-teal-200 dark:border-teal-800/40 bg-teal-50 dark:bg-teal-950/20 text-center">
+                <div class="text-[10px] font-bold text-teal-700 dark:text-teal-300 uppercase">Liberado</div>
+                <div class="text-base font-black text-teal-900 dark:text-teal-100">{{ mercari_status.by_status.LIBERADO|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-purple-200 dark:border-purple-800/40 bg-purple-50 dark:bg-purple-950/20 text-center">
+                <div class="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase">Na GOM</div>
+                <div class="text-base font-black text-purple-900 dark:text-purple-100">{{ mercari_status.by_status.NA_GOM|default:0 }}</div>
+            </div>
+            <div class="p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/20 text-center">
+                <div class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">Finalizado</div>
+                <div class="text-base font-black text-emerald-900 dark:text-emerald-100">{{ mercari_status.by_status.FINALIZADO|default:0 }}</div>
+            </div>
+        </div>
+
+        <!-- Resumo de Pendências de Frete e Taxa -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl border {% if mercari_status.frete_unpaid_count > 0 %}border-blue-300 dark:border-blue-700/60 bg-blue-50/60 dark:bg-blue-950/20{% else %}border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/5{% endif %} flex justify-between items-center">
+                <div>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Fretes Internacionais Pendentes</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Aguardando pagamento de compradores</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-base font-black {% if mercari_status.frete_unpaid_count > 0 %}text-blue-700 dark:text-blue-300{% else %}text-slate-400{% endif %}">
+                        {{ mercari_status.frete_unpaid_count }} pendente(s)
+                    </span>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold">R$ {{ mercari_status.frete_unpaid_amount|floatformat:2 }}</div>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-xl border {% if mercari_status.taxa_unpaid_count > 0 %}border-purple-300 dark:border-purple-700/60 bg-purple-50/60 dark:bg-purple-950/20{% else %}border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/5{% endif %} flex justify-between items-center">
+                <div>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Taxas Aduaneiras Pendentes</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Aguardando pagamento de compradores</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-base font-black {% if mercari_status.taxa_unpaid_count > 0 %}text-purple-700 dark:text-purple-300{% else %}text-slate-400{% endif %}">
+                        {{ mercari_status.taxa_unpaid_count }} pendente(s)
+                    </span>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold">R$ {{ mercari_status.taxa_unpaid_amount|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela dos Itens Individuais Mercari -->
+        {% include 'analytics/partials/_status_mercari_table.html' %}
+    {% else %}
+        <div class="p-8 text-center bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border border-amber-200 dark:border-amber-800/40 space-y-2">
+            <span class="text-3xl">🇯🇵</span>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum item individual Mercari cadastrado ainda.</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500">Cadastre compras avulsas para acompanhar remessas e cobranças de frete e taxa.</p>
+            <div class="pt-2">
+                <a href="{% url 'creations_hub' %}?category=mercari"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Cadastrar Primeiro Item Mercari</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>

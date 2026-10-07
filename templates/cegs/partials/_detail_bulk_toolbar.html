@@ -78,6 +78,12 @@
             </div>
         </div>
 
+        <button type="button" @click="claimSelectedSlotsAsStaff()"
+                class="px-3 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer active:scale-95"
+                title="Comprar / Reservar os itens selecionados">
+            <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+            <span>Comprar Selecionados</span>
+        </button>
         <button type="button" @click="openBulkTypeModal()"
                 class="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer active:scale-95">
             <i data-lucide="tag" class="w-3.5 h-3.5"></i>
@@ -94,8 +100,9 @@
             <span>Excluir Itens</span>
         </button>
         <button type="button" @click="clearSelection()"
-                class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer active:scale-95">
-            ✕ Desmarcar
+                class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer flex items-center gap-1 active:scale-95">
+            <i data-lucide="x" class="w-3 h-3"></i>
+            <span>Desmarcar</span>
         </button>
     </div>
 </div>

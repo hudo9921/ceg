@@ -1,0 +1,84 @@
+<!-- Inteligência Operacional: Integrantes Disputados & Sets Próximos de Fechar -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <!-- Integrantes Mais Disputados (Popularidade & Sold-out) -->
+    <div class="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                    <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
+                    <span>Integrantes Mais Disputados</span>
+                </h2>
+                <p class="text-xs text-slate-400 dark:text-slate-500">Ranking por taxa de reserva e esgotamento rápido de photocards</p>
+            </div>
+        </div>
+
+        {% if members %}
+            <div class="space-y-2.5 pt-1">
+                {% for m in members %}
+                    <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-pink-200 dark:hover:border-pink-500/30 bg-slate-50/50 dark:bg-slate-800/40 space-y-1.5 transition">
+                        <div class="flex justify-between items-center text-xs">
+                            <div>
+                                <strong class="text-slate-900 dark:text-slate-100 text-sm">{{ m.member_name }}</strong>
+                                <span class="text-slate-400 dark:text-slate-500 ml-1">({{ m.group_name }})</span>
+                            </div>
+                            <div class="font-bold text-pink-600 dark:text-pink-400">
+                                {{ m.claimed_slots }}/{{ m.total_slots }} slots ({{ m.claim_percentage }}%)
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                            <div class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: {{ m.claim_percentage }}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-xs text-slate-400 dark:text-slate-500 py-6 text-center">Nenhum dado de integrante registrado para o filtro atual.</p>
+        {% endif %}
+    </div>
+
+    <!-- Sets Próximos de Fechar (Fulfillment de Sets) -->
+    <div class="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                    <i data-lucide="package-check" class="w-5 h-5 text-blue-500"></i>
+                    <span>Sets Próximos de Fechar</span>
+                </h2>
+                <p class="text-xs text-slate-400 dark:text-slate-500">Identifique quais conjuntos estão prontos para compra com o fornecedor</p>
+            </div>
+        </div>
+
+        {% if sets_near %}
+            <div class="space-y-2.5 pt-1">
+                {% for s in sets_near %}
+                    <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1.5 bg-slate-50/50 dark:bg-slate-800/40">
+                        <div class="flex justify-between items-center text-xs">
+                            <div>
+                                <strong class="text-slate-900 dark:text-slate-100">Set #{{ s.set_number }}</strong>
+                                <span class="text-slate-500 dark:text-slate-400">• {{ s.ceg_title }} ({{ s.group_name }})</span>
+                            </div>
+                            {% if s.is_full %}
+                                <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold rounded text-[11px] border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1">
+                                    <i data-lucide="check" class="w-3 h-3 text-emerald-600 dark:text-emerald-400"></i>
+                                    <span>100% Fechado</span>
+                                </span>
+                            {% else %}
+                                <span class="text-slate-600 dark:text-slate-300 font-semibold text-[11px]">
+                                    Faltam {{ s.remaining_slots }} slots
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                            <div class="{% if s.is_full %}bg-emerald-500{% else %}bg-amber-500{% endif %} h-2 rounded-full transition-all duration-500"
+                                 style="width: {{ s.fill_percentage }}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-xs text-slate-400 dark:text-slate-500 py-6 text-center">Nenhum Set ativo no momento para o filtro atual.</p>
+        {% endif %}
+    </div>
+
+</div>

@@ -497,6 +497,29 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('copyShareText()', content)
         self.assertIn('Gerador de Divulgação de Vagas', content)
 
+    def test_sales_report_view_renders_successfully(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get('/analytics/vendas/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
 
+        # Verifica elementos principais do template modularizado
+        self.assertIn('filter-options-data', content)
+        self.assertIn('chart-data', content)
+        self.assertIn('Relatório de Vendas e Income', content)
+        self.assertIn('salesMonthlyChart', content)
+        self.assertIn('salesVolumeChart', content)
+        self.assertIn('salesDonutChart', content)
+        self.assertIn('salesGroupsChart', content)
+        self.assertIn('salesReportApp', content)
 
-
+    def test_sales_report_api_endpoint(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get('/analytics/api/sales/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('summary', data)
+        self.assertIn('monthly_flow', data)
+        self.assertIn('group_sales', data)
+        self.assertIn('top_items', data)
+        self.assertIn('top_buyers', data)

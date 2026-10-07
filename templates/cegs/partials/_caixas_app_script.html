@@ -1,0 +1,30 @@
+<!-- Alpine.js Lógica da Lista de Caixas & Remessas -->
+<script>
+    function caixasDashboard() {
+        return {
+            quickModalOpen: false,
+            targetCaixaSlug: '',
+            targetCaixaName: '',
+            selectedStatus: '',
+
+            openQuickStatusModal(slug, name, currentStatus) {
+                this.targetCaixaSlug = slug;
+                this.targetCaixaName = name;
+                this.selectedStatus = currentStatus;
+                this.quickModalOpen = true;
+                this.$nextTick(() => {
+                    window.dispatchEvent(new Event('icons-refresh'));
+                });
+            },
+
+            copyToClipboard(text) {
+                if (!text) return;
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Código de rastreio copiado: ' + text);
+                }).catch(err => {
+                    console.error('Falha ao copiar:', err);
+                });
+            }
+        };
+    }
+</script>

@@ -1,0 +1,220 @@
+<script>
+function bulkAllocatorMatrixMixin() {
+    return {
+        get occupiedSlots() {
+            return this.matrix.occupied_slots || 0;
+        },
+
+        get paidSlots() {
+            return this.matrix.paid_slots || 0;
+        },
+
+        get occupancyRate() {
+            if (!this.matrix.total_slots) return 0;
+            return Math.round((this.occupiedSlots / this.matrix.total_slots) * 100);
+        },
+
+        get filteredMatrixItems() {
+            if (!this.matrix.items) return [];
+            const q = this.matrixFilter.trim().toLowerCase();
+            if (!q) return this.matrix.items;
+            return this.matrix.items.filter(it => {
+                const name = (it.name || '').toLowerCase();
+                const member = (it.member_name || '').toLowerCase();
+                return name.includes(q) || member.includes(q);
+            });
+        },
+
+        get pendingMatrixChangesCount() {
+            return Object.keys(this.pendingMatrixUpdates).length;
+        },
+
+        get pickerFilteredParticipants() {
+            const q = this.pickerQuery.trim().toLowerCase();
+            if (!q) return this.participants.slice(0, 10);
+            return this.participants.filter(p => {
+                const name = (p.name || '').toLowerCase();
+                const handle = (p.social_handle || '').toLowerCase();
+                const phone = (p.whatsapp || '');
+                return name.includes(q) || handle.includes(q) || phone.includes(q);
+            }).slice(0, 12);
+        },
+
+        openSlotPicker(slotId) {
+            this.activeSlotPicker = slotId;
+            this.pickerQuery = '';
+            this.pickerIsPaid = false;
+            this.$nextTick(() => {
+                if (this.$refs.pickerInput) {
+                    this.$refs.pickerInput.focus();
+                }
+                this.refreshIcons();
+            });
+        },
+
+        closeSlotPicker() {
+            this.activeSlotPicker = null;
+        },
+
+        assignParticipantToSlot(slotId, participant) {
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.slot_id === slotId) {
+                        slot.claimed_by = {
+                            id: participant.id,
+                            name: participant.name,
+                            social_handle: participant.social_handle,
+                            whatsapp: participant.whatsapp,
+                            formatted_phone: participant.formatted_phone
+                        };
+                        slot.is_item_paid = this.pickerIsPaid;
+                        slot.status = this.pickerIsPaid ? 'PAID' : 'RESERVED';
+                        break;
+                    }
+                }
+            }
+
+            this.pendingMatrixUpdates[slotId] = {
+                slot_id: slotId,
+                action: 'assign',
+                participant_id: participant.id,
+                is_paid: this.pickerIsPaid
+            };
+
+            this.recalculateMatrixStats();
+            this.closeSlotPicker();
+            this.refreshIcons();
+        },
+
+        releaseSlot(slotId) {
+            if (!confirm('Deseja liberar este slot e remover o comprador?')) return;
+
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.slot_id === slotId) {
+                        slot.claimed_by = null;
+                        slot.is_item_paid = false;
+                        slot.status = 'AVAILABLE';
+                        break;
+                    }
+                }
+            }
+
+            this.pendingMatrixUpdates[slotId] = {
+                slot_id: slotId,
+                action: 'release'
+            };
+
+            this.recalculateMatrixStats();
+            this.refreshIcons();
+        },
+
+        toggleSlotPayment(slotId) {
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.slot_id === slotId && slot.claimed_by) {
+                        slot.is_item_paid = !slot.is_item_paid;
+                        slot.status = slot.is_item_paid ? 'PAID' : 'RESERVED';
+
+                        if (this.pendingMatrixUpdates[slotId] && this.pendingMatrixUpdates[slotId].action === 'assign') {
+                            this.pendingMatrixUpdates[slotId].is_paid = slot.is_item_paid;
+                        } else {
+                            this.pendingMatrixUpdates[slotId] = {
+                                slot_id: slotId,
+                                action: 'toggle_payment',
+                                participant_id: slot.claimed_by ? slot.claimed_by.id : null,
+                                is_paid: slot.is_item_paid
+                            };
+                        }
+                        break;
+                    }
+                }
+            }
+            this.recalculateMatrixStats();
+            this.refreshIcons();
+        },
+
+        markAllFilledAsPaid() {
+            let count = 0;
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.claimed_by && !slot.is_item_paid) {
+                        slot.is_item_paid = true;
+                        slot.status = 'PAID';
+
+                        if (this.pendingMatrixUpdates[slot.slot_id] && this.pendingMatrixUpdates[slot.slot_id].action === 'assign') {
+                            this.pendingMatrixUpdates[slot.slot_id].is_paid = true;
+                        } else {
+                            this.pendingMatrixUpdates[slot.slot_id] = {
+                                slot_id: slot.slot_id,
+                                action: 'toggle_payment',
+                                participant_id: slot.claimed_by ? slot.claimed_by.id : null,
+                                is_paid: true
+                            };
+                        }
+                        count++;
+                    }
+                }
+            }
+            this.recalculateMatrixStats();
+            this.refreshIcons();
+            alert(count + ' slot(s) marcado(s) como pago(s). Clique em "Salvar Matriz" para confirmar no banco.');
+        },
+
+        recalculateMatrixStats() {
+            let occ = 0;
+            let paid = 0;
+            for (const item of this.matrix.items) {
+                for (const setId in item.slots) {
+                    const slot = item.slots[setId];
+                    if (slot && slot.claimed_by) {
+                        occ++;
+                        if (slot.is_item_paid) paid++;
+                    }
+                }
+            }
+            this.matrix.occupied_slots = occ;
+            this.matrix.paid_slots = paid;
+        },
+
+        async saveMatrixChanges() {
+            if (this.matrixSaving || this.pendingMatrixChangesCount === 0) return;
+            this.matrixSaving = true;
+
+            const updates = Object.values(this.pendingMatrixUpdates);
+            try {
+                const res = await fetch('/ceg/' + this.cegSlug + '/alocar-massa/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'save_matrix',
+                        updates: updates
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.pendingMatrixUpdates = {};
+                    if (data.updated_matrix) {
+                        this.matrix = data.updated_matrix;
+                    }
+                    alert('Alterações da matriz gravadas com sucesso!');
+                    this.refreshIcons();
+                } else {
+                    alert(data.message || 'Erro ao salvar alterações da matriz.');
+                }
+            } catch(e) {
+                alert('Erro ao conectar com o servidor: ' + e);
+            } finally {
+                this.matrixSaving = false;
+            }
+        }
+    };
+}
+</script>

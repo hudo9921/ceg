@@ -1,0 +1,49 @@
+<!-- 2. MÉTRICAS OPERACIONAIS E OCUPAÇÃO -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Ocupação de Slots -->
+    <div class="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+        <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-500 dark:text-slate-400 uppercase flex items-center gap-1.5">
+                <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-pink-500"></i>
+                <span>Ocupação Geral dos Slots</span>
+            </span>
+            <span class="font-black text-pink-600 dark:text-pink-400">{{ summary.occupancy_percentage }}%</span>
+        </div>
+        <div class="text-lg font-black text-slate-900 dark:text-slate-100">
+            {{ summary.reserved_slots }} <span class="text-xs font-normal text-slate-400 dark:text-slate-500">de {{ summary.total_slots }} slots alocados</span>
+        </div>
+        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: {{ summary.occupancy_percentage }}%"></div>
+        </div>
+    </div>
+
+    <!-- Colecionadores Únicos -->
+    <div class="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-1.5">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-blue-500"></i>
+            <span>Colecionadores Participantes</span>
+        </span>
+        <div class="text-2xl font-black text-slate-900 dark:text-slate-100">{{ summary.total_participants }}</div>
+        <p class="text-[11px] text-slate-400 dark:text-slate-500">Usuários únicos com reservas ativas</p>
+    </div>
+
+    <!-- Ticket Médio -->
+    <div class="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-1.5">
+            <i data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-500"></i>
+            <span>Ticket Médio por Colecionador</span>
+        </span>
+        <div class="text-2xl font-black text-slate-900 dark:text-slate-100">R$ {{ summary.avg_ticket|floatformat:2 }}</div>
+        <p class="text-[11px] text-slate-400 dark:text-slate-500">Média de gasto por participante</p>
+    </div>
+
+    <!-- Reservas Realizadas -->
+    <div class="bg-white dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-1.5">
+            <i data-lucide="bookmark-check" class="w-3.5 h-3.5 text-pink-500"></i>
+            <span>Total de Reservas (Claims)</span>
+        </span>
+        <div class="text-2xl font-black text-pink-600 dark:text-pink-400">{{ summary.total_claims_count }}</div>
+        <p class="text-[11px] text-slate-400 dark:text-slate-500">{{ summary.active_cegs }} CEGs ativas monitoradas</p>
+    </div>
+</div>

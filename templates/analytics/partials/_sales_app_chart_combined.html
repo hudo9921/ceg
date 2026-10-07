@@ -1,0 +1,98 @@
+<script>
+function renderSalesCombinedChart(ctx, labels, totalSales, claimsCount, paidSales, pendingSales) {
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Faturamento Total (R$)',
+                    data: totalSales,
+                    backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                    hoverBackgroundColor: 'rgba(5, 150, 105, 0.95)',
+                    borderRadius: 8,
+                    maxBarThickness: 36,
+                    yAxisID: 'yRevenue',
+                    order: 2
+                },
+                {
+                    type: 'line',
+                    label: 'Volume de Vendas (Claims)',
+                    data: claimsCount,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.15)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ec4899',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    tension: 0.35,
+                    yAxisID: 'yVolume',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12, font: { weight: 'bold', size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.yAxisID === 'yRevenue') {
+                                const val = context.parsed.y || 0;
+                                return 'Faturamento: R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                            }
+                            const count = context.parsed.y || 0;
+                            return 'Volume: ' + count + (count === 1 ? ' venda' : ' vendas');
+                        },
+                        afterLabel: function(context) {
+                            if (context.dataset.yAxisID === 'yRevenue') {
+                                const idx = context.dataIndex;
+                                const p = paidSales[idx] || 0;
+                                const pend = pendingSales[idx] || 0;
+                                if (p > 0 || pend > 0) {
+                                    return ' (Pago: R$ ' + p.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' • Pendente: R$ ' + pend.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ')';
+                                }
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { weight: 'bold', size: 11 } }
+                },
+                yRevenue: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    title: { display: true, text: 'Faturamento (R$)', font: { weight: 'bold', size: 11 } },
+                    ticks: {
+                        callback: function(val) { return 'R$ ' + val.toLocaleString('pt-BR'); },
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                yVolume: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    title: { display: true, text: 'Qtd Vendas (Claims)', font: { weight: 'bold', size: 11 } },
+                    grid: { drawOnChartArea: false },
+                    ticks: { precision: 0, font: { size: 10 } }
+                }
+            }
+        }
+    });
+}
+</script>

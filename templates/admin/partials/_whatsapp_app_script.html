@@ -1,0 +1,58 @@
+<script>
+function whatsappManager() {
+    return {
+        state: '{{ state }}',
+        qrBase64: '{{ qr_data.base64|default:"" }}',
+        pairingCode: '{{ qr_data.pairingCode|default:"" }}',
+        loading: false,
+        pollInterval: null,
+
+        init() {
+            this.$nextTick(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+
+            // Polling automático a cada 6 segundos se não estiver conectado
+            if (this.state !== 'open') {
+                this.pollInterval = setInterval(() => {
+                    this.pollStatus();
+                }, 6000);
+            }
+        },
+
+        async pollStatus() {
+            try {
+                const res = await fetch('{% url "admin_whatsapp_status" %}');
+                if (res.ok) {
+                    const data = await res.json();
+                    this.state = data.state;
+                    if (data.base64) {
+                        this.qrBase64 = data.base64;
+                    }
+                    if (data.pairingCode) {
+                        this.pairingCode = data.pairingCode;
+                    }
+                    if (this.state === 'open' && this.pollInterval) {
+                        clearInterval(this.pollInterval);
+                    }
+                    this.$nextTick(() => {
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Erro ao verificar status do WhatsApp:", err);
+            }
+        },
+
+        async refreshStatus() {
+            this.loading = true;
+            await this.pollStatus();
+            this.loading = false;
+        }
+    };
+}
+</script>

@@ -1,0 +1,160 @@
+<div class="product-card group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-pink-300 dark:hover:border-pink-500/50 transition duration-200 flex flex-col overflow-hidden"
+     data-price="{{ item.preco }}"
+     data-date="{{ item.created_at|date:'U' }}"
+     data-destaque="{% if item.destaque %}1{% else %}0{% endif %}"
+     data-title="{{ item.titulo|escapejs }}"
+     data-group-id="{{ item.group_id|default:'' }}"
+     data-era-id="{{ item.era_id|default:'' }}"
+     data-member="{{ item.integrante|default:''|escapejs }}"
+     data-tipo-id="{{ item.tipo_item_id|default:'' }}"
+     data-sub-category="{{ item.sub_category|default:''|escapejs }}"
+     data-status="{{ item.status }}"
+     data-searchable="{{ item.titulo|escapejs }} {{ item.integrante|default:''|escapejs }} {{ item.group.name|default:''|escapejs }} {{ item.era.name|default:''|escapejs }} {{ item.sub_category|default:''|escapejs }} {{ item.descricao|default:''|escapejs }}"
+     x-show="checkItem($el.dataset.searchable, $el.dataset.groupId, $el.dataset.eraId, $el.dataset.member, $el.dataset.tipoId, $el.dataset.subCategory, $el.dataset.status)"
+     x-transition>
+
+    <!-- Badges Superiores Flutuantes -->
+    <div class="absolute top-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
+        <!-- Tipo de Item -->
+        <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs
+            {% if item.tipo_item and 'photocard' in item.tipo_item.nome|lower %}bg-pink-500/90 text-white
+            {% elif item.tipo_item and 'álbum' in item.tipo_item.nome|lower or 'album' in item.tipo_item.nome|lower %}bg-purple-600/90 text-white
+            {% elif item.tipo_item and 'pob' in item.tipo_item.nome|lower %}bg-amber-500/90 text-white
+            {% else %}bg-slate-800/80 text-white{% endif %}">
+            {{ item.tipo_item.nome|default:"Item" }}
+        </span>
+
+        <!-- Status Badge se não for Disponível -->
+        {% if item.status == 'RESERVADO' %}
+            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500 text-white shadow-xs">
+                Reservado
+            </span>
+        {% elif item.status == 'VENDIDO' %}
+            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-red-600 text-white shadow-xs">
+                Vendido
+            </span>
+        {% elif item.destaque %}
+            <span class="px-1.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-400 text-amber-950 shadow-xs flex items-center gap-0.5" title="Destaque">
+                <i data-lucide="star" class="w-3 h-3 fill-amber-950"></i>
+            </span>
+        {% endif %}
+    </div>
+
+    <!-- Área da Imagem / Foto do Photocard -->
+    <div class="relative aspect-3/4 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer"
+         @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.sub_category|default:""|escapejs }}', '{{ item.preco|floatformat:2 }}', '{{ item.status }}', '{{ item.descricao|escapejs }}')">
+
+        {% if item.display_image_url %}
+            <img src="{{ item.display_image_url }}"
+                 alt="{{ item.titulo }}"
+                 loading="lazy"
+                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        {% else %}
+            <div class="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-pink-100 to-purple-100 dark:from-slate-800 dark:to-slate-700">
+                <i data-lucide="image" class="w-8 h-8 text-slate-400 mb-1"></i>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Sem foto</span>
+            </div>
+        {% endif %}
+
+        <!-- Overlay Hover com Lupa -->
+        <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span>Ver detalhes</span>
+        </div>
+    </div>
+
+    <!-- Detalhes do Produto -->
+    <div class="p-3 flex-1 flex flex-col justify-between space-y-2">
+        <div class="space-y-1">
+            <!-- Tags de Grupo, Integrante & Subcategoria -->
+            <div class="flex flex-wrap items-center gap-1 text-[11px]">
+                {% if item.group %}
+                    <span class="font-bold text-pink-600 dark:text-pink-400 truncate max-w-[90px]">
+                        {{ item.group.name }}
+                    </span>
+                {% endif %}
+                {% if item.integrante %}
+                    <span class="text-slate-400">&bull;</span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[80px]">
+                        {{ item.integrante }}
+                    </span>
+                {% endif %}
+                {% if item.sub_category %}
+                    <span class="ml-auto px-1.5 py-0.5 rounded bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 text-[10px] font-black border border-pink-200 dark:border-pink-800">
+                        {{ item.sub_category }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Título do Item -->
+            <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2"
+                title="{{ item.titulo }}">
+                {{ item.titulo }}
+            </h3>
+
+            {% if item.era %}
+                <p class="text-[10px] text-slate-400 truncate">
+                    Era: {{ item.era.name }}
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- Preço e Ação -->
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <div class="flex items-baseline justify-between">
+                <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono">
+                    R$ {{ item.preco|floatformat:2 }}
+                </span>
+            </div>
+
+            <!-- Botão de Compra / Interesse -->
+            {% if item.status == 'DISPONIVEL' %}
+                <button type="button"
+                        @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.sub_category|default:""|escapejs }}', '{{ item.preco|floatformat:2 }}', '{{ item.status }}', '{{ item.descricao|escapejs }}')"
+                        class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-xs font-black shadow-xs hover:shadow-pink-500/20 active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                    <span>Tenho Interesse</span>
+                </button>
+            {% elif item.status == 'RESERVADO' %}
+                <button type="button" disabled
+                        class="w-full py-1.5 px-3 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-bold cursor-not-allowed text-center">
+                    Reservado
+                </button>
+            {% else %}
+                <button type="button" disabled
+                        class="w-full py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-bold cursor-not-allowed text-center">
+                    Esgotado
+                </button>
+            {% endif %}
+
+            <!-- Ações Rápidas de Admin / GOM -->
+            {% if is_staff_user %}
+                <div class="pt-1 flex items-center justify-between border-t border-dashed border-slate-200 dark:border-slate-800 text-[10px]">
+                    <a href="{% url 'vitrine_edit' slug=item.slug %}"
+                       class="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1">
+                        <i data-lucide="pencil" class="w-3 h-3"></i>
+                        <span>Editar</span>
+                    </a>
+
+                    <!-- Formulário de Toggle Rápido de Status -->
+                    <form method="post" action="{% url 'vitrine_toggle_status' slug=item.slug %}" class="inline">
+                        {% csrf_token %}
+                        {% if item.status == 'DISPONIVEL' %}
+                            <input type="hidden" name="status" value="VENDIDO">
+                            <button type="submit" class="text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                                <i data-lucide="check" class="w-3 h-3"></i>
+                                <span>Vender</span>
+                            </button>
+                        {% else %}
+                            <input type="hidden" name="status" value="DISPONIVEL">
+                            <button type="submit" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                <span>Disponibilizar</span>
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,136 @@
+<!-- Linha 1: Título e Categoria -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
+    <div class="sm:col-span-8 space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Título / Nome do Item <span class="text-rose-500">*</span>
+        </label>
+        <div class="relative">
+            <input type="text" name="titulo" required
+                   value="{% if item %}{{ item.titulo }}{% endif %}"
+                   placeholder="Ex: Karina - Savage POB Withmuu"
+                   class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+        </div>
+    </div>
+
+    <div class="sm:col-span-4 space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Categoria / Tipo de Item
+        </label>
+        <select name="tipo_item"
+                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 transition">
+            <option value="">Sem categoria específica</option>
+            {% for t in tipos_item %}
+                <option value="{{ t.id }}" {% if item and item.tipo_item_id == t.id %}selected{% endif %}>
+                    {{ t.nome }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<!-- Linha 2: Grupo, Era, Integrante e Subcategoria / Tipo de Photocard -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Grupo / Solista
+        </label>
+        <select name="group" x-model="selectedGroup" @change="onGroupChange()"
+                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 transition">
+            <option value="">Nenhum / Vários</option>
+            {% for g in groups %}
+                <option value="{{ g.id }}" {% if item and item.group_id == g.id %}selected{% endif %}>
+                    {{ g.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Era / Comeback
+        </label>
+        <select name="era" x-model="selectedEra"
+                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 transition">
+            <option value="">Nenhuma era específica</option>
+            <template x-for="e in filteredEras" :key="e.id">
+                <option :value="e.id" x-text="e.name" :selected="e.id == selectedEra"></option>
+            </template>
+        </select>
+    </div>
+
+    <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Integrante
+            </label>
+            <template x-if="selectedGroup && filteredMembers.length > 0">
+                <span class="text-[10px] font-bold text-pink-500 dark:text-pink-400" x-text="filteredMembers.length + ' sugestão(ões)'"></span>
+            </template>
+        </div>
+        <input type="text" name="integrante" list="membersList"
+               x-model="selectedMember"
+               placeholder="Ex: Karina, Wonyoung, San"
+               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+        <datalist id="membersList">
+            <template x-for="m in filteredMembers" :key="m">
+                <option :value="m"></option>
+            </template>
+        </datalist>
+    </div>
+
+    <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Tipo de Photocard / Edição
+        </label>
+        <input type="text" name="sub_category" list="subCategoryList"
+               value="{% if item %}{{ item.sub_category }}{% endif %}"
+               placeholder="Ex: Regulares, POB, LD..."
+               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+        <datalist id="subCategoryList">
+            {% for sub in photocard_subcategories %}
+                <option value="{{ sub }}"></option>
+            {% endfor %}
+        </datalist>
+    </div>
+</div>
+
+<!-- Linha 3: Preço, Quantidade e Status -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Preço (R$) <span class="text-rose-500">*</span>
+        </label>
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-xs text-slate-400 font-bold">
+                R$
+            </span>
+            <input type="text" name="preco" required
+                   value="{% if item %}{{ item.preco }}{% else %}0.00{% endif %}"
+                   placeholder="45.00"
+                   class="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition font-mono">
+        </div>
+    </div>
+
+    <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Quantidade
+        </label>
+        <input type="number" name="quantidade" min="0"
+               value="{% if item %}{{ item.quantidade }}{% else %}1{% endif %}"
+               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/30 transition">
+    </div>
+
+    <div class="space-y-1.5">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Status
+        </label>
+        <select name="status"
+                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 transition">
+            {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if item and item.status == val %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>

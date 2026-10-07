@@ -1,15 +1,21 @@
 {% with caixa=item.caixa %}
-<div class="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
+<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-2xl border border-sky-100/80 dark:border-white/10 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
     <!-- Topo do Card -->
-    <div class="p-5 border-b border-slate-100 dark:border-slate-800 space-y-4">
+    <div class="p-5 border-b border-slate-100 dark:border-white/10 space-y-4">
         <div class="flex items-start justify-between gap-3">
             <div class="flex items-center gap-3">
-                <!-- Ícone / Flag grande -->
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold shadow-xs
+                <!-- Ícone / Origem -->
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-xs shrink-0
                     {% if caixa.origem == 'KR' %}bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800
                     {% elif caixa.origem == 'JP' %}bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800
                     {% else %}bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %}">
-                    {% if caixa.origem == 'KR' %}🇰🇷{% elif caixa.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}
+                    {% if caixa.origem == 'KR' %}
+                        <i data-lucide="globe" class="w-6 h-6"></i>
+                    {% elif caixa.origem == 'JP' %}
+                        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                    {% else %}
+                        <i data-lucide="archive" class="w-6 h-6"></i>
+                    {% endif %}
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
@@ -53,9 +59,9 @@
         <div class="space-y-1.5">
             <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 <span>Etapa {{ item.step }} de 6</span>
-                <span class="font-bold text-slate-700 dark:text-slate-200">{{ item.progress_pct }}%</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200 font-mono">{{ item.progress_pct }}%</span>
             </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div class="w-full bg-slate-100 dark:bg-cyber-obsidian rounded-full h-2 overflow-hidden border border-slate-200/50 dark:border-white/5">
                 <div class="h-2 rounded-full transition-all duration-500
                     {% if caixa.status == 'ENTREGUE' or caixa.status == 'FINALIZADA' %}bg-emerald-500
                     {% elif caixa.status == 'NO_BRASIL' or caixa.status == 'TRIBUTADA' or caixa.status == 'LIBERADA' %}bg-amber-500
@@ -65,7 +71,7 @@
         </div>
 
         <!-- Código de Rastreio e Datas -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 bg-slate-50/80 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 bg-slate-50/80 dark:bg-cyber-obsidian/80 p-3 rounded-xl border border-slate-100 dark:border-white/10">
             <!-- Rastreio -->
             <div class="flex flex-col">
                 <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Código de Rastreio</span>
@@ -73,11 +79,12 @@
                     <div class="flex items-center gap-1.5 mt-0.5">
                         <a href="{{ caixa.tracking_url }}" target="_blank"
                            class="font-mono font-bold text-xs text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 hover:underline flex items-center gap-1">
-                            <span>🔗 {{ caixa.codigo_rastreio }}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            <span>{{ caixa.codigo_rastreio }}</span>
                         </a>
                         <button type="button" @click="copyToClipboard('{{ caixa.codigo_rastreio }}')"
-                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-0.5 rounded cursor-pointer" title="Copiar código">
-                            📋
+                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1 rounded cursor-pointer" title="Copiar código">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 {% else %}
@@ -88,13 +95,16 @@
             <!-- Datas -->
             <div class="flex flex-col">
                 <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Datas & Prazos</span>
-                <div class="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+                <div class="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5 flex items-center gap-1.5">
                     {% if caixa.data_recebimento %}
-                        <span>🏠 Na GOM: <b>{{ caixa.data_recebimento|date:"d/m/Y" }}</b></span>
+                        <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i>
+                        <span>Na GOM: <b class="font-mono">{{ caixa.data_recebimento|date:"d/m/Y" }}</b></span>
                     {% elif caixa.data_envio %}
-                        <span>✈️ Enviada: <b>{{ caixa.data_envio|date:"d/m/Y" }}</b></span>
+                        <i data-lucide="plane" class="w-3.5 h-3.5 text-sky-500 shrink-0"></i>
+                        <span>Enviada: <b class="font-mono">{{ caixa.data_envio|date:"d/m/Y" }}</b></span>
                     {% elif caixa.data_previsao %}
-                        <span>⏱️ Previsão: <b>{{ caixa.data_previsao|date:"d/m/Y" }}</b></span>
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i>
+                        <span>Previsão: <b class="font-mono">{{ caixa.data_previsao|date:"d/m/Y" }}</b></span>
                     {% else %}
                         <span class="text-slate-400 dark:text-slate-500 italic">Aguardando envio</span>
                     {% endif %}
@@ -106,61 +116,63 @@
         <div class="space-y-2">
             <div class="flex items-center justify-between text-xs">
                 <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
-                    <span>🏷️ Conteúdo na remessa:</span>
-                    <span class="bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                    <i data-lucide="tag" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Conteúdo na remessa:</span>
+                    <span class="bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 text-[10px] font-black px-1.5 py-0.5 rounded-full font-mono">
                         {{ item.cegs_count }} CEG(s)
                     </span>
                     {% if item.itens_count > 0 %}
-                        <span class="bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                            🇯🇵 {{ item.itens_count }} item(ns) Mercari
+                        <span class="bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-[10px] font-black px-1.5 py-0.5 rounded-full font-mono">
+                            {{ item.itens_count }} item(ns) Mercari
                         </span>
                     {% endif %}
                 </span>
             </div>
 
             {% if item.cegs or item.itens %}
-                <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar">
                     {% for c in item.cegs %}
                         <a href="{% url 'ceg_detail' slug=c.slug %}"
-                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 hover:text-sky-700 dark:hover:text-sky-300 border border-slate-200 dark:border-slate-700 transition">
-                            <span>{{ c.era.group.name }}</span>
+                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-cyber-obsidian hover:bg-sky-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-sky-700 dark:hover:text-sky-300 border border-slate-200 dark:border-white/10 transition">
+                            <span class="font-bold">{{ c.era.group.name }}</span>
                             <span class="text-slate-400">/</span>
                             <span class="truncate max-w-[140px]">{{ c.title }}</span>
                         </a>
                     {% endfor %}
                     {% for it in item.itens %}
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                            <span>🇯🇵</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                             <span class="truncate max-w-[140px]">{{ it.nome }}</span>
                         </span>
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="text-xs text-slate-400 italic bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 p-2 rounded-lg text-amber-800 dark:text-amber-300">
-                    ⚠️ Nenhum item ou CEG vinculado a esta caixa ainda.
+                <p class="text-xs italic bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 p-2 rounded-lg text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                    <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i>
+                    <span>Nenhum item ou CEG vinculado a esta caixa ainda.</span>
                 </p>
             {% endif %}
         </div>
     </div>
 
     <!-- Rodapé do Card com Ações -->
-    <div class="p-4 bg-slate-50/90 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+    <div class="p-4 bg-slate-50/90 dark:bg-cyber-obsidian/60 border-t border-slate-100 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <a href="{% url 'caixa_detail' slug=caixa.slug %}"
            class="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 flex items-center justify-center sm:justify-start gap-1 py-1.5 transition">
             <span>Ver Detalhes, CEGs & Itens Mercari</span>
-            <span>→</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </a>
 
         {% if is_staff_user %}
-            <!-- Ação Rápida de Atualizar Status em Cascata -->
             <div class="flex items-center gap-2">
                 <button type="button" @click="openQuickStatusModal('{{ caixa.slug }}', '{{ caixa.nome|escapejs }}', '{{ caixa.status }}')"
-                        class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-sky-500 text-slate-700 dark:text-slate-200 hover:text-sky-600 text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span>⚡ Atualizar Status</span>
+                        class="px-3 py-1.5 rounded-lg bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 hover:border-sky-500 text-slate-700 dark:text-slate-200 hover:text-sky-600 text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
+                    <span>Atualizar Status</span>
                 </button>
                 <a href="{% url 'caixa_update' slug=caixa.slug %}"
-                   class="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-slate-400 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 text-xs transition" title="Editar Caixa">
-                    ✏️
+                   class="p-2 rounded-lg bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 hover:border-slate-400 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 text-xs transition" title="Editar Caixa">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </a>
             </div>
         {% endif %}

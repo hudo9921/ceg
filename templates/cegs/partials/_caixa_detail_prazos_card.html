@@ -1,0 +1,127 @@
+<!-- Card de Informações e Lembretes de Fretes, Taxas & Prazos Definidos -->
+<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0 border border-purple-200/60 dark:border-purple-800/60">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Lembretes & Taxas Definidas nesta Remessa</span>
+                    {% if configured_rates_count %}
+                        <span class="bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 text-[10px] font-black px-2 py-0.5 rounded-full font-mono">
+                            {{ configured_rates_count }} tipo(s) configurado(s)
+                        </span>
+                    {% endif %}
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Valores unitários e prazos de pagamento de frete internacional e taxa aduaneira já configurados para esta caixa.
+                </p>
+            </div>
+        </div>
+        {% if is_staff_user %}
+            <a href="#painel-rateio"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition border border-purple-200 dark:border-purple-800 cursor-pointer shrink-0">
+                <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+                <span>Ajustar Valores / Prazos</span>
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Prazos Gerais de Pagamento da Caixa -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        <!-- Prazo Frete Internacional -->
+        <div class="p-3.5 rounded-2xl border {% if is_caixa_frete_expired %}bg-red-50/70 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200{% elif caixa.prazo_frete %}bg-sky-50/70 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-900 dark:text-sky-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-500{% endif %} flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="plane" class="w-5 h-5 shrink-0 text-sky-500"></i>
+                <div>
+                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-75 block">Prazo Pagamento Frete Internacional</span>
+                    <span class="text-xs sm:text-sm font-black font-mono">
+                        {% if caixa.prazo_frete %}
+                            {{ caixa.prazo_frete|date:"d/m/Y \à\s H:i" }}
+                        {% else %}
+                            Não definido
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            {% if caixa.prazo_frete %}
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 {% if is_caixa_frete_expired %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-300{% else %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300{% endif %}">
+                    {% if is_caixa_frete_expired %}
+                        <i data-lucide="alert-triangle" class="w-3 h-3"></i> Expirado
+                    {% else %}
+                        <i data-lucide="clock" class="w-3 h-3"></i> Em aberto
+                    {% endif %}
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Prazo Taxa Aduaneira -->
+        <div class="p-3.5 rounded-2xl border {% if is_caixa_taxa_expired %}bg-red-50/70 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200{% elif caixa.prazo_taxa %}bg-purple-50/70 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-500{% endif %} flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="landmark" class="w-5 h-5 shrink-0 text-purple-500"></i>
+                <div>
+                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-75 block">Prazo Pagamento Taxa Aduaneira</span>
+                    <span class="text-xs sm:text-sm font-black font-mono">
+                        {% if caixa.prazo_taxa %}
+                            {{ caixa.prazo_taxa|date:"d/m/Y \à\s H:i" }}
+                        {% else %}
+                            Não definido / Não tributada
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            {% if caixa.prazo_taxa %}
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 {% if is_caixa_taxa_expired %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-300{% else %}bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-300{% endif %}">
+                    {% if is_caixa_taxa_expired %}
+                        <i data-lucide="alert-triangle" class="w-3 h-3"></i> Expirado
+                    {% else %}
+                        <i data-lucide="clock" class="w-3 h-3"></i> Em aberto
+                    {% endif %}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if configured_rates %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {% for cr in configured_rates %}
+                <div class="p-3.5 rounded-2xl border border-purple-100 dark:border-white/10 bg-purple-50/20 dark:bg-cyber-obsidian space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                            <i data-lucide="tag" class="w-3 h-3"></i>
+                            <span>{{ cr.tipo.nome }}</span>
+                        </span>
+                        <span class="text-[11px] font-bold font-mono {% if cr.total_count > 0 %}text-sky-600 dark:text-sky-400{% else %}text-slate-400{% endif %}">
+                            {{ cr.total_count }} unid(s) na caixa
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-white dark:bg-cyber-surface p-2 rounded-xl border border-slate-100 dark:border-white/5">
+                            <span class="text-[10px] text-slate-400 font-bold block">FRETE INTER</span>
+                            <span class="font-black text-slate-900 dark:text-white block mt-0.5 font-mono">
+                                {% if cr.frete_unitario_str %}R$ {{ cr.frete_unitario_str }} <span class="text-[10px] text-slate-400 font-normal">/un</span>{% else %}<span class="text-slate-400 font-normal">R$ 0,00</span>{% endif %}
+                            </span>
+                        </div>
+                        <div class="bg-white dark:bg-cyber-surface p-2 rounded-xl border border-slate-100 dark:border-white/5">
+                            <span class="text-[10px] text-slate-400 font-bold block">TAXA ADUAN.</span>
+                            <span class="font-black text-slate-900 dark:text-white block mt-0.5 font-mono">
+                                {% if cr.taxa_unitaria_str %}R$ {{ cr.taxa_unitaria_str }} <span class="text-[10px] text-slate-400 font-normal">/un</span>{% else %}<span class="text-slate-400 font-normal">Isento</span>{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% elif not caixa.prazo_frete and not caixa.prazo_taxa %}
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-cyber-obsidian border border-dashed border-slate-200 dark:border-white/10 text-center">
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Nenhuma taxa unitária ou prazo configurado nesta caixa ainda.
+                {% if is_staff_user %}
+                    Utilize o <a href="#painel-rateio" class="text-purple-600 dark:text-purple-400 font-bold hover:underline">Painel de Rateio abaixo</a> para lançar os valores.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>

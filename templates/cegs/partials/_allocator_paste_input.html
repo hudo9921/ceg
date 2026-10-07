@@ -1,0 +1,68 @@
+<!-- Painel Esquerdo: Área de Colagem e Configurações -->
+<div class="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+    <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
+            <span>Colar Linhas da Venda</span>
+        </h3>
+        <button type="button"
+                @click="loadSamplePaste()"
+                class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1 cursor-pointer">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            <span>Exemplo de Teste</span>
+        </button>
+    </div>
+
+    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        Cole direto de planilhas (Excel/Google Sheets) ou texto livre separado por <strong>Tab</strong>, <strong>Vírgula</strong> ou <strong>Barra (|)</strong>.
+    </p>
+
+    <div>
+        <textarea x-model="pasteRawText"
+                  rows="10"
+                  placeholder="Exemplos aceitos:
+Set 1 | Seoyeon | 11988887777 | Pago
+Chaeyeon | @userkpop | 11977776666
+Set 2 | Kaede | Bia Silva | 11955554444 | Sim
+Kotone | 11944443333"
+                  class="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-750 transition"></textarea>
+    </div>
+
+    <!-- Opções de Alocação -->
+    <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" x-model="pasteOptions.auto_next_set" class="rounded text-indigo-600 focus:ring-indigo-500">
+            <span>Alocar no próximo Set livre caso o número do Set não seja informado</span>
+        </label>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" x-model="pasteOptions.overwrite" class="rounded text-rose-600 focus:ring-rose-500">
+            <span class="text-slate-800 dark:text-slate-200 font-bold">Sobrescrever slots que já possuem reservas em caso de conflito</span>
+        </label>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" x-model="pasteOptions.auto_create_participants" class="rounded text-indigo-600 focus:ring-indigo-500">
+            <span>Cadastrar joiners novos automaticamente caso o telefone não exista no banco</span>
+        </label>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" x-model="pasteOptions.default_is_paid" class="rounded text-emerald-600 focus:ring-emerald-500">
+            <span>Marcar como Pago por padrão se a linha não especificar</span>
+        </label>
+    </div>
+
+    <div class="pt-2">
+        <button type="button"
+                @click="parsePastedLines()"
+                :disabled="parsing || !pasteRawText.trim()"
+                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+            <span x-show="parsing" class="animate-spin">
+                <i data-lucide="loader-2" class="w-4 h-4"></i>
+            </span>
+            <span x-show="!parsing">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </span>
+            <span>Analisar Linhas & Pré-visualizar</span>
+        </button>
+    </div>
+</div>

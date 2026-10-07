@@ -1,0 +1,79 @@
+<!-- MODAL 3: EDITAR PACOTE EXISTENTE -->
+<div x-show="editPacoteModalOpen" x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#14121B] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl max-w-md w-full p-6 space-y-5"
+         @click.away="editPacoteModalOpen = false">
+
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Editar Pacote</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" x-text="editPacoteIdentificador"></p>
+                </div>
+            </div>
+            <button type="button" @click="editPacoteModalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold">
+                ✕
+            </button>
+        </div>
+
+        <form method="post" :action="'/envios/pacote/' + editPacoteId + '/atualizar/'" class="space-y-3.5">
+            {% csrf_token %}
+
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Status do Pacote:</label>
+                <select name="status" x-model="editPacoteStatus" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <option value="EM_PREPARACAO">Em Preparação / Embalando</option>
+                    <option value="ENVIADO">Enviado Nacionalmente</option>
+                    <option value="ENTREGUE">Entregue</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Transportadora:</label>
+                    <input type="text" name="transportadora" x-model="editPacoteTransportadora"
+                           class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Frete Nacional (R$):</label>
+                    <input type="text" name="valor_frete_nacional" x-model="editPacoteValorFrete"
+                           class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Código de Rastreio:</label>
+                <input type="text" name="codigo_rastreio" x-model="editPacoteCodigoRastreio"
+                       class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono uppercase text-slate-900 dark:text-white">
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="is_frete_pago" value="1" id="edit-check-frete-pago" x-model="editPacoteIsFretePago"
+                       class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
+                <label for="edit-check-frete-pago" class="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                    Frete nacional quitado pelo comprador
+                </label>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Observações / Notas:</label>
+                <textarea name="observacoes" x-model="editPacoteObservacoes" rows="2"
+                          class="w-full bg-slate-50 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-200"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-2">
+                <button type="button" @click="editPacoteModalOpen = false"
+                        class="px-4 py-2 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold shadow transition">
+                    Salvar Alterações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

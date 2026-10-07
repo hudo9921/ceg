@@ -1,0 +1,47 @@
+<!-- BARRA DE OCUPAÇÃO GLOBAL & BANNER DE FILTRO ATIVO -->
+<div x-show="selectedCategory === 'all' || selectedCategory === 'ceg'" class="space-y-3">
+    <!-- Barra de Ocupação Global -->
+    <div class="bg-white dark:bg-[#14121B] px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 text-xs">
+            <span class="p-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center">
+                <i data-lucide="target" class="w-4 h-4"></i>
+            </span>
+            <div>
+                <span class="font-bold text-slate-800 dark:text-slate-200">Ocupação Global dos Sets:</span>
+                <span class="text-slate-500 dark:text-slate-400 ml-1">{{ summary.reserved_slots }}/{{ summary.total_slots }} slots ocupados ({{ summary.available_slots }} livres para claim)</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-80">
+            <div class="flex-1 bg-slate-100 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: {{ summary.global_occupancy }}%"></div>
+            </div>
+            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 w-12 text-right">{{ summary.global_occupancy }}%</span>
+        </div>
+    </div>
+
+    <!-- Banner Informativo quando Filtro dos Cards está Ativo -->
+    <div x-show="activeCardFilter !== 'all'"
+         x-cloak
+         class="p-3.5 bg-gradient-to-r from-pink-50 via-purple-50 to-indigo-50 dark:from-pink-950/20 dark:via-purple-950/20 dark:to-indigo-950/20 border border-pink-200 dark:border-pink-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-2.5 text-xs text-slate-800 dark:text-slate-200">
+            <i data-lucide="filter" class="w-4 h-4 text-pink-600 dark:text-pink-400"></i>
+            <span class="font-bold">Filtro rápido dos cards ativo:</span>
+            <span class="px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider shadow-2xs"
+                  :class="{
+                      'bg-purple-600 text-white': activeCardFilter === 'active_cegs',
+                      'bg-pink-600 text-white': activeCardFilter === 'incomplete',
+                      'bg-amber-500 text-white': activeCardFilter === 'fechados',
+                      'bg-emerald-600 text-white': activeCardFilter === 'pagos',
+                      'bg-amber-500 text-slate-950 font-black': activeCardFilter === 'terminados'
+                  }"
+                  x-text="getFilterBannerText()">
+            </span>
+        </div>
+        <button type="button"
+                @click="setCardFilter('all')"
+                class="px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl border border-slate-300 dark:border-white/10 text-xs transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-2xs">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            <span>Limpar filtro dos cards (Mostrar tudo)</span>
+        </button>
+    </div>
+</div>

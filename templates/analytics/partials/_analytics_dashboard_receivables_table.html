@@ -1,0 +1,61 @@
+<!-- 6. MAPA DE VALORES A RECEBER POR PARTICIPANTE -->
+<div class="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+            <h2 class="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <i data-lucide="hand-coins" class="w-4 h-4 text-amber-500"></i>
+                <span>Valores a Receber por Participante (Inadimplência Potencial)</span>
+            </h2>
+            <p class="text-xs text-slate-400 dark:text-slate-500">Participantes com claims ativos e pagamentos pendentes no recorte</p>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40 rounded-lg">
+            {{ debtors|length }} participantes com pendências
+        </span>
+    </div>
+
+    {% if debtors %}
+        <div class="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider text-[11px]">
+                        <th class="py-3 px-4">Participante</th>
+                        <th class="py-3 px-3">WhatsApp</th>
+                        <th class="py-3 px-3 text-center">Claims Pendentes</th>
+                        <th class="py-3 px-4 text-right">Valor Total Pendente</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for d in debtors %}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
+                                <a href="{% url 'ceg_consulta_joiner' %}?q={{ d.name|urlencode }}" class="hover:text-pink-600 dark:hover:text-pink-400 transition flex items-center gap-1.5">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                                    <span>{{ d.name }}</span>
+                                </a>
+                            </td>
+                            <td class="py-3 px-3 text-slate-500 dark:text-slate-400">
+                                {% if d.whatsapp %}
+                                    <span class="font-mono">{{ d.whatsapp }}</span>
+                                {% else %}
+                                    <span class="text-slate-300 dark:text-slate-600">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
+                                {{ d.pending_claims }}
+                            </td>
+                            <td class="py-3 px-4 text-right font-black text-amber-600 dark:text-amber-400 text-sm">
+                                R$ {{ d.total_pending|floatformat:2 }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="p-8 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-1">
+            <i data-lucide="check-circle" class="w-8 h-8 mx-auto text-emerald-500 mb-2 stroke-[1.75]"></i>
+            <p class="font-bold text-slate-700 dark:text-slate-300">Nenhum pagamento pendente no recorte!</p>
+            <p class="text-xs">Todos os claims deste filtro estão com pagamentos 100% quitados.</p>
+        </div>
+    {% endif %}
+</div>

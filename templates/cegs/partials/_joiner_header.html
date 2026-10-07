@@ -1,0 +1,46 @@
+<!-- Toast Flutuante de Feedback em Tempo Real -->
+<div x-show="toastMessage" x-cloak
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+     x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+     class="fixed top-5 right-5 z-50 bg-slate-900/95 dark:bg-cyber-surface/95 backdrop-blur-xl text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700/80 dark:border-white/10 flex items-center gap-3 text-xs font-bold max-w-sm pointer-events-none">
+    <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+    <span x-text="toastMessage"></span>
+</div>
+
+<!-- Cabeçalho Principal -->
+<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="space-y-1.5">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-pink-600 dark:text-cyber-neon uppercase tracking-wide">Auditoria de Joiners & Operacional</span>
+            <span class="px-2.5 py-0.5 bg-pink-100 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300 font-black text-[10px] rounded-full uppercase tracking-wider border border-pink-200/60 dark:border-pink-800/60">
+                Staff / Admin
+            </span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <i data-lucide="search" class="w-7 h-7 text-pink-500"></i>
+            <span>Consulta Joiner</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Consulte todos os itens/cards do participante, acesse diretamente a CEG, alterne pagamentos de item, inter e taxa com 1 clique e organize envios físicos.
+        </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+        <a href="{% url 'envios_nacionais' %}" class="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-pink-600 dark:hover:bg-pink-50 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="truck" class="w-4 h-4 text-sky-400 dark:text-sky-600"></i>
+            <span>Painel Geral de Envios</span>
+        </a>
+        <a href="{% url 'caixas_dashboard' %}" class="px-4 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+            <i data-lucide="plane" class="w-4 h-4 text-sky-500"></i>
+            <span>Caixas & Remessas (KR/JP)</span>
+        </a>
+        <a href="{% url 'cegs_status' %}" class="px-4 py-2 bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/60 hover:bg-pink-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+            <i data-lucide="archive" class="w-4 h-4 text-pink-500"></i>
+            <span>Status das CEGs</span>
+        </a>
+    </div>
+</div>

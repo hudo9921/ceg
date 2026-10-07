@@ -1,0 +1,175 @@
+<!-- Painel de Filtros Avançados -->
+<div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 shadow-sm">
+    <form method="GET" action="{% url 'auditoria_logs' %}" class="space-y-4" id="filterForm" x-ref="filterForm" @submit.prevent="applyFilters(true)">
+        <!-- Linha 1: Filtros Principais -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+            <!-- 1. Campo de Busca Geral -->
+            <div class="lg:col-span-5 space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Busca Rápida</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ q }}" placeholder="Nome, WhatsApp, CEG, Slot, Pacote..."
+                           @input.debounce.350ms="applyFilters(true)"
+                           class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                </div>
+            </div>
+
+            <!-- 2. Tipo de Evento -->
+            <div class="lg:col-span-4 space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Tipo de Evento</label>
+                <select name="event_type" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <option value="">Todos os Eventos</option>
+                    <option value="ACCOUNT_CREATED" {% if event_type == 'ACCOUNT_CREATED' %}selected{% endif %}>Cadastro de Participante</option>
+                    
+                    <optgroup label="Claims & Corridas">
+                        <option value="CLAIMS_ALL" {% if event_type == 'CLAIMS_ALL' %}selected{% endif %}>Todos os Claims & Tentativas</option>
+                        <option value="CLAIM_SUCCESS" {% if event_type == 'CLAIM_SUCCESS' %}selected{% endif %}>&nbsp;&nbsp;↳ Claim Garantido (1º Lugar)</option>
+                        <option value="CLAIM_ATTEMPT" {% if event_type == 'CLAIM_ATTEMPT' %}selected{% endif %}>&nbsp;&nbsp;↳ Tentativa de Claim / Espera</option>
+                        <option value="CLAIM_CANCELLED" {% if event_type == 'CLAIM_CANCELLED' %}selected{% endif %}>&nbsp;&nbsp;↳ Claim Cancelado / Liberado</option>
+                    </optgroup>
+
+                    <optgroup label="Financeiro & Pagamentos">
+                        <option value="PAYMENTS_ALL" {% if event_type == 'PAYMENTS_ALL' %}selected{% endif %}>Todos os Pagamentos</option>
+                        <option value="PAYMENT_ITEM" {% if event_type == 'PAYMENT_ITEM' %}selected{% endif %}>&nbsp;&nbsp;↳ Pagamento do Item</option>
+                        <option value="PAYMENT_FRETE_INTER" {% if event_type == 'PAYMENT_FRETE_INTER' %}selected{% endif %}>&nbsp;&nbsp;↳ Frete Internacional</option>
+                        <option value="PAYMENT_TAXA" {% if event_type == 'PAYMENT_TAXA' %}selected{% endif %}>&nbsp;&nbsp;↳ Taxa Aduaneira</option>
+                        <option value="PAYMENT_FRETE_NACIONAL" {% if event_type == 'PAYMENT_FRETE_NACIONAL' %}selected{% endif %}>&nbsp;&nbsp;↳ Frete Nacional (Financeiro)</option>
+                    </optgroup>
+
+                    <optgroup label="Envios Nacionais / Caixinha">
+                        <option value="PACKAGES_ALL" {% if event_type == 'PACKAGES_ALL' %}selected{% endif %}>Todos os Envios Nacionais</option>
+                        <option value="PACKAGE_REQUESTED" {% if event_type == 'PACKAGE_REQUESTED' %}selected{% endif %}>&nbsp;&nbsp;↳ Solicitação de Envio</option>
+                        <option value="PACKAGE_SENT" {% if event_type == 'PACKAGE_SENT' %}selected{% endif %}>&nbsp;&nbsp;↳ Pacote Despachado / Enviado</option>
+                        <option value="PACKAGE_DELIVERED" {% if event_type == 'PACKAGE_DELIVERED' %}selected{% endif %}>&nbsp;&nbsp;↳ Pacote Entregue / Feedback</option>
+                    </optgroup>
+
+                    <optgroup label="Operações em Slots">
+                        <option value="SLOT_ASSIGNED" {% if event_type == 'SLOT_ASSIGNED' %}selected{% endif %}>Slot Vinculado Manualmente</option>
+                        <option value="SLOT_RELEASED" {% if event_type == 'SLOT_RELEASED' %}selected{% endif %}>Slot Liberado Manualmente</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- 3. Status de Pagamento / Resultado -->
+            <div class="lg:col-span-3 space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Status / Valor</label>
+                <select name="status" @change="applyFilters(true)" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <option value="">Todos os Status</option>
+                    <option value="pago" {% if status_filter == 'pago' %}selected{% endif %}>Apenas Pago</option>
+                    <option value="pendente" {% if status_filter == 'pendente' %}selected{% endif %}>Apenas Pendente</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Linha 2: Segmentação de Escopo (Grupo, Era, CEG, Caixa) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100 dark:border-white/10">
+            <!-- 1. Grupo / Solista -->
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Grupo / Solista</label>
+                <select name="grupo_id" id="grupoSelect" x-model="selectedGroup" @change="onGroupChange()" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <option value="">Todos os Grupos</option>
+                    {% for g in grupos %}
+                        <option value="{{ g.id }}"
+                                x-show="isGroupVisible({{ g.id }})"
+                                :hidden="!isGroupVisible({{ g.id }})"
+                                :disabled="!isGroupVisible({{ g.id }})"
+                                {% if grupo_id == g.id|stringformat:"i" %}selected{% endif %}>
+                            {{ g.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 2. Era / Comeback -->
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Era / Comeback</label>
+                <select name="era_id" id="eraSelect" x-model="selectedEra" @change="onEraChange()" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <option value="">Todas as Eras</option>
+                    {% for e in eras %}
+                        <option value="{{ e.id }}"
+                                x-show="isEraVisible({{ e.id }})"
+                                :hidden="!isEraVisible({{ e.id }})"
+                                :disabled="!isEraVisible({{ e.id }})"
+                                {% if era_id == e.id|stringformat:"i" %}selected{% endif %}>
+                            {{ e.group.name }} — {{ e.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 3. CEG Específica -->
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">CEG Específica</label>
+                <select name="ceg_id" id="cegSelect" x-model="selectedCeg" @change="onCegChange()" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <option value="">Todas as CEGs</option>
+                    {% for c in cegs_data %}
+                        <option value="{{ c.id }}"
+                                x-show="isCegVisible({{ c.id }})"
+                                :hidden="!isCegVisible({{ c.id }})"
+                                :disabled="!isCegVisible({{ c.id }})"
+                                {% if ceg_id == c.id|stringformat:"i" %}selected{% endif %}>
+                            {{ c.title|truncatechars:38 }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 4. Caixa / Remessa -->
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Caixa / Remessa</label>
+                <select name="caixa_id" id="caixaSelect" x-model="selectedCaixa" @change="onCaixaChange()" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+                    <option value="">Todas as Caixas</option>
+                    {% for cx in caixas %}
+                        <option value="{{ cx.id }}" {% if caixa_id == cx.id|stringformat:"i" %}selected{% endif %}>{{ cx.nome|truncatechars:38 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Linha de Datas e Ações -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/10">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Período:</span>
+                <input type="date" name="date_from" id="date_from" value="{{ date_from }}"
+                       @change="applyFilters(true)"
+                       class="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-1 focus:ring-pink-500">
+                <span class="text-xs text-slate-400">até</span>
+                <input type="date" name="date_to" id="date_to" value="{{ date_to }}"
+                       @change="applyFilters(true)"
+                       class="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-medium text-slate-800 dark:text-white focus:bg-white dark:focus:bg-slate-750 focus:outline-none focus:ring-1 focus:ring-pink-500">
+
+                <!-- Atalhos rápidos de data -->
+                <div class="flex items-center gap-1 ml-1">
+                    <button type="button" @click="setDateToday()" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[10px] font-bold transition cursor-pointer">Hoje</button>
+                    <button type="button" @click="setDateLast7Days()" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[10px] font-bold transition cursor-pointer">7 dias</button>
+                    <button type="button" @click="setDateLast30Days()" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-[10px] font-bold transition cursor-pointer">30 dias</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+                <button type="button" @click="resetFilters()" class="px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer">
+                    Limpar Filtros
+                </button>
+                <button type="submit" :disabled="isLoading" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                    <template x-if="!isLoading">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                            <span>Filtrar Logs</span>
+                        </span>
+                    </template>
+                    <template x-if="isLoading">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span>Filtrando...</span>
+                        </span>
+                    </template>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

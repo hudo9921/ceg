@@ -1,0 +1,84 @@
+<!-- 5. INTELIGÊNCIA DE VENDAS: TOP BIAS & SETS PRÓXIMOS DE FECHAR -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Card 1: Integrantes Mais Disputados (Top Bias) -->
+    <div class="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div>
+            <h2 class="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <i data-lucide="flame" class="w-4 h-4 text-pink-500"></i>
+                <span>Integrantes Mais Disputados (Top Bias)</span>
+            </h2>
+            <p class="text-xs text-slate-400 dark:text-slate-500">Ranking por volume de claims realizados</p>
+        </div>
+
+        {% if top_members %}
+            <div class="space-y-3">
+                {% for m in top_members %}
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-pink-50/50 dark:hover:bg-pink-950/20 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs flex items-center justify-center">
+                                {{ forloop.counter }}
+                            </span>
+                            <div>
+                                <span class="font-bold text-slate-800 dark:text-slate-200 text-xs">{{ m.item_definition__name }}</span>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 block">{{ m.item_definition__group__name }}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-black text-pink-600 dark:text-pink-400 text-xs">{{ m.claim_count }} claims</span>
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500 block">R$ {{ m.total_val|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-6 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs">
+                Nenhum dado de claims para o filtro selecionado.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Card 2: Sets Próximos de Fechar (Gargalos) -->
+    <div class="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div>
+            <h2 class="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
+                <span>Sets Próximos de Fechar</span>
+            </h2>
+            <p class="text-xs text-slate-400 dark:text-slate-500">Sets com 70% a 99% de ocupação — foco de divulgação para fechar o lote</p>
+        </div>
+
+        {% if closing_sets %}
+            <div class="space-y-3">
+                {% for cs in closing_sets %}
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-2 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 transition">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="font-bold text-slate-800 dark:text-slate-200">
+                                <a href="{% url 'ceg_detail' slug=cs.ceg_slug %}" class="hover:text-purple-600 dark:hover:text-purple-400 transition flex items-center gap-1">
+                                    <span>{{ cs.ceg_title }}</span>
+                                    <span class="text-purple-600 dark:text-purple-400 font-black">#{{ cs.set_number }}</span>
+                                    <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                                </a>
+                            </div>
+                            <span class="font-black text-purple-700 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/10 px-2 py-0.5 rounded-full text-[10px]">
+                                {{ cs.percent }}%
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                            <span>Faltam apenas <strong>{{ cs.remaining }}</strong> slot(s) para fechar!</span>
+                            <span>{{ cs.reserved }}/{{ cs.total }}</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-purple-600 h-1.5 rounded-full" style="width: {{ cs.percent }}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-6 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs">
+                Nenhum set aberto próximo de fechar no momento.
+            </div>
+        {% endif %}
+    </div>
+
+</div>

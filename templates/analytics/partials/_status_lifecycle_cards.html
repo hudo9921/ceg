@@ -1,0 +1,140 @@
+<!-- 4 CARDS DE RESUMO OPERACIONAL (CICLO DE VIDA DOS SETS) - CLICÁVEIS PARA FILTRAR -->
+<div x-show="selectedCategory === 'all' || selectedCategory === 'ceg'" class="space-y-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1: Sets Abertos / Com Vagas -->
+        <div @click="setCardFilter('incomplete')"
+             class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
+             :class="activeCardFilter === 'incomplete'
+                 ? 'bg-pink-100/80 dark:bg-pink-950/60 border-pink-500 ring-2 ring-pink-400 shadow-md scale-[1.01]'
+                 : 'bg-white dark:bg-[#14121B] border-slate-200 dark:border-white/10 hover:border-pink-300 dark:hover:border-pink-500/40 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'incomplete' ? 'text-pink-950 dark:text-pink-200 font-black' : 'text-pink-700 dark:text-pink-400'">
+                    SETS ABERTOS
+                </span>
+                <span class="p-2 rounded-xl text-base transition flex items-center justify-center"
+                      :class="activeCardFilter === 'incomplete' ? 'bg-pink-600 text-white' : 'bg-pink-50 dark:bg-pink-950/70 text-pink-600 dark:text-pink-300 dark:border dark:border-pink-800/60'">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="space-y-1">
+                <div class="flex items-baseline gap-2">
+                    <div class="text-3xl font-black text-pink-900 dark:text-pink-300" x-text="incompleteCount">{{ summary.incomplete_sets_count }}</div>
+                    <span x-show="activeCardFilter === 'incomplete'"
+                          class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-pink-600 text-white shadow-2xs">
+                        Abertos
+                    </span>
+                </div>
+                <div class="text-xs text-pink-600 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
+                    Em <span x-text="activeCegsCount">{{ summary.active_cegs }}</span> CEGs com vagas
+                </div>
+                <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-pink-100 dark:border-slate-800 flex items-center gap-1.5 text-pink-700 dark:text-pink-400">
+                    <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
+                    <span>Filtrar sets abertos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Sets 100% Fechados (100% claimados porém não 100% pagos) -->
+        <div @click="setCardFilter('fechados')"
+             class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
+             :class="activeCardFilter === 'fechados'
+                 ? 'bg-amber-100/80 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
+                 : 'bg-white dark:bg-[#14121B] border-slate-200 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/40 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'fechados' ? 'text-amber-950 dark:text-amber-200 font-black' : 'text-amber-800 dark:text-amber-400'">
+                    SETS FECHADOS
+                </span>
+                <span class="p-2 rounded-xl text-base transition flex items-center justify-center"
+                      :class="activeCardFilter === 'fechados' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 dark:border dark:border-amber-800/60'">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="space-y-1">
+                <div class="flex items-baseline gap-2">
+                    <div class="text-3xl font-black text-amber-900 dark:text-amber-300" x-text="closedCount">{{ summary.closed_sets_count }}</div>
+                    <span x-show="activeCardFilter === 'fechados'"
+                          class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-600 text-white shadow-2xs">
+                        Fechados
+                    </span>
+                </div>
+                <div class="text-xs text-amber-700 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
+                    100% claimados, aguardando pagamento
+                </div>
+                <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-amber-100 dark:border-slate-800 flex items-center gap-1.5 text-amber-800 dark:text-amber-400">
+                    <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
+                    <span>Filtrar fechados</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Sets 100% Pagos -->
+        <div @click="setCardFilter('pagos')"
+             class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
+             :class="activeCardFilter === 'pagos'
+                 ? 'bg-emerald-100/80 dark:bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.01]'
+                 : 'bg-white dark:bg-[#14121B] border-slate-200 dark:border-white/10 hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'pagos' ? 'text-emerald-950 dark:text-emerald-200 font-black' : 'text-emerald-700 dark:text-emerald-400'">
+                    SETS 100% PAGOS
+                </span>
+                <span class="p-2 rounded-xl text-base transition flex items-center justify-center"
+                      :class="activeCardFilter === 'pagos' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-300 dark:border dark:border-emerald-800/60'">
+                    <i data-lucide="banknote" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="space-y-1">
+                <div class="flex items-baseline gap-2">
+                    <div class="text-3xl font-black text-emerald-900 dark:text-emerald-300" x-text="paidCount">{{ summary.paid_sets_count }}</div>
+                    <span x-show="activeCardFilter === 'pagos'"
+                          class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
+                        Pagos
+                    </span>
+                </div>
+                <div class="text-xs text-emerald-600 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
+                    Em <span x-text="paidCegsCount">{{ summary.paid_cegs_count }}</span> CEGs prontas para compra
+                </div>
+                <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-emerald-100 dark:border-slate-800 flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                    <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
+                    <span>Filtrar pagos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Sets Terminados (TUDO Pago) -->
+        <div @click="setCardFilter('terminados')"
+             class="p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs flex flex-col justify-between space-y-3 select-none relative group"
+             :class="activeCardFilter === 'terminados'
+                 ? 'bg-amber-100/90 dark:bg-amber-950/70 border-amber-500 ring-2 ring-amber-400 shadow-md scale-[1.01]'
+                 : 'bg-white dark:bg-[#14121B] border-slate-200 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/40 hover:shadow-md hover:scale-[1.01]'">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider"
+                      :class="activeCardFilter === 'terminados' ? 'text-amber-950 dark:text-amber-200 font-black' : 'text-amber-800 dark:text-amber-400'">
+                    SETS TERMINADOS
+                </span>
+                <span class="p-2 rounded-xl text-base transition flex items-center justify-center"
+                      :class="activeCardFilter === 'terminados' ? 'bg-amber-500 text-slate-950' : 'bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-300 dark:border dark:border-amber-800/60'">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                </span>
+            </div>
+            <div class="space-y-1">
+                <div class="flex items-baseline gap-2">
+                    <div class="text-3xl font-black text-amber-900 dark:text-amber-300" x-text="completedCount">{{ summary.completed_sets_count }}</div>
+                    <span x-show="activeCardFilter === 'terminados'"
+                          class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black shadow-2xs">
+                        Tudo Pago
+                    </span>
+                </div>
+                <div class="text-xs text-amber-700 dark:text-slate-300 font-semibold mt-0.5 leading-relaxed">
+                    Item + Frete + Taxa quitados (<span x-text="completedCegsCount">{{ summary.completed_cegs_count }}</span> CEGs)
+                </div>
+                <div class="text-[11px] font-bold mt-3 pt-2.5 border-t border-amber-100 dark:border-slate-800 flex items-center gap-1.5 text-amber-800 dark:text-amber-400">
+                    <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
+                    <span>Filtrar terminados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

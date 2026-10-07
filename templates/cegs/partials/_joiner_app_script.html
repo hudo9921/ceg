@@ -1,0 +1,170 @@
+<!-- SERIALIZAÇÃO DE DADOS & MOTOR REATIVO ALPINE.JS PARA CONSULTA JOINER -->
+<script id="participants-search-data-json" type="application/json">
+    {{ participants_search_data_json|safe }}
+</script>
+
+<script id="items-data-json" type="application/json">
+    {{ items_data_json|safe }}
+</script>
+
+{% include 'cegs/partials/_joiner_app_payments.html' %}
+{% include 'cegs/partials/_joiner_app_modals.html' %}
+
+<script>
+function enviosNacionaisApp() {
+    let rawItems = [];
+    try {
+        const el = document.getElementById('items-data-json');
+        if (el && el.textContent) rawItems = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('Erro ao ler items_data_json:', e);
+    }
+
+    let allParticipants = [];
+    try {
+        const elP = document.getElementById('participants-search-data-json');
+        if (elP && elP.textContent) allParticipants = JSON.parse(elP.textContent);
+    } catch (e) {
+        console.error('Erro ao ler participants_search_data_json:', e);
+    }
+
+    return {
+        ...window.joinerPaymentMethods,
+        ...window.joinerModalMethods,
+        items: rawItems,
+        allParticipants: allParticipants,
+        participantSearchQuery: '{{ search_q|escapejs }}',
+        isSearchFocused: false,
+        initialTableFilter: 'ALL',
+
+        filterGrupo: 'ALL',
+        filterEra: 'ALL',
+        filterCaixa: 'ALL',
+        filterItemPaid: 'ALL',
+        filterInterPaid: 'ALL',
+        filterTaxaPaid: 'ALL',
+        filterPacote: 'ALL',
+        searchQuery: '',
+
+        selectedUids: [],
+        packagingModalOpen: false,
+        packagingAction: 'novo_pacote',
+
+        dispatchModalOpen: false,
+        dispatchPacoteId: '',
+        dispatchPacoteIdentificador: '',
+        dispatchTransportadora: '',
+        dispatchCodigoRastreio: '',
+
+        editPacoteModalOpen: false,
+        editPacoteId: '',
+        editPacoteIdentificador: '',
+        editPacoteTransportadora: '',
+        editPacoteCodigoRastreio: '',
+        editPacoteValorFrete: '',
+        editPacoteIsFretePago: false,
+        editPacoteStatus: 'EM_PREPARACAO',
+        editPacoteObservacoes: '',
+
+        togglingKeys: [],
+        toastMessage: '',
+        toastTimer: null,
+
+        statsData: {
+            total_items: {{ stats.total_items|default:0 }},
+            unpacked_count: {{ stats.unpacked_count|default:0 }},
+            packed_count: {{ stats.packed_count|default:0 }},
+            enviados_count: {{ stats.enviados_count|default:0 }},
+            entregues_count: {{ stats.entregues_count|default:0 }},
+            ready_to_pack_count: {{ stats.ready_to_pack_count|default:0 }},
+            item_paid_count: {{ stats.item_paid_count|default:0 }},
+            item_unpaid_count: {{ stats.item_unpaid_count|default:0 }},
+            inter_unpaid_count: {{ stats.inter_unpaid_count|default:0 }},
+            taxa_unpaid_count: {{ stats.taxa_unpaid_count|default:0 }},
+            deve_itens: {{ stats.deve_itens|stringformat:".2f"|default:"0.00" }},
+            deve_frete: {{ stats.deve_frete|stringformat:".2f"|default:"0.00" }},
+            deve_taxa: {{ stats.deve_taxa|stringformat:".2f"|default:"0.00" }},
+            deve_frete_nacional: {{ stats.deve_frete_nacional|stringformat:".2f"|default:"0.00" }},
+            total_devido: {{ stats.total_devido|stringformat:".2f"|default:"0.00" }},
+            pago_itens: {{ stats.pago_itens|stringformat:".2f"|default:"0.00" }},
+            pago_frete: {{ stats.pago_frete|stringformat:".2f"|default:"0.00" }},
+            pago_taxa: {{ stats.pago_taxa|stringformat:".2f"|default:"0.00" }},
+            pago_frete_nacional: {{ stats.pago_frete_nacional|stringformat:".2f"|default:"0.00" }},
+            total_pago_historico: {{ stats.total_pago_historico|stringformat:".2f"|default:"0.00" }},
+        },
+
+        formatMoney(val) {
+            const num = parseFloat(val || 0);
+            return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        isToggling(uid, field) {
+            return this.togglingKeys.includes(uid + '_' + field);
+        },
+
+        showToast(msg) {
+            this.toastMessage = msg;
+            if (this.toastTimer) clearTimeout(this.toastTimer);
+            this.toastTimer = setTimeout(() => { this.toastMessage = ''; }, 3500);
+        },
+
+        get filteredParticipants() {
+            if (!this.participantSearchQuery || !this.participantSearchQuery.trim()) {
+                return this.allParticipants;
+            }
+            const q = this.participantSearchQuery.trim().toLowerCase();
+            const cleanDigits = q.replace(/\D/g, '');
+
+            return this.allParticipants.filter(p => {
+                const nameMatch = p.name && p.name.toLowerCase().includes(q);
+                const usernameMatch = p.username && p.username.toLowerCase().includes(q);
+                const handleMatch = p.social_handle && p.social_handle.toLowerCase().includes(q);
+                const phoneMatch = cleanDigits && p.whatsapp && p.whatsapp.includes(cleanDigits);
+                const formattedPhoneMatch = p.formatted_phone && p.formatted_phone.toLowerCase().includes(q);
+                return nameMatch || usernameMatch || handleMatch || phoneMatch || formattedPhoneMatch;
+            });
+        },
+
+        get filteredItems() {
+            return this.items.filter(item => {
+                if (this.filterGrupo !== 'ALL' && String(item.group_id) !== String(this.filterGrupo)) return false;
+                if (this.filterEra !== 'ALL' && String(item.era_id) !== String(this.filterEra)) return false;
+                if (this.filterCaixa !== 'ALL' && String(item.caixa_id) !== String(this.filterCaixa)) return false;
+                if (this.filterItemPaid === 'PAID' && !item.is_item_paid) return false;
+                if (this.filterItemPaid === 'UNPAID' && item.is_item_paid) return false;
+                if (this.filterInterPaid === 'PAID' && !item.is_frete_inter_paid) return false;
+                if (this.filterInterPaid === 'UNPAID' && item.is_frete_inter_paid) return false;
+                if (this.filterTaxaPaid === 'PAID' && !item.is_taxa_aduaneira_paid) return false;
+                if (this.filterTaxaPaid === 'UNPAID' && item.is_taxa_aduaneira_paid) return false;
+
+                if (this.filterPacote === 'READY_TO_PACK' && !item.pode_empacotar) return false;
+                if (this.filterPacote === 'UNPACKED' && item.pacote_identificador) return false;
+                if (this.filterPacote === 'PACKED' && (!item.pacote_identificador || item.pacote_status === 'ENVIADO' || item.pacote_status === 'ENTREGUE')) return false;
+                if (this.filterPacote === 'ENVIADO' && item.pacote_status !== 'ENVIADO') return false;
+                if (this.filterPacote === 'ENTREGUE' && item.pacote_status !== 'ENTREGUE') return false;
+
+                if (this.searchQuery.trim()) {
+                    const q = this.searchQuery.toLowerCase();
+                    const match = (item.nome && item.nome.toLowerCase().includes(q)) ||
+                                  (item.integrante && item.integrante.toLowerCase().includes(q)) ||
+                                  (item.ceg_titulo && item.ceg_titulo.toLowerCase().includes(q)) ||
+                                  (item.caixa_nome && item.caixa_nome.toLowerCase().includes(q));
+                    if (!match) return false;
+                }
+
+                return true;
+            });
+        },
+
+        get eligibleVisibleItems() {
+            return this.filteredItems.filter(it => it.pode_empacotar);
+        },
+
+        get allVisibleSelected() {
+            const eligible = this.eligibleVisibleItems;
+            if (!eligible.length) return false;
+            return eligible.every(it => this.selectedUids.includes(it.uid));
+        }
+    };
+}
+</script>

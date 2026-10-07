@@ -1,0 +1,56 @@
+<!-- Top Navigation Tabs entre os dois módulos de métricas -->
+<div class="bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+    <div class="flex items-center gap-2 w-full sm:w-auto">
+        <a href="{% url 'cegs_status' %}"
+           class="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-50 dark:bg-slate-800 hover:bg-pink-50 dark:hover:bg-pink-950/40 text-slate-700 dark:text-slate-300 hover:text-pink-700 dark:hover:text-pink-400 border border-slate-200/80 dark:border-white/10 transition flex items-center justify-center gap-2">
+            <i data-lucide="package" class="w-4 h-4"></i>
+            <span>Status & Sets das CEGs</span>
+        </a>
+        <a href="{% url 'sales_report' %}"
+           class="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-black bg-pink-600 text-white shadow-sm flex items-center justify-center gap-2 transition">
+            <i data-lucide="trending-up" class="w-4 h-4"></i>
+            <span>Relatório de Vendas & BI</span>
+        </a>
+    </div>
+
+    <!-- Indicador de Contexto / Atualização -->
+    <div class="text-xs text-slate-500 dark:text-slate-400 font-semibold px-3 py-1 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Inteligência de Vendas e Faturamento Consolidado</span>
+    </div>
+</div>
+
+<!-- Category Switcher Bar (Geral / CEGs / Mercari) -->
+<div class="bg-white dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-1.5 overflow-x-auto">
+        <span class="text-xs font-bold text-slate-400 px-2 flex items-center gap-1">
+            <i data-lucide="folder" class="w-3.5 h-3.5"></i> Categoria:
+        </span>
+        <button type="button"
+                @click="setCategory('all')"
+                class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                :class="selectedCategory === 'all' ? 'bg-slate-900 dark:bg-pink-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
+            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+            <span>Geral (CEGs + Mercari)</span>
+        </button>
+        <button type="button"
+                @click="setCategory('ceg')"
+                class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                :class="selectedCategory === 'ceg' ? 'bg-pink-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Apenas CEGs</span>
+        </button>
+        <button type="button"
+                @click="setCategory('mercari')"
+                class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-black"
+                :class="selectedCategory === 'mercari' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
+            <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+            <span>Apenas Caixa Mercari</span>
+        </button>
+    </div>
+    <div class="text-[11px] font-semibold text-slate-400 px-2">
+        <span x-show="selectedCategory === 'all'">Faturamento unificado (CEGs + Itens Mercari)</span>
+        <span x-show="selectedCategory === 'ceg'">Faturamento exclusivo de compras em grupo (CEGs)</span>
+        <span x-show="selectedCategory === 'mercari'">Faturamento exclusivo de itens avulsos Mercari</span>
+    </div>
+</div>

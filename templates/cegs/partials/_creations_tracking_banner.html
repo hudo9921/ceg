@@ -1,0 +1,31 @@
+<!-- CENTRAL DE ACOMPANHAMENTO: BANNER DE REDIRECIONAMENTO -->
+<div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-purple-500/20">
+    <!-- Ambient Blur Background -->
+    <div class="absolute -top-12 -right-12 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 space-y-2 text-center md:text-left">
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/20 border border-pink-400/30 rounded-full text-xs font-bold text-pink-300">
+            <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-pink-400"></i>
+            <span>Painel Operacional Unificado</span>
+        </div>
+        <h3 class="text-xl sm:text-2xl font-black tracking-tight text-white">
+            Acompanhar Vagas, Fechamento de Sets & Status
+        </h3>
+        <p class="text-slate-300 text-xs sm:text-sm max-w-xl leading-relaxed">
+            Monitore em tempo real o preenchimento de cada Set, faturamento arrecadado, photocards faltantes, fretes internacionais e taxas no painel dedicado de Status de CEGs.
+        </p>
+    </div>
+    <div class="relative z-10 flex flex-wrap items-center justify-center gap-3 flex-shrink-0">
+        <a href="{% url 'cegs_status' %}"
+           class="px-5 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-pink-600/30 transition flex items-center gap-2 hover:scale-[1.02]">
+            <i data-lucide="package" class="w-4 h-4"></i>
+            <span>Acessar Status das CEGs & Sets</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+        <a href="{% url 'caixas_dashboard' %}"
+           class="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-2xl border border-white/20 transition flex items-center gap-2 hover:scale-[1.02]">
+            <i data-lucide="plane" class="w-4 h-4 text-sky-400"></i>
+            <span>Caixas & Remessas</span>
+        </a>
+    </div>
+</div>

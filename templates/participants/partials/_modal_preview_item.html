@@ -1,0 +1,175 @@
+    <!-- Modal Lightbox de Prévia do Photocard / Item -->
+    <div x-show="previewModalOpen"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+         @keydown.escape.window="closePreview()">
+        
+        <div class="relative bg-white dark:bg-cyber-surface border border-slate-200/80 dark:border-white/10 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl space-y-0"
+             @click.outside="closePreview()">
+            
+            <!-- Header do Modal -->
+            <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 flex items-start justify-between gap-3 bg-slate-50/50 dark:bg-white/[0.02]">
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider block"
+                          x-text="(previewItem?.ceg || '') + (previewItem?.set ? ' • Set #' + previewItem?.set : '')"></span>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white"
+                        x-text="previewItem?.title"></h3>
+                </div>
+                <button type="button" @click="closePreview()"
+                    class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-500 hover:text-slate-900 dark:text-cyber-silver dark:hover:text-white flex items-center justify-center transition cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Conteúdo do Modal: Foto em Destaque e Detalhes -->
+            <div class="p-4 sm:p-5 space-y-4">
+                <!-- Imagem Ampliada -->
+                <div class="relative w-full max-w-[280px] mx-auto aspect-[3/4] bg-slate-100 dark:bg-white/5 rounded-2xl overflow-hidden shadow-lg border border-slate-200/80 dark:border-white/10 flex items-center justify-center">
+                    <template x-if="previewItem?.image">
+                        <img :src="previewItem.image" :alt="previewItem.title"
+                             class="w-full h-full object-cover">
+                    </template>
+                    <template x-if="!previewItem?.image">
+                        <div class="text-center p-4">
+                            <i data-lucide="sparkles" class="w-10 h-10 text-pink-400 mx-auto mb-2"></i>
+                            <span class="text-xs font-bold text-slate-500 dark:text-cyber-silver" x-text="previewItem?.title"></span>
+                        </div>
+                    </template>
+
+                    <!-- Preço Overlay -->
+                    <div class="absolute bottom-2.5 right-2.5 px-3 py-1 rounded-xl bg-black/75 backdrop-blur-md text-white font-mono font-black text-xs shadow-md">
+                        R$ <span x-text="previewItem?.price"></span>
+                    </div>
+                </div>
+
+                <!-- Ciclo de Vida: Stepper Visual de 5 Estágios -->
+                <div class="p-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-100 dark:border-white/10 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-cyber-silver">Progresso do Item</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold flex items-center gap-1"
+                              :class="previewItem?.lifecycle?.badgeClass">
+                            <span x-text="previewItem?.lifecycle?.icon"></span>
+                            <span x-text="previewItem?.lifecycle?.label"></span>
+                        </span>
+                    </div>
+
+                    <!-- Stepper Dots/Bar -->
+                    <div class="grid grid-cols-5 gap-1.5 pt-1">
+                        <!-- Estágio 1: Pagamento -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 1) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-white/10'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 1) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                1. Quitado
+                            </span>
+                        </div>
+                        <!-- Estágio 2: Trânsito Inter -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 2) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-white/10'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 2) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                2. Trânsito
+                            </span>
+                        </div>
+                        <!-- Estágio 3: Alfândega -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 3) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-white/10'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 3) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                3. Aduana
+                            </span>
+                        </div>
+                        <!-- Estágio 4: Caixinha -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 4) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-white/10'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 4) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                4. Caixinha
+                            </span>
+                        </div>
+                        <!-- Estágio 5: Entregue -->
+                        <div class="space-y-1">
+                            <div class="h-1.5 rounded-full"
+                                 :class="(previewItem?.lifecycle?.stage >= 5) ? 'bg-pink-500' : 'bg-slate-200 dark:bg-white/10'"></div>
+                            <span class="text-[9px] block text-center font-bold"
+                                  :class="(previewItem?.lifecycle?.stage >= 5) ? 'text-pink-600 dark:text-pink-400' : 'text-slate-400'">
+                                5. Entregue
+                            </span>
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-600 dark:text-cyber-silver pt-1" x-text="previewItem?.lifecycle?.detail"></p>
+                </div>
+
+                <!-- Detalhes de Logística e Fretes -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="p-2.5 bg-slate-50 dark:bg-white/[0.03] rounded-xl border border-slate-100 dark:border-white/10">
+                        <span class="text-[10px] text-slate-400 dark:text-cyber-silver font-bold uppercase flex items-center gap-1 mb-0.5">
+                            <i data-lucide="plane" class="w-3 h-3 text-sky-500"></i>
+                            <span>Frete Internacional</span>
+                        </span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 font-mono text-[11px]"
+                              x-text="previewItem?.freteInter && previewItem?.freteInter !== '0.00' ? ('R$ ' + previewItem?.freteInter + (previewItem?.isFretePaid ? ' (Pago)' : ' (Pendente)')) : 'Incluso / Não Cobrado'"></span>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 dark:bg-white/[0.03] rounded-xl border border-slate-100 dark:border-white/10">
+                        <span class="text-[10px] text-slate-400 dark:text-cyber-silver font-bold uppercase flex items-center gap-1 mb-0.5">
+                            <i data-lucide="landmark" class="w-3 h-3 text-purple-500"></i>
+                            <span>Taxa Aduaneira</span>
+                        </span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 font-mono text-[11px]"
+                              x-text="previewItem?.taxaAduaneira && previewItem?.taxaAduaneira !== '0.00' ? ('R$ ' + previewItem?.taxaAduaneira + (previewItem?.isTaxaPaid ? ' (Paga)' : ' (Pendente)')) : 'Isento / Não Cobrado'"></span>
+                    </div>
+                </div>
+
+                <!-- Se houver pacote nacional vinculado -->
+                <template x-if="previewItem?.pacoteId">
+                    <div class="p-3 bg-blue-50/80 dark:bg-blue-950/30 rounded-xl border border-blue-200/80 dark:border-blue-800/50 flex items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="package" class="w-4 h-4 text-blue-500"></i>
+                            <div>
+                                <span class="font-bold text-blue-900 dark:text-blue-200" x-text="'Pacote ' + previewItem.pacoteId"></span>
+                                <span x-show="previewItem.pacoteTracking" class="text-slate-500 dark:text-cyber-silver font-mono text-[11px] block" x-text="'Rastreio: ' + previewItem.pacoteTracking"></span>
+                            </div>
+                        </div>
+                        <template x-if="previewItem?.pacoteUrl">
+                            <a :href="previewItem.pacoteUrl" target="_blank"
+                                class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1">
+                                <span>Rastrear</span>
+                                <i data-lucide="external-link" class="w-3 h-3"></i>
+                            </a>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Se houver pendência de Pix: Chave e Ação Rápida -->
+                <template x-if="!previewItem?.isItemPaid && previewItem?.pixKey">
+                    <div class="p-3 bg-amber-50/80 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-800/50 space-y-2">
+                        <div class="flex items-center justify-between text-xs text-amber-900 dark:text-amber-300 font-bold">
+                            <span>Chave Pix da CEG:</span>
+                            <span class="text-[11px] font-mono select-all truncate max-w-[200px]" x-text="previewItem?.pixKey"></span>
+                        </div>
+                        <button type="button" @click="copyPix(previewItem?.pixKey, previewItem?.cegId)"
+                            class="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span x-text="copiedPixCegId === previewItem?.cegId ? '✔ Chave Copiada!' : 'Copiar Chave Pix'"></span>
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Se item estiver na Caixinha: Botão de Ação -->
+                <template x-if="previewItem?.lifecycle?.code === 'READY_CAIXINHA'">
+                    <button type="button" @click="activeMainTab = 'caixinha'; closePreview()"
+                        class="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i data-lucide="package" class="w-4 h-4"></i>
+                        <span>Ir para Minha Caixinha e Pedir Envio</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </template>
+            </div>
+
+        </div>
+    </div>

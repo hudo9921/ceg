@@ -1,0 +1,67 @@
+<!-- CARDS DE RESUMO OPERACIONAL E EMPACOTAMENTO (REATIVOS) -->
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+    <!-- Total Itens -->
+    <div class="bg-slate-50 dark:bg-white/5 p-3.5 rounded-xl border border-slate-200 dark:border-white/10 space-y-1 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10 transition"
+         @click="filterPacote = 'ALL'" title="Ver todos os itens">
+        <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase">Total Geral</div>
+        <div class="text-xl font-black text-slate-900 dark:text-white" x-text="statsData.total_items">{{ stats.total_items }}</div>
+        <div class="text-[10px] text-slate-500 dark:text-slate-400">Cards & Mercari</div>
+    </div>
+
+    <!-- Prontos p/ Empacotar -->
+    <div class="bg-emerald-50/70 dark:bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-800/50 space-y-1 cursor-pointer hover:bg-emerald-100/70 dark:hover:bg-emerald-950/50 transition"
+         @click="filterPacote = 'READY_TO_PACK'" title="Clique para filtrar apenas os itens 100% quitados e disponíveis">
+        <div class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase flex items-center justify-between">
+            <span>Prontos Envio</span>
+            <i data-lucide="package" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+        </div>
+        <div class="text-xl font-black text-emerald-900 dark:text-emerald-200" x-text="statsData.ready_to_pack_count">{{ stats.ready_to_pack_count|default:0 }}</div>
+        <div class="text-[10px] text-emerald-700 dark:text-emerald-400">100% quitados no BR</div>
+    </div>
+
+    <!-- Não Empacotados -->
+    <div class="bg-amber-50/70 dark:bg-amber-950/30 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/50 space-y-1 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/50 transition"
+         @click="filterPacote = 'UNPACKED'" title="Clique para filtrar itens livres sem pacote">
+        <div class="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase">Livres (Geral)</div>
+        <div class="text-xl font-black text-amber-900 dark:text-amber-200" x-text="statsData.unpacked_count">{{ stats.unpacked_count }}</div>
+        <div class="text-[10px] text-amber-700 dark:text-amber-400">Sem pacote</div>
+    </div>
+
+    <!-- Em Preparação -->
+    <div class="bg-blue-50/70 dark:bg-blue-950/30 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800/50 space-y-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/50 transition"
+         @click="filterPacote = 'PACKED'" title="Clique para filtrar itens em preparação / embalando">
+        <div class="text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase">Em Preparação</div>
+        <div class="text-xl font-black text-blue-900 dark:text-blue-200" x-text="statsData.packed_count">{{ stats.packed_count }}</div>
+        <div class="text-[10px] text-blue-700 dark:text-blue-400">Embalando / Pacote</div>
+    </div>
+
+    <!-- Já Enviados Nacionalmente -->
+    <div class="bg-purple-50/70 dark:bg-purple-950/30 p-3.5 rounded-xl border border-purple-200 dark:border-purple-800/50 space-y-1 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-950/50 transition"
+         @click="filterPacote = 'ENVIADO'" title="Clique para filtrar itens despachados nacionalmente">
+        <div class="text-[11px] font-bold text-purple-800 dark:text-purple-300 uppercase">Já Despachados</div>
+        <div class="text-xl font-black text-purple-900 dark:text-purple-200" x-text="statsData.enviados_count">{{ stats.enviados_count }}</div>
+        <div class="text-[10px] text-purple-700 dark:text-purple-400">Com rastreio</div>
+    </div>
+
+    <!-- Entregues ao Joiner -->
+    <div class="bg-emerald-50/70 dark:bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-800/50 space-y-1 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition"
+         @click="filterPacote = 'ENTREGUE'" title="Clique para filtrar itens já entregues ao joiner">
+        <div class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">Entregues</div>
+        <div class="text-xl font-black text-emerald-900 dark:text-emerald-200" x-text="statsData.entregues_count">{{ stats.entregues_count|default:0 }}</div>
+        <div class="text-[10px] text-emerald-700 dark:text-emerald-400">Ao joiner</div>
+    </div>
+
+    <!-- Frete Inter Pendente -->
+    <div class="bg-indigo-50/70 dark:bg-indigo-950/30 p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-800/50 space-y-1">
+        <div class="text-[11px] font-bold text-indigo-800 dark:text-indigo-300 uppercase">Inter Pendente</div>
+        <div class="text-xl font-black text-indigo-900 dark:text-indigo-200" x-text="statsData.inter_unpaid_count">{{ stats.inter_unpaid_count }}</div>
+        <div class="text-[10px] text-indigo-700 dark:text-indigo-400">A pagar frete inter</div>
+    </div>
+
+    <!-- Taxa Pendente -->
+    <div class="bg-rose-50/70 dark:bg-rose-950/30 p-3.5 rounded-xl border border-rose-200 dark:border-rose-800/50 space-y-1">
+        <div class="text-[11px] font-bold text-rose-800 dark:text-rose-300 uppercase">Taxa Pendente</div>
+        <div class="text-xl font-black text-rose-900 dark:text-rose-200" x-text="statsData.taxa_unpaid_count">{{ stats.taxa_unpaid_count }}</div>
+        <div class="text-[10px] text-rose-700 dark:text-rose-400">A pagar taxa aduana</div>
+    </div>
+</div>

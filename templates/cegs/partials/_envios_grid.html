@@ -1,0 +1,26 @@
+<!-- LISTAGEM GERAL DE PACOTES NACIONAIS -->
+{% if not pacotes %}
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-sm space-y-4">
+        <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+            <i data-lucide="package" class="w-8 h-8"></i>
+        </div>
+        <div class="max-w-md mx-auto space-y-2">
+            <h3 class="text-base font-black text-slate-800 dark:text-slate-100">Nenhum pacote encontrado com os filtros atuais</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Você pode limpar os filtros ou acessar a <strong class="text-slate-700 dark:text-slate-200">Consulta Joiner</strong> para empacotar novos itens de participantes que já chegaram.
+            </p>
+            <div class="pt-2">
+                <a href="{% url 'consulta_joiner' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    <span>Ir para Consulta Joiner & Empacotar</span>
+                </a>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {% for pacote in pacotes %}
+            {% include 'cegs/partials/_envios_package_card.html' %}
+        {% endfor %}
+    </div>
+{% endif %}

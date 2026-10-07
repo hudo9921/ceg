@@ -1,0 +1,167 @@
+<!-- Topo, Ações, Card Principal e Timeline de Rastreio da Caixa -->
+<div class="space-y-6">
+    <!-- Voltar e Ações do Topo -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {% if is_staff_user %}
+            <a href="{% url 'caixas_dashboard' %}" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Voltar para Caixas & Remessas</span>
+            </a>
+        {% else %}
+            <a href="{% url 'my_claims' %}" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Voltar para Minhas Reservas</span>
+            </a>
+        {% endif %}
+
+        {% if is_staff_user %}
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{% url 'caixa_transfer_unclaimed_vitrine' slug=caixa.slug %}"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-pink-50 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800 text-xs font-bold shadow-2xs transition">
+                    <i data-lucide="shopping-bag" class="w-4 h-4 text-pink-500"></i>
+                    <span>Transferir Itens para a Vitrine</span>
+                </a>
+                <a href="{% url 'caixa_update' slug=caixa.slug %}"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 hover:border-slate-400 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-2xs transition">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    <span>Editar Dados da Caixa</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Card Principal / Cabeçalho da Caixa -->
+    <div class="relative overflow-hidden bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/80 dark:border-white/10 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-white/10">
+            <div class="flex items-start gap-4">
+                <!-- Flag / Origem Grande -->
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-sm shrink-0 border
+                    {% if caixa.origem == 'KR' %}bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 border-sky-200 dark:border-sky-800
+                    {% elif caixa.origem == 'JP' %}bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border-rose-200 dark:border-rose-800
+                    {% else %}bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700{% endif %}">
+                    {% if caixa.origem == 'KR' %}
+                        <i data-lucide="globe" class="w-8 h-8"></i>
+                    {% elif caixa.origem == 'JP' %}
+                        <i data-lucide="shopping-bag" class="w-8 h-8"></i>
+                    {% else %}
+                        <i data-lucide="archive" class="w-8 h-8"></i>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider
+                            {% if caixa.origem == 'KR' %}bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300
+                            {% elif caixa.origem == 'JP' %}bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300
+                            {% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
+                            {{ caixa.get_origem_display }}
+                        </span>
+                        {% if caixa.transportadora %}
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                via {{ caixa.transportadora }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                        {{ caixa.nome }}
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        Cadastrada em {{ caixa.created_at|date:"d/m/Y \à\s H:i" }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Status Badge & Rastreio -->
+            <div class="flex flex-col sm:items-end gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Status Atual:</span>
+                    <span class="text-xs sm:text-sm font-black px-3.5 py-1.5 rounded-xl shadow-2xs
+                        {% if caixa.status == 'EM_CONSOLIDACAO' %}bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700
+                        {% elif caixa.status == 'PRONTA_ENVIO' %}bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800
+                        {% elif caixa.status == 'ENVIADA' %}bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800
+                        {% elif caixa.status == 'NO_BRASIL' %}bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800
+                        {% elif caixa.status == 'TRIBUTADA' %}bg-orange-100 dark:bg-orange-950/80 text-orange-900 dark:text-orange-300 border border-orange-300 dark:border-orange-800
+                        {% elif caixa.status == 'LIBERADA' %}bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-800
+                        {% elif caixa.status == 'ENTREGUE' %}bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800
+                        {% else %}bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800{% endif %}">
+                        {{ caixa.get_status_display }}
+                    </span>
+                </div>
+
+                {% if is_staff_user and caixa.codigo_rastreio %}
+                    <div class="bg-sky-50/80 dark:bg-cyber-obsidian border border-sky-200/80 dark:border-white/10 px-3.5 py-2 rounded-xl flex items-center gap-2">
+                        <span class="text-xs font-bold text-sky-900 dark:text-sky-300">Rastreio:</span>
+                        <a href="{{ caixa.tracking_url }}" target="_blank"
+                           class="font-mono font-black text-xs sm:text-sm text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 hover:underline flex items-center gap-1">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            <span>{{ caixa.codigo_rastreio }}</span>
+                        </a>
+                        <button type="button" @click="copyToClipboard('{{ caixa.codigo_rastreio }}', 'Código de rastreio copiado!')"
+                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1 rounded cursor-pointer" title="Copiar código">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Linha do Tempo / Stepper Visual da Logística (6 Passos) -->
+        <div class="space-y-4 pt-2">
+            <h2 class="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Linha do Tempo da Remessa
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                <!-- 1. Em Consolidação -->
+                <div class="p-3 rounded-2xl border text-center transition
+                    {% if current_step >= 1 %}bg-sky-50 dark:bg-sky-950/50 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-400{% endif %}">
+                    <i data-lucide="archive" class="w-5 h-5 mx-auto mb-1"></i>
+                    <span class="text-[11px] font-bold block">1. Consolidação</span>
+                    <span class="text-[9px] block text-slate-500">Armazém exterior</span>
+                </div>
+
+                <!-- 2. Pronta para Envio -->
+                <div class="p-3 rounded-2xl border text-center transition
+                    {% if current_step >= 2 %}bg-sky-50 dark:bg-sky-950/50 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-400{% endif %}">
+                    <i data-lucide="package-check" class="w-5 h-5 mx-auto mb-1"></i>
+                    <span class="text-[11px] font-bold block">2. Embalada</span>
+                    <span class="text-[9px] block text-slate-500">Pronta p/ envio</span>
+                </div>
+
+                <!-- 3. Enviada / Trânsito -->
+                <div class="p-3 rounded-2xl border text-center transition
+                    {% if current_step >= 3 %}bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-400{% endif %}">
+                    <i data-lucide="plane" class="w-5 h-5 mx-auto mb-1"></i>
+                    <span class="text-[11px] font-bold block">3. Em Trânsito</span>
+                    <span class="text-[9px] block text-slate-500 font-mono">{% if caixa.data_envio %}{{ caixa.data_envio|date:"d/m/Y" }}{% else %}Voo internacional{% endif %}</span>
+                </div>
+
+                <!-- 4. No Brasil / Fiscalização -->
+                <div class="p-3 rounded-2xl border text-center transition
+                    {% if current_step >= 4 %}bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-400{% endif %}">
+                    <i data-lucide="shield-alert" class="w-5 h-5 mx-auto mb-1"></i>
+                    <span class="text-[11px] font-bold block">4. No Brasil</span>
+                    <span class="text-[9px] block text-slate-500">Fiscalização</span>
+                </div>
+
+                <!-- 5. Liberada -->
+                <div class="p-3 rounded-2xl border text-center transition
+                    {% if current_step >= 5 %}bg-teal-50 dark:bg-teal-950/50 border-teal-300 dark:border-teal-800 text-teal-900 dark:text-teal-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-400{% endif %}">
+                    <i data-lucide="check-circle" class="w-5 h-5 mx-auto mb-1"></i>
+                    <span class="text-[11px] font-bold block">5. Liberada</span>
+                    <span class="text-[9px] block text-slate-500">A caminho da GOM</span>
+                </div>
+
+                <!-- 6. Chegou na casa da GOM -->
+                <div class="p-3 rounded-2xl border text-center transition
+                    {% if current_step >= 6 %}bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200{% else %}bg-slate-50 dark:bg-cyber-obsidian border-slate-200 dark:border-white/5 text-slate-400{% endif %}">
+                    <i data-lucide="home" class="w-5 h-5 mx-auto mb-1"></i>
+                    <span class="text-[11px] font-bold block">6. Na GOM</span>
+                    <span class="text-[9px] block text-slate-500 font-mono">{% if caixa.data_recebimento %}{{ caixa.data_recebimento|date:"d/m/Y" }}{% else %}Entregue{% endif %}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel Rápido de Ação de Status (Apenas Administrador) -->
+        {% include 'cegs/partials/_caixa_detail_cascade_panel.html' %}
+    </div>
+</div>

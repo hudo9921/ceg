@@ -1,0 +1,162 @@
+<!-- PAINEL DE AUDITORIA FINANCEIRA: QUANTO DEVE & HISTÓRICO PAGO (REATIVO) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- BLOCO 1: DÍVIDA ATUAL EM ABERTO -->
+    <div class="bg-gradient-to-br from-rose-50/80 via-white to-amber-50/50 dark:from-rose-950/20 dark:via-slate-900/40 dark:to-amber-950/20 rounded-2xl border border-rose-200/80 dark:border-rose-500/20 p-4 sm:p-5 shadow-2xs space-y-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                        Quanto Deve Atualmente (Dívida em Aberto)
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Valores pendentes de pagamento deste joiner</p>
+                </div>
+            </div>
+            <div>
+                <span class="px-3 py-1 rounded-xl font-black text-sm sm:text-base transition inline-flex items-center gap-1"
+                      :class="statsData.total_devido > 0 ? 'bg-rose-600 text-white shadow-2xs' : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'"
+                      x-text="statsData.total_devido > 0 ? formatMoney(statsData.total_devido) : '100% Quitado ✨'">
+                    R$ {{ stats.total_devido|floatformat:2 }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 pt-1">
+            <!-- Deve Itens -->
+            <div class="bg-white/90 dark:bg-slate-800/80 p-3 rounded-xl border border-rose-100 dark:border-rose-900/30 shadow-2xs space-y-0.5">
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                    <i data-lucide="layers" class="w-3 h-3 text-rose-500"></i>
+                    <span>Itens / Cards</span>
+                </div>
+                <div class="text-base sm:text-lg font-black"
+                     :class="statsData.deve_itens > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'"
+                     x-text="formatMoney(statsData.deve_itens)">
+                    R$ {{ stats.deve_itens|floatformat:2 }}
+                </div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500" x-text="statsData.item_unpaid_count + ' pendente(s)'">
+                    {{ stats.item_unpaid_count }} pendente(s)
+                </div>
+            </div>
+
+            <!-- Deve Frete Inter -->
+            <div class="bg-white/90 dark:bg-slate-800/80 p-3 rounded-xl border border-indigo-100 dark:border-indigo-900/30 shadow-2xs space-y-0.5">
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                    <i data-lucide="plane" class="w-3 h-3 text-indigo-500"></i>
+                    <span>Frete Inter</span>
+                </div>
+                <div class="text-base sm:text-lg font-black"
+                     :class="statsData.deve_frete > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'"
+                     x-text="formatMoney(statsData.deve_frete)">
+                    R$ {{ stats.deve_frete|floatformat:2 }}
+                </div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500" x-text="statsData.inter_unpaid_count + ' frete(s)'">
+                    {{ stats.inter_unpaid_count }} frete(s)
+                </div>
+            </div>
+
+            <!-- Deve Taxa Aduaneira -->
+            <div class="bg-white/90 dark:bg-slate-800/80 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30 shadow-2xs space-y-0.5">
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                    <i data-lucide="landmark" class="w-3 h-3 text-amber-500"></i>
+                    <span>Taxa Aduana</span>
+                </div>
+                <div class="text-base sm:text-lg font-black"
+                     :class="statsData.deve_taxa > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'"
+                     x-text="formatMoney(statsData.deve_taxa)">
+                    R$ {{ stats.deve_taxa|floatformat:2 }}
+                </div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500" x-text="statsData.taxa_unpaid_count + ' taxa(s)'">
+                    {{ stats.taxa_unpaid_count }} taxa(s)
+                </div>
+            </div>
+        </div>
+
+        <template x-if="statsData.deve_frete_nacional > 0">
+            <div class="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/40 flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                    Frete Nacional de Pacotes Pendente:
+                </span>
+                <span class="font-black" x-text="formatMoney(statsData.deve_frete_nacional)"></span>
+            </div>
+        </template>
+    </div>
+
+    <!-- BLOCO 2: TOTAL PAGO HISTORICAMENTE -->
+    <div class="bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 dark:from-emerald-950/20 dark:via-slate-900/40 dark:to-teal-950/20 rounded-2xl border border-emerald-200/80 dark:border-emerald-500/20 p-4 sm:p-5 shadow-2xs space-y-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                        Quanto Já Pagou Historicamente
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Total acumulado já quitado em toda a trajetória</p>
+                </div>
+            </div>
+            <div>
+                <span class="px-3 py-1 rounded-xl bg-emerald-600 text-white font-black text-sm sm:text-base shadow-2xs"
+                      x-text="formatMoney(statsData.total_pago_historico)">
+                    R$ {{ stats.total_pago_historico|floatformat:2 }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 pt-1">
+            <!-- Pago Itens -->
+            <div class="bg-white/90 dark:bg-slate-800/80 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-2xs space-y-0.5">
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                    <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>
+                    <span>Itens Pagos</span>
+                </div>
+                <div class="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400"
+                     x-text="formatMoney(statsData.pago_itens)">
+                    R$ {{ stats.pago_itens|floatformat:2 }}
+                </div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500" x-text="statsData.item_paid_count + ' pagos'">
+                    {{ stats.item_paid_count }} pagos
+                </div>
+            </div>
+
+            <!-- Pago Frete Inter -->
+            <div class="bg-white/90 dark:bg-slate-800/80 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-2xs space-y-0.5">
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                    <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>
+                    <span>Fretes Pagos</span>
+                </div>
+                <div class="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400"
+                     x-text="formatMoney(statsData.pago_frete)">
+                    R$ {{ stats.pago_frete|floatformat:2 }}
+                </div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500">Fretes internacionais</div>
+            </div>
+
+            <!-- Pago Taxa Aduaneira -->
+            <div class="bg-white/90 dark:bg-slate-800/80 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-2xs space-y-0.5">
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                    <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>
+                    <span>Taxas Pagas</span>
+                </div>
+                <div class="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400"
+                     x-text="formatMoney(statsData.pago_taxa)">
+                    R$ {{ stats.pago_taxa|floatformat:2 }}
+                </div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500">Taxas aduaneiras</div>
+            </div>
+        </div>
+
+        <template x-if="statsData.pago_frete_nacional > 0">
+            <div class="text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                    Fretes Nacionais de Pacotes Pagos:
+                </span>
+                <span class="font-black" x-text="formatMoney(statsData.pago_frete_nacional)"></span>
+            </div>
+        </template>
+    </div>
+</div>

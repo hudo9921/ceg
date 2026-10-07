@@ -1,0 +1,95 @@
+    <!-- Modal de Edição de Perfil (Nome, WhatsApp, Twitter/Instagram) -->
+    <div x-show="profileModalOpen" x-cloak
+        class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        @keydown.escape.window="profileModalOpen = false">
+
+        <div class="bg-white dark:bg-cyber-surface rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 border border-slate-200/80 dark:border-white/10 transform transition-all"
+            @click.away="profileModalOpen = false">
+
+            <div class="flex justify-between items-start border-b border-slate-100 dark:border-white/10 pb-3">
+                <div>
+                    <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider">Conta do Participante</span>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="user-cog" class="w-5 h-5 text-pink-500"></i>
+                        <span>Meu Perfil de Colecionador</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-cyber-silver">Mantenha seus dados atualizados para suas reservas e comprovantes.</p>
+                </div>
+                <button type="button" @click="profileModalOpen = false"
+                    class="text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form action="{% url 'update_profile' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Nome Completo (Obrigatório) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Nome Completo <span class="text-pink-600 dark:text-pink-400">*</span>
+                    </label>
+                    <input type="text" name="name" required
+                        value="{% if is_placeholder_name %}{% else %}{{ participant.name }}{% endif %}"
+                        placeholder="Ex: Beatriz Lima da Silva"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                    <span class="text-[10px] text-slate-400 dark:text-cyber-silver">Obrigatório. Seu nome civil completo para conferência de pagamentos Pix, envios e encomendas.</span>
+                </div>
+
+                <!-- Como prefere ser chamado(a) / Apelido (Opcional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Como prefere ser chamado(a)? / Nome de Usuário <span class="text-slate-400 dark:text-cyber-silver font-normal text-[11px]">(opcional)</span>
+                    </label>
+                    <input type="text" name="username" value="{{ participant.username|default:'' }}"
+                        placeholder="Ex: Bia, Hudo, JihyoStan"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                    <span class="text-[10px] text-slate-400 dark:text-cyber-silver">Nome de usuário ou apelido usado nas saudações e no painel. Se em branco, usará seu nome completo.</span>
+                </div>
+
+                <!-- WhatsApp (Obrigatório / Autenticado via OTP) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        WhatsApp <span class="text-pink-600 dark:text-pink-400">*</span>
+                    </label>
+                    <div class="flex items-center justify-between px-3.5 py-2.5 bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        <div class="flex items-center space-x-2">
+                            <span>🇧🇷</span>
+                            <span>{{ participant.formatted_phone }}</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/60">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                            <span>Autenticado via OTP</span>
+                        </span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 dark:text-cyber-silver">Número verificado por código de 6 dígitos. Não pode ser alterado diretamente.</span>
+                </div>
+
+                <!-- Twitter / Instagram (Opcional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        @ Twitter (X) ou Instagram <span class="text-slate-400 dark:text-cyber-silver font-normal text-[11px]">(opcional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="social_handle" value="{{ participant.social_handle|default:'' }}"
+                            placeholder="Ex: @jihyolover"
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                    </div>
+                    <span class="text-[10px] text-slate-400 dark:text-cyber-silver">Exibido publicamente na lista de reservas de cada Set e photocard.</span>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" @click="profileModalOpen = false"
+                        class="w-1/3 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="w-2/3 py-2.5 bg-pink-600 hover:bg-pink-700 dark:bg-pink-500 dark:hover:bg-pink-600 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                        <span>Salvar Alterações</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>

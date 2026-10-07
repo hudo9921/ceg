@@ -1,0 +1,136 @@
+{% include 'analytics/partials/_sales_app_chart_monthly.html' %}
+{% include 'analytics/partials/_sales_app_chart_volume.html' %}
+{% include 'analytics/partials/_sales_app_chart_donut_groups.html' %}
+
+<script>
+function salesReportApp() {
+    let filterOptions = { groups: [], eras: [], months: [] };
+    try {
+        const el = document.getElementById('filter-options-data');
+        if (el && el.textContent.trim()) filterOptions = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('Erro ao ler filter-options-data:', e);
+    }
+
+    let chartData = {
+        monthly: { labels: [], full_labels: [], total_sales: [], paid_sales: [], pending_sales: [], claims_count: [] },
+        donut: { labels: ['Pago (Confirmado)', 'Pendente (Aguardando Pix)'], data: [0, 0] },
+        groups: { labels: [], sales: [], claims: [] }
+    };
+    try {
+        const el = document.getElementById('chart-data');
+        if (el && el.textContent.trim()) chartData = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('Erro ao ler chart-data:', e);
+    }
+
+    return {
+        selectedCategory: '{{ category|default:"all" }}',
+        selectedGroup: '{{ selected_group|default:"" }}',
+        selectedEra: '{{ selected_era|default:"" }}',
+        selectedWindow: '{{ selected_window|default:"all" }}',
+        selectedMonth: '{{ selected_month|default:"" }}',
+        chartViewMode: 'side_by_side', // 'side_by_side', 'revenue', 'volume', 'combined'
+        filterOptions: filterOptions,
+        chartData: chartData,
+        monthlyChart: null,
+        volumeChart: null,
+        donutChart: null,
+        groupsChart: null,
+
+        get availableEras() {
+            if (!this.selectedGroup) return this.filterOptions.eras;
+            return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+        },
+
+        setCategory(cat) {
+            this.selectedCategory = cat;
+            this.applyFilter();
+        },
+
+        onGroupChange() {
+            this.selectedEra = '';
+            this.applyFilter();
+        },
+
+        applyFilter() {
+            const params = new URLSearchParams();
+            if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
+            if (this.selectedGroup) params.set('group', this.selectedGroup);
+            if (this.selectedEra) params.set('era', this.selectedEra);
+            if (this.selectedWindow && this.selectedWindow !== 'all') params.set('window', this.selectedWindow);
+            if (this.selectedMonth) params.set('month', this.selectedMonth);
+            window.location.search = params.toString();
+        },
+
+        setWindow(w) {
+            this.selectedWindow = w;
+            this.selectedMonth = '';
+            this.applyFilter();
+        },
+
+        clearFilters() {
+            window.location.href = '{% url "sales_report" %}';
+        },
+
+        setChartViewMode(mode) {
+            this.chartViewMode = mode;
+            this.$nextTick(() => {
+                this.renderMonthlyChart();
+                if (mode === 'side_by_side' || mode === 'volume') {
+                    this.renderVolumeChart();
+                }
+            });
+        },
+
+        updateChartTheme() {
+            if (typeof Chart === 'undefined') return;
+            const isDark = document.documentElement.classList.contains('dark');
+            Chart.defaults.color = isDark ? '#94A3B8' : '#64748B';
+            Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+        },
+
+        initCharts() {
+            const startRendering = () => {
+                this.updateChartTheme();
+                this.renderMonthlyChart();
+                this.renderVolumeChart();
+                this.renderDonutChart();
+                this.renderGroupsChart();
+            };
+
+            const ensureChartLoaded = (tries = 25) => {
+                if (typeof Chart !== 'undefined') {
+                    this.$nextTick(startRendering);
+                } else if (tries > 0) {
+                    setTimeout(() => ensureChartLoaded(tries - 1), 100);
+                } else {
+                    console.error('Chart.js não pôde ser carregado a tempo.');
+                }
+            };
+
+            window.addEventListener('theme-changed', () => {
+                startRendering();
+            });
+
+            ensureChartLoaded();
+        },
+
+        renderMonthlyChart() {
+            this.monthlyChart = renderSalesMonthlyChart(this);
+        },
+
+        renderVolumeChart() {
+            this.volumeChart = renderSalesVolumeChart(this);
+        },
+
+        renderDonutChart() {
+            this.donutChart = renderSalesDonutChart(this);
+        },
+
+        renderGroupsChart() {
+            this.groupsChart = renderSalesGroupsChart(this);
+        }
+    };
+}
+</script>

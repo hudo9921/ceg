@@ -1,0 +1,173 @@
+<!-- CARD DE PACOTE NACIONAL -->
+<div class="border rounded-2xl p-4 shadow-2xs space-y-3 flex flex-col justify-between transition hover:shadow-sm
+            {% if pacote.status == 'ENVIADO' %}border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/20 dark:bg-emerald-950/10{% elif pacote.status == 'ENTREGUE' %}border-slate-200 dark:border-white/10 bg-slate-50/40 dark:bg-white/5{% else %}border-blue-200 dark:border-blue-800/40 bg-blue-50/20 dark:bg-blue-950/10{% endif %}">
+    <div class="space-y-2">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                <i data-lucide="package" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span>{{ pacote.identificador }}</span>
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider
+                         {% if pacote.status == 'ENVIADO' %}bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300{% elif pacote.status == 'ENTREGUE' %}bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300{% else %}bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300{% endif %}">
+                {{ pacote.get_status_display }}
+            </span>
+        </div>
+
+        <div class="text-xs text-slate-600 dark:text-slate-300 space-y-1 bg-white/80 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/80 dark:border-white/5">
+            <div class="flex items-center justify-between">
+                <span class="text-slate-500 dark:text-slate-400">Transportadora:</span>
+                <strong class="text-slate-800 dark:text-slate-200">{{ pacote.transportadora }}</strong>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-slate-500 dark:text-slate-400">Frete Nacional:</span>
+                <span>
+                    {% if pacote.valor_frete_nacional %}
+                        <strong>R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</strong>
+                        {% if pacote.is_frete_pago %}
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold ml-1 inline-flex items-center gap-0.5">
+                                <i data-lucide="check" class="w-3 h-3"></i> Pago
+                            </span>
+                        {% else %}
+                            <span class="text-amber-600 dark:text-amber-400 font-bold ml-1 inline-flex items-center gap-0.5">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> A Pagar
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-slate-400">Não informado</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if pacote.codigo_rastreio %}
+                <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/5">
+                    <span class="text-slate-500 dark:text-slate-400">Rastreio:</span>
+                    <a href="{{ pacote.tracking_url }}" target="_blank"
+                       class="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-black tracking-wider text-xs underline flex items-center gap-1">
+                        <span>{{ pacote.codigo_rastreio }}</span>
+                        <i data-lucide="external-link" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            {% endif %}
+            {% if pacote.data_envio %}
+                <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <span>Postado em:</span>
+                    <span>{{ pacote.data_envio|date:"d/m/Y H:i" }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Resumo dos itens dentro do pacote -->
+        <div class="space-y-1">
+            <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase flex items-center justify-between">
+                <span>Itens no Pacote:</span>
+                <span class="text-slate-700 dark:text-slate-300 font-black">{{ pacote.total_itens }} item(ns)</span>
+            </div>
+            <div class="max-h-28 overflow-y-auto space-y-1 pr-1 text-xs">
+                {% for slot in pacote.slots.all %}
+                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-100 dark:border-white/5 text-[11px]">
+                        <span class="truncate max-w-[170px] inline-flex items-center gap-1" title="{{ slot.item_definition.name }}">
+                            <i data-lucide="layers" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                            <span class="truncate">{{ slot.item_definition.name }} ({{ slot.set.ceg.title|truncatechars:18 }})</span>
+                        </span>
+                        {% if pacote.status == 'EM_PREPARACAO' %}
+                            <form method="post" action="{% url 'desempacotar_item' %}" onsubmit="return confirm('Remover este item do pacote?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="item_uid" value="slot_{{ slot.id }}">
+                                <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
+                                <button type="submit" class="text-slate-300 hover:text-red-500 text-xs px-1" title="Remover do pacote">✕</button>
+                            </form>
+                        {% else %}
+                            <span class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold" title="Item já enviado">✓ Enviado</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% for item in pacote.itens_individuais.all %}
+                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-100 dark:border-white/5 text-[11px]">
+                        <span class="truncate max-w-[170px] inline-flex items-center gap-1" title="{{ item.nome }}">
+                            <i data-lucide="shopping-bag" class="w-3 h-3 text-pink-500 shrink-0"></i>
+                            <span class="truncate">{{ item.nome }}</span>
+                        </span>
+                        {% if pacote.status == 'EM_PREPARACAO' %}
+                            <form method="post" action="{% url 'desempacotar_item' %}" onsubmit="return confirm('Remover este item do pacote?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="item_uid" value="mercari_{{ item.id }}">
+                                <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
+                                <button type="submit" class="text-slate-300 hover:text-red-500 text-xs px-1" title="Remover do pacote">✕</button>
+                            </form>
+                        {% else %}
+                            <span class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold" title="Item já enviado">✓ Enviado</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Avaliação & Feedback do Joiner -->
+        {% if pacote.feedback_rating %}
+            <div class="mt-2 p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/40 space-y-1 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="font-black text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                        <i data-lucide="star" class="w-3.5 h-3.5 text-amber-500 fill-amber-400"></i>
+                        <span>Avaliação do Joiner:</span>
+                    </span>
+                    <span class="text-amber-600 dark:text-amber-400 font-black tracking-widest text-sm">
+                        {% for i in "12345"|make_list %}
+                            {% if forloop.counter <= pacote.feedback_rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                        <span class="text-xs text-amber-800 dark:text-amber-300 font-bold ml-0.5">({{ pacote.feedback_rating }}/5)</span>
+                    </span>
+                </div>
+                {% if pacote.feedback_texto %}
+                    <p class="text-slate-700 dark:text-slate-300 italic text-[11px] bg-white/80 dark:bg-slate-800/80 p-2 rounded-lg border border-amber-100/80 dark:border-white/5 leading-snug">
+                        "{{ pacote.feedback_texto }}"
+                    </p>
+                {% endif %}
+                {% if pacote.feedback_data %}
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 block text-right">Avaliado em {{ pacote.feedback_data|date:"d/m/Y H:i" }}</span>
+                {% endif %}
+            </div>
+        {% elif pacote.status == 'ENTREGUE' %}
+            <div class="mt-2 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span class="flex items-center gap-1">
+                    <i data-lucide="party-popper" class="w-3.5 h-3.5 text-purple-500"></i>
+                    <span>Entregue ({{ pacote.get_entregue_por_display|default:'Admin' }})</span>
+                </span>
+                <span class="text-amber-600 dark:text-amber-400 font-medium">Aguardando avaliação</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Botões de Ação do Pacote -->
+    <div class="pt-2 border-t border-slate-200/80 dark:border-white/10 flex flex-wrap items-center gap-2">
+        {% if pacote.status == 'EM_PREPARACAO' %}
+            <button type="button" @click="openDispatchModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora }}', '{{ pacote.codigo_rastreio }}')"
+                    class="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Marcar como Enviado Nacionalmente</span>
+            </button>
+        {% elif pacote.status == 'ENVIADO' %}
+            <form method="post" action="{% url 'marcar_pacote_entregue' pacote.id %}" class="w-full" onsubmit="return confirm('Marcar o pacote {{ pacote.identificador }} como ENTREGUE ao destinatário?')">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="/consulta-joiner/?participant_id={{ selected_participant.id }}">
+                <button type="submit" class="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="party-popper" class="w-3.5 h-3.5"></i>
+                    <span>Marcar como Entregue</span>
+                </button>
+            </form>
+        {% endif %}
+
+        <button type="button" @click="openEditPacoteModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora }}', '{{ pacote.codigo_rastreio }}', '{{ pacote.valor_frete_nacional|default:'' }}', {{ pacote.is_frete_pago|yesno:'true,false' }}, '{{ pacote.status }}', '{{ pacote.observacoes|escapejs }}')"
+                class="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition text-center flex items-center justify-center gap-1">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            <span>Editar</span>
+        </button>
+
+        {% if pacote.status == 'EM_PREPARACAO' %}
+            <form method="post" action="{% url 'excluir_pacote' pacote.id %}" onsubmit="return confirm('Excluir este pacote? Os itens voltarão para a fila de não empacotados.')">
+                {% csrf_token %}
+                <button type="submit" class="px-2.5 py-1.5 text-slate-400 hover:text-red-600 rounded-xl text-xs font-bold transition" title="Excluir pacote">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>

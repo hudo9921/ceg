@@ -1,0 +1,150 @@
+{% include 'cegs/partials/_vitrine_app_methods.html' %}
+
+<script>
+function vitrineApp() {
+    const erasMap = JSON.parse('{{ eras_by_group_json|escapejs }}' || '{}');
+    const membersMap = JSON.parse('{{ members_by_group_json|escapejs }}' || '{}');
+    const allMembersList = JSON.parse('{{ all_members_json|escapejs }}' || '[]');
+
+    return {
+        ...window.vitrineMethods,
+        searchQuery: '{{ search_query|escapejs }}',
+        selectedGroup: '{{ selected_group }}',
+        selectedEra: '{{ selected_era }}',
+        selectedMember: '{{ selected_member|escapejs }}',
+        selectedSubCategory: '{{ selected_sub_category|escapejs }}',
+        selectedTipo: '{{ selected_tipo }}',
+        selectedStatus: '{{ selected_status|default:"DISPONIVEL" }}',
+        selectedSort: '{{ selected_sort|default:"destaque" }}',
+        visibleCount: {{ itens|length }},
+        modalOpen: false,
+        activeItem: {},
+
+        init() {
+            this.recalculateVisible();
+            this.sortCards();
+        },
+
+        get hasActiveFilters() {
+            return Boolean(
+                (this.searchQuery && this.searchQuery.trim()) ||
+                this.selectedGroup ||
+                this.selectedEra ||
+                this.selectedMember ||
+                this.selectedTipo ||
+                this.selectedSubCategory ||
+                (this.selectedStatus && this.selectedStatus !== 'DISPONIVEL') ||
+                (this.selectedSort && this.selectedSort !== 'destaque')
+            );
+        },
+
+        get isPhotocardActive() {
+            const photocardTipoId = '{{ photocard_tipo_id|default:"" }}';
+            return Boolean(photocardTipoId && String(this.selectedTipo) === String(photocardTipoId));
+        },
+
+        get filteredEras() {
+            if (!this.selectedGroup || !erasMap[this.selectedGroup]) {
+                let all = [];
+                for (const gId in erasMap) {
+                    all = all.concat(erasMap[gId]);
+                }
+                return all;
+            }
+            return erasMap[this.selectedGroup] || [];
+        },
+
+        get filteredMembers() {
+            if (this.selectedGroup && membersMap[this.selectedGroup]) {
+                return membersMap[this.selectedGroup];
+            }
+            return allMembersList;
+        },
+
+        onFilterChange() {
+            this.recalculateVisible();
+            this.updateUrl();
+        },
+
+        onGroupChange() {
+            this.selectedEra = '';
+            // Se o membro selecionado não pertencer ao novo grupo, limpa o membro
+            if (this.selectedGroup && membersMap[this.selectedGroup]) {
+                const groupMembers = membersMap[this.selectedGroup] || [];
+                if (this.selectedMember && !groupMembers.includes(this.selectedMember)) {
+                    this.selectedMember = '';
+                }
+            }
+            this.onFilterChange();
+        },
+
+        setTipo(tipoId) {
+            this.selectedTipo = (this.selectedTipo === String(tipoId)) ? '' : String(tipoId);
+            const photocardTipoId = '{{ photocard_tipo_id|default:"" }}';
+            if (photocardTipoId && this.selectedTipo !== photocardTipoId) {
+                this.selectedSubCategory = '';
+            }
+            this.onFilterChange();
+        },
+
+        setSubCategory(sub) {
+            this.selectedSubCategory = (this.selectedSubCategory === sub) ? '' : sub;
+            const photocardTipoId = '{{ photocard_tipo_id|default:"" }}';
+            if (this.selectedSubCategory && photocardTipoId) {
+                this.selectedTipo = photocardTipoId;
+            }
+            this.onFilterChange();
+        },
+
+        clearFilters() {
+            this.searchQuery = '';
+            this.selectedGroup = '';
+            this.selectedEra = '';
+            this.selectedMember = '';
+            this.selectedTipo = '';
+            this.selectedSubCategory = '';
+            this.selectedStatus = 'DISPONIVEL';
+            this.selectedSort = 'destaque';
+            this.sortCards();
+            this.onFilterChange();
+        },
+
+        openModal(titulo, imageUrl, group, era, integrante, subCategory, preco, status, descricao) {
+            this.activeItem = {
+                titulo: titulo,
+                imageUrl: imageUrl,
+                group: group,
+                era: era,
+                integrante: integrante,
+                subCategory: subCategory,
+                preco: preco,
+                status: status,
+                descricao: descricao,
+            };
+            this.modalOpen = true;
+        },
+
+        formatPreco(val) {
+            if (val === null || val === undefined || val === '') return '0,00';
+            if (typeof val === 'string') {
+                val = val.replace(',', '.');
+            }
+            const num = parseFloat(val);
+            return isNaN(num) ? '0,00' : num.toFixed(2).replace('.', ',');
+        },
+
+        get whatsappUrl() {
+            const precoFmt = this.formatPreco(this.activeItem.preco);
+            let extra = '';
+            if (this.activeItem.integrante) {
+                extra += ` (Integrante: ${this.activeItem.integrante})`;
+            }
+            if (this.activeItem.subCategory) {
+                extra += ` [${this.activeItem.subCategory}]`;
+            }
+            const msg = `Olá! Tenho interesse no item da Vitrine ValCegs:\n\n✨ *${this.activeItem.titulo}*${extra}\n💰 Valor: R$ ${precoFmt}\n\nAinda está disponível?`;
+            return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        }
+    };
+}
+</script>

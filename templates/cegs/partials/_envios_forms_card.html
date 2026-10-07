@@ -1,0 +1,43 @@
+<!-- Card de Configuração do Google Forms de Envio Nacional (GOM) -->
+<div class="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-pink-500/5 dark:from-pink-950/30 dark:via-purple-950/20 dark:to-pink-950/20 rounded-2xl border border-pink-200/80 dark:border-pink-800/60 p-5 shadow-2xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-sm">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+        </div>
+        <div class="space-y-0.5">
+            <div class="flex items-center gap-2">
+                <h3 class="text-sm font-black text-slate-900 dark:text-white">Formulário de Envio Nacional (Google Forms)</h3>
+                {% if configuracao_envio.link_formulario_google %}
+                    <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-[10px] rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Link Ativo
+                    </span>
+                {% else %}
+                    <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold text-[10px] rounded-full border border-amber-200 dark:border-amber-800">Não Configurado</span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                {% if configuracao_envio.link_formulario_google %}
+                    Link atual disponibilizado aos joiners no painel <strong>Minha Caixinha</strong> para preenchimento de endereço e preferências de envio.
+                {% else %}
+                    Configure o formulário do Google para onde os joiners serão direcionados para informar endereço e dados de entrega.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2 self-end sm:self-center">
+        {% if configuracao_envio.link_formulario_google %}
+            <a href="{{ configuracao_envio.link_formulario_google }}" target="_blank" rel="noopener noreferrer"
+               class="px-3.5 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                <span>Abrir Forms</span>
+                <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+        {% endif %}
+        <button type="button" @click="configModalOpen = true"
+                class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+            <span>Configurar Link</span>
+        </button>
+    </div>
+</div>

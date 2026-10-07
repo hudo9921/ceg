@@ -1,0 +1,166 @@
+{% include 'cegs/partials/_auditoria_app_filters.html' %}
+
+<script>
+function auditoriaApp() {
+    return Object.assign({
+        showModal: false,
+        modalData: null,
+        isLoading: false,
+        allCegs: JSON.parse('{{ cegs_json|escapejs }}'),
+        allEras: JSON.parse('{{ eras_json|escapejs }}'),
+        allGrupos: JSON.parse('{{ grupos_json|escapejs }}'),
+        allCaixas: JSON.parse('{{ caixas_json|escapejs }}'),
+        selectedCaixa: '{{ caixa_id|default:""|escapejs }}',
+        selectedGroup: '{{ grupo_id|default:""|escapejs }}',
+        selectedEra: '{{ era_id|default:""|escapejs }}',
+        selectedCeg: '{{ ceg_id|default:""|escapejs }}',
+        currentFetchController: null,
+
+        init() {
+            window.addEventListener('popstate', () => {
+                this.syncFormFromUrl(window.location.href);
+                this.loadUrl(window.location.href, false);
+            });
+            this.refreshIcons();
+        },
+
+        refreshIcons() {
+            this.$nextTick(() => {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            });
+        },
+
+        openDetails(data) {
+            this.modalData = data;
+            this.showModal = true;
+            this.refreshIcons();
+        },
+
+        handleContainerClick(event) {
+            const link = event.target.closest('a');
+            if (!link) return;
+
+            const href = link.getAttribute('href');
+            if (!href) return;
+
+            try {
+                const urlObj = new URL(link.href, window.location.origin);
+                // Intercept clicks on pagination links within table container
+                if (urlObj.pathname === window.location.pathname) {
+                    event.preventDefault();
+                    this.syncFormFromUrl(link.href);
+                    this.loadUrl(link.href, true);
+                }
+            } catch (e) {
+                // Fallback to native click
+            }
+        },
+
+        syncFormFromUrl(urlStr) {
+            try {
+                const url = new URL(urlStr, window.location.origin);
+                const form = this.$refs.filterForm;
+                if (!form) return;
+
+                const fields = ['q', 'event_type', 'grupo_id', 'era_id', 'ceg_id', 'caixa_id', 'status', 'date_from', 'date_to'];
+                fields.forEach(field => {
+                    const el = form.elements[field];
+                    if (el) {
+                        el.value = url.searchParams.get(field) || '';
+                    }
+                });
+                this.selectedCaixa = url.searchParams.get('caixa_id') || '';
+                this.selectedGroup = url.searchParams.get('grupo_id') || '';
+                this.selectedEra = url.searchParams.get('era_id') || '';
+                this.selectedCeg = url.searchParams.get('ceg_id') || '';
+            } catch (err) {
+                console.error('Erro ao sincronizar formulário com URL:', err);
+            }
+        },
+
+        applyFilters(resetPage = true) {
+            const form = this.$refs.filterForm;
+            if (!form) return;
+
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+
+            for (const [key, value] of formData.entries()) {
+                if (key === 'csrfmiddlewaretoken') continue;
+                if (value && value.toString().trim() !== '') {
+                    params.set(key, value.toString().trim());
+                }
+            }
+
+            if (!resetPage) {
+                const currentUrl = new URL(window.location.href);
+                const currentPage = currentUrl.searchParams.get('page');
+                if (currentPage) params.set('page', currentPage);
+            }
+
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            this.loadUrl(newUrl, true);
+        },
+
+        async loadUrl(url, pushHistory = true) {
+            if (this.currentFetchController) {
+                this.currentFetchController.abort();
+            }
+            this.currentFetchController = new AbortController();
+            this.isLoading = true;
+
+            try {
+                const response = await fetch(url, {
+                    signal: this.currentFetchController.signal,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+                const htmlText = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+
+                // Swap KPI cards
+                const newKpis = doc.getElementById('kpisContainer');
+                const curKpis = document.getElementById('kpisContainer');
+                if (newKpis && curKpis) {
+                    curKpis.innerHTML = newKpis.innerHTML;
+                }
+
+                // Swap CSV export button href
+                const newCsv = doc.getElementById('csvExportBtn');
+                const curCsv = document.getElementById('csvExportBtn');
+                if (newCsv && curCsv) {
+                    curCsv.setAttribute('href', newCsv.getAttribute('href'));
+                }
+
+                // Swap Table Container & re-init Alpine bindings
+                const newTable = doc.getElementById('auditTableContainer');
+                const curTable = document.getElementById('auditTableContainer');
+                if (newTable && curTable) {
+                    curTable.innerHTML = newTable.innerHTML;
+                    if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                        window.Alpine.initTree(curTable);
+                    }
+                }
+
+                if (pushHistory) {
+                    window.history.pushState({}, '', url);
+                }
+                this.refreshIcons();
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Falha ao atualizar logs dinamicamente:', err);
+                }
+            } finally {
+                this.isLoading = false;
+            }
+        }
+    }, auditoriaFiltersMixin());
+}
+</script>

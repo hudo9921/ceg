@@ -1,0 +1,123 @@
+<script>
+window.vitrineMethods = {
+    checkItem(searchable, groupId, eraId, member, tipoId, subCategory, status) {
+        // 1. Busca textual
+        if (this.searchQuery && this.searchQuery.trim()) {
+            const q = this.searchQuery.toLowerCase().trim();
+            if (!(searchable || '').toLowerCase().includes(q)) {
+                return false;
+            }
+        }
+
+        // 2. Grupo
+        if (this.selectedGroup && String(groupId) !== String(this.selectedGroup)) {
+            return false;
+        }
+
+        // 3. Era
+        if (this.selectedEra && String(eraId) !== String(this.selectedEra)) {
+            return false;
+        }
+
+        // 4. Membro / Integrante
+        if (this.selectedMember && this.selectedMember.trim()) {
+            const m = this.selectedMember.toLowerCase().trim();
+            const mem = (member || '').toLowerCase().trim();
+            const s = (searchable || '').toLowerCase();
+            if (mem !== m && !s.includes(m)) {
+                return false;
+            }
+        }
+
+        // 5. Tipo de Item
+        if (this.selectedTipo && String(tipoId) !== String(this.selectedTipo)) {
+            return false;
+        }
+
+        // 6. Subcategoria de Photocard
+        if (this.selectedSubCategory && this.selectedSubCategory.trim()) {
+            const sub = this.selectedSubCategory.toLowerCase().trim();
+            const itemSub = (subCategory || '').toLowerCase().trim();
+            const s = (searchable || '').toLowerCase();
+            if (itemSub !== sub && !s.includes(sub)) {
+                return false;
+            }
+        }
+
+        // 7. Status
+        if (this.selectedStatus && this.selectedStatus !== 'ALL') {
+            if (status !== this.selectedStatus) {
+                return false;
+            }
+        }
+
+        return true;
+    },
+
+    recalculateVisible() {
+        const grid = this.$refs.productsGrid;
+        if (!grid) {
+            this.visibleCount = 0;
+            return;
+        }
+        const cards = grid.querySelectorAll('.product-card');
+        let count = 0;
+        for (let i = 0; i < cards.length; i++) {
+            const c = cards[i];
+            if (this.checkItem(
+                c.dataset.searchable,
+                c.dataset.groupId,
+                c.dataset.eraId,
+                c.dataset.member,
+                c.dataset.tipoId,
+                c.dataset.subCategory,
+                c.dataset.status
+            )) {
+                count++;
+            }
+        }
+        this.visibleCount = count;
+    },
+
+    sortCards() {
+        const grid = this.$refs.productsGrid;
+        if (!grid) return;
+        const cards = Array.from(grid.querySelectorAll('.product-card'));
+        cards.sort((a, b) => {
+            if (this.selectedSort === 'menor_preco') {
+                return parseFloat(a.dataset.price || 0) - parseFloat(b.dataset.price || 0);
+            } else if (this.selectedSort === 'maior_preco') {
+                return parseFloat(b.dataset.price || 0) - parseFloat(a.dataset.price || 0);
+            } else if (this.selectedSort === 'recentes') {
+                return parseInt(b.dataset.date || 0) - parseInt(a.dataset.date || 0);
+            } else if (this.selectedSort === 'nome') {
+                return (a.dataset.title || '').localeCompare(b.dataset.title || '');
+            } else {
+                const destA = parseInt(a.dataset.destaque || 0);
+                const destB = parseInt(b.dataset.destaque || 0);
+                if (destB !== destA) return destB - destA;
+                return parseInt(b.dataset.date || 0) - parseInt(a.dataset.date || 0);
+            }
+        });
+        cards.forEach(c => grid.appendChild(c));
+        this.recalculateVisible();
+        this.updateUrl();
+    },
+
+    updateUrl() {
+        const params = new URLSearchParams();
+        if (this.searchQuery && this.searchQuery.trim()) params.set('q', this.searchQuery.trim());
+        if (this.selectedGroup) params.set('group', this.selectedGroup);
+        if (this.selectedEra) params.set('era', this.selectedEra);
+        if (this.selectedMember) params.set('member', this.selectedMember);
+        if (this.selectedTipo) params.set('tipo', this.selectedTipo);
+        if (this.selectedSubCategory) params.set('sub_category', this.selectedSubCategory);
+        if (this.selectedStatus && this.selectedStatus !== 'DISPONIVEL') params.set('status', this.selectedStatus);
+        if (this.selectedSort && this.selectedSort !== 'destaque') params.set('sort', this.selectedSort);
+
+        const queryString = params.toString();
+        const newUrl = window.location.pathname + (queryString ? '?' + queryString : '');
+        window.history.replaceState(null, '', newUrl);
+    }
+};
+</script>

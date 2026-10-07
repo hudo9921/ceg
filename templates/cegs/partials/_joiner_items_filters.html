@@ -1,0 +1,128 @@
+<!-- BARRA DE FILTROS DINÂMICOS DOS ITENS -->
+<div class="bg-white dark:bg-[#14121B] rounded-2xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-center gap-2">
+            <span class="text-base font-bold text-slate-800 dark:text-white">Filtrar Itens do Joiner</span>
+            <span class="px-2 py-0.5 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-full"
+                  x-text="filteredItems.length + ' de ' + items.length + ' item(ns)'"></span>
+        </div>
+
+        <button type="button" @click="resetFilters()"
+                class="text-xs text-pink-600 dark:text-pink-400 hover:text-pink-700 font-bold underline underline-offset-2">
+            Limpar todos os filtros
+        </button>
+    </div>
+
+    <!-- Grade de Filtros -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Filtro por Grupo -->
+        <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Grupo</label>
+            <select x-model="filterGrupo" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="ALL">Todos os Grupos</option>
+                {% for g in groups_list %}
+                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filtro por Era -->
+        <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Era</label>
+            <select x-model="filterEra" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="ALL">Todas as Eras</option>
+                {% for e in eras_list %}
+                    <option value="{{ e.id }}">{{ e.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filtro por Caixa -->
+        <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Caixa / Remessa</label>
+            <select x-model="filterCaixa" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="ALL">Todas as Caixas</option>
+                {% for c in caixas_list %}
+                    <option value="{{ c.id }}">{{ c.nome }} ({{ c.origem }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filtro Pagamento do Item -->
+        <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Item Quitado?</label>
+            <select x-model="filterItemPaid" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="ALL">Todos</option>
+                <option value="PAID">Item Pago</option>
+                <option value="UNPAID">Item Pendente</option>
+            </select>
+        </div>
+
+        <!-- Filtro Frete Internacional -->
+        <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Frete Inter</label>
+            <select x-model="filterInterPaid" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="ALL">Todos</option>
+                <option value="PAID">Frete Inter Pago</option>
+                <option value="UNPAID">Frete Inter Pendente</option>
+            </select>
+        </div>
+
+        <!-- Filtro Taxa Aduaneira -->
+        <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Taxa Aduaneira</label>
+            <select x-model="filterTaxaPaid" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="ALL">Todas</option>
+                <option value="PAID">Taxa Paga</option>
+                <option value="UNPAID">Taxa Pendente</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Filtros Rápidos de Empacotamento / Abas -->
+    <div class="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-white/10">
+        <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" @click="filterPacote = 'ALL'"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition"
+                    :class="filterPacote === 'ALL' ? 'bg-slate-800 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'">
+                Todos os Itens
+            </button>
+            <button type="button" @click="filterPacote = 'READY_TO_PACK'"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                    :class="filterPacote === 'READY_TO_PACK' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-950/50'">
+                <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                <span>Prontos para Empacotar</span>
+                <span class="px-1.5 py-0.2 text-[10px] rounded-full font-black"
+                      :class="filterPacote === 'READY_TO_PACK' ? 'bg-white/20 text-white' : 'bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-white'"
+                      x-text="items.filter(it => it.pode_empacotar).length"></span>
+            </button>
+            <button type="button" @click="filterPacote = 'UNPACKED'"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition"
+                    :class="filterPacote === 'UNPACKED' ? 'bg-amber-600 text-white shadow-2xs' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-950/50'">
+                Livres p/ Empacotar (Não associados)
+            </button>
+            <button type="button" @click="filterPacote = 'PACKED'"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition"
+                    :class="filterPacote === 'PACKED' ? 'bg-blue-600 text-white shadow-2xs' : 'bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-950/50'">
+                Embalando / Em Pacote
+            </button>
+            <button type="button" @click="filterPacote = 'ENVIADO'"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition"
+                    :class="filterPacote === 'ENVIADO' ? 'bg-purple-600 text-white shadow-2xs' : 'bg-purple-50 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 hover:bg-purple-100 dark:hover:bg-purple-950/50'">
+                Enviados Nacionalmente
+            </button>
+            <button type="button" @click="filterPacote = 'ENTREGUE'"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition"
+                    :class="filterPacote === 'ENTREGUE' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-950/50'">
+                Entregues
+            </button>
+        </div>
+
+        <!-- Busca por texto -->
+        <div class="relative w-full sm:w-64">
+            <input type="text" x-model="searchQuery" placeholder="Buscar por card, integrante..."
+                   class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-pink-500">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400"></i>
+        </div>
+    </div>
+</div>

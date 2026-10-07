@@ -1,0 +1,61 @@
+<!-- CARD DE DETALHES DO JOINER ATIVO -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-slate-100 dark:border-white/5">
+    <div class="space-y-1">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Joiner Ativo</span>
+            <template x-if="statsData.unpacked_count > 0">
+                <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold text-[10px] rounded-full border border-amber-200 dark:border-amber-800/50"
+                      x-text="statsData.unpacked_count + ' item(ns) para empacotar'">
+                    {{ stats.unpacked_count }} item(ns) para empacotar
+                </span>
+            </template>
+            <template x-if="statsData.unpacked_count === 0">
+                <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold text-[10px] rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                    Todos os itens já empacotados
+                </span>
+            </template>
+        </div>
+        <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <span>{{ selected_participant.name }}</span>
+            {% if selected_participant.username %}
+                <span class="text-sm font-semibold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2.5 py-0.5 rounded-full border border-pink-200 dark:border-pink-800/50" title="Forma como prefere ser chamado">
+                    @{{ selected_participant.username }}
+                </span>
+            {% endif %}
+        </h2>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">
+            <span class="inline-flex items-center gap-1.5">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                WhatsApp: <strong class="text-slate-800 dark:text-slate-200">{{ selected_participant.formatted_phone }}</strong>
+            </span>
+            <span>•</span>
+            {% if selected_participant.social_handle %}
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="at-sign" class="w-3.5 h-3.5 text-pink-500"></i>
+                    Social: <strong class="text-pink-600 dark:text-pink-400">{{ selected_participant.social_handle }}</strong>
+                </span>
+                <span>•</span>
+            {% endif %}
+            <span class="inline-flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                Cadastrado em: {{ selected_participant.created_at|date:"d/m/Y" }}
+            </span>
+        </div>
+        {% if selected_participant.notes %}
+            <div class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-white/5 p-2.5 rounded-xl border border-slate-200/80 dark:border-white/10 mt-2 flex items-start gap-2">
+                <i data-lucide="file-text" class="w-4 h-4 text-slate-400 mt-0.5 shrink-0"></i>
+                <div>
+                    <strong>Anotações / Observações:</strong> {{ selected_participant.notes }}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="flex items-center gap-2">
+        <a href="https://wa.me/{{ selected_participant.whatsapp }}" target="_blank"
+           class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>WhatsApp</span>
+        </a>
+    </div>
+</div>

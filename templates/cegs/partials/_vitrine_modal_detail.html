@@ -1,0 +1,73 @@
+<!-- MODAL DE DETALHES DO ITEM E CONTATO WHATSAPP -->
+<div x-show="modalOpen" x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+     @keydown.escape.window="modalOpen = false">
+    
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl space-y-0"
+         @click.away="modalOpen = false">
+        
+        <!-- Foto e Header do Modal -->
+        <div class="relative aspect-4/3 w-full bg-slate-950 flex items-center justify-center overflow-hidden">
+            <template x-if="activeItem.imageUrl">
+                <img :src="activeItem.imageUrl" :alt="activeItem.titulo" class="w-full h-full object-contain">
+            </template>
+            <template x-if="!activeItem.imageUrl">
+                <i data-lucide="image" class="w-16 h-16 text-slate-600"></i>
+            </template>
+
+            <button type="button" @click="modalOpen = false"
+                    class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Informações Detalhadas -->
+        <div class="p-6 space-y-4">
+            <div class="space-y-1.5">
+                <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-pink-600 dark:text-pink-400">
+                    <span x-text="activeItem.group || 'K-pop'"></span>
+                    <span x-show="activeItem.era" class="text-slate-400">&bull;</span>
+                    <span x-show="activeItem.era" x-text="activeItem.era" class="text-slate-500 dark:text-slate-400"></span>
+                    <span x-show="activeItem.subCategory" class="px-2 py-0.5 rounded-md bg-pink-100 dark:bg-pink-950 text-pink-700 dark:text-pink-300 text-[10px] font-black border border-pink-200 dark:border-pink-800" x-text="activeItem.subCategory"></span>
+                </div>
+                <h2 class="text-xl font-black text-slate-900 dark:text-white" x-text="activeItem.titulo"></h2>
+                <p x-show="activeItem.integrante" class="text-xs text-slate-500">
+                    Integrante: <strong class="text-slate-800 dark:text-slate-200 font-bold" x-text="activeItem.integrante"></strong>
+                </p>
+            </div>
+
+            <!-- Preço e Status -->
+            <div class="p-3.5 rounded-2xl bg-pink-50/60 dark:bg-slate-800/60 border border-pink-100 dark:border-slate-700 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Valor do Item</span>
+                    <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                        R$ <span x-text="formatPreco(activeItem.preco)"></span>
+                    </span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status</span>
+                    <span class="text-xs font-black px-2.5 py-1 rounded-full inline-block"
+                          :class="activeItem.status === 'DISPONIVEL' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'"
+                          x-text="activeItem.status === 'DISPONIVEL' ? 'Pronta Entrega' : (activeItem.status === 'RESERVADO' ? 'Reservado' : 'Vendido')"></span>
+                </div>
+            </div>
+
+            <!-- Descrição se houver -->
+            <div x-show="activeItem.descricao" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                <p x-text="activeItem.descricao"></p>
+            </div>
+
+            <!-- Botão de Ação / WhatsApp -->
+            <div class="pt-2 space-y-2">
+                <a :href="whatsappUrl" target="_blank"
+                   class="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md hover:shadow-emerald-600/20 active:scale-[0.98] transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    <span>Falar com a GOM no WhatsApp</span>
+                </a>
+                <p class="text-[11px] text-center text-slate-400">
+                    A mensagem já vem preenchida com o nome do item e o valor para agilizar seu atendimento!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

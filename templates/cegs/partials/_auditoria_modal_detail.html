@@ -1,0 +1,76 @@
+<!-- Modal de Detalhes do Log -->
+<div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end sm:items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="showModal" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" @click="showModal = false"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div x-show="showModal" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+             class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-200 dark:border-white/10">
+            
+            <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-pink-600 dark:text-pink-400"></i>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white" x-text="'Log de Auditoria #' + (modalData ? modalData.id : '')"></h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400" x-text="modalData ? modalData.created_at : ''"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="showModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-3 text-xs" x-show="modalData">
+                    <div>
+                        <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Evento</span>
+                        <span class="font-bold text-slate-900 dark:text-white" x-text="modalData.event_type"></span>
+                    </div>
+
+                    <div>
+                        <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Descrição Completa</span>
+                        <p class="text-slate-800 dark:text-slate-200 font-medium bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-white/10" x-text="modalData.action_label"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Operador Responsável</span>
+                            <span class="text-slate-800 dark:text-slate-200 font-bold" x-text="modalData.actor_name"></span>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Participante</span>
+                            <span class="text-slate-800 dark:text-slate-200 font-bold" x-text="modalData.participant_name || '—'"></span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 block" x-text="modalData.participant_phone || ''"></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2" x-show="modalData.old_value || modalData.new_value">
+                        <div>
+                            <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Valor Anterior</span>
+                            <span class="text-slate-600 dark:text-slate-400 font-medium line-through" x-text="modalData.old_value || '—'"></span>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Novo Valor</span>
+                            <span class="text-emerald-700 dark:text-emerald-400 font-bold" x-text="modalData.new_value || '—'"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider block">Metadados Técnicos (JSON)</span>
+                        <pre class="bg-slate-950 text-slate-200 p-3 rounded-xl text-[11px] font-mono overflow-x-auto max-h-48 border border-white/10" x-text="JSON.stringify(modalData.metadata, null, 2)"></pre>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex justify-end">
+                    <button type="button" @click="showModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

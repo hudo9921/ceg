@@ -1,0 +1,1632 @@
+<!-- =======================================================================
+     LÓGICA REATIVA ALPINE.JS — CEG DETAIL APP
+     Estado Global, Gestão de Carrinho, Modais, Prazos e Concorrência
+     ======================================================================= -->
+<script>
+function cegDetailApp() {
+    return {
+         isStandby: {{ ceg.is_standby|yesno:'true,false' }},
+         secondsLeft: {{ ceg.countdown_seconds }},
+         timer: null,
+         isLoggedIn: {{ logged_participant|yesno:'true,false' }} || {{ user.is_staff|yesno:'true,false' }},
+         isAdmin: {{ user.is_staff|yesno:'true,false' }},
+         allParticipants: JSON.parse('{{ all_participants_json|default:'[]'|escapejs }}'),
+         itemTypeChoices: JSON.parse('{{ item_type_choices_json|default:'[]'|escapejs }}'),
+         tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
+         claimLogsBySlot: JSON.parse('{{ claim_logs_by_slot_json|default:'{}'|escapejs }}'),
+         expandedSlotLogs: {},
+         activeSetTab: 'ALL',
+         viewMode: 'ALL',
+         onlyAvailableSlots: false,
+         avulsoItems: JSON.parse('{{ avulso_items_json|default:'[]'|escapejs }}'),
+         findAvulsoItem(defId) {
+             return this.avulsoItems.find(item => item.id === defId) || null;
+         },
+         zoomImageUrl: null,
+         zoomImageTitle: '',
+         openZoom(url, title = '') {
+             this.zoomImageUrl = url;
+             this.zoomImageTitle = title;
+         },
+         closeZoom() {
+             this.zoomImageUrl = null;
+             this.zoomImageTitle = '';
+         },
+         // --- Gestão de Itens Avulsos (Admin) ---
+         addAvulsoModalOpen: false,
+         addAvulsoLoading: false,
+         addAvulsoError: '',
+         addAvulsoName: '',
+         addAvulsoMember: '',
+         addAvulsoItemType: 'OUTROS',
+         addAvulsoTipoItemId: '',
+         addAvulsoPrice: '',
+         addAvulsoQuantity: 1,
+         addAvulsoPreReserveParticipantId: '',
+         addAvulsoPhotoPreview: '',
+         addAvulsoPhotoBase64: '',
+         addAvulsoPhotoUrl: '',
+         addAvulsoPhotoError: '',
+         addAvulsoPhotoDragOver: false,
+
+         editAvulsoModalOpen: false,
+         editAvulsoLoading: false,
+         editAvulsoError: '',
+         editAvulsoItem: null,
+         editAvulsoName: '',
+         editAvulsoMember: '',
+         editAvulsoItemType: 'OUTROS',
+         editAvulsoTipoItemId: '',
+         editAvulsoPrice: '',
+         editAvulsoQuantity: 1,
+         editAvulsoPhotoPreview: '',
+         editAvulsoPhotoBase64: '',
+         editAvulsoPhotoUrl: '',
+         editAvulsoPhotoError: '',
+         editAvulsoPhotoDragOver: false,
+         editAvulsoRemovePhoto: false,
+
+         deleteAvulsoModalOpen: false,
+         deleteAvulsoLoading: false,
+         deleteAvulsoError: '',
+         deleteAvulsoItem: null,
+
+         openAddAvulsoModal() {
+             this.addAvulsoError = '';
+             this.addAvulsoName = '';
+             this.addAvulsoMember = '';
+             this.addAvulsoItemType = this.itemTypeChoices && this.itemTypeChoices.length > 0 ? this.itemTypeChoices[0].code : 'OUTROS';
+             this.addAvulsoTipoItemId = this.tipoItemList && this.tipoItemList.length > 0 ? String(this.tipoItemList[0].id) : '';
+             this.addAvulsoPrice = '';
+             this.addAvulsoQuantity = 1;
+             this.addAvulsoPreReserveParticipantId = '';
+             this.addAvulsoPhotoPreview = '';
+             this.addAvulsoPhotoBase64 = '';
+             this.addAvulsoPhotoUrl = '';
+             this.addAvulsoPhotoError = '';
+             this.addAvulsoPhotoDragOver = false;
+             const input = document.getElementById('add_avulso_file_input');
+             if (input) input.value = '';
+             this.addAvulsoModalOpen = true;
+         },
+         closeAddAvulsoModal() {
+             this.addAvulsoModalOpen = false;
+             this.addAvulsoError = '';
+         },
+         handleAddAvulsoPhoto(file) {
+             if (!file || file.type.indexOf('image') === -1) return;
+             this.addAvulsoPhotoError = '';
+             const MAX_MB = 5;
+             if (file.size > MAX_MB * 1024 * 1024) {
+                 const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                 this.addAvulsoPhotoError = `O arquivo possui ${sizeMb} MB. Limite máximo: ${MAX_MB} MB.`;
+                 const fileInput = document.getElementById('add_avulso_file_input');
+                 if (fileInput) fileInput.value = '';
+                 return;
+             }
+             let fileAttached = false;
+             try {
+                 const dt = new DataTransfer();
+                 dt.items.add(file);
+                 const fileInput = document.getElementById('add_avulso_file_input');
+                 if (fileInput) {
+                     fileInput.files = dt.files;
+                     fileAttached = true;
+                 }
+             } catch(e) {
+                 fileAttached = false;
+             }
+             const reader = new FileReader();
+             reader.onload = (e) => {
+                 this.addAvulsoPhotoPreview = e.target.result;
+                 this.addAvulsoPhotoBase64 = fileAttached ? '' : e.target.result;
+             };
+             reader.readAsDataURL(file);
+         },
+         clearAddAvulsoPhoto() {
+             this.addAvulsoPhotoPreview = '';
+             this.addAvulsoPhotoBase64 = '';
+             this.addAvulsoPhotoUrl = '';
+             this.addAvulsoPhotoError = '';
+             const input = document.getElementById('add_avulso_file_input');
+             if (input) input.value = '';
+         },
+         async submitAddAvulso() {
+             if (this.addAvulsoLoading) return;
+             if (!this.addAvulsoName.trim()) {
+                 this.addAvulsoError = 'Por favor, informe o nome do item avulso.';
+                 return;
+             }
+             if (!this.addAvulsoPrice || parseFloat(this.addAvulsoPrice) <= 0) {
+                 this.addAvulsoError = 'Por favor, informe um preço válido para o item.';
+                 return;
+             }
+             const qty = parseInt(this.addAvulsoQuantity, 10);
+             if (isNaN(qty) || qty < 1) {
+                 this.addAvulsoError = 'A quantidade deve ser de no mínimo 1 unidade.';
+                 return;
+             }
+
+             this.addAvulsoLoading = true;
+             this.addAvulsoError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('name', this.addAvulsoName.trim());
+                 formData.append('member', this.addAvulsoMember.trim());
+                 formData.append('item_type', this.addAvulsoItemType);
+                 if (this.addAvulsoTipoItemId) formData.append('tipo_item_id', this.addAvulsoTipoItemId);
+                 formData.append('price', this.addAvulsoPrice);
+                 formData.append('quantity', qty);
+                 if (this.addAvulsoPreReserveParticipantId) {
+                     formData.append('participant_id', this.addAvulsoPreReserveParticipantId);
+                 }
+
+                 const fileInput = document.getElementById('add_avulso_file_input');
+                 if (fileInput && fileInput.files && fileInput.files[0]) {
+                     formData.append('image_file', fileInput.files[0]);
+                 } else if (this.addAvulsoPhotoBase64) {
+                     formData.append('image_base64', this.addAvulsoPhotoBase64);
+                 } else if (this.addAvulsoPhotoUrl) {
+                     formData.append('image_url', this.addAvulsoPhotoUrl);
+                 }
+
+                 const res = await fetch('/ceg/{{ ceg.slug }}/avulsos/adicionar/', {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     this.addAvulsoError = data.message || 'Erro ao adicionar item avulso.';
+                 }
+             } catch(e) {
+                 this.addAvulsoError = 'Erro de conexão: ' + e;
+             } finally {
+                 this.addAvulsoLoading = false;
+             }
+         },
+
+         openEditAvulsoModal(item) {
+             if (!item) return;
+             this.editAvulsoItem = item;
+             this.editAvulsoError = '';
+             this.editAvulsoName = item.name || '';
+             this.editAvulsoMember = item.member_name || '';
+             this.editAvulsoItemType = item.item_type || 'OUTROS';
+             this.editAvulsoTipoItemId = item.tipo_item_id ? String(item.tipo_item_id) : '';
+             this.editAvulsoPrice = String(item.default_price || '');
+             this.editAvulsoQuantity = item.quantidade_avulsa || item.slots_count || 1;
+             this.editAvulsoPhotoPreview = item.image_url || '';
+             this.editAvulsoPhotoBase64 = '';
+             this.editAvulsoPhotoUrl = item.image_url || '';
+             this.editAvulsoPhotoError = '';
+             this.editAvulsoPhotoDragOver = false;
+             this.editAvulsoRemovePhoto = false;
+             const input = document.getElementById('edit_avulso_file_input');
+             if (input) input.value = '';
+             this.editAvulsoModalOpen = true;
+         },
+         closeEditAvulsoModal() {
+             this.editAvulsoModalOpen = false;
+             this.editAvulsoItem = null;
+             this.editAvulsoError = '';
+         },
+         handleEditAvulsoPhoto(file) {
+             if (!file || file.type.indexOf('image') === -1) return;
+             this.editAvulsoPhotoError = '';
+             const MAX_MB = 5;
+             if (file.size > MAX_MB * 1024 * 1024) {
+                 const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                 this.editAvulsoPhotoError = `O arquivo possui ${sizeMb} MB. Limite máximo: ${MAX_MB} MB.`;
+                 const fileInput = document.getElementById('edit_avulso_file_input');
+                 if (fileInput) fileInput.value = '';
+                 return;
+             }
+             this.editAvulsoRemovePhoto = false;
+             let fileAttached = false;
+             try {
+                 const dt = new DataTransfer();
+                 dt.items.add(file);
+                 const fileInput = document.getElementById('edit_avulso_file_input');
+                 if (fileInput) {
+                     fileInput.files = dt.files;
+                     fileAttached = true;
+                 }
+             } catch(e) {
+                 fileAttached = false;
+             }
+             const reader = new FileReader();
+             reader.onload = (e) => {
+                 this.editAvulsoPhotoPreview = e.target.result;
+                 this.editAvulsoPhotoBase64 = fileAttached ? '' : e.target.result;
+             };
+             reader.readAsDataURL(file);
+         },
+         clearEditAvulsoPhoto() {
+             this.editAvulsoPhotoPreview = '';
+             this.editAvulsoPhotoBase64 = '';
+             this.editAvulsoPhotoUrl = '';
+             this.editAvulsoRemovePhoto = true;
+             const input = document.getElementById('edit_avulso_file_input');
+             if (input) input.value = '';
+         },
+         async submitEditAvulso() {
+             if (this.editAvulsoLoading || !this.editAvulsoItem) return;
+             if (!this.editAvulsoName.trim()) {
+                 this.editAvulsoError = 'Por favor, informe o nome do item avulso.';
+                 return;
+             }
+             if (!this.editAvulsoPrice || parseFloat(this.editAvulsoPrice) <= 0) {
+                 this.editAvulsoError = 'Por favor, informe um preço válido.';
+                 return;
+             }
+             const qty = parseInt(this.editAvulsoQuantity, 10);
+             if (isNaN(qty) || qty < 1) {
+                 this.editAvulsoError = 'A quantidade deve ser de no mínimo 1 unidade.';
+                 return;
+             }
+
+             this.editAvulsoLoading = true;
+             this.editAvulsoError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const formData = new FormData();
+                 formData.append('name', this.editAvulsoName.trim());
+                 formData.append('member', this.editAvulsoMember.trim());
+                 formData.append('item_type', this.editAvulsoItemType);
+                 if (this.editAvulsoTipoItemId) formData.append('tipo_item_id', this.editAvulsoTipoItemId);
+                 formData.append('price', this.editAvulsoPrice);
+                 formData.append('quantity', qty);
+                 if (this.editAvulsoRemovePhoto) {
+                     formData.append('remove_image', 'true');
+                 }
+
+                 const fileInput = document.getElementById('edit_avulso_file_input');
+                 if (fileInput && fileInput.files && fileInput.files[0]) {
+                     formData.append('image_file', fileInput.files[0]);
+                 } else if (this.editAvulsoPhotoBase64) {
+                     formData.append('image_base64', this.editAvulsoPhotoBase64);
+                 } else if (this.editAvulsoPhotoUrl && !this.editAvulsoRemovePhoto) {
+                     formData.append('image_url', this.editAvulsoPhotoUrl);
+                 }
+
+                 const res = await fetch(`/ceg/{{ ceg.slug }}/avulsos/${this.editAvulsoItem.id}/editar/`, {
+                     method: 'POST',
+                     headers: {
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: formData
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     this.editAvulsoError = data.message || 'Erro ao atualizar item avulso.';
+                 }
+             } catch(e) {
+                 this.editAvulsoError = 'Erro de conexão: ' + e;
+             } finally {
+                 this.editAvulsoLoading = false;
+             }
+         },
+
+         openDeleteAvulsoModal(item) {
+             if (!item) return;
+             this.deleteAvulsoItem = item;
+             this.deleteAvulsoError = '';
+             this.deleteAvulsoLoading = false;
+             this.deleteAvulsoModalOpen = true;
+         },
+         closeDeleteAvulsoModal() {
+             this.deleteAvulsoModalOpen = false;
+             this.deleteAvulsoItem = null;
+             this.deleteAvulsoError = '';
+         },
+         async submitDeleteAvulso() {
+             if (this.deleteAvulsoLoading || !this.deleteAvulsoItem) return;
+             this.deleteAvulsoLoading = true;
+             this.deleteAvulsoError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch(`/ceg/{{ ceg.slug }}/avulsos/${this.deleteAvulsoItem.id}/excluir/`, {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     }
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.reload();
+                 } else {
+                     this.deleteAvulsoError = data.message || 'Erro ao excluir item avulso.';
+                 }
+             } catch(e) {
+                 this.deleteAvulsoError = 'Erro de conexão: ' + e;
+             } finally {
+                 this.deleteAvulsoLoading = false;
+             }
+         },
+         slotLogsModalOpen: false,
+         activeLogSlotId: null,
+         activeLogSlotName: '',
+         activeLogSetNumber: '',
+         openSlotLogsModal(slotId, name, setNumber) {
+             this.activeLogSlotId = slotId;
+             this.activeLogSlotName = name;
+             this.activeLogSetNumber = setNumber;
+             this.slotLogsModalOpen = true;
+         },
+         closeSlotLogsModal() {
+             this.slotLogsModalOpen = false;
+             this.activeLogSlotId = null;
+         },
+         // --- Participant Multi-Select Claim ---
+         participantSelectedSlots: [],   // [{id, name, setNumber, price, frete, taxa}, ...]
+         bulkClaimModalOpen: false,
+         bulkClaimLoading: false,
+         bulkClaimResults: null,
+         bulkClaimSummary: null,
+         formName: '{{ prefilled_name|default:''|escapejs }}',
+         formWhatsapp: '{{ prefilled_whatsapp|default:''|escapejs }}',
+         formSocial: '{{ prefilled_social|default:''|escapejs }}',
+         formUsername: '{{ prefilled_username|default:''|escapejs }}',
+         claimSelectedSlotsAsStaff() {
+             if (this.selectedSlotIds.length === 0) return;
+             window.dispatchEvent(new CustomEvent('bulk-claim-add-selected', { detail: { ids: [...this.selectedSlotIds] } }));
+             setTimeout(() => {
+                 this.participantSelectedSlots = [...$store.claimSelection.slots];
+                 $store.claimSelection.openModal();
+             }, 60);
+         },
+         toggleParticipantSlot(slot) {
+             const idx = this.participantSelectedSlots.findIndex(s => s.id === slot.id);
+             if (idx === -1) {
+                 this.participantSelectedSlots.push(slot);
+             } else {
+                 this.participantSelectedSlots.splice(idx, 1);
+             }
+         },
+         isParticipantSlotSelected(slotId) {
+             return this.participantSelectedSlots.some(s => s.id === slotId);
+         },
+         clearParticipantSelection() {
+             this.participantSelectedSlots = [];
+         },
+         openBulkClaimModal() {
+             if (this.participantSelectedSlots.length === 0) return;
+             this.bulkClaimResults = null;
+             this.bulkClaimSummary = null;
+             this.bulkClaimModalOpen = true;
+         },
+         async submitBulkClaim() {
+             if (this.bulkClaimLoading) return;
+             this.bulkClaimLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/ceg/{{ ceg.slug }}/bulk-claim/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                     },
+                     body: JSON.stringify({
+                         slot_ids: this.participantSelectedSlots.map(s => s.id),
+                         name: this.formName,
+                         whatsapp: this.formWhatsapp,
+                         social_handle: this.formSocial,
+                         username: this.formUsername,
+                     })
+                 });
+                 if (res.status === 401) {
+                     const data = await res.json();
+                     if (data.requires_auth) {
+                         window.location.href = data.redirect_url;
+                         return;
+                     }
+                 }
+                 const data = await res.json();
+                 if (data.success) {
+                     this.bulkClaimResults = data.results;
+                     this.bulkClaimSummary = data.summary;
+                     // Remove from selection the ones that succeeded
+                     const successIds = new Set(data.results.filter(r => r.success).map(r => r.slot_id));
+                     this.participantSelectedSlots = this.participantSelectedSlots.filter(s => !successIds.has(s.id));
+                 } else {
+                     alert(data.message || 'Erro ao processar reserva.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.bulkClaimLoading = false;
+             }
+         },
+         closeBulkClaimModal() {
+             this.bulkClaimModalOpen = false;
+             this.bulkClaimResults = null;
+             this.bulkClaimSummary = null;
+         },
+         // Listen for slot-toggle events from nested card scopes
+         handleSlotToggle(event) {
+             const slot = event.detail;
+             const idx = this.participantSelectedSlots.findIndex(s => s.id === slot.id);
+             if (idx === -1) {
+                 this.participantSelectedSlots.push(slot);
+             } else {
+                 this.participantSelectedSlots.splice(idx, 1);
+             }
+         },
+         // --- End Multi-Select Claim ---
+         // --- Polling / Sondagem de Demanda ---
+         selectedVoteDefIds: [],
+         userVotedDefIds: JSON.parse('{{ user_voted_def_ids_json|default:'[]'|escapejs }}'),
+         voteModalOpen: false,
+         voteLoading: false,
+         consolidateModalOpen: false,
+         consolidateLoading: false,
+         numSetsToOpen: {{ ceg.viable_sets_count|default:1 }},
+         expandedVotes: {},
+         toggleVotesAccordion(id) {
+             this.expandedVotes[id] = !this.expandedVotes[id];
+         },
+         isVotesAccordionOpen(id) {
+             return !!this.expandedVotes[id];
+         },
+         toggleVoteSelection(item) {
+             if (this.isStandby) return;
+             const idx = this.selectedVoteDefIds.findIndex(i => i.id === item.id);
+             if (idx === -1) {
+                 this.selectedVoteDefIds.push(item);
+             } else {
+                 this.selectedVoteDefIds.splice(idx, 1);
+             }
+         },
+         isVoteSelected(id) {
+             return this.selectedVoteDefIds.some(i => i.id === id);
+         },
+         clearVoteSelection() {
+             this.selectedVoteDefIds = [];
+         },
+         openVoteModal() {
+             if (this.isStandby || this.selectedVoteDefIds.length === 0) return;
+             this.voteModalOpen = true;
+         },
+         closeVoteModal() {
+             this.voteModalOpen = false;
+         },
+         async submitVotes() {
+             if (this.isStandby) {
+                 alert('A votação ainda não foi aberta!');
+                 return;
+             }
+             if (this.voteLoading || this.selectedVoteDefIds.length === 0) return;
+             this.voteLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/ceg/{{ ceg.slug }}/vote/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                     },
+                     body: JSON.stringify({
+                         item_definition_ids: this.selectedVoteDefIds.map(i => i.id),
+                         name: this.formName,
+                         whatsapp: this.formWhatsapp,
+                         social_handle: this.formSocial,
+                         username: this.formUsername,
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Voto(s) registrado(s) com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao registrar voto.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.voteLoading = false;
+             }
+         },
+         async submitConsolidate() {
+             if (this.consolidateLoading) return;
+             const setsNum = parseInt(this.numSetsToOpen) || 1;
+             if (!confirm(`Confirma a consolidação da enquete abrindo ${setsNum} set(s)?\n\nIsso criará os sets e slots físicos oficiais, alocará os primeiros colocados de cada integrante e enviará notificações para os contemplados.`)) {
+                 return;
+             }
+             this.consolidateLoading = true;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/ceg/{{ ceg.slug }}/consolidate-polling/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                     },
+                     body: JSON.stringify({
+                         num_sets: setsNum,
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message || 'Enquete consolidada em sets com sucesso!');
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao consolidar enquete.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             } finally {
+                 this.consolidateLoading = false;
+             }
+         },
+         // --- End Polling ---
+         selectedSlotIds: [],
+         selectedItemDefIds: [],
+         bulkTypeModalOpen: false,
+         bulkPriceModalOpen: false,
+         bulkNewType: 'PHOTOCARD',
+         bulkNewTipoItemId: '',
+         bulkNewPrice: '',
+         bulkUpdatePrefix: true,
+         bulkApplyAllSets: true,
+         bulkLoading: false,
+         bulkFeedbackMsg: '',
+         bulkFeedbackTimer: null,
+         manageName: '',
+         manageMember: '',
+         manageItemType: 'PHOTOCARD',
+         manageTipoItemId: '',
+         showNewTipoModal: false,
+         newTipoNome: '',
+         newTipoDesc: '',
+         newTipoTarget: 'manage',
+         newTipoLoading: false,
+         formName: '{{ logged_participant.name|default:''|escapejs }}',
+         formUsername: '{{ logged_participant.username|default:''|escapejs }}',
+         formWhatsapp: '{{ logged_participant.whatsapp|default:''|escapejs }}',
+         formSocial: '{{ logged_participant.social_handle|default:''|escapejs }}',
+         // Modal State
+         modalOpen: false,
+         claimLoading: false,
+         claimResult: null,
+         feeModalOpen: false,
+         editCegModalOpen: false,
+         deleteCegModalOpen: false,
+         deleteCegPassword: '',
+         deleteCegShowPassword: false,
+         deleteCegLoading: false,
+         deleteCegError: '',
+         manageSlotModalOpen: false,
+         deleteSetModalOpen: false,
+         deleteSetPassword: '',
+         deleteSetShowPassword: false,
+         deleteSetLoading: false,
+         deleteSetError: '',
+         editPhotoPreview: '{{ ceg.display_image_url|default:''|escapejs }}',
+         editPhotoBase64: '',
+         editPhotoUrl: '{{ ceg.banner_url|default:''|escapejs }}',
+         editPhotoDragOver: false,
+         removeBannerFlag: false,
+         editPhotoError: '',
+         // Estado do Estúdio de Recorte de Itens / Photocards
+         cropStudioOpen: false,
+         cropStudioSaving: false,
+         cropStudioImageReady: false,
+         cropStudioSourceUrl: '{{ ceg.display_image_url|default:''|escapejs }}',
+         cropStudioItems: [],
+         cropStudioCurrentIndex: 0,
+         cropAspectRatio: 2/3,
+         cropperInstance: null,
+         handleBannerFile(file) {
+             if (!file || file.type.indexOf('image') === -1) return;
+             this.editPhotoError = '';
+             const MAX_MB = 5;
+             if (file.size > MAX_MB * 1024 * 1024) {
+                 const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                 this.editPhotoError = `O arquivo selecionado possui ${sizeMb} MB. O limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve.`;
+                 const fileInput = document.getElementById('ceg_banner_file_input');
+                 if (fileInput) fileInput.value = '';
+                 return;
+             }
+             this.removeBannerFlag = false;
+             let fileAttached = false;
+             try {
+                 const dt = new DataTransfer();
+                 dt.items.add(file);
+                 const fileInput = document.getElementById('ceg_banner_file_input');
+                 if (fileInput) {
+                     fileInput.files = dt.files;
+                     fileAttached = true;
+                 }
+             } catch(e) {
+                 fileAttached = false;
+             }
+             const reader = new FileReader();
+             reader.onload = (event) => {
+                 this.editPhotoPreview = event.target.result;
+                 this.editPhotoBase64 = fileAttached ? '' : event.target.result;
+             };
+             reader.readAsDataURL(file);
+         },
+         onPhotoSelected(e) {
+             const file = e.target.files && e.target.files[0];
+             if (file) this.handleBannerFile(file);
+         },
+         onPhotoDropped(e) {
+             this.editPhotoDragOver = false;
+             if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                 const file = e.dataTransfer.files[0];
+                 if (file && file.type.indexOf('image') !== -1) {
+                     this.handleBannerFile(file);
+                 }
+             }
+         },
+         clearPhoto() {
+             this.editPhotoPreview = '';
+             this.editPhotoBase64 = '';
+             this.editPhotoUrl = '';
+             this.editPhotoError = '';
+             this.removeBannerFlag = true;
+             const fileInput = document.getElementById('ceg_banner_file_input');
+             if (fileInput) fileInput.value = '';
+             const urlInput = document.getElementById('ceg_banner_url_input');
+             if (urlInput) urlInput.value = '';
+         },
+         onUrlInput(e) {
+             this.removeBannerFlag = false;
+             this.editPhotoPreview = e.target.value;
+             this.editPhotoUrl = e.target.value;
+             this.editPhotoBase64 = '';
+             this.editPhotoError = '';
+         },
+         // --- Gerador de Texto de Divulgação (Twitter / WhatsApp / Telegram) ---
+         shareModalOpen: false,
+         shareCopied: false,
+         shareEmoji: '🟢',
+         shareShowSoldOut: false,
+         shareIncludePrice: false,
+         shareItems: JSON.parse('{{ share_items_json|default:'[]'|escapejs }}'),
+         cegPriceDisplay: '{{ ceg_price_display|default:''|escapejs }}',
+         openShareModal() {
+             this.shareCopied = false;
+             this.shareModalOpen = true;
+         },
+         closeShareModal() {
+             this.shareModalOpen = false;
+         },
+         get shareText() {
+             const groupName = '{{ ceg.era.group.name|escapejs }}';
+             const cegTitle = '{{ ceg.title|escapejs }}';
+             const title = `✨ CEG ${groupName} - ${cegTitle} ✨`;
+             const lines = [];
+
+             this.shareItems.forEach(item => {
+                 const name = item.member_name || item.name;
+                 if (item.available_count > 0) {
+                     const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
+                     lines.push(`${name} ${emojis}`);
+                 } else if (this.shareShowSoldOut) {
+                     lines.push(`${name} ❌`);
+                 }
+             });
+
+             let body = lines.join('\n');
+             if (!body) {
+                 body = '🎉 Todas as vagas foram preenchidas!';
+             }
+
+             let priceSection = '';
+             if (this.shareIncludePrice && this.cegPriceDisplay) {
+                 priceSection = `\n\n💵 Valor: ${this.cegPriceDisplay} cada`;
+             }
+
+             const url = window.location.origin + window.location.pathname;
+             const footer = `\n\n🔗 Link: ${url}`;
+
+             return `${title}\n\n${body}${priceSection}${footer}`;
+         },
+         async copyShareText() {
+             try {
+                 await navigator.clipboard.writeText(this.shareText);
+                 this.shareCopied = true;
+                 setTimeout(() => { this.shareCopied = false; }, 2500);
+             } catch (e) {
+                 alert('Erro ao copiar: ' + e);
+             }
+         },
+         // --- Fim Gerador de Texto de Divulgação ---
+         selectedSlot: null,
+         managedSlot: null,
+         setToDelete: null,
+         deleteSetLoading: false,
+         notifyParticipants: true,
+         customCancelMessage: '',
+         copySuccess: false,
+         managePrice: '',
+         manageApplyAllSets: false,
+         manageParticipantId: '',
+         manageRemoveClaim: false,
+         manageLoading: false,
+         logsModalOpen: false,
+         logsLoading: false,
+         logsTab: 'logs',
+         disputeLogs: [],
+         waitingList: [],
+         async openLogsModal() {
+             this.logsModalOpen = true;
+             this.logsLoading = true;
+             try {
+                 const res = await fetch('/ceg/{{ ceg.slug }}/logs-espera/');
+                 const data = await res.json();
+                 if (data.success) {
+                     this.disputeLogs = data.logs || [];
+                     this.waitingList = data.waiting_list || [];
+                 }
+             } catch(e) {
+                 console.error('Erro ao carregar logs:', e);
+             } finally {
+                 this.logsLoading = false;
+             }
+         },
+         closeLogsModal() {
+             this.logsModalOpen = false;
+         },
+         async promoteWaitingOnSlot(slotId) {
+             if (!confirm('Deseja promover o 1º colocado da Fila de Espera para este slot?')) return;
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/slots/' + slotId + '/manage/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf
+                     },
+                     body: JSON.stringify({ action: 'promote_waiting' })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     alert(data.message);
+                     window.location.reload();
+                 } else {
+                     alert(data.message || 'Erro ao promover participante.');
+                 }
+             } catch(e) {
+                 alert('Erro de conexão: ' + e);
+             }
+         },
+         openDeleteCegModal() {
+             this.deleteCegPassword = '';
+             this.deleteCegShowPassword = false;
+             this.deleteCegLoading = false;
+             this.deleteCegError = '';
+             this.deleteCegModalOpen = true;
+         },
+         closeDeleteCegModal() {
+             this.deleteCegModalOpen = false;
+             this.deleteCegPassword = '';
+             this.deleteCegError = '';
+             this.deleteCegLoading = false;
+         },
+         async submitDeleteCeg() {
+             if (!this.deleteCegPassword) {
+                 this.deleteCegError = 'Por favor, digite sua senha de administrador para autorizar a exclusão.';
+                 return;
+             }
+             this.deleteCegLoading = true;
+             this.deleteCegError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('{% url "delete_ceg" slug=ceg.slug %}', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: JSON.stringify({ password: this.deleteCegPassword })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     window.location.href = data.redirect_url || '{% url "home" %}';
+                 } else {
+                     this.deleteCegError = data.message || 'Senha de administrador incorreta.';
+                     this.deleteCegLoading = false;
+                 }
+             } catch(e) {
+                 this.deleteCegError = 'Erro de conexão: ' + e;
+                 this.deleteCegLoading = false;
+             }
+         },
+         openDeleteSetModal(setObj) {
+             this.setToDelete = setObj;
+             this.deleteSetLoading = false;
+             this.notifyParticipants = true;
+             this.customCancelMessage = '';
+             this.deleteSetPassword = '';
+             this.deleteSetShowPassword = false;
+             this.deleteSetError = '';
+             this.copySuccess = false;
+             this.deleteSetModalOpen = true;
+         },
+         closeDeleteSetModal() {
+             this.deleteSetModalOpen = false;
+             this.setToDelete = null;
+             this.deleteSetPassword = '';
+             this.deleteSetError = '';
+             this.deleteSetLoading = false;
+             this.copySuccess = false;
+         },
+         async submitDeleteSet() {
+             if (!this.setToDelete) return;
+             if (!this.deleteSetPassword) {
+                 this.deleteSetError = 'Por favor, digite sua senha de administrador para autorizar a exclusão.';
+                 return;
+             }
+             this.deleteSetLoading = true;
+             this.deleteSetError = '';
+             try {
+                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                 const res = await fetch('/sets/' + this.setToDelete.id + '/delete/', {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'X-CSRFToken': csrf,
+                         'X-Requested-With': 'XMLHttpRequest'
+                     },
+                     body: JSON.stringify({
+                         password: this.deleteSetPassword,
+                         notify_participants: this.notifyParticipants,
+                         custom_message: this.customCancelMessage || ''
+                     })
+                 });
+                 const data = await res.json();
+                 if (data.success) {
+                     this.closeDeleteSetModal();
+                     window.location.reload();
+                 } else {
+                     this.deleteSetError = data.message || 'Senha de administrador incorreta.';
+                     this.deleteSetLoading = false;
+                 }
+             } catch(e) {
+                 this.deleteSetError = 'Erro de conexão: ' + e;
+                 this.deleteSetLoading = false;
+             }
+         },
+         copyCancelMessage(slot) {
+             let paymentNote = slot.isPaid
+                 ? '⚠️ Como você já havia efetuado o pagamento deste item, entre em contato para estorno via Pix ou transferência de crédito.'
+                 : 'ℹ️ Nenhuma cobrança foi efetuada para este item.';
+             let extra = this.customCancelMessage ? '\n\n💬 Recado do organizador:\n' + this.customCancelMessage : '';
+             let text = `Olá, ${slot.participantName}! 📢\n\nInformamos que o Set #${this.setToDelete.setNumber} da compra em grupo '{{ ceg.title|escapejs }}' não atingiu o fechamento e precisou ser cancelado.\n\n📦 Item que você tinha neste set:\n• ${slot.name} — R$ ${slot.price} (${slot.isPaid ? 'Pago ✔' : 'Pendente'})\n\n${paymentNote}${extra}\n\nAgradecemos pelo seu apoio e compreensão!`;
+             navigator.clipboard.writeText(text);
+             this.copySuccess = true;
+             setTimeout(() => { this.copySuccess = false; }, 2500);
+         },
+         openClaimModal(slot) {
+             if (!this.isLoggedIn) {
+                 window.location.href = '{% url "login_otp" %}?next=' + encodeURIComponent(window.location.pathname);
+                 return;
+             }
+             this.selectedSlot = slot;
+             this.modalOpen = true;
+         },
+         closeClaimModal() {
+             this.modalOpen = false;
+             this.selectedSlot = null;
+             this.claimLoading = false;
+             this.claimResult = null;
+         },
+         openManageSlotModal(slot) {
+             this.managedSlot = slot;
+             let p = '';
+             if (slot && slot.price !== undefined && slot.price !== null) {
+                 p = String(slot.price).replace(' R$', '' ).split(' ').join('').replace(',', '.' ).trim(); }
+    this.managePrice=p; this.manageName=slot.name || '' ; this.manageMember=slot.member || '' ;
+    this.manageItemType=slot.itemType || 'PHOTOCARD' ; this.manageTipoItemId=slot.tipoItemId ? String(slot.tipoItemId)
+    : '' ; if (!this.manageTipoItemId && this.tipoItemList && this.tipoItemList.length> 0) {
+    const match = this.tipoItemList.find(t => t.nome.toLowerCase() === (slot.tipoItemNome || '').toLowerCase()) ||
+    this.tipoItemList.find(t => t.nome.toLowerCase().includes((slot.itemType || '').toLowerCase()));
+    this.manageTipoItemId = match ? String(match.id) : String(this.tipoItemList[0].id);
+    }
+    this.manageApplyAllSets = false;
+    this.manageParticipantId = slot.claimedById ? String(slot.claimedById) : '';
+    this.manageRemoveClaim = false;
+    this.manageLoading = false;
+    this.manageSlotModalOpen = true;
+    },
+    applyTipoPrefixToName() {
+    if (!this.manageTipoItemId) return;
+    const tipo = this.tipoItemList.find(t => String(t.id) === String(this.manageTipoItemId));
+    if (!tipo) return;
+    const prefix = tipo.nome;
+    const pattern = /^(Photocard|POB|Pre-Order Benefit|Álbum|Album|Compact ver\.|Lucky Draw|Fansign|Inclusão|Lightstick|Item)\s*/i;
+    if (pattern.test(this.manageName)) {
+    this.manageName = this.manageName.replace(pattern, prefix + ' ').trim();
+    } else if (this.manageMember) {
+    this.manageName = prefix + ' ' + this.manageMember;
+    } else {
+    this.manageName = prefix + ' ' + this.manageName;
+    }
+    },
+    openNewTipoInline(target) {
+    this.newTipoTarget = target || 'manage';
+    this.newTipoNome = '';
+    this.newTipoDesc = '';
+    this.showNewTipoModal = true;
+    },
+    async submitInlineNewTipo() {
+    const nome = (this.newTipoNome || '').trim();
+    if (!nome) return;
+    this.newTipoLoading = true;
+    try {
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const formData = new FormData();
+    formData.append('nome', nome);
+    formData.append('descricao', this.newTipoDesc || '');
+    const res = await fetch('/tipos-item/criar/', {
+    method: 'POST',
+    headers: {
+    'X-CSRFToken': csrf,
+    'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+    const newTipo = data.tipo || { id: data.id, nome: data.nome, descricao: this.newTipoDesc };
+    if (!this.tipoItemList.some(t => t.id === newTipo.id)) {
+    this.tipoItemList.push(newTipo);
+    this.tipoItemList.sort((a, b) => a.nome.localeCompare(b.nome));
+    }
+    if (this.newTipoTarget === 'bulk') {
+    this.bulkNewTipoItemId = String(newTipo.id);
+    } else {
+    this.manageTipoItemId = String(newTipo.id);
+    }
+    this.showNewTipoModal = false;
+    this.newTipoNome = '';
+    this.newTipoDesc = '';
+    } else {
+    alert(data.message || 'Erro ao criar tipo de item.');
+    }
+    } catch(e) {
+    alert('Erro de conexão ao criar tipo de item: ' + e);
+    } finally {
+    this.newTipoLoading = false;
+    }
+    },
+    closeManageSlotModal() {
+    this.manageSlotModalOpen = false;
+    this.managedSlot = null;
+    },
+    async submitManageSlot() {
+    if (this.manageLoading || !this.managedSlot) return;
+    this.manageLoading = true;
+    try {
+    const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({
+    price: this.managePrice,
+    apply_to_all_sets: this.manageApplyAllSets,
+    name: this.manageName,
+    member_name: this.manageMember,
+    item_type: this.manageItemType,
+    tipo_item_id: this.manageTipoItemId || null,
+    remove_claim: this.manageRemoveClaim,
+    participant_id: this.manageRemoveClaim ? null : (this.manageParticipantId || null)
+    })
+    });
+    const data = await res.json();
+    if (data.success) {
+    window.location.reload();
+    } else {
+    alert(data.message || 'Erro ao atualizar slot');
+    }
+    } catch(e) {
+    alert('Erro de conexão ao gerenciar slot: ' + e);
+    } finally {
+    this.manageLoading = false;
+    }
+    },
+    async deleteManagedItemDefinition() {
+    if (!this.managedSlot) return;
+    let msg = `⚠️ ATENÇÃO: Deseja realmente EXCLUIR o item '${this.managedSlot.name}' da CEG?\n\nEsta ação excluirá este
+    item e todas as suas vagas de TODOS os Sets desta CEG!`;
+    if (this.managedSlot.claimedByName) {
+    msg += `\n\n🚨 CUIDADO: Este item possui reserva ativa para: ${this.managedSlot.claimedByName}!`;
+    }
+    if (!confirm(msg)) return;
+
+    this.manageLoading = true;
+    try {
+    const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({ action: 'delete_item_definition' })
+    });
+    const data = await res.json();
+    if (data.success) {
+    alert(data.message || 'Item excluído com sucesso!');
+    window.location.reload();
+    } else {
+    alert(data.message || 'Erro ao excluir item.');
+    }
+    } catch(e) {
+    alert('Erro ao excluir item: ' + e);
+    } finally {
+    this.manageLoading = false;
+    }
+    },
+    async deleteManagedSingleSlot() {
+    if (!this.managedSlot) return;
+    let msg = `Deseja remover apenas esta vaga do Set #${this.managedSlot.setNumber}?`;
+    if (this.managedSlot.claimedByName) {
+    msg += `\n\n🚨 CUIDADO: Este slot está reservado para: ${this.managedSlot.claimedByName}!`;
+    }
+    if (!confirm(msg)) return;
+
+    this.manageLoading = true;
+    try {
+    const res = await fetch('/slots/' + this.managedSlot.id + '/manage/', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({ action: 'delete_slot' })
+    });
+    const data = await res.json();
+    if (data.success) {
+    alert(data.message || 'Slot removido com sucesso!');
+    window.location.reload();
+    } else {
+    alert(data.message || 'Erro ao remover slot.');
+    }
+    } catch(e) {
+    alert('Erro de conexão: ' + e);
+    } finally {
+    this.manageLoading = false;
+    }
+    },
+    toggleSlotSelection(slotId, itemDefId) {
+    const idx = this.selectedSlotIds.indexOf(slotId);
+    if (idx > -1) {
+    this.selectedSlotIds.splice(idx, 1);
+    const defIdx = this.selectedItemDefIds.indexOf(itemDefId);
+    if (defIdx > -1) this.selectedItemDefIds.splice(defIdx, 1);
+    } else {
+    this.selectedSlotIds.push(slotId);
+    if (!this.selectedItemDefIds.includes(itemDefId)) {
+    this.selectedItemDefIds.push(itemDefId);
+    }
+    }
+    },
+    selectAllInSet(slotsArray) {
+    const allSelected = slotsArray.every(s => this.selectedSlotIds.includes(s.id));
+    if (allSelected) {
+    slotsArray.forEach(s => {
+    const idx = this.selectedSlotIds.indexOf(s.id);
+    if (idx > -1) this.selectedSlotIds.splice(idx, 1);
+    const defIdx = this.selectedItemDefIds.indexOf(s.itemDefId);
+    if (defIdx > -1) this.selectedItemDefIds.splice(defIdx, 1);
+    });
+    } else {
+    slotsArray.forEach(s => {
+    if (!this.selectedSlotIds.includes(s.id)) this.selectedSlotIds.push(s.id);
+    if (!this.selectedItemDefIds.includes(s.itemDefId)) this.selectedItemDefIds.push(s.itemDefId);
+    });
+    }
+    },
+    clearSelection() {
+    this.selectedSlotIds = [];
+    this.selectedItemDefIds = [];
+    },
+    openBulkTypeModal() {
+    if (this.selectedSlotIds.length === 0) {
+    alert('Selecione pelo menos um item para editar o tipo em massa.');
+    return;
+    }
+    if (this.tipoItemList && this.tipoItemList.length > 0) {
+    this.bulkNewTipoItemId = String(this.tipoItemList[0].id);
+    }
+    this.bulkUpdatePrefix = true;
+    this.bulkApplyAllSets = true;
+    this.bulkTypeModalOpen = true;
+    },
+    closeBulkTypeModal() {
+    this.bulkTypeModalOpen = false;
+    },
+    async submitBulkType() {
+    if (this.bulkLoading) return;
+    this.bulkLoading = true;
+    try {
+    const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({
+    action: 'update_type',
+    slot_ids: this.selectedSlotIds,
+    item_def_ids: this.selectedItemDefIds,
+    new_item_type: this.bulkNewType,
+    new_tipo_item_id: this.bulkNewTipoItemId || null,
+    update_prefix: this.bulkUpdatePrefix,
+    apply_all_sets: this.bulkApplyAllSets
+    })
+    });
+    const data = await res.json();
+    if (data.success) {
+    alert(data.message || 'Tipos atualizados com sucesso!');
+    window.location.reload();
+    } else {
+    alert(data.message || 'Erro ao atualizar tipos em massa.');
+    }
+    } catch(e) {
+    alert('Erro de conexão: ' + e);
+    } finally {
+    this.bulkLoading = false;
+    }
+    },
+    openBulkPriceModal() {
+    if (this.selectedSlotIds.length === 0) {
+    alert('Selecione pelo menos um item para alterar o preço.');
+    return;
+    }
+    this.bulkNewPrice = '';
+    this.bulkApplyAllSets = true;
+    this.bulkPriceModalOpen = true;
+    },
+    closeBulkPriceModal() {
+    this.bulkPriceModalOpen = false;
+    },
+    async submitBulkPrice() {
+    if (this.bulkLoading || !this.bulkNewPrice) return;
+    this.bulkLoading = true;
+    try {
+    const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({
+    action: 'update_price',
+    slot_ids: this.selectedSlotIds,
+    item_def_ids: this.selectedItemDefIds,
+    new_price: this.bulkNewPrice,
+    apply_all_sets: this.bulkApplyAllSets
+    })
+    });
+    const data = await res.json();
+    if (data.success) {
+    alert(data.message || 'Preços atualizados com sucesso!');
+    window.location.reload();
+    } else {
+    alert(data.message || 'Erro ao atualizar preços em massa.');
+    }
+    } catch(e) {
+    alert('Erro de conexão: ' + e);
+    } finally {
+    this.bulkLoading = false;
+    }
+    },
+    async bulkDeleteItems() {
+    if (this.selectedSlotIds.length === 0) return;
+    if (!confirm(`⚠️ ATENÇÃO: Deseja realmente EXCLUIR os ${this.selectedItemDefIds.length} itens selecionados da
+    CEG?\n\nEsta ação excluirá permanentemente esses itens e todas as suas vagas em todos os sets desta CEG!`)) {
+    return;
+    }
+    this.bulkLoading = true;
+    try {
+    const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({
+    action: 'delete_items',
+    slot_ids: this.selectedSlotIds,
+    item_def_ids: this.selectedItemDefIds
+    })
+    });
+    const data = await res.json();
+    if (data.success) {
+    alert(data.message || 'Itens excluídos com sucesso!');
+    window.location.reload();
+    } else {
+    alert(data.message || 'Erro ao excluir itens.');
+    }
+    } catch(e) {
+    alert('Erro de conexão: ' + e);
+    } finally {
+    this.bulkLoading = false;
+    }
+    },
+    async bulkSetPayment(field, value = true) {
+        if (this.selectedSlotIds.length === 0 || this.bulkLoading) return;
+        this.bulkLoading = true;
+        try {
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            const res = await fetch('/ceg/{{ ceg.slug }}/bulk-manage-items/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify({
+                    action: 'bulk_payment',
+                    slot_ids: this.selectedSlotIds,
+                    field: field,
+                    value: value
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.dispatchEvent(new CustomEvent('slot-payment-updated', { detail: data }));
+                this.bulkFeedbackMsg = data.message;
+                if (this.bulkFeedbackTimer) clearTimeout(this.bulkFeedbackTimer);
+                this.bulkFeedbackTimer = setTimeout(() => { this.bulkFeedbackMsg = ''; }, 4000);
+            } else {
+                alert(data.message || 'Erro ao atualizar pagamentos em massa.');
+            }
+        } catch(e) {
+            alert('Erro de conexão: ' + e);
+        } finally {
+            this.bulkLoading = false;
+        }
+    },
+    selectParticipantForClaim(pId) {
+    if (!pId) {
+    this.formName = '';
+    this.formUsername = '';
+    this.formWhatsapp = '';
+    this.formSocial = '';
+    return;
+    }
+    const p = this.allParticipants.find(item => String(item.id) === String(pId));
+    if (p) {
+    this.formName = p.name || '';
+    this.formUsername = p.username || '';
+    this.formWhatsapp = p.whatsapp || '';
+    this.formSocial = p.social_handle || '';
+    }
+    },
+    async submitClaimForm() {
+    if (this.claimLoading || !this.selectedSlot) return;
+    this.claimLoading = true;
+    this.claimResult = null;
+    try {
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const formData = new FormData();
+    formData.append('name', this.formName || '');
+    formData.append('username', this.formUsername || '');
+    formData.append('whatsapp', this.formWhatsapp || '');
+    formData.append('social_handle', this.formSocial || '');
+    const notesEl = document.getElementById('claimNotesField');
+    formData.append('notes', notesEl ? notesEl.value : '');
+    const res = await fetch('/slots/' + this.selectedSlot.id + '/claim/', {
+    method: 'POST',
+    headers: {
+    'X-CSRFToken': csrf,
+    'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+    this.claimResult = { ok: true, message: data.message, pixKey: data.pix_key || null, isWaiting: data.is_waiting_list
+    || false };
+    } else if (data.requires_auth) {
+    window.location.href = data.redirect_url || '/me/login/';
+    } else {
+    this.claimResult = { ok: false, message: data.message || 'Erro ao processar reserva.' };
+    }
+    } catch(e) {
+    this.claimResult = { ok: false, message: 'Erro de conexão: ' + e };
+    } finally {
+    this.claimLoading = false;
+    }
+    },
+    copyPix(key) {
+    navigator.clipboard.writeText(key);
+    },
+    openCropStudioFromDetail(bannerUrlOrIndex, startIndex = 0) {
+        let src = typeof bannerUrlOrIndex === 'string' && bannerUrlOrIndex ? bannerUrlOrIndex : '{{ ceg.display_image_url|default:''|escapejs }}';
+        let sIndex = typeof bannerUrlOrIndex === 'number' ? bannerUrlOrIndex : (startIndex || 0);
+        if (!src) {
+            alert('Esta CEG ainda não possui uma foto/banner cadastrado. Edite a CEG e anexe uma imagem primeiro.');
+            return;
+        }
+        const defsEl = document.getElementById('ceg-items-definitions-data');
+        if (!this.cropStudioItems || this.cropStudioItems.length === 0) {
+            this.cropStudioItems = defsEl ? JSON.parse(defsEl.textContent || '[]') : [];
+        }
+        if (!this.cropStudioItems || this.cropStudioItems.length === 0) {
+            alert('Nenhum photocard/item cadastrado nesta CEG para recortar.');
+            return;
+        }
+
+        this.cropStudioSourceUrl = src;
+        this.cropStudioCurrentIndex = Math.max(0, Math.min(sIndex, this.cropStudioItems.length - 1));
+        this.cropStudioImageReady = false;
+        this.cropStudioOpen = true;
+
+        if (this.cropperInstance) {
+            try { this.cropperInstance.destroy(); } catch (e) {}
+            this.cropperInstance = null;
+        }
+
+        // Aguarda a transição de abertura do modal (150ms) para dimensões finais no DOM
+        setTimeout(() => {
+            this.onCropStudioImageLoad();
+        }, 150);
+    },
+    onCropStudioImageLoad() {
+        if (!this.cropStudioOpen) return;
+        const img = document.getElementById('crop-studio-target-image');
+        if (!img) return;
+
+        if (img.complete && img.naturalWidth > 0) {
+            this.initCropperInstance();
+        } else {
+            img.onload = () => {
+                this.initCropperInstance();
+            };
+        }
+    },
+    initCropperInstance() {
+        if (!this.cropStudioOpen) return;
+        const img = document.getElementById('crop-studio-target-image');
+        if (!img) return;
+
+        if (this.cropperInstance) {
+            try { this.cropperInstance.destroy(); } catch (e) {}
+            this.cropperInstance = null;
+        }
+
+        if (typeof Cropper === 'undefined') {
+            console.warn('Cropper.js ainda não disponível. Aguardando...');
+            setTimeout(() => this.initCropperInstance(), 150);
+            return;
+        }
+
+        try {
+            this.cropperInstance = new Cropper(img, {
+                aspectRatio: this.cropAspectRatio || (2 / 3),
+                viewMode: 1,
+                dragMode: 'crop',
+                autoCrop: true,
+                autoCropArea: 0.7,
+                responsive: true,
+                restore: false,
+                checkCrossOrigin: false,
+                zoomable: true,
+                scalable: false,
+                rotatable: true,
+                movable: true,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                ready: () => {
+                    this.cropStudioImageReady = true;
+                    if (this.cropperInstance) {
+                        this.cropperInstance.crop();
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Erro ao inicializar Cropper.js:', e);
+            this.cropStudioImageReady = true;
+        }
+    },
+    setCropAspectRatio(ratio) {
+        this.cropAspectRatio = ratio;
+        if (this.cropperInstance) {
+            this.cropperInstance.setAspectRatio(ratio);
+        }
+    },
+    cropperZoom(delta) {
+        if (this.cropperInstance) {
+            this.cropperInstance.zoom(delta);
+        }
+    },
+    cropperRotate(deg) {
+        if (this.cropperInstance) {
+            this.cropperInstance.rotate(deg);
+        }
+    },
+    cropperReset() {
+        if (this.cropperInstance) {
+            this.cropperInstance.reset();
+        }
+    },
+    selectCropStudioIndex(idx) {
+        if (idx >= 0 && idx < this.cropStudioItems.length) {
+            this.cropStudioCurrentIndex = idx;
+        }
+    },
+    async cropCurrentItemAndNext() {
+        if (!this.cropperInstance) return;
+        const item = this.cropStudioItems[this.cropStudioCurrentIndex];
+        if (!item) return;
+
+        let base64 = '';
+        let cropData = null;
+
+        // 1. Tentar exportar Base64 direto via Canvas (caso a imagem não sofra restrição de CORS)
+        try {
+            const canvas = this.cropperInstance?.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 1200,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            if (canvas) {
+                try {
+                    base64 = canvas.toDataURL('image/webp', 0.85);
+                } catch (e) {
+                    try {
+                        base64 = canvas.toDataURL('image/jpeg', 0.85);
+                    } catch (err) {
+                        console.warn('Canvas bloqueado por CORS (tainted). Usando corte por coordenadas no backend.');
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Erro ou restrição de CORS ao gerar canvas:', e);
+        }
+
+        // 2. Se o canvas estiver bloqueado por CORS (tainted canvas), pegamos as coordenadas do Cropper
+        // para que o backend (Python/Pillow) faça o recorte diretamente da URL original no servidor!
+        if (!base64 && this.cropperInstance) {
+            try {
+                cropData = this.cropperInstance.getData(true);
+            } catch (err) {
+                console.error('Erro ao obter coordenadas do Cropper:', err);
+            }
+        }
+
+        if (!base64 && (!cropData || !cropData.width || !cropData.height)) {
+            alert('Não foi possível gerar o recorte. Verifique a seleção da imagem.');
+            return;
+        }
+
+        this.cropStudioSaving = true;
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            const url = `/ceg/{{ ceg.slug }}/item/${item.id}/crop/`;
+
+            const payload = base64 ? {
+                image_base64: base64
+            } : {
+                source_url: this.cropStudioSourceUrl,
+                x: cropData.x,
+                y: cropData.y,
+                width: cropData.width,
+                height: cropData.height
+            };
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                item.image_url = data.image_url;
+                item.image_base64 = data.image_url;
+                if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+                    this.cropStudioCurrentIndex++;
+                } else {
+                    this.closeCropStudio();
+                    window.location.reload();
+                }
+            } else {
+                alert(data.message || 'Erro ao salvar recorte.');
+            }
+        } catch (err) {
+            console.error('Erro na requisição AJAX de crop:', err);
+            alert('Erro ao conectar com o servidor para salvar o recorte.');
+        } finally {
+            this.cropStudioSaving = false;
+        }
+    },
+    skipCropStudioItem() {
+        if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+            this.cropStudioCurrentIndex++;
+        } else {
+            this.closeCropStudio();
+        }
+    },
+    closeCropStudio() {
+        this.cropStudioOpen = false;
+        if (this.cropperInstance) {
+            try { this.cropperInstance.destroy(); } catch (e) {}
+            this.cropperInstance = null;
+        }
+    },
+    formatCountdown() {
+        if (this.secondsLeft <= 0) {
+            this.isStandby = false;
+            return { d: 0, h: '00', m: '00', s: '00' };
+        }
+        let d = Math.floor(this.secondsLeft / 86400);
+        let h = Math.floor((this.secondsLeft % 86400) / 3600);
+        let m = Math.floor((this.secondsLeft % 3600) / 60);
+        let s = this.secondsLeft % 60;
+        return {
+            d: d,
+            h: String(h).padStart(2, '0'),
+            m: String(m).padStart(2, '0'),
+            s: String(s).padStart(2, '0')
+        };
+    },
+
+        init() {
+            window.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                    const it = items[i];
+                    if (it.kind === 'file' && it.type.indexOf('image') !== -1) {
+                        const blob = it.getAsFile();
+                        if (this.editCegModalOpen) {
+                            this.handleBannerFile(blob);
+                            e.preventDefault();
+                            break;
+                        } else if (this.addAvulsoModalOpen) {
+                            this.handleAddAvulsoPhoto(blob);
+                            e.preventDefault();
+                            break;
+                        } else if (this.editAvulsoModalOpen) {
+                            this.handleEditAvulsoPhoto(blob);
+                            e.preventDefault();
+                            break;
+                        }
+                    }
+                }
+            });
+            if (this.secondsLeft > 0) {
+                this.timer = setInterval(() => {
+                    if (this.secondsLeft > 0) {
+                        this.secondsLeft--;
+                        if (this.secondsLeft <= 0) {
+                            this.isStandby = false;
+                            clearInterval(this.timer);
+                            window.dispatchEvent(new CustomEvent('standby-ended'));
+                        }
+                    }
+                }, 1000);
+            }
+        }
+    };
+}
+</script>

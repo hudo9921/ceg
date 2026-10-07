@@ -1,0 +1,189 @@
+<!-- Modal de Edição de Item Individual Mercari (Alpine.js) -->
+{% if is_staff_user %}
+<div x-show="editItemModalOpen" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-sm overflow-y-auto"
+     @keydown.escape.window="closeEditModal()">
+    <div class="bg-white dark:bg-cyber-surface w-full max-w-5xl rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[92vh] my-auto"
+         @click.away="closeEditModal()">
+        
+        <!-- Header fixo -->
+        <div class="flex-shrink-0 p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-amber-50/70 dark:bg-amber-950/20">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Editar Pedido Individual Mercari</h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                        Editando item de <strong x-text="editingItem.comprador_name || editingItem.comprador_display"></strong> • <span x-text="editingItem.nome"></span>
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="closeEditModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Form de Edição -->
+        <form id="edit_item_caixa_form" :action="'/itens-individuais/' + editingItem.id + '/update/'" method="POST" enctype="multipart/form-data"
+              class="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {% csrf_token %}
+            <input type="hidden" name="next_url" :value="window.location.href">
+            <input type="hidden" name="foto_base64" :value="itemImageBase64">
+
+            <!-- Corpo Rolável em 2 Colunas -->
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 no-scrollbar">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                    
+                    <!-- Coluna Esquerda: Dados do Item (lg:col-span-7) -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nome do Item *</label>
+                            <input type="text" name="nome" :value="editingItem.nome" required
+                                   class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- Tipo de Item com botão + Novo Tipo -->
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Tipo de Item</label>
+                                    <button type="button" @click="addTipoModalOpen = true"
+                                            class="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-0.5 cursor-pointer">
+                                        <span>+ Novo</span>
+                                    </button>
+                                </div>
+                                <select name="tipo_item_id"
+                                        class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                                    <option value="">-- Sem Tipo --</option>
+                                    <template x-for="t in tiposItem" :key="t.id">
+                                        <option :value="t.id" x-text="t.nome" :selected="editingItem.tipo_item_id == t.id"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Caixa Mercari</label>
+                                <select name="caixa_id"
+                                        class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                                    <option value="">-- Sem Caixa --</option>
+                                    {% for cx in all_caixas %}
+                                        <option value="{{ cx.id }}" :selected="editingItem.caixa_id == {{ cx.id }}">
+                                            {{ cx.nome }} ({{ cx.get_origem_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Status do Item</label>
+                                <select name="status"
+                                        class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                                    {% for val, label in item_individual_statuses %}
+                                        <option value="{{ val }}" :selected="editingItem.status == '{{ val }}'">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Link do Pedido</label>
+                                <input type="url" name="link_pedido" :value="editingItem.link_pedido" placeholder="https://jp.mercari.com/item/..."
+                                       class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Quantidade</label>
+                                <input type="number" name="quantidade" :value="editingItem.quantidade" min="1"
+                                       class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:bg-white transition font-mono">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Preço do Produto (R$)</label>
+                            <input type="text" name="preco_produto" :value="editingItem.preco_produto_str || editingItem.preco_produto" placeholder="Ex: 85,00"
+                                   class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:bg-white transition font-mono">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observações Internas (Opcional)</label>
+                            <textarea name="observacoes" rows="2" :value="editingItem.observacoes"
+                                      placeholder="Notas sobre o item, condição, embalagem..."
+                                      class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 focus:bg-white transition"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Foto e Pagamentos (lg:col-span-5) -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <!-- Pagamentos -->
+                        <div class="p-3.5 bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-2xl space-y-3">
+                            <h4 class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <i data-lucide="dollar-sign" class="w-3.5 h-3.5 text-emerald-500"></i>
+                                <span>Pagamentos de Frete & Taxa</span>
+                            </h4>
+                            <div class="grid grid-cols-1 gap-3">
+                                <div class="p-3 bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                            <i data-lucide="plane" class="w-3 h-3 text-sky-500"></i>
+                                            <span>Frete Inter (R$)</span>
+                                        </label>
+                                        <label class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 cursor-pointer">
+                                            <input type="checkbox" name="frete_inter_pago" :checked="editingItem.frete_inter_pago" class="rounded text-emerald-600">
+                                            <span>Pago</span>
+                                        </label>
+                                    </div>
+                                    <input type="text" name="frete_inter" :value="editingItem.frete_inter_str || editingItem.frete_inter"
+                                           class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 font-mono">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">Prazo Frete Inter</label>
+                                        <input type="datetime-local" name="prazo_frete_inter" :value="editingItem.prazo_frete_inter"
+                                               class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 dark:text-slate-300">
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                            <i data-lucide="landmark" class="w-3 h-3 text-purple-500"></i>
+                                            <span>Taxa Aduaneira (R$)</span>
+                                        </label>
+                                        <label class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 cursor-pointer">
+                                            <input type="checkbox" name="taxa_aduaneira_paga" :checked="editingItem.taxa_aduaneira_paga" class="rounded text-emerald-600">
+                                            <span>Paga</span>
+                                        </label>
+                                    </div>
+                                    <input type="text" name="taxa_aduaneira" :value="editingItem.taxa_aduaneira_str || editingItem.taxa_aduaneira"
+                                           class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 font-mono">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">Prazo Taxa</label>
+                                        <input type="datetime-local" name="prazo_taxa_aduaneira" :value="editingItem.prazo_taxa_aduaneira"
+                                               class="w-full bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 dark:text-slate-300">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Atualizar Foto / Proof com Dropzone e Ctrl+V -->
+                        {% include 'cegs/partials/_caixa_detail_modal_edit_mercari_photo.html' %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer Fixo -->
+            <div class="flex-shrink-0 p-4 sm:px-6 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-cyber-obsidian flex items-center justify-end gap-3">
+                <button type="button" @click="closeEditModal()"
+                        class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Salvar Alterações</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}

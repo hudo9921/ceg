@@ -1,0 +1,146 @@
+<script>
+function auditoriaFiltersMixin() {
+    return {
+        isGroupVisible(groupId) {
+            if (!groupId) return true;
+            const gid = parseInt(groupId);
+            if (this.selectedCaixa) {
+                const cid = parseInt(this.selectedCaixa);
+                return this.allCegs.some(c => c.caixa_id === cid && c.group_id === gid);
+            }
+            return true;
+        },
+
+        isEraVisible(eraId) {
+            if (!eraId) return true;
+            const eid = parseInt(eraId);
+            const era = this.allEras.find(e => e.id === eid);
+            if (!era) return false;
+
+            if (this.selectedGroup && era.group_id !== parseInt(this.selectedGroup)) {
+                return false;
+            }
+            if (this.selectedCaixa) {
+                const cid = parseInt(this.selectedCaixa);
+                return this.allCegs.some(c => c.caixa_id === cid && c.era_id === eid);
+            }
+            return true;
+        },
+
+        isCegVisible(cegId) {
+            if (!cegId) return true;
+            const cid = parseInt(cegId);
+            const ceg = this.allCegs.find(c => c.id === cid);
+            if (!ceg) return false;
+
+            if (this.selectedCaixa && ceg.caixa_id !== parseInt(this.selectedCaixa)) {
+                return false;
+            }
+            if (this.selectedGroup && ceg.group_id !== parseInt(this.selectedGroup)) {
+                return false;
+            }
+            if (this.selectedEra && ceg.era_id !== parseInt(this.selectedEra)) {
+                return false;
+            }
+            return true;
+        },
+
+        onCaixaChange() {
+            this.$nextTick(() => {
+                if (this.selectedGroup && !this.isGroupVisible(this.selectedGroup)) {
+                    this.selectedGroup = '';
+                    const groupEl = document.getElementById('grupoSelect');
+                    if (groupEl) groupEl.value = '';
+                }
+                if (this.selectedEra && !this.isEraVisible(this.selectedEra)) {
+                    this.selectedEra = '';
+                    const eraEl = document.getElementById('eraSelect');
+                    if (eraEl) eraEl.value = '';
+                }
+                if (this.selectedCeg && !this.isCegVisible(this.selectedCeg)) {
+                    this.selectedCeg = '';
+                    const cegEl = document.getElementById('cegSelect');
+                    if (cegEl) cegEl.value = '';
+                }
+                this.applyFilters(true);
+            });
+        },
+
+        onGroupChange() {
+            this.$nextTick(() => {
+                if (this.selectedEra && !this.isEraVisible(this.selectedEra)) {
+                    this.selectedEra = '';
+                    const eraEl = document.getElementById('eraSelect');
+                    if (eraEl) eraEl.value = '';
+                }
+                if (this.selectedCeg && !this.isCegVisible(this.selectedCeg)) {
+                    this.selectedCeg = '';
+                    const cegEl = document.getElementById('cegSelect');
+                    if (cegEl) cegEl.value = '';
+                }
+                this.applyFilters(true);
+            });
+        },
+
+        onEraChange() {
+            this.$nextTick(() => {
+                if (this.selectedCeg && !this.isCegVisible(this.selectedCeg)) {
+                    this.selectedCeg = '';
+                    const cegEl = document.getElementById('cegSelect');
+                    if (cegEl) cegEl.value = '';
+                }
+                this.applyFilters(true);
+            });
+        },
+
+        onCegChange() {
+            this.applyFilters(true);
+        },
+
+        setDateToday() {
+            const today = new Date().toISOString().split('T')[0];
+            const df = document.getElementById('date_from');
+            const dt = document.getElementById('date_to');
+            if (df) df.value = today;
+            if (dt) dt.value = today;
+            this.applyFilters(true);
+        },
+
+        setDateLast7Days() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 7);
+            const df = document.getElementById('date_from');
+            const dt = document.getElementById('date_to');
+            if (df) df.value = start.toISOString().split('T')[0];
+            if (dt) dt.value = end.toISOString().split('T')[0];
+            this.applyFilters(true);
+        },
+
+        setDateLast30Days() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 30);
+            const df = document.getElementById('date_from');
+            const dt = document.getElementById('date_to');
+            if (df) df.value = start.toISOString().split('T')[0];
+            if (dt) dt.value = end.toISOString().split('T')[0];
+            this.applyFilters(true);
+        },
+
+        resetFilters() {
+            this.selectedCaixa = '';
+            this.selectedGroup = '';
+            this.selectedEra = '';
+            this.selectedCeg = '';
+            const form = this.$refs.filterForm;
+            if (form) {
+                form.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
+                    el.value = '';
+                });
+            }
+            this.applyFilters(true);
+        }
+    };
+}
+</script>

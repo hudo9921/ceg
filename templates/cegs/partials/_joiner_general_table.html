@@ -1,0 +1,126 @@
+<!-- Estado Inicial: Nenhum Participante Selecionado -> Tabela Geral de Joiners e Dívidas -->
+<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 shadow-sm space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-pink-600 dark:text-cyber-neon uppercase tracking-wide">Visão Geral dos Participantes</span>
+                <span class="px-2 py-0.5 bg-slate-100 dark:bg-cyber-elevated text-slate-700 dark:text-slate-300 font-black text-[10px] rounded-full border border-slate-200 dark:border-white/5"
+                      x-text="filteredParticipants.length + ' participante(s)'">
+                    {{ all_participants|length }} participante(s)
+                </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                Auditoria Financeira Geral de Joiners
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Consulte o saldo devedor de itens, fretes e taxas aduaneiras e quanto cada joiner já quitou na loja.
+            </p>
+        </div>
+
+        <!-- Filtros de Tabela -->
+        <div class="flex items-center gap-2">
+            <button type="button" @click="initialTableFilter = 'ALL'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                    :class="initialTableFilter === 'ALL' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-xs' : 'bg-slate-100 dark:bg-cyber-elevated text-slate-600 dark:text-slate-300 hover:bg-slate-200'">
+                Todos
+            </button>
+            <button type="button" @click="initialTableFilter = 'DEBT'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    :class="initialTableFilter === 'DEBT' ? 'bg-rose-600 text-white shadow-2xs' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 hover:bg-rose-100'">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                <span>Com Dívida Aberta</span>
+            </button>
+            <button type="button" @click="initialTableFilter = 'PAID'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    :class="initialTableFilter === 'PAID' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100'">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span>100% Quitados</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabela Responsiva de Joiners -->
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xs">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 dark:bg-cyber-elevated text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold border-b border-slate-200 dark:border-white/10 text-[10px]">
+                <tr>
+                    <th class="py-3 px-4">Joiner / Participante</th>
+                    <th class="py-3 px-4">Forma que quer ser chamado</th>
+                    <th class="py-3 px-4">WhatsApp / Telefone</th>
+                    <th class="py-3 px-3 text-right">Deve Itens</th>
+                    <th class="py-3 px-3 text-right">Deve Frete</th>
+                    <th class="py-3 px-3 text-right">Deve Taxa</th>
+                    <th class="py-3 px-4 text-right">Dívida Total</th>
+                    <th class="py-3 px-4 text-right">Total Já Pago</th>
+                    <th class="py-3 px-4 text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-white/5 font-medium">
+                <template x-for="p in filteredParticipants.filter(p => {
+                    if (initialTableFilter === 'DEBT') return p.total_devido > 0;
+                    if (initialTableFilter === 'PAID') return p.total_devido <= 0;
+                    return true;
+                })" :key="p.id">
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
+                        <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                            <a :href="'{% url 'consulta_joiner' %}?participant_id=' + p.id"
+                               class="hover:text-pink-600 dark:hover:text-cyber-neon transition flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-xl bg-pink-100 dark:bg-pink-950/70 text-pink-700 dark:text-pink-300 font-black text-xs flex items-center justify-center shrink-0 border border-pink-200/60 dark:border-pink-800/60"
+                                     x-text="p.name.charAt(0).toUpperCase()"></div>
+                                <span x-text="p.name"></span>
+                            </a>
+                        </td>
+                        <td class="py-3 px-4">
+                            <template x-if="p.username">
+                                <span class="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-cyber-neon border border-pink-200 dark:border-pink-800/60 rounded-md font-bold text-[11px]"
+                                      x-text="'@' + p.username"></span>
+                            </template>
+                            <template x-if="!p.username && p.social_handle">
+                                <span class="text-slate-600 dark:text-slate-300 font-semibold" x-text="p.social_handle"></span>
+                            </template>
+                            <template x-if="!p.username && !p.social_handle">
+                                <span class="text-slate-400 italic">Mesmo do nome</span>
+                            </template>
+                        </td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">
+                            <a :href="'https://wa.me/' + p.whatsapp" target="_blank"
+                               class="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 font-mono">
+                                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                                <span x-text="p.formatted_phone || p.whatsapp"></span>
+                            </a>
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold font-mono"
+                            :class="p.deve_itens > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'"
+                            x-text="formatMoney(p.deve_itens)"></td>
+                        <td class="py-3 px-3 text-right font-bold font-mono"
+                            :class="p.deve_frete > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'"
+                            x-text="formatMoney(p.deve_frete)"></td>
+                        <td class="py-3 px-3 text-right font-bold font-mono"
+                            :class="p.deve_taxa > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'"
+                            x-text="formatMoney(p.deve_taxa)"></td>
+                        <td class="py-3 px-4 text-right">
+                            <template x-if="p.total_devido > 0">
+                                <span class="px-2 py-0.5 bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-black rounded-lg text-xs font-mono"
+                                      x-text="formatMoney(p.total_devido)"></span>
+                            </template>
+                            <template x-if="p.total_devido <= 0">
+                                <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold rounded-lg text-xs font-mono">
+                                    R$ 0,00
+                                </span>
+                            </template>
+                        </td>
+                        <td class="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400 font-mono"
+                            x-text="formatMoney(p.total_pago_historico)"></td>
+                        <td class="py-3 px-4 text-center">
+                            <a :href="'{% url 'consulta_joiner' %}?participant_id=' + p.id"
+                               class="px-3 py-1.5 bg-pink-50 dark:bg-pink-950/40 hover:bg-pink-100 dark:hover:bg-pink-900/60 text-pink-700 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/60 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs">
+                                <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                                <span>Auditar</span>
+                            </a>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+<!-- Seção de Itens Individuais (Mercari JP) Vinculados a esta Caixa -->
+{% if is_staff_user %}
+<div x-show="currentTab === 'all' || currentTab === 'itens'"
+     class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/10">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <h2 class="text-lg font-black text-slate-900 dark:text-white">
+                    Itens Individuais (Mercari) nesta Caixa
+                </h2>
+                <span class="bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-xs font-black px-2.5 py-0.5 rounded-full font-mono">
+                    {{ itens_individuais_count }} item(ns)
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Pedidos avulsos comprados no Mercari/Japão consolidados nesta remessa. O status avança em conjunto com a caixa!
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            {% if itens_individuais_sem_caixa %}
+                <button type="button" @click="linkItemModalOpen = true"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold transition shadow-xs cursor-pointer">
+                    <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                    <span>Vincular Itens Avulsos ({{ itens_individuais_sem_caixa|length }})</span>
+                </button>
+            {% endif %}
+            <a href="{% url 'creations_hub' %}?category=mercari&caixa_id={{ caixa.id }}&open=item_individual"
+               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                <span>Cadastrar Item nesta Caixa</span>
+            </a>
+        </div>
+    </div>
+
+    {% if itens_individuais %}
+        {% include 'cegs/partials/_caixa_detail_tab_mercari_table.html' %}
+    {% else %}
+        <div class="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 mx-auto flex items-center justify-center">
+                <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Nenhum item individual do Mercari cadastrado nesta caixa ainda.
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {% if itens_individuais_sem_caixa %}
+                    <button type="button" @click="linkItemModalOpen = true"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold transition shadow-sm cursor-pointer">
+                        <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                        <span>Vincular Itens Avulsos ({{ itens_individuais_sem_caixa|length }})</span>
+                    </button>
+                {% endif %}
+                <a href="{% url 'creations_hub' %}?category=mercari&caixa_id={{ caixa.id }}&open=item_individual"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                    <span>Cadastrar Primeiro Item nesta Caixa</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,30 @@
+<!-- Seleção Inicial de CEGs (Apenas no Create) -->
+{% if action == 'create' and cegs_sem_caixa %}
+    <div class="space-y-3 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
+                <span>Vincular CEGs Existentes Imediatamente (Opcional)</span>
+            </div>
+            <span class="text-[11px] text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-500/20">
+                {{ cegs_sem_caixa.count }} CEG(s) sem caixa
+            </span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+            Selecione as CEGs que já pertencem a esta remessa para vinculação imediata:
+        </p>
+
+        <div class="max-h-56 overflow-y-auto space-y-2 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 bg-slate-50/70 dark:bg-slate-800/40 custom-scrollbar">
+            {% for c in cegs_sem_caixa %}
+                <label class="flex items-center gap-3 p-2.5 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200 dark:border-slate-700/70 hover:border-blue-400 dark:hover:border-blue-500/50 cursor-pointer transition">
+                    <input type="checkbox" name="ceg_ids" value="{{ c.id }}"
+                           class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+                    <div class="text-xs">
+                        <div class="font-bold text-slate-900 dark:text-slate-100">{{ c.title }}</div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">{{ c.era.group.name }} &bull; {{ c.get_status_display }}</div>
+                    </div>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}

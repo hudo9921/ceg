@@ -1,0 +1,66 @@
+<!-- MÉTODOS DE CONTROLE DE MODAIS, SELEÇÃO E FILTROS PARA CONSULTA JOINER -->
+<script>
+window.joinerModalMethods = {
+    toggleSelectAll(checked) {
+        if (checked) {
+            this.eligibleVisibleItems.forEach(it => {
+                if (!this.selectedUids.includes(it.uid)) {
+                    this.selectedUids.push(it.uid);
+                }
+            });
+        } else {
+            const eligibleUids = this.eligibleVisibleItems.map(it => it.uid);
+            this.selectedUids = this.selectedUids.filter(uid => !eligibleUids.includes(uid));
+        }
+    },
+
+    toggleItemSelection(uid) {
+        const idx = this.selectedUids.indexOf(uid);
+        if (idx > -1) {
+            this.selectedUids.splice(idx, 1);
+        } else {
+            this.selectedUids.push(uid);
+        }
+    },
+
+    clearSelection() {
+        this.selectedUids = [];
+    },
+
+    resetFilters() {
+        this.filterGrupo = 'ALL';
+        this.filterEra = 'ALL';
+        this.filterCaixa = 'ALL';
+        this.filterItemPaid = 'ALL';
+        this.filterInterPaid = 'ALL';
+        this.filterTaxaPaid = 'ALL';
+        this.filterPacote = 'ALL';
+        this.searchQuery = '';
+    },
+
+    openPackagingModal() {
+        if (!this.selectedUids.length) return;
+        this.packagingModalOpen = true;
+    },
+
+    openDispatchModal(id, identificador, transportadora, rastreio) {
+        this.dispatchPacoteId = id;
+        this.dispatchPacoteIdentificador = identificador;
+        this.dispatchTransportadora = transportadora || 'Correios Mini Envios';
+        this.dispatchCodigoRastreio = rastreio || '';
+        this.dispatchModalOpen = true;
+    },
+
+    openEditPacoteModal(id, identificador, transportadora, rastreio, valorFrete, isFretePago, status, obs) {
+        this.editPacoteId = id;
+        this.editPacoteIdentificador = identificador;
+        this.editPacoteTransportadora = transportadora;
+        this.editPacoteCodigoRastreio = rastreio;
+        this.editPacoteValorFrete = valorFrete;
+        this.editPacoteIsFretePago = isFretePago;
+        this.editPacoteStatus = status;
+        this.editPacoteObservacoes = obs;
+        this.editPacoteModalOpen = true;
+    }
+};
+</script>

@@ -1,0 +1,114 @@
+<!-- ABA 2: GRADE INTERATIVA (LINHA POR LINHA) -->
+<div x-show="activeTab === 'table'" x-transition class="space-y-6">
+
+    <div class="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <i data-lucide="table" class="w-4 h-4 text-indigo-500"></i>
+                    <span>Grade Interativa de Cadastro</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Preencha os campos diretamente na tabela abaixo. Adicione quantas linhas precisar com os botões rápidos.
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" @click="addRow()"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-500/30 transition cursor-pointer">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Adicionar Linha</span>
+                </button>
+                <button type="button" @click="addMultipleRows(5)"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer">
+                    <span>+5 Linhas</span>
+                </button>
+                <button type="button" @click="clearTableRows()"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 text-slate-400 hover:text-rose-600 font-medium text-xs transition cursor-pointer">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Limpar Tudo</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabela de Linhas Editáveis -->
+        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                        <th class="px-3 py-2.5 text-left w-10">#</th>
+                        <th class="px-3 py-2.5 text-left">Nome Completo *</th>
+                        <th class="px-3 py-2.5 text-left w-44">País / DDI</th>
+                        <th class="px-3 py-2.5 text-left">Número de Telefone *</th>
+                        <th class="px-3 py-2.5 text-left">Twitter / X (@handle)</th>
+                        <th class="px-3 py-2.5 text-left">Apelido (opcional)</th>
+                        <th class="px-3 py-2.5 text-center w-12">Ação</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                    <template x-for="(row, idx) in tableRows" :key="row.id">
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <td class="px-3 py-2 text-slate-400 font-mono text-[11px]" x-text="idx + 1"></td>
+                            <td class="px-3 py-2">
+                                <input type="text" x-model="row.name" placeholder="Ex: Lucas Silva"
+                                       class="w-full text-xs p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100">
+                            </td>
+                            <td class="px-3 py-2">
+                                <select x-model="row.ddi"
+                                        class="w-full text-xs p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none font-semibold text-slate-700 dark:text-slate-200">
+                                    <option value="55">🇧🇷 Brasil (+55)</option>
+                                    <option value="1">🇺🇸 EUA / CA (+1)</option>
+                                    <option value="82">🇰🇷 Coreia (+82)</option>
+                                    <option value="81">🇯🇵 Japão (+81)</option>
+                                    <option value="351">🇵🇹 Portugal (+351)</option>
+                                    <option value="44">🇬🇧 Reino Unido (+44)</option>
+                                    <option value="54">🇦🇷 Argentina (+54)</option>
+                                    <option value="56">🇨🇱 Chile (+56)</option>
+                                    <option value="custom">🌐 Outro / Manual (+)</option>
+                                </select>
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="text" x-model="row.phone"
+                                       :placeholder="row.ddi === '55' ? '11 98888-7777 ou 11988887777' : (row.ddi === 'custom' ? '+DDI número completo' : 'DDD e número sem +')"
+                                       class="w-full text-xs font-mono p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100">
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="text" x-model="row.social_handle" placeholder="@usuario"
+                                       class="w-full text-xs p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none text-indigo-600 dark:text-indigo-400 font-semibold bg-slate-50/50 dark:bg-slate-800/50">
+                            </td>
+                            <td class="px-3 py-2">
+                                <input type="text" x-model="row.username" placeholder="Apelido curto"
+                                       class="w-full text-xs p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100">
+                            </td>
+                            <td class="px-3 py-2 text-center">
+                                <button type="button" @click="removeTableRow(idx)"
+                                        class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                                        title="Remover linha">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Botões de Envio da Grade -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" @click="addRow()"
+                    class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1.5 cursor-pointer">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Adicionar mais uma linha</span>
+            </button>
+
+            <button type="button" @click="saveTableRows()" :disabled="isSaving || tableRows.length === 0"
+                    class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition cursor-pointer">
+                <i data-lucide="save" class="w-4 h-4" x-show="!isSaving"></i>
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="isSaving"></i>
+                <span x-text="isSaving ? 'Salvando...' : 'Cadastrar Participantes da Grade'"></span>
+            </button>
+        </div>
+
+    </div>
+
+</div>

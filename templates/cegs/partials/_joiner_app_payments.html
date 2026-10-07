@@ -1,0 +1,156 @@
+<!-- MÉTODOS DE PAGAMENTO E RECÁLCULO FINANCEIRO PARA CONSULTA JOINER -->
+<script>
+window.joinerPaymentMethods = {
+    recalcStats() {
+        let itemPaid = 0, itemUnpaid = 0, interUnpaid = 0, taxaUnpaid = 0, readyCount = 0;
+        let deveItens = 0, deveFrete = 0, deveTaxa = 0;
+        let pagoItens = 0, pagoFrete = 0, pagoTaxa = 0;
+
+        this.items.forEach(it => {
+            const preco = parseFloat(it.preco || 0);
+            const frete = parseFloat(it.frete_inter_valor || 0);
+            const taxa = parseFloat(it.taxa_aduaneira_valor || 0);
+
+            if (it.is_item_paid) {
+                itemPaid++;
+                pagoItens += preco;
+            } else {
+                itemUnpaid++;
+                deveItens += preco;
+            }
+
+            if (frete > 0) {
+                if (it.is_frete_inter_paid) {
+                    pagoFrete += frete;
+                } else {
+                    interUnpaid++;
+                    deveFrete += frete;
+                }
+            }
+
+            if (taxa > 0) {
+                if (it.is_taxa_aduaneira_paid) {
+                    pagoTaxa += taxa;
+                } else {
+                    taxaUnpaid++;
+                    deveTaxa += taxa;
+                }
+            }
+
+            if (it.pode_empacotar) {
+                readyCount++;
+            }
+        });
+
+        const fnDevido = parseFloat(this.statsData.deve_frete_nacional || 0);
+        const fnPago = parseFloat(this.statsData.pago_frete_nacional || 0);
+
+        this.statsData.item_paid_count = itemPaid;
+        this.statsData.item_unpaid_count = itemUnpaid;
+        this.statsData.inter_unpaid_count = interUnpaid;
+        this.statsData.taxa_unpaid_count = taxaUnpaid;
+        this.statsData.ready_to_pack_count = readyCount;
+
+        this.statsData.deve_itens = deveItens;
+        this.statsData.deve_frete = deveFrete;
+        this.statsData.deve_taxa = deveTaxa;
+        this.statsData.total_devido = deveItens + deveFrete + deveTaxa + fnDevido;
+
+        this.statsData.pago_itens = pagoItens;
+        this.statsData.pago_frete = pagoFrete;
+        this.statsData.pago_taxa = pagoTaxa;
+        this.statsData.total_pago_historico = pagoItens + pagoFrete + pagoTaxa + fnPago;
+    },
+
+    async togglePayment(item, field) {
+        const key = item.uid + '_' + field;
+        if (this.isToggling(item.uid, field)) return;
+        this.togglingKeys.push(key);
+
+        const getCookie = (name) => {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        };
+
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrf = getCookie('csrftoken') || (csrfEl ? csrfEl.value : '');
+
+        const url = item.type === 'slot'
+            ? '/slots/' + item.id + '/toggle-payment/'
+            : '/itens-individuais/' + item.id + '/toggle-payment/';
+
+        const bodyData = item.type === 'slot'
+            ? { field: field }
+            : { tipo: field, field: field };
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(bodyData),
+            });
+
+            if (!res.ok) {
+                let errMsg = 'Status ' + res.status;
+                try {
+                    const errData = await res.json();
+                    errMsg = errData.message || errMsg;
+                } catch(e) {
+                    const errTxt = await res.text();
+                    console.error('Resposta de erro do servidor:', errTxt);
+                }
+                this.showToast('Erro: ' + errMsg);
+                alert('Não foi possível alterar status: ' + errMsg);
+                return;
+            }
+
+            const data = await res.json();
+            if (data.success) {
+                const idx = this.items.findIndex(it => it.uid === item.uid);
+                if (idx > -1) {
+                    if (data.is_item_paid !== undefined) this.items[idx].is_item_paid = Boolean(data.is_item_paid);
+                    if (data.is_frete_inter_paid !== undefined) this.items[idx].is_frete_inter_paid = Boolean(data.is_frete_inter_paid);
+                    if (data.is_taxa_aduaneira_paid !== undefined) this.items[idx].is_taxa_aduaneira_paid = Boolean(data.is_taxa_aduaneira_paid);
+                    if (data.pode_empacotar !== undefined) this.items[idx].pode_empacotar = Boolean(data.pode_empacotar);
+                    if (data.motivo_bloqueio !== undefined) this.items[idx].motivo_bloqueio = data.motivo_bloqueio || '';
+                }
+
+                if (data.is_item_paid !== undefined) item.is_item_paid = Boolean(data.is_item_paid);
+                if (data.is_frete_inter_paid !== undefined) item.is_frete_inter_paid = Boolean(data.is_frete_inter_paid);
+                if (data.is_taxa_aduaneira_paid !== undefined) item.is_taxa_aduaneira_paid = Boolean(data.is_taxa_aduaneira_paid);
+                if (data.pode_empacotar !== undefined) item.pode_empacotar = Boolean(data.pode_empacotar);
+                if (data.motivo_bloqueio !== undefined) item.motivo_bloqueio = data.motivo_bloqueio || '';
+
+                if (!item.pode_empacotar) {
+                    this.selectedUids = this.selectedUids.filter(u => u !== item.uid);
+                }
+
+                this.items = [...this.items];
+                this.recalcStats();
+                this.showToast(data.message || 'Status atualizado com sucesso!');
+            } else {
+                alert(data.message || 'Erro ao alterar status de pagamento.');
+            }
+        } catch (err) {
+            console.error('Erro no togglePayment:', err);
+            alert('Erro de conexão ao alterar status: ' + (err.message || err));
+        } finally {
+            this.togglingKeys = this.togglingKeys.filter(k => k !== key);
+        }
+    }
+};
+</script>

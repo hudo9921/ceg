@@ -1,0 +1,171 @@
+<!-- ABA 1: COLAR EM LOTE (EXCEL / SHEETS / TEXTO) -->
+<div x-show="activeTab === 'paste'" x-transition class="space-y-6">
+
+    <div class="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+
+        <!-- Instruções Rápidas e DDI Padrão -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div class="space-y-2 lg:col-span-2">
+                <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
+                    <span>1. Cole as linhas abaixo</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Você pode copiar diretamente de uma coluna do Excel/Sheets ou digitar livremente.
+                    Cada linha pode ter os campos separados por <b>tabulação (Ctrl+V do Excel)</b>, <b>vírgula (,)</b>, <b>ponto e vírgula (;)</b> ou <b>barra vertical (|)</b>.
+                </p>
+                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-[11px] font-mono text-slate-700 dark:text-slate-300 space-y-1">
+                    <div class="text-slate-400 dark:text-slate-500 uppercase text-[9px] font-sans font-bold">Exemplos válidos aceitos automaticamente:</div>
+                    <div>Maria Silva, 11 98888-7777, @mariasilva <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(Brasil com DDD)</span></div>
+                    <div>John Doe	+1 202 555 0199	@johndoe <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(EUA / Canadá)</span></div>
+                    <div>Kim Minji | +82 10 1234 5678 | @minjikim <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(Coreia do Sul)</span></div>
+                    <div>Pedro Santos, 55998765432, @pedrokpop <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(Brasil com DDD 55 RS)</span></div>
+                </div>
+            </div>
+
+            <!-- Seletor de DDI Padrão para números sem prefixo '+' -->
+            <div class="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-500/20 p-4 rounded-xl space-y-3">
+                <label class="block text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-indigo-500"></i>
+                    <span>DDI Padrão (sem +)</span>
+                </label>
+                <select x-model="defaultDDI" @change="parsePastedText()"
+                        class="w-full text-xs font-semibold bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-500/30 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="55">🇧🇷 Brasil (+55) — Adiciona 55 em números estilo DDD 9XXXX-XXXX</option>
+                    <option value="1">🇺🇸 EUA / Canadá (+1)</option>
+                    <option value="82">🇰🇷 Coreia do Sul (+82)</option>
+                    <option value="81">🇯🇵 Japão (+81)</option>
+                    <option value="351">🇵🇹 Portugal (+351)</option>
+                    <option value="44">🇬🇧 Reino Unido (+44)</option>
+                    <option value="54">🇦🇷 Argentina (+54)</option>
+                    <option value="56">🇨🇱 Chile (+56)</option>
+                    <option value="52">🇲🇽 México (+52)</option>
+                    <option value="34">🇪🇸 Espanha (+34)</option>
+                </select>
+                <p class="text-[11px] text-indigo-700/80 dark:text-indigo-400/80">
+                    * Números que começarem com <b>+</b> (ex: +1, +82) sempre preservam seu próprio código de país automaticamente.
+                </p>
+            </div>
+        </div>
+
+        <!-- Área de Colagem (Textarea) -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="align-left" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Área de Texto (Cole aqui)</span>
+                </label>
+                <div class="flex items-center gap-2 text-xs">
+                    <button type="button" @click="loadSampleData()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                        <i data-lucide="plus" class="w-3 h-3"></i>
+                        <span>Preencher Exemplo</span>
+                    </button>
+                    <span class="text-slate-300 dark:text-slate-700">|</span>
+                    <button type="button" @click="rawText = ''; previewItems = []" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-medium cursor-pointer">
+                        Limpar
+                    </button>
+                </div>
+            </div>
+            <textarea x-model="rawText" @input.debounce.300ms="parsePastedText()"
+                      rows="8"
+                      placeholder="Cole as linhas aqui...
+Exemplo:
+Beatriz Lima	11 98888-7777	@bialima
+John Walker	+1 202 555 0199	@jwalker
+Park Jihyo	+82 10 9999 8888	@jihyofan"
+                      class="w-full text-xs font-mono p-4 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"></textarea>
+        </div>
+
+        <!-- Ações e Pré-Visualização Instantânea -->
+        <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button type="button" @click="parsePastedText(true)" :disabled="isParsing"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                        <i data-lucide="zap" class="w-3.5 h-3.5" x-show="!isParsing"></i>
+                        <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin" x-show="isParsing"></i>
+                        <span x-text="isParsing ? 'Analisando...' : 'Analisar & Pré-visualizar'"></span>
+                    </button>
+
+                    <button type="button" @click="saveParsedItems()" :disabled="isSaving || validPreviewCount === 0"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition cursor-pointer">
+                        <i data-lucide="save" class="w-4 h-4" x-show="!isSaving"></i>
+                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="isSaving"></i>
+                        <span x-text="isSaving ? 'Salvando Participantes...' : `Cadastrar ${validPreviewCount} Participante(s)`"></span>
+                    </button>
+                </div>
+
+                <!-- Contadores de Validação -->
+                <div class="flex items-center gap-2 text-xs" x-show="previewItems.length > 0">
+                    <span class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                        <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span x-text="`${validPreviewCount} Válidos`"></span>
+                    </span>
+                    <span x-show="invalidPreviewCount > 0" class="bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
+                        <span x-text="`${invalidPreviewCount} Com Erro`"></span>
+                    </span>
+                    <span x-show="existingPreviewCount > 0" class="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span x-text="`${existingPreviewCount} Já Cadastrados (serão atualizados)`"></span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Tabela de Pré-visualização -->
+            <div x-show="previewItems.length > 0" class="overflow-hidden border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-xs">
+                <div class="max-h-80 overflow-y-auto custom-scrollbar">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                            <tr>
+                                <th class="px-3 py-2.5 text-left w-12">#</th>
+                                <th class="px-3 py-2.5 text-left">Status</th>
+                                <th class="px-3 py-2.5 text-left">Nome Completo</th>
+                                <th class="px-3 py-2.5 text-left">Telefone Formatado</th>
+                                <th class="px-3 py-2.5 text-left">WhatsApp (Banco)</th>
+                                <th class="px-3 py-2.5 text-left">Twitter / X</th>
+                                <th class="px-3 py-2.5 text-left">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                            <template x-for="(item, idx) in previewItems" :key="idx">
+                                <tr :class="!item.is_valid ? 'bg-rose-50/50 dark:bg-rose-950/20' : (item.already_exists ? 'bg-amber-50/30 dark:bg-amber-950/20' : '')">
+                                    <td class="px-3 py-2 text-slate-400 font-mono text-[11px]" x-text="idx + 1"></td>
+                                    <td class="px-3 py-2">
+                                        <template x-if="item.is_valid && !item.already_exists">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded font-bold text-[10px] border border-emerald-200 dark:border-emerald-500/30">
+                                                Novo
+                                            </span>
+                                        </template>
+                                        <template x-if="item.is_valid && item.already_exists">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 rounded font-bold text-[10px] border border-amber-200 dark:border-amber-500/30" title="Número já existe no banco de dados. Os dados serão atualizados.">
+                                                Atualizar
+                                            </span>
+                                        </template>
+                                        <template x-if="!item.is_valid">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 rounded font-bold text-[10px] border border-rose-200 dark:border-rose-500/30" :title="item.error">
+                                                Erro
+                                            </span>
+                                        </template>
+                                    </td>
+                                    <td class="px-3 py-2 font-bold text-slate-800 dark:text-slate-200" x-text="item.name || '—'"></td>
+                                    <td class="px-3 py-2 font-mono text-slate-700 dark:text-slate-300" x-text="formatPhoneDisplay(item.whatsapp)"></td>
+                                    <td class="px-3 py-2 font-mono text-slate-500 dark:text-slate-400 text-[11px]" x-text="item.whatsapp || '—'"></td>
+                                    <td class="px-3 py-2 text-indigo-600 dark:text-indigo-400 font-bold" x-text="item.social_handle || '—'"></td>
+                                    <td class="px-3 py-2 text-right">
+                                        <button type="button" @click="removePreviewItem(idx)" class="text-slate-400 hover:text-rose-600 font-bold text-sm cursor-pointer" title="Remover esta linha">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

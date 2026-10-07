@@ -1,0 +1,199 @@
+<script>
+    function caixaDetail() {
+        return {
+            linkModalOpen: false,
+            linkItemModalOpen: false,
+            addTipoModalOpen: false,
+            newTipoNome: '',
+            newTipoDescricao: '',
+            currentTab: 'all',
+            zoomImageUrl: null,
+            itemDragOver: false,
+            editItemModalOpen: false,
+            editingItem: {},
+            itemImagePreview: '',
+            itemImageBase64: '',
+            itemImageUrl: '',
+            tiposItem: JSON.parse(document.getElementById('tipos-item-data')?.textContent || '[]'),
+            itensIndividuais: JSON.parse(document.getElementById('itens-individuais-data')?.textContent || '[]'),
+
+            init() {
+                window.addEventListener('paste', (e) => {
+                    if (!this.editItemModalOpen) return;
+                    const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
+                    if (!items) return;
+                    let imageFile = null;
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            imageFile = items[i].getAsFile();
+                            break;
+                        }
+                    }
+                    if (imageFile) {
+                        e.preventDefault();
+                        this.handleFileChange({ target: { files: [imageFile] } });
+                    }
+                });
+            },
+
+            openEditItem(itemId) {
+                const item = this.itensIndividuais.find(i => i.id === itemId);
+                if (!item) return;
+                this.editingItem = Object.assign({}, item);
+                this.itemImagePreview = item.image_url || '';
+                this.itemImageBase64 = '';
+                this.itemImageUrl = item.image_url || '';
+                this.editItemModalOpen = true;
+            },
+            closeEditModal() {
+                this.editItemModalOpen = false;
+                this.editingItem = {};
+                this.itemImagePreview = '';
+                this.itemImageBase64 = '';
+                this.itemImageUrl = '';
+            },
+            handleFileChange(event) {
+                const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+                const file = files && files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.itemImagePreview = e.target.result;
+                        this.itemImageBase64 = e.target.result;
+                        this.itemImageUrl = '';
+                    };
+                    reader.readAsDataURL(file);
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        const fileInput = document.querySelector('#edit_item_caixa_form input[name="foto_arquivo"]');
+                        if (fileInput) fileInput.files = dt.files;
+                    } catch(err) {}
+                }
+            },
+            handleUrlChange() {
+                if (this.itemImageUrl) {
+                    this.itemImagePreview = this.itemImageUrl;
+                    this.itemImageBase64 = '';
+                }
+            },
+            clearImage() {
+                this.itemImagePreview = '';
+                this.itemImageBase64 = '';
+                this.itemImageUrl = '';
+                if (this.editingItem) {
+                    this.editingItem.image_url = '';
+                }
+                const fileInput = document.querySelector('#edit_item_caixa_form input[name="foto_arquivo"]');
+                if (fileInput) fileInput.value = '';
+            },
+
+            openZoom(url) {
+                if (url) this.zoomImageUrl = url;
+            },
+            closeZoom() {
+                this.zoomImageUrl = null;
+            },
+
+            copyToClipboard(text, msg = 'Copiado para a área de transferência!') {
+                if (!text) return;
+                navigator.clipboard.writeText(text).then(() => {
+                    alert(msg);
+                }).catch(err => {
+                    console.error('Falha ao copiar:', err);
+                });
+            },
+
+            async togglePayment(itemId, feeType) {
+                const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+                const csrf = csrfEl ? csrfEl.value : '';
+                const formData = new FormData();
+                formData.append('fee_type', feeType);
+                try {
+                    const res = await fetch(`/itens-individuais/${itemId}/toggle-payment/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrf,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Erro ao alterar status de pagamento.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Erro ao conectar com o servidor.');
+                }
+            },
+
+            async submitNewTipo() {
+                if (!this.newTipoNome.trim()) {
+                    alert('Por favor informe o nome do tipo de item.');
+                    return;
+                }
+                const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+                const csrf = csrfEl ? csrfEl.value : '';
+                const formData = new FormData();
+                formData.append('nome', this.newTipoNome.trim());
+                formData.append('descricao', this.newTipoDescricao.trim());
+                try {
+                    const res = await fetch('/tipos-item/criar/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrf,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (!this.tiposItem.some(t => t.id === data.tipo.id)) {
+                            this.tiposItem.push(data.tipo);
+                        }
+                        if (this.editingItem && this.editingItem.id) {
+                            this.editingItem.tipo_item_id = data.tipo.id;
+                            this.addTipoModalOpen = false;
+                            this.newTipoNome = '';
+                            this.newTipoDescricao = '';
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert(data.message || 'Erro ao criar tipo de item.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Erro ao conectar com o servidor.');
+                }
+            },
+
+            async deleteTipo(tipoId, tipoNome) {
+                if (!confirm(`Tem certeza que deseja excluir o tipo de item "${tipoNome}"?`)) return;
+                const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+                const csrf = csrfEl ? csrfEl.value : '';
+                try {
+                    const res = await fetch(`/tipos-item/${tipoId}/deletar/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrf,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Erro ao excluir tipo.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Erro ao conectar com o servidor.');
+                }
+            }
+        };
+    }
+</script>

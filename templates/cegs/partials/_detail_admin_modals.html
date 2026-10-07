@@ -1,0 +1,1856 @@
+<!-- =======================================================================
+     MODAIS DE GESTÃO DO ORGANIZADOR / STAFF (CEG DETAIL)
+     100% Lucide Icons & Suporte a Dark Mode (Cyber-Luxury / Soft Y2K)
+     ======================================================================= -->
+{% if user.is_staff %}
+<!-- Modal para Editar Informações e Foto da CEG (Organizador) -->
+        <div x-show="editCegModalOpen" x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+            @keydown.escape.window="editCegModalOpen = false">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 transform transition-all max-h-[90vh] overflow-y-auto"
+                @click.away="editCegModalOpen = false">
+
+                <!-- Cabeçalho do Modal -->
+                <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl shadow-xs">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-lg font-black text-slate-900 dark:text-white">Editar Informações da CEG</h3>
+                            <p class="text-xs text-slate-500">Altere foto de capa, título, era, status, regras e dados
+                                de pagamento.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="editCegModalOpen = false"
+                        class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver text-xl font-bold cursor-pointer">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form action="{% url 'update_ceg' ceg.slug %}" method="POST" enctype="multipart/form-data"
+                    class="space-y-5 text-xs">
+                    {% csrf_token %}
+                    <input type="hidden" name="remove_banner" :value="removeBannerFlag ? '1' : '0'">
+
+                    <!-- 1. Foto de Capa / Banner Promocional -->
+                    <div class="p-4 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label
+                                class="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <span><i data-lucide="image" class="w-4 h-4"></i></span> Foto de Capa / Banner da CEG
+                            </label>
+                            <span
+                                class="text-[10px] text-pink-600 font-bold bg-pink-50 px-2 py-0.5 rounded border border-pink-100">
+                                Imagem de Destaque
+                            </span>
+                        </div>
+
+                        <!-- Preview da Imagem Adaptativo (Sem Cortes + Blur Ambiente) -->
+                        <div x-show="editPhotoPreview"
+                            class="relative rounded-xl overflow-hidden border border-slate-300 h-52 bg-slate-950 flex items-center justify-center group shadow-inner">
+                            <img :src="editPhotoPreview" alt=""
+                                class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none select-none">
+                            <img :src="editPhotoPreview" alt="Preview do Banner"
+                                class="relative z-10 max-h-52 w-auto max-w-full object-contain mx-auto select-none">
+                            <button type="button" @click="clearPhoto()"
+                                class="absolute top-2 right-2 z-20 px-2.5 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                                <span><i data-lucide="trash-2" class="w-4 h-4"></i></span> Remover Foto
+                            </button>
+                        </div>
+
+                        <!-- Alerta Visual se a Imagem For Muito Pesada -->
+                        <div x-show="editPhotoError" x-cloak
+                            class="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start justify-between gap-2 shadow-xs">
+                            <div class="flex items-start gap-2">
+                                <span class="text-base leading-none"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i></span>
+                                <span class="font-bold" x-text="editPhotoError"></span>
+                            </div>
+                            <button type="button" @click="editPhotoError = ''"
+                                class="text-rose-500 hover:text-rose-800 font-bold px-1 text-sm cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+
+                        <!-- Dropzone Interativo: Clique para PC, Arrastar ou Ctrl+V -->
+                        <div @dragover.prevent="editPhotoDragOver = true" @dragleave.prevent="editPhotoDragOver = false"
+                            @drop.prevent="onPhotoDropped($event)"
+                            @click="document.getElementById('ceg_banner_file_input').click()"
+                            :class="editPhotoDragOver ? 'border-pink-500 bg-pink-50 ring-2 ring-pink-300' : 'border-slate-300 bg-white hover:bg-purple-50/30 dark:bg-cyber-elevated/50 hover:border-pink-300'"
+                            class="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 select-none">
+                            <span class="text-2xl"><i data-lucide="clipboard-list" class="w-4 h-4"></i></span>
+                            <p class="text-xs font-bold text-slate-800">
+                                Clique para selecionar do PC ou dê <kbd
+                                    class="px-2 py-0.5 bg-pink-100 text-pink-800 border border-pink-200 rounded font-black text-xs">Ctrl
+                                    + V</kbd> nesta tela
+                            </p>
+                            <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 flex-wrap">
+                                <span>Ou arraste um arquivo (JPG, PNG, WEBP)</span>
+                                <span class="font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded border border-pink-200 text-[10px] uppercase tracking-wider">Máx 5 MB</span>
+                            </p>
+                        </div>
+
+                        <!-- Inputs Ocultos de Arquivo e Base64 -->
+                        <input type="file" id="ceg_banner_file_input" name="banner_file" accept="image/*" class="hidden"
+                            @change="onPhotoSelected($event)">
+                        <input type="hidden" name="banner_base64" :value="editPhotoBase64">
+
+                        <!-- Link Direto / URL -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">
+                                <i data-lucide="link" class="w-4 h-4"></i> Ou cole o Link / URL Direto da Imagem:
+                            </label>
+                            <input type="text" id="ceg_banner_url_input" name="banner_url" :value="editPhotoUrl"
+                                @input="onUrlInput($event)" placeholder="https://exemplo.com/foto-ceg.jpg"
+                                class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                        </div>
+                    </div>
+
+                    <!-- 2. Identificação & Vinculações -->
+                    <div class="p-4 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+                        <label
+                            class="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span><i data-lucide="file-text" class="w-4 h-4"></i></span> Identificação & Vínculos
+                        </label>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Título da CEG:</label>
+                            <input type="text" name="title" value="{{ ceg.title }}" required
+                                class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Grupo & Era:</label>
+                                <select name="era_id"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    {% for e in all_eras %}
+                                    <option value="{{ e.id }}" {% if e.id == ceg.era_id %}selected{% endif %}>
+                                        {{ e.group.name }} — {{ e.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Caixa / Remessa
+                                    Vinculada:</label>
+                                <select name="caixa_id"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    <option value="">Nenhuma Caixa Vinculada</option>
+                                    {% for c in all_caixas %}
+                                    <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                        {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}
+                                        {{ c.nome }} ({{ c.get_status_display }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Status e Prazos -->
+                    <div class="p-4 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+                        <label
+                            class="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span><i data-lucide="clock" class="w-4 h-4"></i></span> Status & Prazos
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Status da CEG:</label>
+                                <select name="status"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                                    {% for code, label in status_choices %}
+                                    <option value="{{ code }}" {% if ceg.status == code %}selected{% endif %}>{{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Prazo Pagamento do
+                                    Item:</label>
+                                <input type="datetime-local" name="prazo_pagamento_item"
+                                    value="{{ ceg.prazo_pagamento_item|date:'Y-m-d\TH:i' }}"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200 dark:border-white/10/60">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">
+                                    Abertura / Standby (Contagem Regressiva):
+                                </label>
+                                <input type="datetime-local" name="opens_at"
+                                    value="{{ ceg.opens_at|date:'Y-m-d\TH:i' }}"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <span class="text-[10px] text-slate-400">Se futura, a página pública ativa o
+                                    cronômetro.</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Encerramento da
+                                    CEG:</label>
+                                <input type="datetime-local" name="closes_at"
+                                    value="{{ ceg.closes_at|date:'Y-m-d\TH:i' }}"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <span class="text-[10px] text-slate-400">Opcional. Data em que as reservas
+                                    fecham.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Pagamento Pix & Regras -->
+                    <div class="p-4 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+                        <label
+                            class="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <span><i data-lucide="credit-card" class="w-4 h-4"></i></span> Dados Pix & Regras
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Chave Pix (Padrão / Itens):</label>
+                                <input type="text" name="pix_key" value="{{ ceg.pix_key }}"
+                                    placeholder="exemplo@email.com ou CPF/Telefone"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Instruções Pix (Itens / Geral):</label>
+                                <input type="text" name="pix_instructions" value="{{ ceg.pix_instructions }}"
+                                    placeholder="Ex: Anexar comprovante com nome no WhatsApp"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-white/10/60">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1 flex items-center gap-1">
+                                    <span><i data-lucide="plane" class="w-4 h-4"></i></span> Chave Pix (Frete Internacional):
+                                </label>
+                                <input type="text" name="pix_key_frete" value="{{ ceg.pix_key_frete|default:'' }}"
+                                    placeholder="Opcional. Deixe vazio para usar a chave padrão"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Instruções Pix (Frete):</label>
+                                <input type="text" name="pix_instructions_frete" value="{{ ceg.pix_instructions_frete|default:'' }}"
+                                    placeholder="Ex: Chave Pix da transportadora ou conta de frete"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-white/10/60">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1 flex items-center gap-1">
+                                    <span><i data-lucide="landmark" class="w-4 h-4"></i></span> Chave Pix (Taxa Aduaneira):
+                                </label>
+                                <input type="text" name="pix_key_taxa" value="{{ ceg.pix_key_taxa|default:'' }}"
+                                    placeholder="Opcional. Deixe vazio para usar a chave padrão"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Instruções Pix (Taxa):</label>
+                                <input type="text" name="pix_instructions_taxa" value="{{ ceg.pix_instructions_taxa|default:'' }}"
+                                    placeholder="Ex: Chave Pix para quitação da alfândega"
+                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver mb-1">Regras e Informações da
+                                CEG:</label>
+                            <textarea name="description" rows="3"
+                                placeholder="Regras de frete internacional, prazos, avisos e orientações aos participantes..."
+                                class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-normal text-slate-800 focus:ring-2 focus:ring-pink-500">{{ ceg.description }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="flex items-center justify-end gap-3 pt-3 border-t border-purple-100/60 dark:border-white/5">
+                        <button type="button" @click="editCegModalOpen = false"
+                            class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-cyber-silver font-bold text-xs rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-6 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+                            <span><i data-lucide="save" class="w-4 h-4"></i></span> Salvar Alterações da CEG
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para Atualizar Taxas e Prazos da CEG (Organizador) -->
+        <div x-show="feeModalOpen" x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+            @keydown.escape.window="feeModalOpen = false">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all"
+                @click.away="feeModalOpen = false">
+                <div class="flex justify-between items-center border-b border-purple-100/60 dark:border-white/5 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl"><i data-lucide="circle-dollar-sign" class="w-4 h-4"></i></span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">Atualizar Taxas & Prazos da CEG</h3>
+                            <p class="text-[11px] text-slate-500">Altere os prazos e informe os valores do frete inter e
+                                taxa aduaneira.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="feeModalOpen = false"
+                        class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver text-lg font-bold">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form action="{% url 'update_ceg_fees' ceg.slug %}" method="POST" class="space-y-4 text-xs">
+                    {% csrf_token %}
+
+                    <!-- Item -->
+                    <div class="p-3.5 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-1">
+                        <label class="block font-bold text-slate-700 dark:text-cyber-silver">1. Prazo para Pagamento do Item</label>
+                        <input type="datetime-local" name="prazo_pagamento_item"
+                            value="{{ ceg.prazo_pagamento_item|date:'Y-m-d\TH:i' }}"
+                            class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white font-semibold text-slate-800">
+                        <span class="text-[10px] text-slate-400">Data limite para os participantes pagarem o valor do
+                            item.</span>
+                    </div>
+
+                    <!-- Frete Inter -->
+                    <div class="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2">
+                        <label class="block font-bold text-blue-950">2. Frete Internacional</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Valor (R$)</span>
+                                <input type="number" step="0.01" min="0" name="frete_inter"
+                                    value="{{ ceg.frete_inter|default_if_none:'' }}" placeholder="Ex: 35.00"
+                                    class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Prazo de
+                                    Pagamento</span>
+                                <input type="datetime-local" name="prazo_pagamento_frete_inter"
+                                    value="{{ ceg.prazo_pagamento_frete_inter|date:'Y-m-d\TH:i' }}"
+                                    class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg font-semibold text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Taxa Aduaneira -->
+                    <div class="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-2">
+                        <label class="block font-bold text-emerald-950">3. Taxa Aduaneira / Alfândega</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Valor (R$)</span>
+                                <input type="number" step="0.01" min="0" name="taxa_aduaneira"
+                                    value="{{ ceg.taxa_aduaneira|default_if_none:'' }}" placeholder="Ex: 25.00"
+                                    class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 font-semibold block mb-1">Prazo de
+                                    Pagamento</span>
+                                <input type="datetime-local" name="prazo_pagamento_taxa_aduaneira"
+                                    value="{{ ceg.prazo_pagamento_taxa_aduaneira|date:'Y-m-d\TH:i' }}"
+                                    class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg font-semibold text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caixa / Remessa Internacional -->
+                    <div class="p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block font-bold text-indigo-950">4. Caixa / Remessa Internacional</label>
+                            {% if ceg.caixa %}
+                            <a href="{% url 'caixa_detail' slug=ceg.caixa.slug %}" target="_blank"
+                                class="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 hover:underline">
+                                Ver Remessa ↗
+                            </a>
+                            {% endif %}
+                        </div>
+                        <select name="caixa_id"
+                            class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg font-semibold text-slate-800">
+                            <option value="" {% if not ceg.caixa %}selected{% endif %}>-- Nenhuma (Sem Caixa /
+                                Desvincular) --</option>
+                            {% for c in all_caixas %}
+                            <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
+                                {{ c.nome }} ({{ c.get_status_display }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="text-[10px] text-slate-500 block">
+                            Ao alterar a caixa, o status de envio da CEG é sincronizado automaticamente com o da remessa
+                            selecionada.
+                        </span>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2 border-t border-purple-100/60 dark:border-white/5">
+                        <button type="button" @click="feeModalOpen = false"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-cyber-silver font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition">
+                            ✔ Salvar Taxas & Prazos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Gerenciamento de Slot (Editar Preço & Trocar/Remover Claim) -->
+        <div x-show="manageSlotModalOpen" x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+            @keydown.escape.window="closeManageSlotModal()">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-4xl w-full shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[92vh] transform transition-all"
+                @click.away="closeManageSlotModal()">
+
+                <!-- Cabeçalho do Modal -->
+                <div
+                    class="px-6 py-4 border-b border-purple-100/60 dark:border-white/5 flex items-center justify-between bg-purple-50/30 dark:bg-cyber-elevated/50/80 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl shadow-xs shrink-0">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                Gerenciar Slot • Set #<span x-text="managedSlot ? managedSlot.setNumber : ''"></span>
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold"
+                                x-text="managedSlot ? (managedSlot.member ? managedSlot.member + ' — ' : '') + managedSlot.name : ''">
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeManageSlotModal()"
+                        class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver text-xl font-bold p-1 rounded-lg hover:bg-slate-100 transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Formulário de Gerenciamento com 2 Colunas e Rodapé Fixo -->
+                <form @submit.prevent="submitManageSlot()" class="flex flex-col flex-1 overflow-hidden">
+
+                    <!-- Conteúdo Rolável (Grid 2 Colunas) -->
+                    <div class="p-6 overflow-y-auto flex-1">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+
+                            <!-- COLUNA 1 (Esquerda): Identificação e Preço -->
+                            <div class="space-y-4">
+                                <!-- 1. Edição do Tipo do Item & Identificação -->
+                                <div class="p-4 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3 shadow-2xs">
+                                    <div class="flex items-center justify-between">
+                                        <label
+                                            class="block font-black text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                            <span><i data-lucide="tag" class="w-4 h-4"></i></span> Tipo e Identificação do Item
+                                        </label>
+                                        <span
+                                            class="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                            Definição na CEG
+                                        </span>
+                                    </div>
+
+                                    <!-- Seletor Unificado do Tipo do Item (Pool compartilhada com Caixas) -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center justify-between">
+                                            <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver">Tipo do
+                                                Item:</label>
+                                            <button type="button" @click="openNewTipoInline('manage')"
+                                                class="text-[10px] text-purple-600 font-bold hover:text-purple-800 flex items-center gap-1 cursor-pointer">
+                                                <span><i data-lucide="plus" class="w-3.5 h-3.5"></i></span> Novo Tipo
+                                            </button>
+                                        </div>
+                                        <select x-model="manageTipoItemId" required
+                                            class="w-full px-2.5 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                            <template x-for="tip in tipoItemList" :key="tip.id">
+                                                <option :value="tip.id" x-text="tip.nome"
+                                                    :selected="String(tip.id) === String(manageTipoItemId)"></option>
+                                            </template>
+                                        </select>
+                                        <div
+                                            class="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                                            <span>Pool compartilhada com as Caixas.</span>
+                                            <button type="button" @click="applyTipoPrefixToName()"
+                                                class="text-purple-600 font-semibold hover:underline cursor-pointer">
+                                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Ajustar prefixo no nome
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Nome do Item & Integrante -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Nome do
+                                                Item:</label>
+                                            <input type="text" x-model="manageName" required
+                                                placeholder="Ex: Photocard Sakura 1"
+                                                class="w-full px-2.5 py-1.5 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Integrante
+                                                (Opcional):</label>
+                                            <input type="text" x-model="manageMember" placeholder="Ex: Sakura 1"
+                                                class="w-full px-2.5 py-1.5 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Edição do Valor do Item -->
+                                <div class="p-4 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2.5 shadow-2xs">
+                                    <label
+                                        class="block font-black text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                        <span><i data-lucide="circle-dollar-sign" class="w-4 h-4"></i></span> Preço do Item neste Slot (R$)
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 font-bold text-slate-400">R$</span>
+                                        <input type="number" step="0.01" min="0" required x-model="managePrice"
+                                            placeholder="0.00"
+                                            class="w-full pl-9 pr-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white font-black text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                    </div>
+                                    <label class="flex items-start gap-2 pt-1 cursor-pointer select-none">
+                                        <input type="checkbox" x-model="manageApplyAllSets"
+                                            class="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                        <span class="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                                            Replicar este novo valor para <strong>todos os Sets</strong> deste photocard
+                                            na CEG.
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- COLUNA 2 (Direita): Reserva (Claim) e Exclusão -->
+                            <div class="space-y-4">
+                                <!-- 3. Gerenciamento de Reserva (Claim) -->
+                                <div
+                                    class="p-4 bg-purple-50/40 rounded-xl border border-purple-200/80 space-y-3 shadow-2xs">
+                                    <div class="flex items-center justify-between">
+                                        <span
+                                            class="font-black text-purple-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                            <span><i data-lucide="user" class="w-4 h-4"></i></span> Gerenciar Reserva (Claim)
+                                        </span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded"
+                                            :class="managedSlot && managedSlot.claimedById ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'"
+                                            x-text="managedSlot && managedSlot.claimedById ? (managedSlot.isItemPaid ? '✔ Confirmado / Pago' : '<i data-lucide="lock" class="w-4 h-4"></i> Reservado') : '○ Disponível'">
+                                        </span>
+                                    </div>
+
+                                    <!-- Caso o Slot esteja Reservado atualmente -->
+                                    <template x-if="managedSlot && managedSlot.claimedById">
+                                        <div class="space-y-3">
+                                            <!-- Info do Participante Atual -->
+                                            <div
+                                                class="p-2.5 bg-white rounded-lg border border-purple-100 flex items-center justify-between">
+                                                <div class="truncate">
+                                                    <div class="font-bold text-slate-900 dark:text-white"
+                                                        x-text="managedSlot.claimedByName"></div>
+                                                    <div class="text-[10px] text-pink-600 font-mono"
+                                                        x-text="managedSlot.claimedByHandle || 'Sem rede social'"></div>
+                                                </div>
+                                                <span
+                                                    class="text-[10px] bg-slate-100 text-slate-600 dark:text-slate-400 font-semibold px-2 py-0.5 rounded">
+                                                    Atual
+                                                </span>
+                                            </div>
+
+                                            <!-- Ação de Remover Reserva -->
+                                            <div class="p-2.5 rounded-lg border transition"
+                                                :class="manageRemoveClaim ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200 dark:border-white/10'">
+                                                <label class="flex items-start gap-2 cursor-pointer select-none">
+                                                    <input type="checkbox" x-model="manageRemoveClaim"
+                                                        class="mt-0.5 rounded border-red-300 text-red-600 focus:ring-red-500">
+                                                    <div>
+                                                        <span class="font-bold text-red-700 block text-xs">
+                                                            <i data-lucide="trash-2" class="w-4 h-4"></i> Remover reserva (Liberar slot como Disponível)
+                                                        </span>
+                                                        <span class="text-[10px] text-slate-500 block leading-tight">
+                                                            Exclui a reserva do participante atual e disponibiliza o
+                                                            slot imediatamente para quem quiser reservar.
+                                                        </span>
+                                                    </div>
+                                                </label>
+                                            </div>
+
+                                            <!-- Ação de Trocar Participante (se não for remover) -->
+                                            <div x-show="!manageRemoveClaim" class="space-y-1.5 pt-1">
+                                                <label class="block font-bold text-slate-700 dark:text-cyber-silver text-[11px]">
+                                                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Trocar por outro participante cadastrado:
+                                                </label>
+                                                <select x-model="manageParticipantId"
+                                                    class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                    <option value="">-- Manter participante atual --</option>
+                                                    <template x-for="p in allParticipants" :key="p.id">
+                                                        <option :value="p.id"
+                                                            x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                                                        </option>
+                                                    </template>
+                                                </select>
+                                                <span class="text-[10px] text-slate-400">Transfere a reserva deste slot
+                                                    para o participante selecionado.</span>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Caso o Slot esteja Disponível no momento -->
+                                    <template x-if="managedSlot && !managedSlot.claimedById">
+                                        <div class="space-y-2">
+                                            <p class="text-[11px] text-slate-500">
+                                                Este slot está <strong>livre</strong>. Você pode atribuí-lo diretamente
+                                                a um participante cadastrado:
+                                            </p>
+                                            <select x-model="manageParticipantId"
+                                                class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                <option value="">-- Deixar Disponível (Nenhum) --</option>
+                                                <template x-for="p in allParticipants" :key="p.id">
+                                                    <option :value="p.id"
+                                                        x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp + (p.social_handle ? ' • ' + p.social_handle : '')">
+                                                    </option>
+                                                </template>
+                                            </select>
+                                            <div class="pt-1">
+                                                <button type="button" @click="promoteWaitingOnSlot(managedSlot.id)"
+                                                    class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                                                    <span><i data-lucide="zap" class="w-4 h-4"></i></span> Alocar 1º Colocado da Fila de Espera
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- 4. Zona de Exclusão e Remoção do Item / Slot -->
+                                <div class="p-4 bg-rose-50/60 rounded-xl border border-rose-200 space-y-2 shadow-2xs">
+                                    <label
+                                        class="block font-black text-rose-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                        <span><i data-lucide="trash-2" class="w-4 h-4"></i></span> Exclusão e Remoção
+                                    </label>
+                                    <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">
+                                        Exclua este item da CEG ou remova apenas a vaga deste Set caso não vá
+                                        utilizá-lo.
+                                    </p>
+                                    <div class="flex flex-wrap gap-2 pt-1">
+                                        <button type="button" @click="deleteManagedItemDefinition()"
+                                            :disabled="manageLoading"
+                                            class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                            <span><i data-lucide="trash-2" class="w-4 h-4"></i></span> Excluir Item da CEG Inteira
+                                        </button>
+                                        {% if sets|length > 1 %}
+                                        <button type="button" @click="deleteManagedSingleSlot()"
+                                            :disabled="manageLoading"
+                                            class="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 font-bold text-xs rounded-lg border border-rose-300 transition shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                            Remover apenas este Slot do Set #<span
+                                                x-text="managedSlot ? managedSlot.setNumber : ''"></span>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação do Rodapé Fixo -->
+                    <div class="px-6 py-3.5 bg-purple-50/30 dark:bg-cyber-elevated/50 border-t border-slate-200 dark:border-white/10 flex justify-end gap-3 shrink-0">
+                        <button type="button" @click="closeManageSlotModal()" :disabled="manageLoading"
+                            class="px-5 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-cyber-silver font-bold rounded-xl transition cursor-pointer text-xs">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="manageLoading"
+                            class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-xs">
+                            <span x-show="manageLoading" class="animate-spin">⌛</span>
+                            <span><i data-lucide="save" class="w-4 h-4"></i> Salvar Alterações</span>
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Modal de Alteração de Tipo em Massa -->
+        <div x-show="bulkTypeModalOpen" x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+            @keydown.escape.window="closeBulkTypeModal()">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-purple-100/60 dark:border-white/5"
+                @click.away="closeBulkTypeModal()">
+
+                <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span
+                            class="w-9 h-9 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-lg shadow-xs">
+                            <i data-lucide="tag" class="w-4 h-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                Alterar Tipo em Massa
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold"
+                                x-text="selectedSlotIds.length + ' vaga(s) / ' + selectedItemDefIds.length + ' item(ns) selecionado(s)'">
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkTypeModal()"
+                        class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver text-lg font-bold">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitBulkType()" class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block font-bold text-slate-700 dark:text-cyber-silver">Novo Tipo de Item para os
+                                    Selecionados:</label>
+                                <button type="button" @click="openNewTipoInline('bulk')"
+                                    class="text-[10px] text-pink-600 font-bold hover:underline flex items-center gap-1 cursor-pointer">
+                                    <span><i data-lucide="plus" class="w-3.5 h-3.5"></i></span> Novo Tipo
+                                </button>
+                            </div>
+                            <select x-model="bulkNewTipoItemId" required
+                                class="w-full px-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500">
+                                <template x-for="tip in tipoItemList" :key="tip.id">
+                                    <option :value="tip.id" x-text="tip.nome"
+                                        :selected="String(tip.id) === String(bulkNewTipoItemId)"></option>
+                                </template>
+                            </select>
+                            <p class="text-[10px] text-slate-500 mt-1">
+                                Pool compartilhada com as Caixas e Itens da CEG.
+                            </p>
+                        </div>
+
+                        <div class="p-3 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="bulkUpdatePrefix"
+                                    class="mt-0.5 rounded border-slate-300 text-pink-600 focus:ring-pink-500">
+                                <span class="text-[11px] text-slate-700 dark:text-cyber-silver font-semibold leading-tight">
+                                    Atualizar automaticamente o prefixo do nome dos itens com o novo tipo (ex: trocar
+                                    'Photocard Sakura' por 'POB Sakura' ou 'Álbum Sakura').
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-purple-100/60 dark:border-white/5">
+                        <button type="button" @click="closeBulkTypeModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-cyber-silver font-bold rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="bulkLoading"
+                            class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                            <span x-show="bulkLoading" class="animate-spin"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                            <span>Aplicar aos Selecionados</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Alteração de Preço em Massa -->
+        <div x-show="bulkPriceModalOpen" x-cloak
+            class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+            @keydown.escape.window="closeBulkPriceModal()">
+            <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-md w-full p-6 shadow-2xl space-y-5 transform transition-all border border-purple-100/60 dark:border-white/5"
+                @click.away="closeBulkPriceModal()">
+
+                <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span
+                            class="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg shadow-xs">
+                            <i data-lucide="circle-dollar-sign" class="w-4 h-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                Alterar Preço em Massa
+                            </h3>
+                            <p class="text-xs text-slate-500 font-semibold"
+                                x-text="selectedSlotIds.length + ' vaga(s) selecionada(s)'"></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeBulkPriceModal()"
+                        class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver text-lg font-bold">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitBulkPrice()" class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1">Novo Preço Unitário (R$):</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 font-bold text-slate-400">R$</span>
+                                <input type="number" step="0.01" min="0" required x-model="bulkNewPrice"
+                                    placeholder="0.00"
+                                    class="w-full pl-9 pr-3 py-2 bg-white dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white font-black text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-purple-50/40 dark:bg-cyber-elevated/60 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2">
+                            <label class="flex items-start gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="bulkApplyAllSets"
+                                    class="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                <span class="text-[11px] text-slate-700 dark:text-cyber-silver font-semibold leading-tight">
+                                    Aplicar este novo preço a todos os Sets dos itens selecionados nesta CEG.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-3 border-t border-purple-100/60 dark:border-white/5">
+                        <button type="button" @click="closeBulkPriceModal()"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-cyber-silver font-bold rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="bulkLoading"
+                            class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                            <span x-show="bulkLoading" class="animate-spin"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                            <span>Aplicar Novo Preço</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+<!-- Modal de Confirmação para Excluir Set e Notificar Participantes -->
+<div x-show="deleteSetModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+    @keydown.escape.window="closeDeleteSetModal()">
+
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-200 dark:border-white/10 dark:border-rose-900/40 max-h-[90vh] flex flex-col"
+        @click.away="closeDeleteSetModal()">
+
+        <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span
+                    class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg shadow-2xs border border-rose-100 dark:border-rose-900/50">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white dark:text-white flex items-center gap-1.5">
+                        <span>Excluir Set</span>
+                        <span class="text-rose-600 dark:text-rose-400" x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span>
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[280px]">{{ ceg.title }}</p>
+                </div>
+            </div>
+            <button type="button" @click="closeDeleteSetModal()"
+                class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver dark:hover:text-white text-xl font-bold cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3.5 text-xs text-slate-600 dark:text-slate-400 dark:text-slate-300 overflow-y-auto pr-1">
+            <!-- Explicação do que está acontecendo -->
+            <div class="p-3 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-xs space-y-1.5 text-rose-950 dark:text-rose-200">
+                <div class="font-black flex items-center gap-1.5 text-rose-900 dark:text-rose-300">
+                    <span><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i></span> O que acontece ao excluir este Set?
+                </div>
+                <ul class="text-[11px] space-y-1 text-rose-900/90 dark:text-rose-300/90 list-disc list-inside">
+                    <li>O <strong>Set <span x-text="setToDelete ? '#' + setToDelete.setNumber : ''"></span></strong> e todos os seus slots serão permanentemente apagados.</li>
+                    <li>Quaisquer reservas ativas neste set serão canceladas de imediato.</li>
+                    <li>Esta ação é <strong>definitiva e irreversível</strong>.</li>
+                </ul>
+            </div>
+
+            <!-- Lista de Participantes Afetados se houver reservas -->
+            <template x-if="setToDelete && setToDelete.claimedSlots && setToDelete.claimedSlots.length > 0">
+                <div class="space-y-2">
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-2xl space-y-2 text-amber-900 dark:text-amber-200">
+                        <div class="font-bold flex items-center justify-between text-xs text-amber-900 dark:text-amber-300">
+                            <span class="flex items-center gap-1.5">
+                                <span>👥</span> Reservas ativas no set (<span
+                                    x-text="setToDelete.claimedSlots.length"></span>)
+                            </span>
+                            <span class="text-[10px] bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-black border border-amber-300 dark:border-amber-700">
+                                Serão Canceladas
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                            Os seguintes participantes estão com vagas confirmadas neste set:
+                        </p>
+
+                        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                            <template x-for="slot in setToDelete.claimedSlots" :key="slot.id">
+                                <div
+                                    class="bg-white dark:bg-slate-800 p-2 rounded-xl border border-amber-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs">
+                                    <div class="min-w-0">
+                                        <div class="font-bold text-slate-900 dark:text-white dark:text-white truncate">
+                                            <span x-text="slot.participantName"></span>
+                                            <template x-if="slot.socialHandle">
+                                                <span class="text-[10px] font-normal text-slate-400 dark:text-slate-400"
+                                                    x-text="' (' + slot.socialHandle + ')'"></span>
+                                            </template>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                            <span class="font-medium text-purple-700 dark:text-purple-300 truncate"
+                                                x-text="slot.name"></span>
+                                            <span>•</span>
+                                            <span class="font-mono text-slate-800 dark:text-slate-200" x-text="'R$ ' + slot.price"></span>
+                                            <template x-if="slot.isPaid">
+                                                <span
+                                                    class="text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 font-bold px-1.5 py-0.2 rounded text-[9px] border border-emerald-200 dark:border-emerald-800">Pago
+                                                    ✔</span>
+                                            </template>
+                                            <template x-if="!slot.isPaid">
+                                                <span
+                                                    class="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 font-semibold px-1.5 py-0.2 rounded text-[9px]">Pendente</span>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <template x-if="slot.whatsapp">
+                                            <a :href="'https://wa.me/' + slot.whatsapp + '?text=' + encodeURIComponent('Olá, ' + slot.participantName + '! Informamos que o Set #' + setToDelete.setNumber + ' da compra em grupo '{{ ceg.title|escapejs }}' precisou ser cancelado por não atingir o fechamento. Seu item reservado era: ' + slot.name + ' (' + (slot.isPaid ? 'Pago' : 'Pendente') + ').')"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                                title="Conversar com este participante no WhatsApp">
+                                                <span><i data-lucide="message-circle" class="w-3.5 h-3.5"></i></span> WhatsApp
+                                            </a>
+                                        </template>
+                                        <button type="button" @click="copyCancelMessage(slot)"
+                                            class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-white/10 dark:border-slate-700 text-[10px] cursor-pointer transition shadow-2xs"
+                                            title="Copiar mensagem para este participante">
+                                            <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Opção de Notificação Automática -->
+                    <div class="p-3 bg-purple-50/30 dark:bg-cyber-elevated/50 dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 dark:border-slate-700 rounded-2xl space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800 dark:text-slate-200">
+                            <input type="checkbox" name="notify_participants_check" value="true"
+                                x-model="notifyParticipants"
+                                class="w-4 h-4 text-pink-600 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-pink-500 cursor-pointer">
+                            <span>Enviar notificação automática via WhatsApp</span>
+                        </label>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 pl-6">
+                            O sistema disparará mensagem via WhatsApp Gateway para cada participante com seus
+                            respectivos itens cancelados e orientações de estorno/crédito.
+                        </p>
+
+                        <div x-show="notifyParticipants" class="pl-6 pt-1 space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver dark:text-slate-300">
+                                Recado adicional do organizador (opcional):
+                            </label>
+                            <textarea x-model="customCancelMessage" rows="2"
+                                placeholder="Ex: Não atingimos o mínimo a tempo. Quem já efetuou o pagamento receberá o estorno via Pix ainda hoje!"
+                                class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Mensagem se não houver reservas -->
+            <template x-if="setToDelete && (!setToDelete.claimedSlots || setToDelete.claimedSlots.length === 0)">
+                <div
+                    class="p-3 bg-purple-50/30 dark:bg-cyber-elevated/50 dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-400 dark:text-slate-300 text-[11px] leading-relaxed">
+                    ℹ️ Este set não possui nenhuma reserva ativa. Todos os seus slots vagos serão removidos com
+                    segurança sem afetar nenhum participante.
+                </div>
+            </template>
+
+            <div x-show="copySuccess" x-cloak
+                class="p-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-xs font-bold rounded-xl text-center border border-emerald-200 dark:border-emerald-800">
+                ✓ Mensagem de aviso copiada para a área de transferência!
+            </div>
+
+            <!-- Campo de Senha do Administrador -->
+            <div class="p-3.5 bg-red-50/80 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-2xl space-y-2">
+                <label class="block font-black text-xs text-red-900 dark:text-red-200">
+                    <i data-lucide="lock" class="w-4 h-4"></i> Confirmação de Segurança: Digite sua Senha de Administrador *
+                </label>
+                <div class="relative">
+                    <input :type="deleteSetShowPassword ? 'text' : 'password'"
+                        x-model="deleteSetPassword"
+                        @keydown.enter="submitDeleteSet()"
+                        placeholder="Sua senha de login no sistema"
+                        class="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-red-300 dark:border-red-700/80 rounded-xl text-slate-900 dark:text-white dark:text-white font-medium focus:ring-2 focus:ring-red-500 pr-10">
+                    <button type="button" @click="deleteSetShowPassword = !deleteSetShowPassword"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 text-xs cursor-pointer select-none">
+                        <span x-text="deleteSetShowPassword ? '<i data-lucide="eye-off" class="w-4 h-4"></i>' : '<i data-lucide="eye" class="w-4 h-4"></i>'"></span>
+                    </button>
+                </div>
+                <div x-show="deleteSetError" x-cloak class="text-red-600 dark:text-red-400 text-[11px] font-bold" x-text="deleteSetError"></div>
+            </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-purple-100/60 dark:border-white/5 dark:border-slate-800 flex-shrink-0">
+            <button type="button" @click="closeDeleteSetModal()" :disabled="deleteSetLoading"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" :disabled="deleteSetLoading || !deleteSetPassword" @click="submitDeleteSet()"
+                class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-40 disabled:cursor-not-allowed">
+                <span x-show="deleteSetLoading" class="animate-spin"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                <span><i data-lucide="trash-2" class="w-4 h-4"></i> Excluir Set Definitivamente</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+
+<!-- Modal de Logs de Concorrência e Fila de Espera (Staff) -->
+<div x-show="logsModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
+    @keydown.escape.window="closeLogsModal()">
+
+    <div class="bg-slate-900 border border-slate-700/80 text-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 transform transition-all max-h-[92vh] flex flex-col"
+        @click.away="closeLogsModal()">
+
+        <!-- Modal Header -->
+        <div class="flex justify-between items-start border-b border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span
+                    class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl shadow-2xs">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                        <span>Logs de Concorrência & Fila de Espera</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-mono">Segundo
+                            Zero</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 truncate max-w-sm sm:max-w-md">{{ ceg.title }}</p>
+                </div>
+            </div>
+            <button type="button" @click="closeLogsModal()"
+                class="text-slate-400 hover:text-white text-2xl font-bold cursor-pointer transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Tabs Switcher -->
+        <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <button type="button" @click="logsTab = 'logs'"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                    :class="logsTab === 'logs' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                    <span><i data-lucide="clipboard-list" class="w-4 h-4"></i></span> Logs de Tentativas & Disputas
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                        :class="logsTab === 'logs' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
+                        x-text="disputeLogs.length"></span>
+                </button>
+                <button type="button" @click="logsTab = 'waiting'"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                    :class="logsTab === 'waiting' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                    <span><i data-lucide="clock" class="w-4 h-4"></i></span> Fila de Espera por Item
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px]"
+                        :class="logsTab === 'waiting' ? 'bg-slate-950 text-amber-400' : 'bg-slate-700 text-slate-300'"
+                        x-text="waitingList.length"></span>
+                </button>
+                <button type="button" @click="logsTab = 'byitem'"
+                    class="px-3.5 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+                    :class="logsTab === 'byitem' ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+                    <span>🗂️</span> Por Set &amp; Item
+                </button>
+            </div>
+
+            <button type="button" @click="openLogsModal()"
+                class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                title="Recarregar logs">
+                <span :class="logsLoading ? 'animate-spin' : ''"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></span> Atualizar
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div x-show="logsLoading" class="py-12 text-center text-slate-400 space-y-2">
+            <div class="inline-block animate-spin text-2xl text-amber-400"><i data-lucide="zap" class="w-4 h-4"></i></div>
+            <div class="text-xs font-semibold">Carregando logs de concorrência e fila de espera...</div>
+        </div>
+
+        <!-- Tab 1: Logs de Concorrência -->
+        <div x-show="!logsLoading && logsTab === 'logs'" class="overflow-y-auto space-y-2 pr-1 max-h-[60vh]">
+            <template x-if="disputeLogs.length === 0">
+                <div
+                    class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                    Nenhuma tentativa de claim registrada nesta CEG até o momento.
+                </div>
+            </template>
+
+            <template x-if="disputeLogs.length > 0">
+                <div class="space-y-2">
+                    <template x-for="log in disputeLogs" :key="log.id">
+                        <div
+                            class="p-3 bg-slate-800/70 border border-slate-700/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:border-slate-600 transition">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black px-2 py-0.5 rounded text-[10px]" :class="{
+                                                      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': log.result === 'SUCCESS',
+                                                      'bg-blue-500/20 text-blue-300 border border-blue-500/30': log.result === 'AUTO_FALLBACK',
+                                                      'bg-amber-500/20 text-amber-300 border border-amber-500/30': log.result === 'WAITING_LIST',
+                                                      'bg-rose-500/20 text-rose-300 border border-rose-500/30': log.result === 'LOST_RACE',
+                                                      'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30': log.result === 'STANDBY_BLOCKED',
+                                                      'bg-slate-700 text-slate-300': log.result === 'ERROR'
+                                                  }" x-text="log.result_display"></span>
+                                    <span class="font-bold text-white text-xs"
+                                        x-text="log.item_name + ' (Set #' + log.set_number + ')'"></span>
+                                    <span class="text-[10px] text-amber-400 font-black"
+                                        x-text="'#' + log.attempt_number + 'º lugar'"></span>
+                                </div>
+                                <div class="flex items-center gap-2 text-slate-300 text-[11px]">
+                                    <span class="font-semibold text-white" x-text="log.participant_name"></span>
+                                    <span class="text-pink-300 font-mono" x-show="log.social_handle"
+                                        x-text="log.social_handle"></span>
+                                    <span class="text-slate-400 font-mono text-[10px]" x-text="'+' + log.phone"></span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 leading-snug" x-text="log.details"></div>
+                            </div>
+                            <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
+                                <div x-text="log.created_at"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Tab 2: Fila de Espera por Item -->
+        <div x-show="!logsLoading && logsTab === 'waiting'" class="overflow-y-auto space-y-2 pr-1 max-h-[60vh]">
+            <template x-if="waitingList.length === 0">
+                <div
+                    class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                    Nenhum participante na fila de espera no momento. Todos os slots disponíveis supriram a demanda!
+                </div>
+            </template>
+
+            <template x-if="waitingList.length > 0">
+                <div class="space-y-2">
+                    <template x-for="w in waitingList" :key="w.id">
+                        <div
+                            class="p-3 bg-slate-800/70 border border-slate-700/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs hover:border-slate-600 transition">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black px-2 py-0.5 rounded text-[10px]"
+                                        :class="w.status === 'WAITING' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : (w.status === 'PROMOTED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700 text-slate-400')"
+                                        x-text="w.status_display"></span>
+                                    <span class="font-bold text-white text-xs" x-text="w.item_name"></span>
+                                    <span class="text-amber-400 font-black text-xs"
+                                        x-text="'#' + w.position + 'º da Fila'"></span>
+                                    <span x-show="w.allocated_slot"
+                                        class="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded"
+                                        x-text="'Alocado em ' + w.allocated_slot"></span>
+                                </div>
+                                <div class="flex items-center gap-2 text-slate-300 text-[11px]">
+                                    <span class="font-semibold text-white" x-text="w.participant_name"></span>
+                                    <span class="text-pink-300 font-mono" x-show="w.social_handle"
+                                        x-text="w.social_handle"></span>
+                                    <span class="text-slate-400 font-mono text-[10px]" x-text="'+' + w.phone"></span>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 text-[10px] font-mono text-slate-400">
+                                <div>Entrou em: <span x-text="w.created_at"></span></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Tab 3: Por Set & Item -->
+        <div x-show="!logsLoading && logsTab === 'byitem'" class="overflow-y-auto space-y-3 pr-1 max-h-[60vh]">
+            <template x-if="disputeLogs.length === 0">
+                <div
+                    class="py-8 text-center text-slate-400 text-xs bg-slate-800/40 rounded-xl border border-slate-700/60">
+                    Nenhuma tentativa de claim registrada nesta CEG até o momento.
+                </div>
+            </template>
+            <template x-if="disputeLogs.length > 0">
+                <div class="space-y-3">
+                    <!-- Group by set_number then item_name -->
+                    <template x-for="setNum in [...new Set(disputeLogs.map(l => l.set_number))].sort((a,b) => a-b)"
+                        :key="setNum">
+                        <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+                            <div class="px-3 py-2 bg-slate-700/50 flex items-center gap-2">
+                                <span
+                                    class="text-[10px] font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30"
+                                    x-text="'Set #' + setNum"></span>
+                                <span class="text-[10px] text-slate-400 font-semibold"
+                                    x-text="disputeLogs.filter(l => l.set_number === setNum).length + ' tentativa(s)'"></span>
+                            </div>
+                            <div class="p-2 space-y-2">
+                                <template
+                                    x-for="itemName in [...new Set(disputeLogs.filter(l => l.set_number === setNum).map(l => l.item_name))]"
+                                    :key="itemName">
+                                    <div class="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700/40">
+                                        <div
+                                            class="px-2.5 py-1.5 flex items-center justify-between border-b border-slate-700/40">
+                                            <span class="text-xs font-black text-white" x-text="itemName"></span>
+                                            <span class="text-[10px] text-slate-400 font-semibold"
+                                                x-text="disputeLogs.filter(l => l.set_number === setNum && l.item_name === itemName).length + ' tentativa(s)'"></span>
+                                        </div>
+                                        <div class="divide-y divide-slate-800/60">
+                                            <template
+                                                x-for="log in disputeLogs.filter(l => l.set_number === setNum && l.item_name === itemName).sort((a,b) => a.attempt_number - b.attempt_number)"
+                                                :key="log.id">
+                                                <div
+                                                    class="flex items-center justify-between gap-2 px-2.5 py-1.5 text-[10px]">
+                                                    <div class="flex items-center gap-1.5 min-w-0">
+                                                        <span
+                                                            class="text-[9px] font-black text-slate-400 w-4 text-right shrink-0"
+                                                            x-text="'#' + log.attempt_number"></span>
+                                                        <span
+                                                            class="font-black px-1.5 py-0.5 rounded text-[9px] shrink-0"
+                                                            :class="{
+                                                                          'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': log.result === 'SUCCESS',
+                                                                          'bg-blue-500/20 text-blue-300 border border-blue-500/30': log.result === 'AUTO_FALLBACK',
+                                                                          'bg-amber-500/20 text-amber-300 border border-amber-500/30': log.result === 'WAITING_LIST',
+                                                                          'bg-rose-500/20 text-rose-300 border border-rose-500/30': log.result === 'LOST_RACE',
+                                                                          'bg-slate-600 text-slate-300': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                                                                      }" x-text="log.result_display"></span>
+                                                        <span class="font-semibold text-white truncate"
+                                                            x-text="log.participant_name"></span>
+                                                        <span class="text-pink-300 font-mono truncate"
+                                                            x-show="log.social_handle"
+                                                            x-text="log.social_handle"></span>
+                                                    </div>
+                                                    <span class="text-slate-500 font-mono shrink-0 text-[9px]"
+                                                        x-text="log.created_at"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Footer -->
+        <div class="pt-3 border-t border-slate-800 flex justify-end flex-shrink-0">
+            <button type="button" @click="closeLogsModal()"
+                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs transition cursor-pointer">
+                Fechar
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Inline para Criar Novo Tipo de Item (Pool Compartilhada) -->
+<div x-show="showNewTipoModal" x-cloak
+    class="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+    style="z-index: 99999;"
+    @keydown.escape.window="showNewTipoModal = false">
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-sm w-full p-5 shadow-2xl space-y-4 border border-purple-100/60 dark:border-white/5 transform transition-all"
+        @click.away="showNewTipoModal = false">
+        <div class="flex justify-between items-center border-b border-purple-100/60 dark:border-white/5 pb-2">
+            <h4 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span><i data-lucide="tag" class="w-4 h-4"></i></span> Novo Tipo de Item
+            </h4>
+            <button type="button" @click="showNewTipoModal = false"
+                class="text-slate-400 hover:text-slate-600 dark:text-slate-400 font-bold text-sm"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <form @submit.prevent="submitInlineNewTipo()" class="space-y-3 text-xs">
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1">Nome do Tipo de Item *</label>
+                <input type="text" x-model="newTipoNome" required placeholder="Ex: Mini Poster, Keyring, Labubu"
+                    class="w-full px-3 py-2 bg-purple-50/30 dark:bg-cyber-elevated/50 border border-slate-200 dark:border-white/10 rounded-lg font-bold text-slate-800 focus:ring-2 focus:ring-purple-500">
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1">Descrição (opcional)</label>
+                <input type="text" x-model="newTipoDesc" placeholder="Breve detalhe sobre esta categoria de item"
+                    class="w-full px-3 py-2 bg-purple-50/30 dark:bg-cyber-elevated/50 border border-slate-200 dark:border-white/10 rounded-lg text-slate-700 dark:text-cyber-silver focus:ring-2 focus:ring-purple-500">
+            </div>
+            <p class="text-[10px] text-slate-500 leading-tight">
+                💡 Este tipo fará parte da pool compartilhada e ficará disponível imediatamente para todas as CEGs,
+                Caixas e Remessas do sistema.
+            </p>
+            <div class="flex justify-end gap-2 pt-2 border-t border-purple-100/60 dark:border-white/5">
+                <button type="button" @click="showNewTipoModal = false"
+                    class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-cyber-silver font-bold rounded-lg transition">
+                    Cancelar
+                </button>
+                <button type="submit" :disabled="newTipoLoading"
+                    class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                    <span x-show="newTipoLoading" class="animate-spin"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                    <span>Criar Tipo</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== MODAL DE CONSOLIDAÇÃO DE ENQUETE (Staff) ===== -->
+<div x-show="consolidateModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+    @keydown.escape.window="consolidateModalOpen = false">
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-2xl w-full p-6 sm:p-7 shadow-2xl space-y-5 transform transition-all border border-emerald-100 dark:border-emerald-900/60"
+        @click.away="consolidateModalOpen = false">
+        
+        <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-black border border-emerald-100 dark:border-emerald-800/60">
+                    <i data-lucide="rocket" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white dark:text-white">Consolidar Enquete em Sets Oficiais</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Defina a quantidade de sets a abrir com base nos votos registrados</p>
+                </div>
+            </div>
+            <button type="button" @click="consolidateModalOpen = false" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-white font-bold text-sm cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <div class="space-y-4">
+            <!-- Resumo de Demanda por Integrante -->
+            <div class="p-3.5 bg-purple-50/30 dark:bg-cyber-elevated/50 dark:bg-slate-800/70 rounded-2xl border border-slate-200 dark:border-white/10 dark:border-slate-700 space-y-2">
+                <div class="flex justify-between items-center text-xs font-black text-slate-800 dark:text-slate-200">
+                    <span>DEMANDA DE VOTOS POR ITEM</span>
+                    <span class="text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
+                        {{ ceg.viable_sets_count }} Set(s) 100% Viáveis
+                    </span>
+                </div>
+                <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                    {% for item in polling_summary.item_summaries %}
+                    <div class="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 text-xs">
+                        <div class="flex items-center gap-2 truncate">
+                            {% if item.member_name %}
+                            <span class="font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/60 px-1.5 py-0.5 rounded text-[10px] border border-pink-100 dark:border-pink-900/50">
+                                {{ item.member_name }}
+                            </span>
+                            {% endif %}
+                            <span class="font-bold text-slate-800 dark:text-white truncate">{{ item.name }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 font-mono text-xs">
+                            <span class="font-black text-purple-700 dark:text-purple-300">{{ item.votes_count }} voto(s)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Seleção da quantidade de sets -->
+            <div class="p-4 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800/50 space-y-3">
+                <label class="block font-black text-slate-900 dark:text-white dark:text-white text-xs uppercase tracking-wider">
+                    Quantos Sets você deseja abrir para esta CEG? *
+                </label>
+                <div class="flex items-center gap-3">
+                    <input type="number" min="1" max="50" x-model="numSetsToOpen"
+                        class="w-28 px-3 py-2 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 rounded-xl font-black text-base text-emerald-900 dark:text-emerald-300 text-center focus:ring-2 focus:ring-emerald-500">
+                    <span class="text-xs text-slate-600 dark:text-slate-400 dark:text-slate-300 leading-snug">
+                        Abrirá <strong><span x-text="numSetsToOpen"></span> Set(s)</strong> oficiais. Os primeiros <strong><span x-text="numSetsToOpen"></span> votantes</strong> de cada integrante serão automaticamente convertidos em reservas (Claims).
+                    </span>
+                </div>
+            </div>
+
+            <!-- Alerta de Notificação Exclusiva para Contemplados -->
+            <div class="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-800/50 text-xs text-blue-950 dark:text-blue-200 space-y-1.5">
+                <div class="font-black flex items-center gap-1.5 text-blue-900 dark:text-blue-300">
+                    <span>📢</span> Regra de Notificações & Prazos
+                </div>
+                <ul class="text-[11px] space-y-1 text-blue-900 dark:text-blue-300">
+                    <li>• <strong>Apenas quem garantiu vaga será notificado</strong> no site e no WhatsApp com as instruções e prazos pré-configurados.</li>
+                    <li>• Participantes excedentes <strong>NÃO</strong> receberão mensagens para evitar spam/confusão.</li>
+                    <li>• O status da CEG mudará de <strong>Enquete</strong> para <strong>Aberta (OPEN)</strong> com sets físicos.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-purple-100/60 dark:border-white/5 dark:border-slate-800">
+            <button type="button" @click="consolidateModalOpen = false"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+                Cancelar
+            </button>
+            <button type="button" @click="submitConsolidate()" :disabled="consolidateLoading"
+                class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50">
+                <span x-show="consolidateLoading" class="animate-spin"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                <span><i data-lucide="rocket" class="w-4 h-4"></i> Abrir Sets & Notificar Vencedores</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================== MODAL: EXCLUIR CEG ===================== -->
+<div x-show="deleteCegModalOpen" x-cloak
+    @keydown.escape.window="closeDeleteCegModal()"
+    class="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+    <div @click.outside="closeDeleteCegModal()"
+        class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 shadow-2xl w-full max-w-lg border border-red-200 dark:border-red-900/60 overflow-hidden transform transition-all">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-red-600 to-rose-700 px-6 py-4 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-xl shadow-inner">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="font-black text-base text-white">Excluir CEG Permanentemente</h3>
+                    <p class="text-red-100 text-xs">Esta ação é irreversível e destruirá todos os dados</p>
+                </div>
+            </div>
+            <button type="button" @click="closeDeleteCegModal()" class="text-white/80 hover:text-white text-xl font-bold cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-4 text-xs">
+            <!-- Explicação do que está acontecendo -->
+            <div class="bg-red-50/90 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl p-4 space-y-2 text-red-950 dark:text-red-200">
+                <div class="font-black flex items-center gap-1.5 text-sm text-red-900 dark:text-red-300">
+                    <span><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i></span> Você está prestes a excluir definitivamente:
+                </div>
+                <p class="text-xs font-black text-slate-900 dark:text-white dark:text-white bg-white/70 dark:bg-slate-800/80 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800/50">
+                    {{ ceg.title }}
+                </p>
+                <div class="text-[11px] text-red-900/90 dark:text-red-300/90 space-y-1">
+                    <p class="font-bold">Ao confirmar, o sistema apagará permanentemente:</p>
+                    <ul class="list-disc list-inside space-y-0.5 pl-1">
+                        <li>Todos os <strong>{{ active_sets|length }} Sets</strong> e slots cadastrados nesta CEG</li>
+                        <li>Todas as reservas (claims) ativas e histórico de compradores</li>
+                        <li>Toda a fila de espera e logs de disputa</li>
+                        {% if ceg.is_polling %}
+                        <li>Todos os votos registrados na enquete de demanda</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Campo de Senha do Administrador -->
+            <div class="p-4 bg-purple-50/30 dark:bg-cyber-elevated/50 dark:bg-slate-800/70 border border-slate-200 dark:border-white/10 dark:border-slate-700 rounded-2xl space-y-2">
+                <label class="block font-black text-xs text-slate-900 dark:text-white dark:text-white">
+                    <i data-lucide="lock" class="w-4 h-4"></i> Confirmação de Segurança: Digite sua Senha de Administrador *
+                </label>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    Para garantir que esta ação não ocorra por engano, informe a sua senha de acesso ao painel admin:
+                </p>
+                <div class="relative">
+                    <input :type="deleteCegShowPassword ? 'text' : 'password'"
+                        x-model="deleteCegPassword"
+                        @keydown.enter="submitDeleteCeg()"
+                        placeholder="Sua senha de administrador"
+                        class="w-full px-3 py-2.5 text-xs bg-white dark:bg-slate-900 border border-red-300 dark:border-red-700/80 rounded-xl text-slate-900 dark:text-white dark:text-white font-medium focus:ring-2 focus:ring-red-500 pr-10">
+                    <button type="button" @click="deleteCegShowPassword = !deleteCegShowPassword"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 text-xs cursor-pointer select-none">
+                        <span x-text="deleteCegShowPassword ? '<i data-lucide="eye-off" class="w-4 h-4"></i>' : '<i data-lucide="eye" class="w-4 h-4"></i>'"></span>
+                    </button>
+                </div>
+                <div x-show="deleteCegError" x-cloak class="text-red-600 dark:text-red-400 text-xs font-bold pt-1" x-text="deleteCegError"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-2">
+                <button type="button" @click="closeDeleteCegModal()" :disabled="deleteCegLoading"
+                    class="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-purple-50/30 dark:bg-cyber-elevated/50 dark:hover:bg-slate-800 transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" @click="submitDeleteCeg()" :disabled="deleteCegLoading || !deleteCegPassword"
+                    class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-xs font-black rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span x-show="deleteCegLoading" class="animate-spin"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                    <span><i data-lucide="trash-2" class="w-4 h-4"></i> Excluir CEG Definitivamente</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Histórico de Claim / Disputa por Slot (Staff) -->
+<div x-show="slotLogsModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+    @keydown.escape.window="closeSlotLogsModal()">
+    <div class="bg-white dark:bg-[#131B2E] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-white/10 dark:border-slate-800"
+        @click.away="closeSlotLogsModal()">
+        <div class="flex items-center justify-between border-b border-purple-100/60 dark:border-white/5 dark:border-slate-800 pb-3">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white dark:text-white flex items-center gap-2">
+                    <span><i data-lucide="clipboard-list" class="w-4 h-4"></i></span> Histórico de Disputa & Claim
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="'Set #' + activeLogSetNumber + ' • ' + activeLogSlotName"></p>
+            </div>
+            <button type="button" @click="closeSlotLogsModal()" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 text-lg font-bold p-1 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <div class="max-h-96 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+            <template x-if="!activeLogSlotId || !claimLogsBySlot[activeLogSlotId] || claimLogsBySlot[activeLogSlotId].length === 0">
+                <p class="text-xs text-slate-400 text-center py-8">Nenhum registro de tentativa para este slot.</p>
+            </template>
+            <template x-for="log in (activeLogSlotId && claimLogsBySlot[activeLogSlotId] ? claimLogsBySlot[activeLogSlotId] : [])" :key="log.id">
+                <div class="flex items-start justify-between gap-2.5 text-xs p-3 rounded-xl border transition"
+                    :class="{
+                        'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60': log.result === 'SUCCESS',
+                        'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/60': log.result === 'AUTO_FALLBACK',
+                        'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/60': log.result === 'WAITING_LIST',
+                        'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60': log.result === 'LOST_RACE',
+                        'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-white/10 dark:border-slate-700': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                    }">
+                    <div class="flex-1 min-w-0 space-y-0.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-black text-[10px] px-1.5 py-0.5 rounded shadow-2xs"
+                                :class="{
+                                    'bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100': log.result === 'SUCCESS',
+                                    'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-100': log.result === 'AUTO_FALLBACK',
+                                    'bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-100': log.result === 'WAITING_LIST',
+                                    'bg-rose-200 dark:bg-rose-800 text-rose-800 dark:text-rose-100': log.result === 'LOST_RACE',
+                                    'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-200': log.result === 'STANDBY_BLOCKED' || log.result === 'ERROR',
+                                }" x-text="log.result_display"></span>
+                            <span class="font-bold text-slate-900 dark:text-white dark:text-white" x-text="'#' + log.attempt_number + ' ' + log.participant_name"></span>
+                        </div>
+                        <div class="text-slate-600 dark:text-slate-400 dark:text-slate-400 text-[11px]" x-show="log.social_handle" x-text="'@' + log.social_handle.replace(/^@/, '')"></div>
+                        <div class="text-slate-500 dark:text-slate-400 text-[10px] italic" x-show="log.message" x-text="log.message"></div>
+                    </div>
+                    <div class="text-slate-400 font-mono text-[10px] shrink-0 text-right" x-text="log.created_at"></div>
+                </div>
+            </template>
+        </div>
+
+        <div class="pt-3 border-t border-purple-100/60 dark:border-white/5 dark:border-slate-800 flex justify-end">
+            <button type="button" @click="closeSlotLogsModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer">
+                Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Adicionar Item Avulso (Staff) -->
+<div x-show="addAvulsoModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+    @keydown.escape.window="closeAddAvulsoModal()">
+
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-xl w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-200 dark:border-white/10 dark:border-pink-900/40 max-h-[92vh] flex flex-col"
+        @click.away="closeAddAvulsoModal()">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 text-white flex items-center justify-center text-lg shadow-sm">
+                    <i data-lucide="gift" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white dark:text-white">Adicionar Item Avulso</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Estoque fixo/único — não será replicado ao abrir novos Sets</p>
+                </div>
+            </div>
+            <button type="button" @click="closeAddAvulsoModal()"
+                class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver dark:hover:text-white text-xl font-bold cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Form Body -->
+        <div class="space-y-4 text-xs overflow-y-auto pr-1">
+            <!-- Banner / Aviso Recorte -->
+            <div class="p-3 bg-pink-50/80 dark:bg-pink-950/40 border border-pink-200/80 dark:border-pink-900/50 rounded-2xl flex items-center justify-between gap-3 text-pink-950 dark:text-pink-200">
+                <div class="flex items-center gap-2">
+                    <span class="text-base"><i data-lucide="scissors" class="w-4 h-4"></i></span>
+                    <div>
+                        <div class="font-bold text-[11px]">Recorte direto da foto da CEG</div>
+                        <div class="text-[10px] text-pink-900/80 dark:text-pink-300/80">Seletor com corte visual integrado em desenvolvimento para a próxima etapa.</div>
+                    </div>
+                </div>
+                {% if ceg.display_image_url %}
+                <span class="px-2 py-0.5 rounded-full bg-pink-200/80 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-[9px] font-black uppercase tracking-wider">Em breve</span>
+                {% endif %}
+            </div>
+
+            <!-- Nome do Item -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">
+                    Nome do Item Avulso <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" x-model="addAvulsoName" placeholder="Ex: Álbum Selado Ver. A, Pôster Oficial, POB Exclusivo..."
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Integrante -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Integrante (Opcional)</label>
+                    <input type="text" x-model="addAvulsoMember" placeholder="Ex: Wonyoung, Grupo Todo..."
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+                </div>
+
+                <!-- Tipo de Item -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Categoria / Tipo</label>
+                    <select x-model="addAvulsoTipoItemId"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+                        <template x-for="t in tipoItemList" :key="t.id">
+                            <option :value="t.id" x-text="t.nome"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Preço -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">
+                        Preço por Unidade (R$) <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" step="0.01" min="0" x-model="addAvulsoPrice" placeholder="0.00"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden font-bold">
+                </div>
+
+                <!-- Quantidade Total de Unidades -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">
+                        Quantidade de Unidades <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" min="1" max="100" x-model="addAvulsoQuantity"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden font-bold">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Serão criadas N unidades deste item disponíveis para reserva.</p>
+                </div>
+            </div>
+
+            <!-- Pré-Reserva Opcional -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Pré-reservar para um participante? (Opcional)</label>
+                <select x-model="addAvulsoPreReserveParticipantId"
+                    class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-hidden">
+                    <option value="">Nenhum (Deixar disponível para quem reservar primeiro)</option>
+                    <template x-for="p in allParticipants" :key="p.id">
+                        <option :value="p.id" x-text="p.name + (p.social_handle ? ' (' + p.social_handle + ')' : '')"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Upload de Imagem -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Foto do Item (Opcional)</label>
+                
+                <template x-if="!addAvulsoPhotoPreview">
+                    <div class="border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition select-none"
+                        :class="addAvulsoPhotoDragOver ? 'border-pink-500 bg-pink-50 dark:bg-pink-950/40 ring-2 ring-pink-300' : 'border-slate-300 dark:border-slate-700 bg-purple-50/30 dark:bg-cyber-elevated/50/50 dark:bg-slate-800/40 hover:border-pink-400 hover:bg-white dark:hover:bg-slate-800'"
+                        @click="document.getElementById('add_avulso_file_input').click()"
+                        @dragover.prevent="addAvulsoPhotoDragOver = true"
+                        @dragleave.prevent="addAvulsoPhotoDragOver = false"
+                        @drop.prevent="addAvulsoPhotoDragOver = false; if ($event.dataTransfer.files[0]) handleAddAvulsoPhoto($event.dataTransfer.files[0])">
+                        <input type="file" id="add_avulso_file_input" accept="image/*" class="hidden"
+                            @change="if ($event.target.files[0]) handleAddAvulsoPhoto($event.target.files[0])">
+                        <span class="text-2xl block mb-1"><i data-lucide="clipboard-list" class="w-4 h-4"></i></span>
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Clique para selecionar ou dê <kbd class="px-2 py-0.5 bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800 rounded font-black text-xs">Ctrl + V</kbd> nesta tela
+                        </p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5 flex-wrap mt-1">
+                            <span>Ou arraste um arquivo (JPG, PNG, WEBP)</span>
+                            <span class="font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/50 px-2 py-0.5 rounded border border-pink-200 dark:border-pink-800 text-[10px] uppercase tracking-wider">Máx 5 MB</span>
+                        </p>
+                    </div>
+                </template>
+
+                <template x-if="addAvulsoPhotoPreview">
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 max-h-48 flex items-center justify-center p-2 group">
+                        <img :src="addAvulsoPhotoPreview" class="max-h-44 w-full object-contain rounded-xl">
+                        <button type="button" @click="clearAddAvulsoPhoto()"
+                            class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-xs cursor-pointer transition hover:scale-105"
+                            title="Remover foto"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        <span class="absolute bottom-2 left-2 right-2 bg-slate-950/75 backdrop-blur-xs text-white text-[10px] py-0.5 px-2 rounded-lg text-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                            Cole outra com Ctrl+V ou clique no <i data-lucide="x" class="w-4 h-4"></i> para trocar
+                        </span>
+                    </div>
+                </template>
+
+                <div class="mt-2" x-show="!addAvulsoPhotoPreview">
+                    <input type="url" x-model="addAvulsoPhotoUrl" placeholder="Ou cole a URL direta de uma imagem externa..."
+                        class="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs">
+                </div>
+
+                <div x-show="addAvulsoPhotoError" class="mt-1 text-rose-500 font-bold text-[11px]" x-text="addAvulsoPhotoError"></div>
+            </div>
+
+            <!-- Error Banner -->
+            <div x-show="addAvulsoError" class="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold" x-text="addAvulsoError"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-purple-100/60 dark:border-white/5 dark:border-slate-800 pt-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" @click="closeAddAvulsoModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" @click="submitAddAvulso()" :disabled="addAvulsoLoading"
+                class="px-5 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                <span x-show="!addAvulsoLoading">Salvar Item Avulso</span>
+                <span x-show="addAvulsoLoading">Salvando...</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Editar Item Avulso (Staff) -->
+<div x-show="editAvulsoModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+    @keydown.escape.window="closeEditAvulsoModal()">
+
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-xl w-full p-6 shadow-2xl space-y-5 transform transition-all border border-slate-200 dark:border-white/10 dark:border-purple-900/40 max-h-[92vh] flex flex-col"
+        @click.away="closeEditAvulsoModal()">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg shadow-sm border border-purple-200 dark:border-purple-800">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white dark:text-white">Editar Item Avulso</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" x-text="editAvulsoItem ? editAvulsoItem.name : ''"></p>
+                </div>
+            </div>
+            <button type="button" @click="closeEditAvulsoModal()"
+                class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver dark:hover:text-white text-xl font-bold cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Form Body -->
+        <div class="space-y-4 text-xs overflow-y-auto pr-1">
+            <!-- Nome do Item -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">
+                    Nome do Item <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" x-model="editAvulsoName"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Integrante -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Integrante</label>
+                    <input type="text" x-model="editAvulsoMember"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                </div>
+
+                <!-- Tipo de Item -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Categoria / Tipo</label>
+                    <select x-model="editAvulsoTipoItemId"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                        <template x-for="t in tipoItemList" :key="t.id">
+                            <option :value="t.id" x-text="t.nome"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Preço -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Preço por Unidade (R$)</label>
+                    <input type="number" step="0.01" min="0" x-model="editAvulsoPrice"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs font-bold focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Atualiza o valor de todas as unidades ainda disponíveis.</p>
+                </div>
+
+                <!-- Quantidade -->
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Quantidade de Unidades</label>
+                    <input type="number" min="1" max="100" x-model="editAvulsoQuantity"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white text-xs font-bold focus:ring-2 focus:ring-purple-500 focus:outline-hidden">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Se diminuir, apenas unidades sem reserva ativa serão removidas.</p>
+                </div>
+            </div>
+
+            <!-- Foto do Item -->
+            <div>
+                <label class="block font-black text-slate-700 dark:text-cyber-silver dark:text-slate-300 mb-1">Foto do Item</label>
+
+                <template x-if="!editAvulsoPhotoPreview">
+                    <div class="border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition select-none"
+                        :class="editAvulsoPhotoDragOver ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40 ring-2 ring-purple-300' : 'border-slate-300 dark:border-slate-700 bg-purple-50/30 dark:bg-cyber-elevated/50/50 dark:bg-slate-800/40 hover:border-purple-400 hover:bg-white dark:hover:bg-slate-800'"
+                        @click="document.getElementById('edit_avulso_file_input').click()"
+                        @dragover.prevent="editAvulsoPhotoDragOver = true"
+                        @dragleave.prevent="editAvulsoPhotoDragOver = false"
+                        @drop.prevent="editAvulsoPhotoDragOver = false; if ($event.dataTransfer.files[0]) handleEditAvulsoPhoto($event.dataTransfer.files[0])">
+                        <input type="file" id="edit_avulso_file_input" accept="image/*" class="hidden"
+                            @change="if ($event.target.files[0]) handleEditAvulsoPhoto($event.target.files[0])">
+                        <span class="text-2xl block mb-1"><i data-lucide="clipboard-list" class="w-4 h-4"></i></span>
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Clique para selecionar ou dê <kbd class="px-2 py-0.5 bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded font-black text-xs">Ctrl + V</kbd> nesta tela
+                        </p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5 flex-wrap mt-1">
+                            <span>Ou arraste um arquivo (JPG, PNG, WEBP)</span>
+                            <span class="font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 text-[10px] uppercase tracking-wider">Máx 5 MB</span>
+                        </p>
+                    </div>
+                </template>
+
+                <template x-if="editAvulsoPhotoPreview">
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 max-h-48 flex items-center justify-center p-2 group">
+                        <img :src="editAvulsoPhotoPreview" class="max-h-44 w-full object-contain rounded-xl">
+                        <button type="button" @click="clearEditAvulsoPhoto()"
+                            class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-xs cursor-pointer transition hover:scale-105"
+                            title="Remover foto"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        <span class="absolute bottom-2 left-2 right-2 bg-slate-950/75 backdrop-blur-xs text-white text-[10px] py-0.5 px-2 rounded-lg text-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                            Cole outra com Ctrl+V ou clique no <i data-lucide="x" class="w-4 h-4"></i> para trocar
+                        </span>
+                    </div>
+                </template>
+
+                <div x-show="editAvulsoPhotoError" class="mt-1 text-rose-500 font-bold text-[11px]" x-text="editAvulsoPhotoError"></div>
+            </div>
+
+            <!-- Error Banner -->
+            <div x-show="editAvulsoError" class="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold" x-text="editAvulsoError"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-purple-100/60 dark:border-white/5 dark:border-slate-800 pt-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" @click="closeEditAvulsoModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" @click="submitEditAvulso()" :disabled="editAvulsoLoading"
+                class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                <span x-show="!editAvulsoLoading">Salvar Alterações</span>
+                <span x-show="editAvulsoLoading">Salvando...</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Excluir Item Avulso (Staff) -->
+<div x-show="deleteAvulsoModalOpen" x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+    @keydown.escape.window="closeDeleteAvulsoModal()">
+
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-md w-full p-6 shadow-2xl space-y-4 transform transition-all border border-slate-200 dark:border-white/10 dark:border-rose-900/40 max-h-[90vh] flex flex-col"
+        @click.away="closeDeleteAvulsoModal()">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 dark:border-slate-800 pb-3 flex-shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span class="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg shadow-2xs border border-rose-100 dark:border-rose-900/50">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white dark:text-white">Excluir Item Avulso</h3>
+                    <p class="text-xs text-rose-600 dark:text-rose-400 truncate max-w-[260px]" x-text="deleteAvulsoItem ? deleteAvulsoItem.name : ''"></p>
+                </div>
+            </div>
+            <button type="button" @click="closeDeleteAvulsoModal()"
+                class="text-slate-400 hover:text-slate-700 dark:text-cyber-silver dark:hover:text-white text-xl font-bold cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Body -->
+        <div class="space-y-3 text-xs text-slate-600 dark:text-slate-400 dark:text-slate-300">
+            <div class="p-3 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl space-y-1.5 text-rose-950 dark:text-rose-200">
+                <div class="font-black flex items-center gap-1.5 text-rose-900 dark:text-rose-300">
+                    <span><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i></span> Confirma a exclusão definitiva?
+                </div>
+                <ul class="text-[11px] space-y-1 text-rose-900/90 dark:text-rose-300/90 list-disc list-inside">
+                    <li>O item <strong><span x-text="deleteAvulsoItem ? deleteAvulsoItem.name : ''"></span></strong> e todas as suas unidades serão apagados.</li>
+                    <li>Vagas disponíveis e reservas não pagas serão canceladas.</li>
+                    <li>Itens com pagamento já confirmado <strong>não</strong> podem ser excluídos diretamente.</li>
+                </ul>
+            </div>
+
+            <!-- Error Banner -->
+            <div x-show="deleteAvulsoError" class="p-3 bg-rose-100 dark:bg-rose-900/80 border border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-100 rounded-xl text-xs font-bold" x-text="deleteAvulsoError"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-purple-100/60 dark:border-white/5 dark:border-slate-800 pt-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" @click="closeDeleteAvulsoModal()"
+                class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-cyber-silver dark:text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs">
+                Cancelar
+            </button>
+            <button type="button" @click="submitDeleteAvulso()" :disabled="deleteAvulsoLoading"
+                class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs disabled:opacity-50">
+                <span x-show="!deleteAvulsoLoading">Sim, Excluir Item</span>
+                <span x-show="deleteAvulsoLoading">Excluindo...</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+{% endif %}

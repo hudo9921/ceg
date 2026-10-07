@@ -1,0 +1,103 @@
+<!-- MODAL DE DIVULGAÇÃO DE VAGAS ABERTAS (CEG) -->
+<div x-show="shareModalOpen" x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+     @keydown.escape.window="closeShareModal()">
+    <div class="bg-white dark:bg-[#14121B] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200 dark:border-white/10 transition-all transform my-auto"
+         @click.away="closeShareModal()">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                    <i data-lucide="share-2" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-900 dark:text-white text-base leading-tight">
+                        Gerador de Divulgação de Vagas
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Texto pronto para redes sociais da CEG <span class="font-bold text-slate-800 dark:text-slate-200" x-text="currentShareCeg ? currentShareCeg.title : ''"></span>
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="closeShareModal()"
+                class="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-slate-300 flex items-center justify-center font-bold text-sm transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Customização: Emoji e Opções -->
+        <div class="space-y-3 bg-slate-50 dark:bg-white/5 p-3.5 rounded-2xl border border-slate-200 dark:border-white/10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <!-- Escolha do Emoji de Vaga -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Emoji de vaga:</span>
+                    <div class="inline-flex rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-white/10 shadow-2xs gap-1">
+                        <button type="button" @click="shareEmoji = '🟢'"
+                            class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                            :class="shareEmoji === '🟢' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">🟢</button>
+                        <button type="button" @click="shareEmoji = '⭕'"
+                            class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                            :class="shareEmoji === '⭕' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">⭕</button>
+                        <button type="button" @click="shareEmoji = '✅'"
+                            class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                            :class="shareEmoji === '✅' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">✅</button>
+                        <button type="button" @click="shareEmoji = '🪪'"
+                            class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
+                            :class="shareEmoji === '🪪' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">🪪</button>
+                    </div>
+                </div>
+
+                <!-- Toggles -->
+                <div class="flex items-center gap-4 text-xs font-bold text-slate-600 dark:text-slate-300">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" x-model="shareShowSoldOut" class="rounded text-indigo-600 focus:ring-indigo-500">
+                        <span>Mostrar esgotados (❌)</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer" x-show="currentShareCeg && currentShareCeg.price_display">
+                        <input type="checkbox" x-model="shareIncludePrice" class="rounded text-indigo-600 focus:ring-indigo-500">
+                        <span>Incluir valor</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview do Texto -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Prévia do Texto:</span>
+                </span>
+                <span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                    <span x-text="shareText.length"></span> caracteres
+                    <span x-show="shareText.length <= 280" class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">✓ Cabe no Twitter/X</span>
+                </span>
+            </div>
+            <textarea
+                readonly
+                :value="shareText"
+                @click="$event.target.select()"
+                rows="9"
+                class="w-full text-xs font-mono bg-slate-900 text-slate-100 p-3.5 rounded-2xl border border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 leading-relaxed resize-y select-all shadow-inner"
+                title="Clique para selecionar tudo"></textarea>
+        </div>
+
+        <!-- Botão Copiar Principal -->
+        <div class="pt-2 border-t border-slate-100 dark:border-white/5 flex justify-end">
+            <button type="button" @click="copyShareText()"
+                class="w-full sm:w-auto px-6 py-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer select-none"
+                :class="shareCopied
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                    : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-indigo-500/20'">
+                <template x-if="shareCopied">
+                    <span class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Copiado para o Clipboard!</span>
+                </template>
+                <template x-if="!shareCopied">
+                    <span class="flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i> Copiar Texto Completo</span>
+                </template>
+            </button>
+        </div>
+
+    </div>
+</div>

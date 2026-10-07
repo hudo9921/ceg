@@ -1,0 +1,171 @@
+<!-- Seletor e Busca de Joiner -->
+<div class="bg-gradient-to-r from-pink-50 via-white to-purple-50 dark:from-cyber-surface dark:via-cyber-elevated dark:to-cyber-surface rounded-3xl border border-pink-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-pink-600 text-white flex items-center justify-center text-sm font-bold shadow-2xs">
+                <i data-lucide="user" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <h2 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">Pesquisa & Auditoria de Joiner (Participante)</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Pesquise por <strong>Nome</strong>, <strong>Telefone (WhatsApp)</strong> ou <strong>Forma que quer ser chamado (Apelido / @)</strong></p>
+            </div>
+        </div>
+
+        {% if selected_participant %}
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-500 dark:text-slate-400">Selecionado:</span>
+                <span class="px-3 py-1 bg-white dark:bg-cyber-obsidian border border-pink-300 dark:border-pink-500/40 rounded-xl text-xs font-black text-pink-700 dark:text-cyber-neon shadow-2xs">
+                    {{ selected_participant.display_name }}
+                </span>
+                <a href="{% url 'consulta_joiner' %}" class="text-xs text-slate-400 hover:text-rose-500 underline font-medium">
+                    Limpar seleção
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Barra de Busca Rápida com Autocomplete / Filtro Instantâneo -->
+    <div class="relative" @click.outside="isSearchFocused = false">
+        <form method="get" action="{% url 'consulta_joiner' %}" class="relative flex items-center gap-2">
+            <div class="relative flex-1">
+                <input type="text"
+                       name="q"
+                       x-model="participantSearchQuery"
+                       @focus="isSearchFocused = true"
+                       placeholder="Pesquise por Nome, Telefone (WhatsApp) ou Forma que quer ser chamado (@user, apelido)..."
+                       autocomplete="off"
+                       class="w-full bg-white dark:bg-cyber-obsidian border border-pink-300/80 dark:border-white/10 rounded-2xl pl-10 pr-10 py-3 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 placeholder-slate-400">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <button type="button"
+                        x-show="participantSearchQuery"
+                        @click="participantSearchQuery = ''; isSearchFocused = false;"
+                        class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+            <button type="submit"
+                    class="px-5 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-2xl text-xs sm:text-sm font-bold transition shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer">
+                <i data-lucide="search" class="w-4 h-4"></i>
+                <span>Buscar</span>
+            </button>
+        </form>
+
+        <!-- Menu Suspenso de Sugestões / Resultados da Busca Instantânea -->
+        <div x-show="isSearchFocused && participantSearchQuery.trim().length > 0"
+             x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-cyber-surface rounded-2xl border border-pink-200/80 dark:border-white/10 shadow-2xl overflow-hidden max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5">
+            <template x-for="p in filteredParticipants" :key="p.id">
+                <a :href="'{% url 'consulta_joiner' %}?participant_id=' + p.id"
+                   class="p-3.5 hover:bg-pink-50/60 dark:hover:bg-cyber-elevated transition flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 block cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-pink-100 dark:bg-pink-950/70 text-pink-700 dark:text-pink-300 font-black text-sm flex items-center justify-center shrink-0">
+                            <span x-text="p.name.charAt(0).toUpperCase()"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white" x-text="p.name"></span>
+                                <template x-if="p.username">
+                                    <span class="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/60 text-pink-600 dark:text-cyber-neon text-[10px] font-bold rounded-md border border-pink-200/80 dark:border-pink-800/60"
+                                          x-text="'@' + p.username" title="Forma que quer ser chamado"></span>
+                                </template>
+                                <template x-if="p.social_handle">
+                                    <span class="text-[11px] text-slate-400 font-medium" x-text="p.social_handle"></span>
+                                </template>
+                            </div>
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                <span class="flex items-center gap-1">
+                                    <i data-lucide="phone" class="w-3 h-3 text-emerald-500"></i>
+                                    <span x-text="p.formatted_phone || p.whatsapp"></span>
+                                </span>
+                                <span>•</span>
+                                <span x-text="p.total_itens + ' item(ns) sob custódia'"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumo Financeiro Rápido do Joiner -->
+                    <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <template x-if="p.total_devido > 0">
+                            <div class="text-right">
+                                <span class="px-2.5 py-1 bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 rounded-lg text-xs font-black inline-flex items-center gap-1">
+                                    <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-500"></i>
+                                    <span>Deve <span x-text="formatMoney(p.total_devido)"></span></span>
+                                </span>
+                                <div class="text-[10px] text-slate-400 mt-0.5">
+                                    Itens: <span x-text="formatMoney(p.deve_itens)"></span> | Frete: <span x-text="formatMoney(p.deve_frete)"></span> | Taxa: <span x-text="formatMoney(p.deve_taxa)"></span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="p.total_devido <= 0">
+                            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-lg text-xs font-black inline-flex items-center gap-1">
+                                <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                                <span>Quitado (R$ 0,00)</span>
+                            </span>
+                        </template>
+                        <span class="text-xs text-slate-300 dark:text-slate-500 hover:text-pink-600 font-bold ml-1 flex items-center gap-0.5">
+                            <span>Abrir</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </span>
+                    </div>
+                </a>
+            </template>
+            <div x-show="filteredParticipants.length === 0" class="p-6 text-center text-slate-400 text-xs">
+                Nenhum joiner encontrado para esta pesquisa. Tente buscar por outro nome, telefone ou @.
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        <!-- Dropdown / Select Direto Tradicional -->
+        <div class="md:col-span-8">
+            <form method="get" action="{% url 'consulta_joiner' %}" id="form-select-participant">
+                <div class="relative">
+                    <select name="participant_id" id="select-participant" onchange="this.form.submit()"
+                            class="w-full bg-white dark:bg-cyber-obsidian border border-slate-300 dark:border-white/10 rounded-2xl py-2.5 pl-3.5 pr-10 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 shadow-2xs focus:ring-2 focus:ring-pink-500 focus:border-pink-500 cursor-pointer">
+                        <option value="">-- Ou selecione na lista geral de participantes --</option>
+                        {% for p in participants_with_counts %}
+                            <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
+                                {{ p.name }}{% if p.username %} [{{ p.username }}]{% endif %}{% if p.social_handle %} ({{ p.social_handle }}){% endif %} — {{ p.unpacked_slots|add:p.unpacked_mercari }} item(ns) livres / {{ p.total_slots|add:p.total_mercari }} total
+                            </option>
+                        {% endfor %}
+                        <optgroup label="Todos os Participantes Cadastrados">
+                            {% for p in all_participants %}
+                                <option value="{{ p.id }}" {% if selected_participant and selected_participant.id == p.id %}selected{% endif %}>
+                                    {{ p.name }}{% if p.username %} (@{{ p.username }}){% endif %} ({{ p.formatted_phone }})
+                                </option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Dica Rápida -->
+        <div class="md:col-span-4 text-xs text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-cyber-elevated p-3 rounded-2xl border border-slate-200 dark:border-white/10 flex items-center gap-2">
+            <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 shrink-0"></i>
+            <div>
+                <strong class="text-slate-700 dark:text-slate-200">Dica:</strong> Clique nos botões <span class="font-bold text-slate-700 dark:text-slate-200">Item, Inter e Taxa</span> de cada card para alternar o status e atualizar os valores em R$ na hora!
+            </div>
+        </div>
+    </div>
+
+    <!-- Chips de Acesso Rápido a Joiners com Mais Itens Livres -->
+    {% if participants_with_counts %}
+        <div class="pt-2 border-t border-pink-100/60 dark:border-white/5 flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mr-1">Joiners em destaque:</span>
+            {% for p in participants_with_counts|slice:":8" %}
+                <a href="{% url 'consulta_joiner' %}?participant_id={{ p.id }}"
+                   class="px-2.5 py-1 rounded-xl text-xs font-semibold transition border shadow-2xs flex items-center gap-1.5
+                          {% if selected_participant and selected_participant.id == p.id %}bg-pink-600 text-white border-pink-600{% else %}bg-white dark:bg-cyber-elevated text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:border-pink-300 hover:text-pink-600{% endif %}">
+                    <span>{{ p.display_name }}</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black {% if selected_participant and selected_participant.id == p.id %}bg-pink-700 text-white{% else %}bg-pink-100 dark:bg-pink-950 text-pink-700 dark:text-pink-300{% endif %}">
+                        {{ p.unpacked_slots|add:p.unpacked_mercari }}
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

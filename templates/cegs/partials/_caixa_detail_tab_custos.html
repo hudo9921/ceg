@@ -1,0 +1,46 @@
+<!-- Custos e Observações Internas da Remessa (Apenas Organizador / Staff) -->
+{% if is_staff_user %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Resumo Financeiro da Remessa -->
+    <div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm p-6 space-y-4">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-500"></i>
+            <span>Custos da Remessa Internacional</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="p-3.5 bg-slate-50 dark:bg-cyber-obsidian rounded-2xl border border-slate-100 dark:border-white/5">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Frete Internacional Total</span>
+                <span class="text-base sm:text-lg font-black text-slate-900 dark:text-white block mt-0.5 font-mono">
+                    {% if caixa.frete_inter_total %}R$ {{ caixa.frete_inter_total }}{% else %}<span class="text-xs text-slate-400 font-normal">Não informado</span>{% endif %}
+                </span>
+            </div>
+            <div class="p-3.5 bg-slate-50 dark:bg-cyber-obsidian rounded-2xl border border-slate-100 dark:border-white/5">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Taxa Aduaneira Total</span>
+                <span class="text-base sm:text-lg font-black text-slate-900 dark:text-white block mt-0.5 font-mono">
+                    {% if caixa.taxa_aduaneira_total %}R$ {{ caixa.taxa_aduaneira_total }}{% else %}<span class="text-xs text-slate-400 font-normal">Não tributada</span>{% endif %}
+                </span>
+            </div>
+        </div>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            Estes valores são preenchidos pelo organizador para controle das taxas divididas entre os participantes.
+        </p>
+    </div>
+
+    <!-- Anotações Internas -->
+    <div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm p-6 space-y-3">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4 text-purple-500"></i>
+            <span>Anotações & Observações da Remessa</span>
+        </h3>
+        {% if caixa.observacoes %}
+            <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line bg-slate-50 dark:bg-cyber-obsidian p-3.5 rounded-2xl border border-slate-100 dark:border-white/5 font-mono">
+                {{ caixa.observacoes }}
+            </p>
+        {% else %}
+            <p class="text-xs text-slate-400 italic bg-slate-50 dark:bg-cyber-obsidian p-3.5 rounded-2xl border border-slate-100 dark:border-white/5">
+                Nenhuma anotação cadastrada para esta remessa.
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

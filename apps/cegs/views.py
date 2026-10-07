@@ -286,15 +286,31 @@ class CEGDetailView(View):
 
         claim_logs_by_slot_json = json.dumps(claim_logs_by_slot)
 
-        # Carrega participante logado via sessão (para pré-preencher o formulário de reserva)
+        # Carrega participante logado via sessão ou usuário autenticado (para pré-preencher o formulário de reserva)
         logged_participant = None
         participant_id = request.session.get('participant_id')
-        if participant_id and not (request.user.is_authenticated and request.user.is_staff):
+        if participant_id:
             from apps.participants.models import Participant
             try:
                 logged_participant = Participant.objects.get(id=participant_id)
             except Participant.DoesNotExist:
                 request.session.pop('participant_id', None)
+        if not logged_participant and request.user.is_authenticated:
+            from apps.participants.models import Participant
+            logged_participant = Participant.objects.filter(username=request.user.username).first()
+
+        prefilled_name = ''
+        prefilled_whatsapp = ''
+        prefilled_social = ''
+        prefilled_username = ''
+        if logged_participant:
+            prefilled_name = logged_participant.name
+            prefilled_whatsapp = logged_participant.whatsapp or ''
+            prefilled_social = logged_participant.social_handle or ''
+            prefilled_username = logged_participant.username or ''
+        elif request.user.is_authenticated:
+            prefilled_name = request.user.get_full_name() or request.user.username
+            prefilled_username = request.user.username
 
         # Polling / Sondagem de Demanda data
         polling_summary = None
@@ -389,6 +405,10 @@ class CEGDetailView(View):
             'share_items': share_items,
             'share_items_json': share_items_json,
             'ceg_price_display': ceg_price_display,
+            'prefilled_name': prefilled_name,
+            'prefilled_whatsapp': prefilled_whatsapp,
+            'prefilled_social': prefilled_social,
+            'prefilled_username': prefilled_username,
         })
 
 

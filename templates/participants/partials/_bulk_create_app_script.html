@@ -1,0 +1,256 @@
+<!-- Script Alpine.js para Cadastro de Participantes em Massa -->
+<script>
+function bulkParticipantsApp() {
+    return {
+        activeTab: 'paste',
+        rawText: '',
+        defaultDDI: '55',
+        updateExisting: true,
+        previewItems: [],
+        isParsing: false,
+        isSaving: false,
+        toast: { show: false, type: 'success', title: '', message: '' },
+
+        // Linhas da grade interativa
+        tableRows: [
+            { id: 1, name: '', ddi: '55', phone: '', social_handle: '', username: '' },
+            { id: 2, name: '', ddi: '55', phone: '', social_handle: '', username: '' },
+            { id: 3, name: '', ddi: '55', phone: '', social_handle: '', username: '' },
+        ],
+        nextRowId: 4,
+
+        init() {
+            this.$watch('previewItems', () => {
+                this.$nextTick(() => {
+                    if (window.lucide) window.lucide.createIcons();
+                });
+            });
+            this.$watch('activeTab', () => {
+                this.$nextTick(() => {
+                    if (window.lucide) window.lucide.createIcons();
+                });
+            });
+        },
+
+        get validPreviewCount() {
+            return this.previewItems.filter(i => i.is_valid).length;
+        },
+
+        get invalidPreviewCount() {
+            return this.previewItems.filter(i => !i.is_valid).length;
+        },
+
+        get existingPreviewCount() {
+            return this.previewItems.filter(i => i.is_valid && i.already_exists).length;
+        },
+
+        showToast(type, title, message) {
+            this.toast = { show: true, type, title, message };
+            this.$nextTick(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+            setTimeout(() => { this.toast.show = false; }, 6000);
+        },
+
+        loadSampleData() {
+            this.rawText = [
+                "Lucas Silva\t11 98888-7777\t@lucaskpop",
+                "Maria Souza\t21 97777-6666\t@mariasouza",
+                "John Walker\t+1 202 555 0199\t@jwalker",
+                "Minji Kim\t+82 10 1234 5678\t@minjikpop",
+                "Beatriz Santos | 55998765432 | @biakpop",
+                "Carlos Oliveira, 31987654321, @carlos_ceg"
+            ].join("\n");
+            this.parsePastedText();
+        },
+
+        formatPhoneDisplay(digits) {
+            if (!digits) return "—";
+            if (digits.startsWith("55") && digits.length === 13) {
+                return `+55 (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9)}`;
+            }
+            if (digits.startsWith("55") && digits.length === 12) {
+                return `+55 (${digits.slice(2, 4)}) ${digits.slice(4, 8)}-${digits.slice(8)}`;
+            }
+            if (digits.startsWith("1") && digits.length === 11) {
+                return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+            }
+            if (digits.startsWith("82") && digits.length >= 11) {
+                return `+82 ${digits.slice(2, 4)} ${digits.slice(4, 8)}-${digits.slice(8)}`;
+            }
+            return `+${digits}`;
+        },
+
+        removePreviewItem(idx) {
+            this.previewItems.splice(idx, 1);
+        },
+
+        async parsePastedText(forceServer = false) {
+            if (!this.rawText.trim()) {
+                this.previewItems = [];
+                return;
+            }
+
+            this.isParsing = true;
+            try {
+                const res = await fetch("{% url 'bulk_participant_create' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: 'parse',
+                        raw_text: this.rawText,
+                        default_ddi: this.defaultDDI
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.previewItems = data.items || [];
+                }
+            } catch (err) {
+                console.error("Erro ao analisar texto colado:", err);
+            } finally {
+                this.isParsing = false;
+            }
+        },
+
+        async saveParsedItems() {
+            const validItems = this.previewItems.filter(i => i.is_valid);
+            if (validItems.length === 0) {
+                this.showToast('error', 'Atenção', 'Nenhum participante válido para cadastrar.');
+                return;
+            }
+
+            this.isSaving = true;
+            try {
+                const res = await fetch("{% url 'bulk_participant_create' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: 'save',
+                        items: validItems,
+                        default_ddi: this.defaultDDI,
+                        update_existing: this.updateExisting
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast('success', 'Cadastrados com Sucesso!', data.message);
+                    this.rawText = '';
+                    this.previewItems = [];
+                    setTimeout(() => { window.location.reload(); }, 1800);
+                } else {
+                    this.showToast('error', 'Erro ao salvar', data.message || 'Ocorreu um erro.');
+                }
+            } catch (err) {
+                this.showToast('error', 'Erro de Conexão', 'Não foi possível salvar os participantes.');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        // Gestão de Linhas na Grade Interativa
+        addRow() {
+            this.tableRows.push({
+                id: this.nextRowId++,
+                name: '',
+                ddi: this.defaultDDI,
+                phone: '',
+                social_handle: '',
+                username: ''
+            });
+            this.$nextTick(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+        },
+
+        addMultipleRows(count = 5) {
+            for (let i = 0; i < count; i++) {
+                this.addRow();
+            }
+        },
+
+        removeTableRow(idx) {
+            this.tableRows.splice(idx, 1);
+        },
+
+        clearTableRows() {
+            this.tableRows = [];
+            this.addRow();
+        },
+
+        async saveTableRows() {
+            const items = [];
+            for (const r of this.tableRows) {
+                if (!r.name.trim() && !r.phone.trim()) continue;
+
+                let raw = r.phone.trim();
+                let chosenDDI = r.ddi;
+                if (chosenDDI !== 'custom' && !raw.startsWith('+') && !raw.startsWith('00')) {
+                    if (chosenDDI === '55') {
+                        let digits = raw.replace(/\D/g, '');
+                        if (digits.length === 10 || digits.length === 11) {
+                            raw = '55' + digits;
+                        }
+                    } else {
+                        let cleanD = chosenDDI.replace(/\D/g, '');
+                        let digits = raw.replace(/\D/g, '');
+                        if (!digits.startsWith(cleanD)) {
+                            raw = cleanD + digits;
+                        }
+                    }
+                }
+
+                items.push({
+                    name: r.name.trim(),
+                    raw_phone: raw,
+                    social_handle: r.social_handle.trim(),
+                    username: r.username.trim(),
+                });
+            }
+
+            if (items.length === 0) {
+                this.showToast('error', 'Atenção', 'Preencha ao menos uma linha com Nome e Telefone.');
+                return;
+            }
+
+            this.isSaving = true;
+            try {
+                const res = await fetch("{% url 'bulk_participant_create' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        action: 'save',
+                        items: items,
+                        default_ddi: this.defaultDDI,
+                        update_existing: this.updateExisting
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast('success', 'Participantes Salvos!', data.message);
+                    this.clearTableRows();
+                    setTimeout(() => { window.location.reload(); }, 1800);
+                } else {
+                    this.showToast('error', 'Erro', data.message || 'Falha ao salvar participantes.');
+                }
+            } catch (err) {
+                this.showToast('error', 'Erro', 'Falha ao comunicar com o servidor.');
+            } finally {
+                this.isSaving = false;
+            }
+        }
+    }
+}
+</script>

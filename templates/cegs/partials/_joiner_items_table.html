@@ -1,0 +1,35 @@
+<!-- TABELA / LISTA DE ITENS DO JOINER -->
+<div class="bg-white dark:bg-[#14121B] rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
+    <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <input type="checkbox" id="check-all-visible" @change="toggleSelectAll($event.target.checked)"
+                   :checked="allVisibleSelected"
+                   class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
+            <label for="check-all-visible" class="text-xs font-black text-slate-800 dark:text-slate-200 cursor-pointer select-none">
+                Selecionar Todos os Visíveis (<span x-text="eligibleVisibleItems.length"></span> livres p/ empacotar)
+            </label>
+        </div>
+        <div class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+            <span>Clique nos botões <strong class="text-slate-600 dark:text-slate-300">Item, Inter e Taxa</strong> para alternar pagamento</span>
+        </div>
+    </div>
+
+    <template x-if="filteredItems.length === 0">
+        <div class="p-12 text-center text-slate-400 space-y-2">
+            <i data-lucide="search" class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600"></i>
+            <div class="text-sm font-bold text-slate-600 dark:text-slate-400">Nenhum item encontrado com os filtros selecionados.</div>
+            <p class="text-xs text-slate-400 dark:text-slate-500">Tente redefinir os filtros ou mudar a categoria.</p>
+        </div>
+    </template>
+
+    <div class="divide-y divide-slate-100 dark:divide-white/5">
+        <template x-for="item in filteredItems" :key="item.uid">
+            <div class="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition hover:bg-slate-50/80 dark:hover:bg-white/5"
+                 :class="selectedUids.includes(item.uid) ? 'bg-pink-50/40 dark:bg-pink-950/20' : (item.pacote_status === 'ENVIADO' ? 'bg-emerald-50/10 dark:bg-emerald-950/10' : '')">
+                {% include 'cegs/partials/_joiner_item_row.html' %}
+                {% include 'cegs/partials/_joiner_item_payment_buttons.html' %}
+            </div>
+        </template>
+    </div>
+</div>

@@ -1,0 +1,74 @@
+<!-- Coluna Direita: Teste de Envio e Configurações -->
+<div class="space-y-6">
+    <!-- Formulário de Teste de Disparo -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+                <i data-lucide="message-square" class="w-5 h-5 text-pink-500 stroke-[2]"></i>
+                <span>Testar Envio de Mensagem</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Envie uma mensagem instantânea para o seu próprio WhatsApp para validar que a integração está funcionando perfeitamente.
+            </p>
+        </div>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="send_test">
+
+            <div class="space-y-1.5">
+                <label for="phone" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Número de WhatsApp (com DDI e DDD)
+                </label>
+                <input type="text" id="phone" name="phone" placeholder="Ex: 5511999998888" required
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 outline-none transition" />
+                <span class="text-[11px] text-slate-400 dark:text-slate-500 block">Apenas números (DDI Brasil = 55 + DDD + 9 dígitos).</span>
+            </div>
+
+            <div class="space-y-1.5">
+                <label for="message" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Texto da Mensagem
+                </label>
+                <textarea id="message" name="message" rows="3" required
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 outline-none transition">Olá! Este é um teste oficial de mensagem via Bot WhatsApp do CEG Manager. ✨</textarea>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 shadow-md hover:shadow-pink-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer">
+                <i data-lucide="send" class="w-4 h-4 stroke-[2]"></i>
+                <span>Enviar Mensagem de Teste</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Card de Informações Técnicas -->
+    <div class="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Ambiente & Conexões
+        </h3>
+        <dl class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+                <dt class="text-slate-400">Servidor Evolution</dt>
+                <dd class="font-mono font-semibold text-slate-700 dark:text-slate-300 break-all">{{ evolution_url }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">Instância Baileys</dt>
+                <dd class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ instance_name }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">Cache Redis</dt>
+                <dd class="font-semibold text-emerald-600 dark:text-emerald-400">Ativo (valcegs-redis)</dd>
+            </div>
+            <div>
+                <dt class="text-slate-400">Banco de Dados</dt>
+                <dd class="font-semibold text-purple-600 dark:text-purple-400">Neon PostgreSQL (evolution)</dd>
+            </div>
+        </dl>
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+            <a href="http://150.136.166.17:8080/manager/" target="_blank" rel="noopener noreferrer"
+               class="text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 font-semibold inline-flex items-center gap-1.5 transition">
+                <span>Abrir Evolution Manager Oficial</span>
+                <i data-lucide="external-link" class="w-3.5 h-3.5 stroke-[2]"></i>
+            </a>
+        </div>
+    </div>
+</div>

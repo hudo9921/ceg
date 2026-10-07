@@ -1,0 +1,30 @@
+<script>
+function transferVitrineApp() {
+    const allSlotIds = [{% for slot in unclaimed_slots %}'{{ slot.id }}',{% endfor %}];
+
+    return {
+        selectedSlots: [...allSlotIds],
+        selectAll: true,
+
+        init() {
+            this.$nextTick(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+        },
+
+        get selectedCount() {
+            return this.selectedSlots.length;
+        },
+
+        toggleSelectAll() {
+            if (this.selectAll) {
+                this.selectedSlots = [...allSlotIds];
+            } else {
+                this.selectedSlots = [];
+            }
+        }
+    };
+}
+</script>

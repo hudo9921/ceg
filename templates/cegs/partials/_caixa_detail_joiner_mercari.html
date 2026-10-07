@@ -1,0 +1,130 @@
+<!-- Visão do Participante: Itens Individuais Mercari nesta Caixa & Empty State -->
+{% if participant %}
+    {% if participant_itens_individuais %}
+        <div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm overflow-hidden space-y-4 p-5 sm:p-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-rose-500"></i>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">
+                            Seus Itens Individuais (Mercari) nesta Caixa
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Itens adquiridos avulsos que estão viajando nesta mesma remessa.
+                        </p>
+                    </div>
+                </div>
+                <span class="bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-xs font-black px-2.5 py-0.5 rounded-full font-mono">
+                    {{ participant_itens_individuais|length }} item(ns)
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold border-b border-slate-100 dark:border-white/10">
+                            <th class="py-2.5 px-3">Foto</th>
+                            <th class="py-2.5 px-3">Item</th>
+                            <th class="py-2.5 px-3 text-center">Qtd</th>
+                            <th class="py-2.5 px-3">Status</th>
+                            <th class="py-2.5 px-3">Frete Inter</th>
+                            <th class="py-2.5 px-3">Taxa Aduaneira</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                        {% for item in participant_itens_individuais %}
+                            <tr class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
+                                <td class="py-3 px-3 w-14">
+                                    <div class="w-12 h-12 relative group">
+                                        <img src="{{ item.image_display_url }}" alt="{{ item.nome }}"
+                                             @click="openZoom('{{ item.image_display_url }}')"
+                                             class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:opacity-80 transition">
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-3">
+                                    <div class="font-bold text-slate-900 dark:text-white">{{ item.nome }}</div>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        {% if item.tipo_item %}
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                <i data-lucide="tag" class="w-2.5 h-2.5"></i>
+                                                <span>{{ item.tipo_item.nome }}</span>
+                                            </span>
+                                        {% endif %}
+                                        {% if item.preco_produto %}
+                                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                                Preço: R$ {{ item.preco_produto }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td class="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 font-mono">
+                                    {{ item.quantidade }}
+                                </td>
+
+                                <td class="py-3 px-3">
+                                    <span class="inline-block text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider
+                                        {% if item.status == 'COMPRADO' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300
+                                        {% elif item.status == 'WAREHOUSE' %}bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300
+                                        {% elif item.status == 'EM_CONSOLIDACAO' %}bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300
+                                        {% elif item.status == 'ENVIADO' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300
+                                        {% elif item.status == 'NO_BRASIL' %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300
+                                        {% elif item.status == 'FINALIZADO' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
+                                        {% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
+                                        {{ item.get_status_display }}
+                                    </span>
+                                </td>
+
+                                <td class="py-3 px-3">
+                                    {% if item.frete_inter %}
+                                        <div class="font-mono font-bold text-slate-900 dark:text-white">R$ {{ item.frete_inter }}</div>
+                                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                            {% if item.frete_inter_pago %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
+                                            {% else %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300{% endif %}">
+                                            {% if item.frete_inter_pago %}✓ Pago{% else %}⏳ Pendente{% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-3">
+                                    {% if item.taxa_aduaneira %}
+                                        <div class="font-mono font-bold text-slate-900 dark:text-white">R$ {{ item.taxa_aduaneira }}</div>
+                                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5
+                                            {% if item.taxa_aduaneira_paga %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
+                                            {% else %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300{% endif %}">
+                                            {% if item.taxa_aduaneira_paga %}✓ Paga{% else %}⏳ Pendente{% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-slate-400 dark:text-slate-500 italic text-[11px]">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if not participant_cegs and not participant_itens_individuais %}
+        <div class="p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-cyber-surface/90 border border-slate-200 dark:border-white/10 text-center space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
+                <i data-lucide="info" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white">
+                Você não possui itens alocados nesta remessa
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Suas compras podem estar consolidadas em outras remessas ou aguardando o fechamento de novas caixas.
+            </p>
+            <a href="{% url 'my_claims' %}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs transition shadow-xs">
+                <span>Ver Minhas Reservas & Compras</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+    {% endif %}
+{% endif %}

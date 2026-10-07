@@ -1,0 +1,71 @@
+<!-- Hero Banner Oficial & KPIs ValCegs CAIXINHAS -->
+<div class="relative overflow-hidden rounded-3xl shadow-sm border border-sky-100 dark:border-white/10 bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-md transition-all duration-300">
+    <div class="w-full relative aspect-[21/6] sm:aspect-[24/7] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-500 dark:from-cyber-surface dark:via-[#1A2035] dark:to-cyber-surface">
+        {% load static %}
+        <img src="{% static 'images/banner_caixinhas.png' %}"
+             alt="ValCegs Caixinhas"
+             class="w-full h-full object-cover sm:object-contain object-center">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent sm:hidden"></div>
+    </div>
+    
+    <!-- Faixa de Ações Rápidas -->
+    <div class="p-3.5 sm:p-5 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md border-t border-sky-100 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0 border border-sky-200/80 dark:border-sky-800/60 shadow-2xs">
+                <i data-lucide="plane" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h2 class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">Rastreamento de Caixas & Remessas Internacionais</h2>
+                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Acompanhe envio, rastreio e chegada de remessas da Coreia do Sul (KR) e Japão (JP Mercari).</p>
+            </div>
+        </div>
+
+        {% if is_staff_user %}
+            <div class="flex items-center gap-2">
+                <a href="{% url 'caixa_create' %}" class="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition transform hover:-translate-y-0.5 flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Nova Caixa / Remessa</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- KPI Mini Cards em Estilo Soft Y2K & Cyber-Luxury -->
+    <div class="px-4 pb-5 sm:px-6 sm:pb-6 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+        <div class="bg-white/80 dark:bg-slate-800/70 backdrop-blur-md px-3 py-2.5 rounded-xl border border-sky-100 dark:border-white/10 shadow-2xs">
+            <span class="block text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">{{ total_caixas }}</span>
+            <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider flex items-center justify-center gap-1">
+                <i data-lucide="archive" class="w-3 h-3 text-slate-400"></i>
+                <span>Total de Caixas</span>
+            </span>
+        </div>
+        <div class="bg-sky-50/80 dark:bg-sky-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-sky-200/80 dark:border-sky-800/60 shadow-2xs">
+            <span class="block text-xl sm:text-2xl font-black text-sky-700 dark:text-sky-300 font-mono">{{ caixas_kr }}</span>
+            <span class="text-[10px] uppercase font-bold text-sky-800/80 dark:text-sky-300 tracking-wider flex items-center justify-center gap-1">
+                <i data-lucide="globe" class="w-3 h-3 text-sky-500"></i>
+                <span>Coreia (KR)</span>
+            </span>
+        </div>
+        <div class="bg-rose-50/80 dark:bg-rose-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-rose-200/80 dark:border-rose-800/60 shadow-2xs">
+            <span class="block text-xl sm:text-2xl font-black text-rose-700 dark:text-rose-300 font-mono">{{ caixas_jp }}</span>
+            <span class="text-[10px] uppercase font-bold text-rose-800/80 dark:text-rose-300 tracking-wider flex items-center justify-center gap-1">
+                <i data-lucide="shopping-bag" class="w-3 h-3 text-rose-500"></i>
+                <span>Mercari (JP)</span>
+            </span>
+        </div>
+        <div class="bg-amber-50/80 dark:bg-amber-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-amber-200/80 dark:border-amber-800/60 shadow-2xs">
+            <span class="block text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-300 font-mono">{{ caixas_em_transito }}</span>
+            <span class="text-[10px] uppercase font-bold text-amber-800/80 dark:text-amber-300 tracking-wider flex items-center justify-center gap-1">
+                <i data-lucide="navigation" class="w-3 h-3 text-amber-500"></i>
+                <span>Em Trânsito</span>
+            </span>
+        </div>
+        <div class="bg-emerald-50/80 dark:bg-emerald-950/40 backdrop-blur-md px-3 py-2.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
+            <span class="block text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 font-mono">{{ total_cegs_vinculadas }}</span>
+            <span class="text-[10px] uppercase font-bold text-emerald-800/80 dark:text-emerald-300 tracking-wider flex items-center justify-center gap-1">
+                <i data-lucide="layers" class="w-3 h-3 text-emerald-500"></i>
+                <span>CEGs Vinculadas</span>
+            </span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,32 @@
+<!-- Seção de CEGs sem Caixa (Apenas para Administrador) -->
+{% if is_staff_user and cegs_sem_caixa %}
+    <div class="bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-5 space-y-3 backdrop-blur-md">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">
+                    CEGs Aguardando Vinculação a uma Remessa ({{ cegs_sem_caixa|length }})
+                </h3>
+            </div>
+            <span class="text-xs text-amber-700 dark:text-amber-300 font-medium">Sem caixa atrelada</span>
+        </div>
+        <p class="text-xs text-amber-800 dark:text-amber-300">
+            As seguintes CEGs ainda não estão atreladas a nenhuma Caixa (KR ou JP). Vincule-as ao criar uma nova caixa ou entrando nos detalhes de uma caixa existente:
+        </p>
+        <div class="flex flex-wrap gap-2 pt-1">
+            {% for c in cegs_sem_caixa|slice:":10" %}
+                <a href="{% url 'ceg_detail' slug=c.slug %}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-cyber-surface border border-amber-200 dark:border-white/10 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:border-sky-400 hover:text-sky-600 dark:hover:text-sky-300 transition shadow-2xs">
+                    <span class="text-slate-400 dark:text-slate-500 font-mono text-[10px]">CEG:</span>
+                    <span>{{ c.title }}</span>
+                    <span class="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 rounded font-bold">{{ c.get_status_display }}</span>
+                </a>
+            {% endfor %}
+            {% if cegs_sem_caixa|length > 10 %}
+                <span class="text-xs text-amber-700 dark:text-amber-300 font-bold self-center">
+                    + {{ cegs_sem_caixa|length|add:"-10" }} outras CEGs
+                </span>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}

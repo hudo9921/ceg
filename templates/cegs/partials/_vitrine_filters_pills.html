@@ -1,0 +1,51 @@
+<!-- Linha 3: Categorias Principais (Pills) -->
+<div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 overflow-x-auto pb-1">
+    <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 shrink-0">Tipo de Item:</span>
+    
+    <button type="button" @click="setTipo('')"
+       class="px-3 py-1 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
+       :class="!selectedTipo ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-pink-50 hover:text-pink-600'">
+        Todos os Tipos
+    </button>
+
+    {% for tipo in tipos_item %}
+        <button type="button" @click="setTipo('{{ tipo.id }}')"
+           class="px-3 py-1 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer"
+           :class="selectedTipo === '{{ tipo.id }}' ? 'bg-pink-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-pink-50 hover:text-pink-600'">
+            {{ tipo.nome }}
+        </button>
+    {% endfor %}
+
+    <button type="button"
+            x-show="hasActiveFilters"
+            x-cloak
+            @click="clearFilters()"
+            class="ml-auto text-xs font-bold text-rose-500 hover:text-rose-700 hover:underline shrink-0 cursor-pointer">
+        Limpar Filtros
+    </button>
+</div>
+
+<!-- Linha 4: Subfiltro Especial de Photocards (Regulares, POB, Lucky Draw, Fansign, etc.) -->
+<div x-show="isPhotocardActive || selectedSubCategory"
+     x-transition
+     x-cloak
+     class="p-2.5 rounded-xl bg-pink-50/60 dark:bg-pink-950/20 border border-pink-200/60 dark:border-pink-900/40 flex items-center gap-2 overflow-x-auto">
+    <span class="text-[11px] font-black uppercase tracking-wider text-pink-700 dark:text-pink-300 shrink-0 flex items-center gap-1">
+        <i data-lucide="tag" class="w-3.5 h-3.5"></i>
+        <span>Tipo de Photocard:</span>
+    </span>
+
+    <button type="button" @click="setSubCategory('')"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
+            :class="!selectedSubCategory ? 'bg-pink-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-pink-100 dark:hover:bg-slate-800'">
+        Todos os Photocards
+    </button>
+
+    {% for sub in photocard_subcategories %}
+        <button type="button" @click="setSubCategory('{{ sub|escapejs }}')"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
+                :class="selectedSubCategory === '{{ sub|escapejs }}' ? 'bg-pink-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-pink-100 dark:hover:bg-slate-800'">
+            {{ sub }}
+        </button>
+    {% endfor %}
+</div>

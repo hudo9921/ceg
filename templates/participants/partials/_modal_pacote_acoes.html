@@ -1,0 +1,122 @@
+    <!-- MODAL: CANCELAR SOLICITAÇÃO DE ENVIO -->
+    <div x-show="cancelModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs" @click="cancelModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white dark:bg-cyber-surface rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200/80 dark:border-white/10"
+                @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-xs">
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">Cancelar Solicitação de Envio</h3>
+                            <p class="text-[11px] text-slate-400 dark:text-cyber-silver">Pacote <span class="font-bold text-slate-700 dark:text-slate-300" x-text="cancelPacoteIdentificador"></span></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="cancelModalOpen = false"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer p-1">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-cyber-silver leading-relaxed">
+                    Tem certeza de que deseja cancelar esta solicitação de envio? Os itens voltarão imediatamente para a sua <strong>Minha Caixinha</strong> e você poderá solicitá-los novamente quando quiser.
+                </p>
+
+                <form :action="'/me/pacotes/' + cancelPacoteId + '/cancelar-solicitacao/'" method="post" class="pt-2 flex justify-end gap-2">
+                    {% csrf_token %}
+                    <button type="button" @click="cancelModalOpen = false"
+                        class="px-4 py-2 border border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-cyber-silver rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition cursor-pointer">
+                        Voltar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>Sim, Cancelar Solicitação</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRMAR ENTREGA & DEIXAR FEEDBACK -->
+    <div x-show="deliveryModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xs" @click="deliveryModalOpen = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-white dark:bg-cyber-surface rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200/80 dark:border-white/10"
+                @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
+                            <i data-lucide="award" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">Confirmar Recebimento</h3>
+                            <p class="text-[11px] text-slate-400 dark:text-cyber-silver">Pacote <span class="font-bold text-slate-700 dark:text-slate-300"
+                                    x-text="deliveryPacoteIdentificador"></span></p>
+                        </div>
+                    </div>
+                    <button type="button" @click="deliveryModalOpen = false"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer p-1">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form :action="'/me/pacotes/' + deliveryPacoteId + '/confirmar-entrega/'" method="post"
+                    class="space-y-4">
+                    {% csrf_token %}
+
+                    <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2.5">
+                        <i data-lucide="package-check" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <strong>Seus photocards chegaram?</strong>
+                            <p class="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                                Ao confirmar o recebimento, o status do pacote é alterado para <strong>Entregue</strong>
+                                e o organizador é notificado.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Avaliação por Estrelas -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Sua Avaliação (1 a 5 estrelas)</label>
+                        <div class="flex items-center gap-2">
+                            <template x-for="star in [1, 2, 3, 4, 5]" :key="star">
+                                <button type="button" @click="deliveryRating = star"
+                                    class="text-2xl transition transform hover:scale-125 focus:outline-none cursor-pointer"
+                                    :class="star <= deliveryRating ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'">
+                                    ★
+                                </button>
+                            </template>
+                            <span class="ml-2 text-xs font-bold text-amber-800 dark:text-amber-300"
+                                x-text="deliveryRating + ' de 5 estrelas'"></span>
+                            <input type="hidden" name="rating" :value="deliveryRating">
+                        </div>
+                    </div>
+
+                    <!-- Campo de Depoimento / Feedback -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                            Depoimento / Comentário <span class="text-slate-400 dark:text-cyber-silver font-normal text-[11px]">(Opcional)</span>
+                        </label>
+                        <textarea name="feedback" rows="3"
+                            placeholder="Conte como os itens chegaram (embalagem, brindes, estado dos cards)..."
+                            class="w-full p-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-cyber-surface focus:ring-2 focus:ring-pink-500 focus:outline-none transition"></textarea>
+                    </div>
+
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" @click="deliveryModalOpen = false"
+                            class="px-4 py-2 border border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-cyber-silver rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-white/5 transition cursor-pointer">
+                            Voltar
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                            <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                            <span>Confirmar Entrega</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>

@@ -1,0 +1,101 @@
+{% include 'analytics/partials/_sales_app_chart_combined.html' %}
+
+<script>
+function renderSalesMonthlyChart(app) {
+    const ctx = document.getElementById('salesMonthlyChart');
+    if (!ctx) return null;
+    if (app.monthlyChart) app.monthlyChart.destroy();
+
+    const labels = (app.chartData.monthly && app.chartData.monthly.labels) || [];
+    const claimsCount = (app.chartData.monthly && app.chartData.monthly.claims_count) || [];
+    const totalSales = (app.chartData.monthly && app.chartData.monthly.total_sales) || [];
+    const paidSales = (app.chartData.monthly && app.chartData.monthly.paid_sales) || [];
+    const pendingSales = (app.chartData.monthly && app.chartData.monthly.pending_sales) || [];
+
+    const isCombined = app.chartViewMode === 'combined';
+
+    if (isCombined) {
+        return renderSalesCombinedChart(ctx, labels, totalSales, claimsCount, paidSales, pendingSales);
+    }
+
+    const c2d = ctx.getContext('2d');
+    let gradient = 'rgba(16, 185, 129, 0.15)';
+    if (c2d) {
+        const g = c2d.createLinearGradient(0, 0, 0, 260);
+        g.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+        g.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+        gradient = g;
+    }
+
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Faturamento Mensal (R$)',
+                    data: totalSales,
+                    borderColor: '#10b981',
+                    backgroundColor: gradient,
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    tension: 0.35
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.y || 0;
+                            return 'Faturamento: R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        },
+                        afterLabel: function(context) {
+                            const idx = context.dataIndex;
+                            const p = paidSales[idx] || 0;
+                            const pend = pendingSales[idx] || 0;
+                            if (p > 0 || pend > 0) {
+                                return '• Pago: R$ ' + p.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) +
+                                       '\n• Pendente: R$ ' + pend.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { weight: 'bold', size: 11 } }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Faturamento (R$)',
+                        font: { weight: 'bold', size: 11 }
+                    },
+                    ticks: {
+                        callback: function(val) { return 'R$ ' + val.toLocaleString('pt-BR'); },
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            }
+        }
+    });
+}
+</script>

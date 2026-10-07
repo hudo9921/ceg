@@ -1,0 +1,187 @@
+<!-- SEÇÃO 4: VISÃO GERAL CONSOLIDADA E VALORES DAS CEGS -->
+<div x-show="selectedCategory === 'all' || selectedCategory === 'ceg'" class="bg-white dark:bg-[#14121B] rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden space-y-4 p-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-4">
+        <div>
+            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="bar-chart-3" class="w-5 h-5 text-purple-600"></i>
+                <span>Valores e Estatísticas Individuais de cada CEG</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Consolidação financeira de itens, fretes, taxas e prazos por compra em grupo.
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button"
+                    @click="openAddSetModal()"
+                    class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 font-bold rounded-xl text-xs border border-amber-200 dark:border-amber-800/40 transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Novo Set</span>
+            </button>
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-bold" x-text="getCegTableSubtext()">
+                Total: {{ cegs_overview|length }} CEG(s)
+            </span>
+            <button type="button"
+                    x-show="activeCardFilter !== 'all'"
+                    x-cloak
+                    @click="setCardFilter('all')"
+                    class="text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:text-pink-800 transition">
+                (Ver todas)
+            </button>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-white/10">
+                <tr>
+                    <th class="py-3 px-4">CEG & Era</th>
+                    <th class="py-3 px-3 text-center">Status</th>
+                    <th class="py-3 px-3 text-center">Sets / Slots</th>
+                    <th class="py-3 px-3 text-right">Faturado (Pago)</th>
+                    <th class="py-3 px-3 text-right">Falta Pagar</th>
+                    <th class="py-3 px-3 text-right">Para Vender</th>
+                    <th class="py-3 px-3 text-right">Potencial Total</th>
+                    <th class="py-3 px-3 text-center">Frete Inter</th>
+                    <th class="py-3 px-3 text-center">Taxa Aduaneira</th>
+                    <th class="py-3 px-4 text-center">Ação</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-white/5">
+                {% for c in cegs_overview %}
+                    <tr x-show="isCegRowVisible({{ c.is_ativa|yesno:'true,false' }}, {{ c.has_incomplete_sets|yesno:'true,false' }}, {{ c.closed_sets_count|default:0 }}, {{ c.paid_sets_count|default:0 }}, {{ c.finished_sets_count|default:0 }}) && matchItem('{{ c.title|escapejs }} {{ c.clean_title|escapejs }} {{ c.group_name|escapejs }} {{ c.era_name|escapejs }} {{ c.caixa_nome|default:''|escapejs }}', '{{ c.group_id }}', '{{ c.era_id }}')"
+                        x-transition
+                        class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
+                        <td class="py-3 px-4">
+                            <div class="flex items-center gap-3">
+                                {% if c.banner_url or c.image_url %}
+                                    <img src="{{ c.banner_url|default:c.image_url }}" alt="{{ c.title }}"
+                                         @click="zoomPhoto = '{{ c.banner_url|default:c.image_url }}'"
+                                         class="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
+                                         title="Clique para ampliar o banner da CEG" />
+                                {% else %}
+                                    <div class="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/40 flex items-center justify-center text-purple-600 dark:text-purple-300 font-bold text-sm flex-shrink-0">
+                                        <i data-lucide="disc" class="w-4 h-4"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="min-w-0">
+                                    <div class="font-black text-slate-900 dark:text-white text-sm leading-snug">{{ c.clean_title|default:c.title }}</div>
+                                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                                        {{ c.group_name }} • {{ c.era_name }}
+                                    </div>
+                                    {% if c.caixa_nome %}
+                                        <div class="mt-1 flex items-center gap-1">
+                                            <a href="/caixas/{{ c.caixa_slug }}/"
+                                               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-800/40 text-[10px] font-bold transition"
+                                               title="Remessa: {{ c.caixa_nome }} — {{ c.shipping_status_display }}">
+                                                <span>{% if c.caixa_origem == 'KR' %}🇰🇷{% elif c.caixa_origem == 'JP' %}🇯🇵{% else %}📦{% endif %}</span>
+                                                <span class="truncate max-w-[140px]">{{ c.caixa_nome }}</span>
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <div class="mt-1">
+                                            <span class="text-[10px] text-slate-400 italic">Sem caixa vinculada</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            {% if c.is_ativa %}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40"
+                                      title="CEG Ativa: ainda possui {{ c.available_slots }} vaga(s) aberta(s)">
+                                    Ativa ({{ c.available_slots }} vaga{{ c.available_slots|pluralize }})
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40"
+                                      title="Todos os sets foram 100% preenchidos">
+                                    100% Preenchida
+                                </span>
+                            {% endif %}
+                            {% if c.finished_sets_count > 0 %}
+                                <span class="block mt-1 text-[9px] font-bold text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 rounded px-1.5 py-0.5">
+                                    🏆 {{ c.finished_sets_count }} set{{ c.finished_sets_count|pluralize }} terminado{{ c.finished_sets_count|pluralize }}
+                                </span>
+                            {% endif %}
+                            {% if c.shipping_status %}
+                                <span class="block mt-1 text-[9px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 rounded px-1.5 py-0.5"
+                                      title="Status de Envio Internacional">
+                                    ✈️ {{ c.shipping_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3 text-center font-bold">
+                            <div>{{ c.sold_slots }}/{{ c.total_slots }} <span class="text-[10px] text-slate-400 font-normal">({{ c.fill_percentage }}%)</span></div>
+                            <div class="text-[10px] text-slate-400 font-normal">{{ c.total_sets }} Set(s)</div>
+                        </td>
+                        <td class="py-3 px-3 text-right font-black text-emerald-600 dark:text-emerald-400">
+                            R$ {{ c.paid_amount|floatformat:2 }}
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold {% if c.pending_amount > 0 %}text-amber-600 dark:text-amber-400{% else %}text-slate-400{% endif %}">
+                            R$ {{ c.pending_amount|floatformat:2 }}
+                        </td>
+                        <td class="py-3 px-3 text-right text-slate-500 dark:text-slate-400 font-bold">
+                            R$ {{ c.available_amount|floatformat:2 }}
+                        </td>
+                        <td class="py-3 px-3 text-right font-black text-slate-900 dark:text-white">
+                            R$ {{ c.total_potential|floatformat:2 }}
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            {% if c.has_frete %}
+                                <span class="text-xs font-black text-blue-700 dark:text-blue-300 block">R$ {{ c.frete_inter|floatformat:2 }}</span>
+                                <span class="text-[10px] text-slate-400">{{ c.frete_inter_paid_slots }}/{{ c.sold_slots }} pagos</span>
+                            {% else %}
+                                <span class="text-[10px] text-slate-400 font-semibold">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            {% if c.has_taxa %}
+                                <span class="text-xs font-black text-purple-700 dark:text-purple-300 block">R$ {{ c.taxa_aduaneira|floatformat:2 }}</span>
+                                <span class="text-[10px] text-slate-400">{{ c.taxa_paid_slots }}/{{ c.sold_slots }} pagos</span>
+                            {% else %}
+                                <span class="text-[10px] text-slate-400 font-semibold">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button type="button"
+                                        @click="openShareModal('{{ c.ceg_id }}')"
+                                        class="px-2 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        title="Gerar texto formatado de vagas abertas">
+                                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                                    <span>Gerar Texto</span>
+                                </button>
+                                <button type="button"
+                                        @click="openAddSetModal({ id: '{{ c.ceg_id }}', title: '{{ c.title|escapejs }}' })"
+                                        class="px-2 py-1 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 font-bold rounded-lg text-xs transition border border-amber-200 dark:border-amber-800/40 flex items-center gap-1 cursor-pointer shadow-2xs"
+                                        title="Adicionar novo Set a esta CEG">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                    <span>Set</span>
+                                </button>
+                                <button type="button"
+                                        @click="openEditCegModalById('{{ c.ceg_id }}')"
+                                        class="px-2 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs transition border border-slate-200 dark:border-white/10 flex items-center gap-1 cursor-pointer"
+                                        title="Editar Informações da CEG">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <a href="/ceg/{{ c.slug }}/"
+                                   class="px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-bold rounded-lg text-xs transition border border-purple-200 dark:border-purple-800/40">
+                                    Acessar
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                <!-- Empty state dinâmico para a tabela de CEGs -->
+                <tr x-show="visibleCegsCount === 0" x-cloak>
+                    <td colspan="10" class="py-8 text-center text-slate-400 space-y-2">
+                        <i data-lucide="search" class="w-8 h-8 mx-auto text-slate-400"></i>
+                        <div class="font-bold text-slate-700 dark:text-slate-300">Nenhuma CEG encontrada com os filtros selecionados.</div>
+                        <div><button type="button" @click="clearFilters()" class="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline cursor-pointer">✕ Limpar Filtros</button></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

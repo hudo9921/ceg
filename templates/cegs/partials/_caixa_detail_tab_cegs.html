@@ -1,0 +1,141 @@
+<!-- Seção de CEGs Vinculadas a esta Caixa -->
+{% if is_staff_user %}
+<div x-show="currentTab === 'all' || currentTab === 'cegs'"
+     class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/10">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <h2 class="text-lg font-black text-slate-900 dark:text-white">
+                    CEGs Consolidadas nesta Caixa
+                </h2>
+                <span class="bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 text-xs font-black px-2.5 py-0.5 rounded-full font-mono">
+                    {{ cegs|length }} CEG(s)
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Todas as compras em grupo abaixo estão embaladas e sendo transportadas nesta remessa.
+            </p>
+        </div>
+
+        {% if cegs_sem_caixa %}
+            <button type="button" @click="linkModalOpen = true"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold transition shadow-xs cursor-pointer">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                <span>Vincular Outras CEGs</span>
+            </button>
+        {% endif %}
+    </div>
+
+    {% if cegs %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold border-b border-slate-200 dark:border-white/10 pb-2">
+                        <th class="py-2.5 px-3 w-16">Foto</th>
+                        <th class="py-2.5 px-3">CEG / Grupo</th>
+                        <th class="py-2.5 px-3">Status da CEG</th>
+                        <th class="py-2.5 px-3">Status de Envio</th>
+                        <th class="py-2.5 px-3 text-center">Sets / Slots</th>
+                        <th class="py-2.5 px-3 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                    {% for ceg in cegs %}
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
+                            <!-- Foto / Imagem da CEG -->
+                            <td class="py-3 px-3 w-16">
+                                <div class="relative group w-12 h-12">
+                                    {% if ceg.display_image_url %}
+                                        <img src="{{ ceg.display_image_url }}"
+                                             alt="{{ ceg.title }}"
+                                             @click="openZoom('{{ ceg.display_image_url }}')"
+                                             class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer group-hover:opacity-80 transition">
+                                        <div @click="openZoom('{{ ceg.display_image_url }}')"
+                                             class="absolute inset-0 bg-black/40 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition text-[10px] font-bold">
+                                            <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-2xs">
+                                            <i data-lucide="disc" class="w-6 h-6"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-slate-900 dark:text-white leading-snug">
+                                    <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-sky-600 dark:hover:text-sky-400 hover:underline" title="{{ ceg.title }}">
+                                        {{ ceg.display_title }}
+                                    </a>
+                                </div>
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                    <span class="font-bold text-slate-700 dark:text-slate-300">{{ ceg.era.group.name }}</span>
+                                    {% if ceg.era.name %}
+                                        <span>&bull;</span>
+                                        <span class="text-slate-500 dark:text-slate-400">{{ ceg.era.name }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="inline-block text-[10px] font-black px-2 py-0.5 rounded-full
+                                    {% if ceg.status == 'OPEN' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
+                                    {% elif ceg.status == 'CLOSED' %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300
+                                    {% elif ceg.status == 'SCHEDULED' %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300
+                                    {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                                    {{ ceg.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-cyber-obsidian text-slate-800 dark:text-slate-200 font-bold rounded-lg text-[11px]">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                                    <span>{{ ceg.get_shipping_status_display }}</span>
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-center">
+                                <div class="font-bold text-slate-800 dark:text-slate-200 font-mono">
+                                    {{ ceg.sets.all|length }} set(s)
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-mono">
+                                    {{ ceg.reserved_slots_count }}/{{ ceg.total_slots_count }} slots
+                                </div>
+                            </td>
+                            <td class="py-3 px-3 text-right space-x-1.5">
+                                <a href="{% url 'ceg_detail' slug=ceg.slug %}"
+                                   class="inline-flex items-center gap-1 px-3 py-1 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold rounded-lg transition">
+                                    <span>Ver Detalhes</span>
+                                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                                </a>
+                                <form action="{% url 'caixa_unlink_ceg' slug=caixa.slug ceg_id=ceg.id %}" method="post" class="inline"
+                                      onsubmit="return confirm('Deseja desvincular esta CEG da caixa?')">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/60 text-slate-400 hover:text-red-600 dark:hover:text-red-400 font-bold rounded-lg transition cursor-pointer"
+                                            title="Desvincular da Caixa">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-10 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-500 mx-auto flex items-center justify-center">
+                <i data-lucide="archive" class="w-6 h-6"></i>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Nenhuma CEG vinculada a esta caixa ainda.
+            </p>
+            {% if cegs_sem_caixa %}
+                <button type="button" @click="linkModalOpen = true"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition shadow-sm cursor-pointer">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                    <span>Vincular Primeira CEG</span>
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endif %}

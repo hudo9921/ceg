@@ -1,0 +1,110 @@
+<!-- Identificação Básica e Logística da Remessa -->
+<div class="space-y-6">
+    <!-- Seção 1: Identificação -->
+    <div class="space-y-4">
+        <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <i data-lucide="tag" class="w-3.5 h-3.5"></i>
+            <span>Identificação da Remessa</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-2 space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Nome da Caixa / Remessa <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <input type="text" name="nome" value="{{ caixa.nome|default:'' }}" required
+                           placeholder="Ex: Caixa KR #14 - NewJeans & IVE"
+                           class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Origem do Envio <span class="text-rose-500">*</span>
+                </label>
+                <select name="origem" required
+                        class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+                    {% for val, label in origem_choices %}
+                        <option value="{{ val }}" {% if caixa.origem == val or not caixa and val == 'KR' %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if action == 'create' %}
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Status Inicial</label>
+                <select name="status"
+                        class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+                    {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if val == 'EM_CONSOLIDACAO' %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Seção 2: Rastreio & Transportadora -->
+    <div class="space-y-4 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <i data-lucide="plane-takeoff" class="w-3.5 h-3.5"></i>
+            <span>Logística & Rastreamento</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="barcode" class="w-3.5 h-3.5 text-blue-500"></i>
+                    <span>Código de Rastreio</span>
+                </label>
+                <input type="text" name="codigo_rastreio" value="{{ caixa.codigo_rastreio|default:'' }}"
+                       placeholder="Ex: EG123456789KR"
+                       class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-blue-600 dark:text-blue-400 uppercase placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="truck" class="w-3.5 h-3.5 text-indigo-500"></i>
+                    <span>Transportadora / Modalidade</span>
+                </label>
+                <input type="text" name="transportadora" value="{{ caixa.transportadora|default:'' }}"
+                       placeholder="Ex: EMS / Correios, K-Packet, FedEx"
+                       class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Data de Envio</span>
+                </label>
+                <input type="date" name="data_envio" value="{{ caixa.data_envio|date:'Y-m-d'|default:'' }}"
+                       class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
+                    <span>Previsão de Entrega</span>
+                </label>
+                <input type="date" name="data_previsao" value="{{ caixa.data_previsao|date:'Y-m-d'|default:'' }}"
+                       class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    <span>Data de Recebimento</span>
+                </label>
+                <input type="date" name="data_recebimento" value="{{ caixa.data_recebimento|date:'Y-m-d'|default:'' }}"
+                       class="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:outline-none transition shadow-2xs">
+            </div>
+        </div>
+    </div>
+</div>

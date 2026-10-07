@@ -1,0 +1,93 @@
+<!-- Cabeçalho Principal e Seleção de CEG -->
+<div class="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-950 p-6 sm:p-8 rounded-3xl shadow-xl text-white relative overflow-hidden border border-white/10">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -left-10 -top-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-pink-300 text-xs font-bold uppercase tracking-wider">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                <span>Produtividade do Organizador</span>
+                <span>•</span>
+                <span>Alocação Rápida de Vendas</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+                <i data-lucide="crosshair" class="w-7 h-7 text-pink-400"></i>
+                <span>Alocador de Joiners em Massa</span>
+            </h1>
+            <p class="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                Atribua múltiplos compradores e joiners aos slots desta CEG em segundos. Utilize a grade interativa tipo planilha ou cole listas brutas do Excel/Forms/Twitter.
+            </p>
+        </div>
+
+        <!-- Seletor de CEG e Links de Ação -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <form method="get" class="flex flex-wrap items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5">
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Buscar CEG..."
+                       class="w-36 bg-slate-900/90 text-white placeholder:text-slate-400 text-xs font-bold rounded-xl px-3 py-2 border-0 focus:ring-2 focus:ring-pink-500">
+                <select name="group_id" class="bg-slate-900/90 text-white text-xs font-bold rounded-xl px-3 py-2 border-0 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                    <option value="">Todos os grupos</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}" {% if selected_group_id == group.id|stringformat:'s' %}selected{% endif %}>{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="era_id" class="bg-slate-900/90 text-white text-xs font-bold rounded-xl px-3 py-2 border-0 focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                    <option value="">Todas as eras</option>
+                    {% for era in eras %}
+                        <option value="{{ era.id }}" {% if selected_era_id == era.id|stringformat:'s' %}selected{% endif %}>{{ era.group.name }} · {{ era.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-3 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-xs font-black cursor-pointer">Filtrar</button>
+                {% if search_query or selected_group_id or selected_era_id %}
+                    <a href="{% if ceg %}{% url 'ceg_bulk_allocator' slug=ceg.slug %}{% else %}{% url 'bulk_joiner_allocator_global' %}{% endif %}" class="px-2 py-2 text-xs font-bold text-pink-200 hover:text-white">Limpar</a>
+                {% endif %}
+            </form>
+            {% if cegs_list %}
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1.5 flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-300 pl-2">CEG:</span>
+                <select @change="changeCeg($event.target.value)"
+                        class="bg-slate-900/90 text-white text-xs font-bold rounded-xl px-3 py-2 border-0 focus:ring-2 focus:ring-pink-500 cursor-pointer max-w-[240px] truncate">
+                    {% for c in cegs_list %}
+                        <option value="{{ c.slug }}" {% if c.slug == ceg.slug %}selected{% endif %}>
+                            {{ c.title }} ({{ c.sets_count }} sets)
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            {% if ceg %}
+            <a href="{% url 'ceg_detail' slug=ceg.slug %}"
+               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-bold text-white transition shadow-sm">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+                <span>Ver CEG Pública</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estatísticas da CEG Selecionada -->
+    {% if ceg %}
+    <div class="mt-6 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total de Sets</span>
+            <span class="text-2xl font-black text-white" x-text="matrix.sets ? matrix.sets.length : 0"></span>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Slots Ocupados</span>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-black text-pink-400" x-text="occupiedSlots"></span>
+                <span class="text-xs text-slate-400">/ <span x-text="matrix.total_slots || 0"></span></span>
+            </div>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Itens Pagos</span>
+            <span class="text-2xl font-black text-emerald-400" x-text="paidSlots"></span>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-3.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Taxa de Preenchimento</span>
+            <span class="text-2xl font-black text-indigo-300" x-text="occupancyRate + '%'"></span>
+        </div>
+    </div>
+    {% endif %}
+</div>

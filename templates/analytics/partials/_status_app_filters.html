@@ -1,0 +1,97 @@
+<script>
+function cegStatusFilterMethods() {
+    return {
+        get availableEras() {
+            if (!this.selectedGroup) return this.filterOptions.eras;
+            return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+        },
+        matchSearch(text) {
+            if (!this.searchQuery || !this.searchQuery.trim()) return true;
+            const q = this.searchQuery.toLowerCase().trim();
+            return (text || '').toLowerCase().includes(q);
+        },
+        matchItem(text, groupId, eraId) {
+            if (this.selectedGroup && String(groupId) !== String(this.selectedGroup)) return false;
+            if (this.selectedEra && String(eraId) !== String(this.selectedEra)) return false;
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                return (text || '').toLowerCase().includes(q);
+            }
+            return true;
+        },
+        matchSetObj(s) {
+            if (!s) return false;
+            if (this.selectedGroup && String(s.group_id) !== String(this.selectedGroup)) return false;
+            if (this.selectedEra && String(s.era_id) !== String(this.selectedEra)) return false;
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                let missingStr = '';
+                if (s.missing_items && Array.isArray(s.missing_items)) {
+                    missingStr = s.missing_items.map(m => (m.member_name || '') + ' ' + (m.item_name || '')).join(' ');
+                }
+                const hay = ((s.ceg_title || '') + ' ' + (s.ceg_clean_title || '') + ' ' + (s.group_name || '') + ' ' + (s.era_name || '') + ' ' + missingStr).toLowerCase();
+                return hay.includes(q);
+            }
+            return true;
+        },
+        matchCegObj(c) {
+            if (!c) return false;
+            if (this.selectedGroup && String(c.group_id) !== String(this.selectedGroup)) return false;
+            if (this.selectedEra && String(c.era_id) !== String(this.selectedEra)) return false;
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                const hay = ((c.title || '') + ' ' + (c.clean_title || '') + ' ' + (c.group_name || '') + ' ' + (c.era_name || '') + ' ' + (c.caixa_nome || '')).toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return this.isCegRowVisible(c.is_ativa, c.has_incomplete_sets, c.closed_sets_count, c.paid_sets_count, c.finished_sets_count);
+        },
+        get incompleteCount() {
+            return this.setsIncomplete.filter(s => this.matchSetObj(s)).length;
+        },
+        get closedCount() {
+            return this.setsFechados.filter(s => this.matchSetObj(s)).length;
+        },
+        get paidCount() {
+            return this.setsPagos.filter(s => this.matchSetObj(s)).length;
+        },
+        get finishedCount() {
+            return this.setsTerminados.filter(s => this.matchSetObj(s)).length;
+        },
+        get activeCegsCount() {
+            return this.cegsOverview.filter(c => {
+                if (!c.has_incomplete_sets) return false;
+                if (this.selectedGroup && String(c.group_id) !== String(this.selectedGroup)) return false;
+                if (this.selectedEra && String(c.era_id) !== String(this.selectedEra)) return false;
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    const hay = ((c.title || '') + ' ' + (c.clean_title || '') + ' ' + (c.group_name || '') + ' ' + (c.era_name || '') + ' ' + (c.caixa_nome || '')).toLowerCase();
+                    return hay.includes(q);
+                }
+                return true;
+            }).length;
+        },
+        get visibleCegsCount() {
+            return this.cegsOverview.filter(c => this.matchCegObj(c)).length;
+        },
+        get hasActiveFilters() {
+            return Boolean(
+                (this.selectedCategory && this.selectedCategory !== 'all') ||
+                this.selectedGroup ||
+                this.selectedEra ||
+                (this.searchQuery && this.searchQuery.trim()) ||
+                (this.activeCardFilter && this.activeCardFilter !== 'all')
+            );
+        },
+        get currentGroupName() {
+            if (!this.selectedGroup) return 'Todos os Grupos';
+            const g = this.filterOptions.groups.find(x => String(x.id) === String(this.selectedGroup));
+            return g ? g.name : 'Todos os Grupos';
+        },
+        get currentEraName() {
+            if (!this.selectedEra) return '';
+            const e = this.filterOptions.eras.find(x => String(x.id) === String(this.selectedEra));
+            return e ? e.name : '';
+        }
+    };
+}
+</script>

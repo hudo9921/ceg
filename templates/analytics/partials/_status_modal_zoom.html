@@ -1,0 +1,12 @@
+<!-- MODAL ZOOM DE FOTO -->
+<div x-show="zoomPhoto" x-cloak
+     @click="zoomPhoto = null"
+     class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
+    <div class="relative max-w-2xl max-h-[90vh]" @click.stop>
+        <img :src="zoomPhoto" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain" />
+        <button @click="zoomPhoto = null"
+                class="absolute -top-3 -right-3 w-8 h-8 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-full font-black text-sm shadow-lg flex items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    </div>
+</div>

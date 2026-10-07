@@ -1,0 +1,56 @@
+<script>
+function cegStatusShareMethods() {
+    return {
+        openShareModal(cegId) {
+            const data = this.cegShareMap[cegId];
+            if (!data) return;
+            this.currentShareCeg = data;
+            this.shareCopied = false;
+            this.shareModalOpen = true;
+        },
+        closeShareModal() {
+            this.shareModalOpen = false;
+        },
+        get shareText() {
+            if (!this.currentShareCeg) return '';
+            const groupName = this.currentShareCeg.group_name || '';
+            const title = `✨ CEG ${groupName} - ${this.currentShareCeg.title} ✨`;
+            const lines = [];
+
+            (this.currentShareCeg.items || []).forEach(item => {
+                const name = item.member_name || item.name;
+                if (item.available_count > 0) {
+                    const emojis = Array(item.available_count).fill(this.shareEmoji).join(', ');
+                    lines.push(`${name} ${emojis}`);
+                } else if (this.shareShowSoldOut) {
+                    lines.push(`${name} ❌`);
+                }
+            });
+
+            let body = lines.join('\n');
+            if (!body) {
+                body = '🎉 Todas as vagas foram preenchidas!';
+            }
+
+            let priceSection = '';
+            if (this.shareIncludePrice && this.currentShareCeg.price_display) {
+                priceSection = `\n\n💵 Valor: ${this.currentShareCeg.price_display} cada`;
+            }
+
+            const url = window.location.origin + '/ceg/' + this.currentShareCeg.slug + '/';
+            const footer = `\n\n🔗 Link: ${url}`;
+
+            return `${title}\n\n${body}${priceSection}${footer}`;
+        },
+        async copyShareText() {
+            try {
+                await navigator.clipboard.writeText(this.shareText);
+                this.shareCopied = true;
+                setTimeout(() => { this.shareCopied = false; }, 2500);
+            } catch (e) {
+                alert('Erro ao copiar: ' + e);
+            }
+        }
+    };
+}
+</script>

@@ -1,0 +1,77 @@
+<!-- MODAL 4: ADICIONAR NOVO SET (POP-UP) -->
+<div x-show="activeModal === 'set'" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+     @keydown.escape.window="closeModal()">
+    <div class="bg-white/98 dark:bg-cyber-surface/98 w-full max-w-lg rounded-3xl shadow-2xl border border-purple-100/80 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]"
+         @click.away="closeModal()">
+        
+        <!-- Header do Modal -->
+        <div class="p-5 border-b border-purple-100/70 dark:border-white/10 flex items-center justify-between bg-amber-50/60 dark:bg-cyber-elevated/70">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200/50 dark:border-amber-500/20">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Adicionar Novo Set</h3>
+                    <p class="text-[11px] text-slate-500 dark:text-cyber-silver">Expanda os slots de uma CEG existente.</p>
+                </div>
+            </div>
+            <button type="button" @click="closeModal()" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form action="{% url 'create_set' %}" method="POST" class="p-6 space-y-4 overflow-y-auto">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Selecione a CEG *</label>
+                <select name="ceg_id" required
+                        class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                    <option value="">-- Escolha uma CEG --</option>
+                    {% for c in cegs %}
+                        <option value="{{ c.id }}">
+                            {{ c.title }} ({{ c.era.group.name }}) — {{ c.sets.all|length }} set(s) atuais
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Número do Set</label>
+                    <input type="number" name="set_number" min="1"
+                           placeholder="Auto-incrementar"
+                           class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Em branco calcula o próximo set automaticamente.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Anotações do Set</label>
+                    <input type="text" name="notes"
+                           placeholder="Ex: Set 2 - Pedido Adicional"
+                           class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                </div>
+            </div>
+
+            <div class="p-3.5 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 rounded-2xl flex items-center gap-3">
+                <input type="checkbox" name="is_active" id="modal_set_active" checked
+                       class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 border-slate-300 dark:border-white/10">
+                <label for="modal_set_active" class="text-xs font-bold text-amber-900 dark:text-amber-200 cursor-pointer">
+                    Ativar este Set para novas reservas imediatamente
+                </label>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex justify-end gap-2">
+                <button type="button" @click="closeModal()"
+                        class="px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver font-bold text-xs rounded-xl transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5 hover:scale-[1.02]">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-200"></i>
+                    <span>Criar Set & Gerar Slots</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

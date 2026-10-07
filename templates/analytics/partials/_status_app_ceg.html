@@ -1,0 +1,112 @@
+<script>
+function cegStatusCegMethods() {
+    return {
+        openAddSetModal(arg) {
+            let ceg = null;
+            if (typeof arg === 'string' || typeof arg === 'number') {
+                ceg = this.cegsOverview.find(c => String(c.ceg_id) === String(arg));
+            } else if (arg && typeof arg === 'object') {
+                ceg = arg;
+            }
+            if (ceg) {
+                this.addSetCegId = ceg.id || ceg.ceg_id || '';
+                this.addSetCegTitle = ceg.title || ceg.ceg_title || '';
+                const found = this.cegsOverview.find(c => String(c.ceg_id) === String(this.addSetCegId));
+                const totalSets = found ? (found.total_sets || 0) : (ceg.total_sets || 0);
+                this.addSetNumber = totalSets + 1;
+            } else {
+                this.addSetCegId = '';
+                this.addSetCegTitle = '';
+                this.addSetNumber = '';
+            }
+            this.addSetNotes = '';
+            this.addSetIsActive = true;
+            this.addSetModalOpen = true;
+        },
+        onAddSetCegChange() {
+            if (this.addSetCegId) {
+                const found = this.cegsOverview.find(c => String(c.ceg_id) === String(this.addSetCegId));
+                if (found) {
+                    this.addSetCegTitle = found.title;
+                    this.addSetNumber = (found.total_sets || 0) + 1;
+                }
+            }
+        },
+        closeAddSetModal() {
+            this.addSetModalOpen = false;
+        },
+        openEditCegModal(arg) {
+            let ceg = null;
+            if (typeof arg === 'string' || typeof arg === 'number') {
+                ceg = this.cegsOverview.find(c => String(c.ceg_id) === String(arg));
+            } else if (arg && typeof arg === 'object') {
+                ceg = arg;
+            }
+            if (!ceg) return;
+            this.editingCeg = Object.assign({}, ceg);
+            this.cegBannerPreview = ceg.banner_url || '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = ceg.banner_url || '';
+            this.removeBannerFlag = false;
+            this.cegBannerError = '';
+            this.cegDragOver = false;
+            this.editCegModalOpen = true;
+        },
+        openEditCegModalById(cegId) {
+            this.openEditCegModal(cegId);
+        },
+        closeEditCegModal() {
+            this.editCegModalOpen = false;
+            this.editingCeg = {};
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            this.removeBannerFlag = false;
+            this.cegBannerError = '';
+        },
+        handleCegBannerFile(event) {
+            const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+            const file = files && files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    this.cegBannerError = 'A imagem selecionada é muito pesada (máximo 5 MB).';
+                    return;
+                }
+                this.cegBannerError = '';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.cegBannerPreview = e.target.result;
+                    this.cegBannerBase64 = e.target.result;
+                    this.cegBannerUrl = '';
+                    this.removeBannerFlag = false;
+                };
+                reader.readAsDataURL(file);
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fileInput = document.querySelector('#edit_ceg_status_form input[name="banner_file"]');
+                    if (fileInput) fileInput.files = dt.files;
+                } catch(err) {}
+            }
+        },
+        handleCegBannerUrl() {
+            if (this.cegBannerUrl) {
+                this.cegBannerPreview = this.cegBannerUrl;
+                this.cegBannerBase64 = '';
+                this.removeBannerFlag = false;
+            }
+        },
+        clearCegBanner() {
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            this.removeBannerFlag = true;
+            if (this.editingCeg) {
+                this.editingCeg.banner_url = '';
+            }
+            const fileInput = document.querySelector('#edit_ceg_status_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
+        }
+    };
+}
+</script>

@@ -1,0 +1,1189 @@
+<!-- Dados Iniciais em JSON isolado (Permite que o script JS abaixo seja 100% livre de erros de lint) -->
+<script id="creations-hub-data" type="application/json">
+{
+    "currentCategory": "{{ category_filter|default:'all' }}",
+    "selectedCaixaId": "{{ preselected_caixa_id|default:'' }}",
+    "autoOpenModal": "{{ auto_open_modal|default:'' }}",
+    "groups": {{ groups_json|safe|default:"[]" }},
+    "participants": {{ participants_json|safe|default:"[]" }},
+    "caixas": {{ caixas_json|safe|default:"[]" }},
+    "itensIndividuais": [],
+    "tiposItem": {{ tipos_item_json|safe|default:"[]" }}
+}
+</script>
+
+<!-- Script Alpine.js com Componente Isolado (Livre de erros de linter) -->
+<script>
+document.addEventListener('alpine:init', () => {
+    const hubDataEl = document.getElementById('creations-hub-data');
+    const hubData = hubDataEl ? JSON.parse(hubDataEl.textContent || '{}') : {};
+
+    Alpine.data('creationsHub', () => ({
+        activeModal: null, // 'group', 'era', 'ceg', 'set', 'item_individual', 'edit_item_individual'
+        currentCategory: hubData.currentCategory || 'all', // 'all', 'ceg', 'mercari'
+        groups: hubData.groups || [],
+        participants: hubData.participants || [],
+        caixas: hubData.caixas || [],
+        itensIndividuais: hubData.itensIndividuais || [],
+        tiposItem: hubData.tiposItem || [],
+        itemSearch: '',
+        itemStatusFilter: '',
+        itemCaixaFilter: '',
+        zoomImageUrl: null,
+        selectedGroupId: '',
+        selectedEraId: '',
+        batchMembersText: '',
+        batchDefaultPrice: '45.00',
+        batchTipoItemId: '',
+        batchSubCategory: 'Pob',
+        cegStatus: 'OPEN',
+        initialSetsCount: 1,
+
+        // Estado do Grupo (criação com foto/logo e membros)
+        groupImagePreview: '',
+        groupImageBase64: '',
+        groupImageUrl: '',
+        groupColorHex: '',
+        groupDragOver: false,
+        newGroupMembers: [],
+        newGroupMemberInput: '',
+
+        // Estado de Edição de Grupo
+        editingGroupId: '',
+        editingGroupName: '',
+        editingGroupDescription: '',
+        editGroupImagePreview: '',
+        editGroupImageBase64: '',
+        editGroupImageUrl: '',
+        editGroupColorHex: '',
+        editGroupDragOver: false,
+        editGroupMembers: [],
+        editGroupMemberInput: '',
+
+        // Estado da Era (criação com banner)
+        eraBannerPreview: '',
+        eraBannerBase64: '',
+        eraBannerUrl: '',
+        eraColorHex: '',
+        eraDragOver: false,
+
+        // Estado de Edição de Era
+        editingEraId: '',
+        editingEraGroupId: '',
+        editingEraName: '',
+        editingEraReleaseDate: '',
+        editingEraDescription: '',
+        editEraBannerPreview: '',
+        editEraBannerBase64: '',
+        editEraBannerUrl: '',
+        editEraColorHex: '',
+        editEraDragOver: false,
+
+        // Estado da CEG (criação com banner)
+        cegBannerPreview: '',
+        cegBannerBase64: '',
+        cegBannerUrl: '',
+        cegDragOver: false,
+
+        // Estado do Estúdio de Recorte de Itens / Photocards
+        cropStudioOpen: false,
+        cropStudioSaving: false,
+        cropStudioImageReady: false,
+        cropStudioSourceUrl: '',
+        cropStudioItems: [],
+        cropStudioCurrentIndex: 0,
+        cropAspectRatio: 2/3,
+        cropperInstance: null,
+
+        // Estado do Item Individual (criação / edição)
+        itemImagePreview: '',
+        itemImageBase64: '',
+        itemImageUrl: '',
+        itemTipoId: '',
+        showNewTipoModal: false,
+        newTipoNome: '',
+        newTipoDesc: '',
+        newTipoSubmitting: false,
+        selectedCaixaId: hubData.selectedCaixaId || '',
+        selectedParticipantId: '',
+        buyerPhone: '',
+        buyerName: '',
+        buyerUsername: '',
+        buyerSocial: '',
+        buyerFound: false,
+        buyerSearching: false,
+        showNameSuggestions: false,
+        showPhoneSuggestions: false,
+        editingItem: {},
+
+        items: [],
+
+        init() {
+            // Garante seleção padrão de tipo
+            if (this.tiposItem && this.tiposItem.length > 0) {
+                if (!this.itemTipoId) {
+                    this.itemTipoId = this.tiposItem[0].id;
+                }
+                const defaultPhotocard = this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0];
+                if (defaultPhotocard && !this.batchTipoItemId) {
+                    this.batchTipoItemId = defaultPhotocard.id;
+                }
+            }
+
+            // Auto-popula itens a partir do primeiro grupo disponível
+            if (this.groups && this.groups.length > 0) {
+                if (!this.selectedGroupId) {
+                    this.selectedGroupId = this.groups[0].id;
+                }
+                this.populateItemsFromGroup(this.selectedGroupId);
+            }
+
+            // Escuta global de paste para colar imagem via Ctrl+C / Ctrl+V em qualquer modal ativo
+            window.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+                if (!items) return;
+
+                let imageFile = null;
+                for (let i = 0; i < items.length; i++) {
+                    const it = items[i];
+                    if (it.kind === 'file' && it.type.indexOf('image') !== -1) {
+                        imageFile = it.getAsFile();
+                        break;
+                    }
+                }
+                if (!imageFile) return;
+
+                if (this.activeModal === 'group') {
+                    this.handleGroupImageFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'edit-group' || this.activeModal === 'edit_group') {
+                    this.handleEditGroupImageFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'era') {
+                    this.handleEraBannerFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'edit-era' || this.activeModal === 'edit_era') {
+                    this.handleEditEraBannerFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'ceg') {
+                    this.handleCegBannerFile(imageFile);
+                    e.preventDefault();
+                } else if (this.activeModal === 'item_individual' || this.activeModal === 'edit_item_individual') {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        this.itemImagePreview = event.target.result;
+                        this.itemImageBase64 = event.target.result;
+                    };
+                    reader.readAsDataURL(imageFile);
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(imageFile);
+                        const fileInputs = document.querySelectorAll('input[name="foto_arquivo"]');
+                        fileInputs.forEach(fi => fi.files = dt.files);
+                    } catch(err) {}
+                    e.preventDefault();
+                }
+            });
+
+            // Se requisitado via URL (ex: a partir do detalhe da caixa), abre automaticamente o modal
+            if (hubData.autoOpenModal === 'item_individual') {
+                this.setCategory('mercari');
+                this.openModal('item_individual');
+            }
+        },
+
+        get selectedCaixaInfo() {
+            if (!this.selectedCaixaId) return null;
+            return this.caixas.find(c => String(c.id) === String(this.selectedCaixaId)) || null;
+        },
+
+        onSelectExistingParticipant(pId) {
+            this.selectedParticipantId = pId || '';
+            if (!pId) {
+                this.resetToNewParticipant();
+                return;
+            }
+            const p = this.participants.find(item => String(item.id) === String(pId));
+            if (p) {
+                this.buyerName = p.name || '';
+                this.buyerPhone = p.whatsapp || '';
+                this.buyerUsername = p.username || '';
+                this.buyerSocial = p.social_handle || '';
+                this.buyerFound = true;
+                this.showNameSuggestions = false;
+                this.showPhoneSuggestions = false;
+            }
+        },
+
+        selectParticipant(p) {
+            if (!p) return;
+            this.selectedParticipantId = p.id;
+            this.buyerName = p.name || '';
+            this.buyerPhone = p.whatsapp || '';
+            this.buyerUsername = p.username || '';
+            this.buyerSocial = p.social_handle || '';
+            this.buyerFound = true;
+            this.showNameSuggestions = false;
+            this.showPhoneSuggestions = false;
+        },
+
+        resetToNewParticipant() {
+            this.selectedParticipantId = '';
+            this.buyerName = '';
+            this.buyerPhone = '';
+            this.buyerUsername = '';
+            this.buyerSocial = '';
+            this.buyerFound = false;
+            this.showNameSuggestions = false;
+            this.showPhoneSuggestions = false;
+        },
+
+        get filteredParticipantsByName() {
+            const term = (this.buyerName || '').toLowerCase().trim();
+            if (!term) {
+                return this.participants.slice(0, 5);
+            }
+            return this.participants.filter(p => {
+                const n = (p.name || '').toLowerCase();
+                const u = (p.username || '').toLowerCase();
+                const s = (p.social_handle || '').toLowerCase();
+                return n.includes(term) || u.includes(term) || s.includes(term);
+            }).slice(0, 6);
+        },
+
+        get filteredParticipantsByPhone() {
+            const term = (this.buyerPhone || '').replace(/\D/g, '');
+            if (!term) {
+                return this.participants.slice(0, 5);
+            }
+            return this.participants.filter(p => {
+                const ph = (p.whatsapp || '').replace(/\D/g, '');
+                const n = (p.name || '').toLowerCase();
+                return ph.includes(term) || n.includes(this.buyerPhone.toLowerCase());
+            }).slice(0, 6);
+        },
+
+        setCategory(cat) {
+            this.currentCategory = cat;
+            const url = new URL(window.location);
+            url.searchParams.set('category', cat);
+            window.history.replaceState({}, '', url);
+        },
+
+        openModal(name) {
+            this.activeModal = name;
+            if (name === 'group') {
+                this.newGroupMembers = [];
+                this.newGroupMemberInput = '';
+            } else if (name === 'edit-group' || name === 'edit_group') {
+                if (this.groups && this.groups.length > 0 && !this.editingGroupId) {
+                    this.onSelectEditGroup(this.groups[0].id);
+                }
+            } else if (name === 'edit-era' || name === 'edit_era') {
+                if (!this.editingEraGroupId) {
+                    const firstWithEras = this.groups.find(g => g.eras && g.eras.length > 0) || this.groups[0];
+                    if (firstWithEras) {
+                        this.editingEraGroupId = firstWithEras.id;
+                        if (firstWithEras.eras && firstWithEras.eras.length > 0) {
+                            this.onSelectEditEra(firstWithEras.eras[0].id);
+                        }
+                    }
+                } else if (!this.editingEraId) {
+                    const eras = this.currentGroupEras;
+                    if (eras && eras.length > 0) {
+                        this.onSelectEditEra(eras[0].id);
+                    }
+                }
+            } else if (name === 'item_individual') {
+                this.itemImagePreview = '';
+                this.itemImageBase64 = '';
+                this.itemImageUrl = '';
+                this.buyerPhone = '';
+                this.buyerName = '';
+                this.buyerUsername = '';
+                this.buyerSocial = '';
+                this.buyerFound = false;
+                this.selectedParticipantId = '';
+                this.showNameSuggestions = false;
+                this.showPhoneSuggestions = false;
+                if (hubData.selectedCaixaId) {
+                    this.selectedCaixaId = hubData.selectedCaixaId;
+                }
+            } else if (name === 'ceg') {
+                if (!this.selectedGroupId && this.groups && this.groups.length > 0) {
+                    this.selectedGroupId = this.groups[0].id;
+                }
+                if (this.selectedGroupId && (!this.items || this.items.length === 0)) {
+                    this.populateItemsFromGroup(this.selectedGroupId);
+                }
+            }
+        },
+        closeModal() {
+            this.activeModal = null;
+            this.groupImagePreview = '';
+            this.groupImageBase64 = '';
+            this.groupImageUrl = '';
+            this.groupColorHex = '';
+            this.newGroupMembers = [];
+            this.newGroupMemberInput = '';
+            this.eraBannerPreview = '';
+            this.eraBannerBase64 = '';
+            this.eraBannerUrl = '';
+            this.eraColorHex = '';
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            this.editGroupImagePreview = '';
+            this.editGroupImageBase64 = '';
+            this.editGroupImageUrl = '';
+            this.editGroupColorHex = '';
+            this.editGroupMembers = [];
+            this.editGroupMemberInput = '';
+            this.editEraBannerPreview = '';
+            this.editEraBannerBase64 = '';
+            this.editEraBannerUrl = '';
+            this.editEraColorHex = '';
+        },
+
+        onSelectEditGroup(groupId) {
+            this.editingGroupId = groupId || '';
+            if (!groupId) {
+                this.editingGroupName = '';
+                this.editingGroupDescription = '';
+                this.editGroupImagePreview = '';
+                this.editGroupImageBase64 = '';
+                this.editGroupImageUrl = '';
+                this.editGroupColorHex = '';
+                this.editGroupMembers = [];
+                this.editGroupMemberInput = '';
+                return;
+            }
+            const g = this.groups.find(item => String(item.id) === String(groupId));
+            if (g) {
+                this.editingGroupName = g.name || '';
+                this.editingGroupDescription = g.description || '';
+                this.editGroupImagePreview = g.image_url || '';
+                this.editGroupImageUrl = g.image_url || '';
+                this.editGroupImageBase64 = '';
+                this.editGroupColorHex = g.color_hex || '';
+                this.editGroupMembers = (g.members || []).map(m => typeof m === 'object' ? m.name : m);
+                this.editGroupMemberInput = '';
+            }
+        },
+
+        addGroupMember(isEdit = false) {
+            const inputKey = isEdit ? 'editGroupMemberInput' : 'newGroupMemberInput';
+            const listKey = isEdit ? 'editGroupMembers' : 'newGroupMembers';
+            const val = (this[inputKey] || '').trim();
+            if (!val) return;
+
+            // Permite colar múltiplos nomes separados por vírgula, barra ou quebra de linha
+            const parts = val.replace(/\n/g, ',').replace(/;/g, ',').replace(/\//g, ',').split(',');
+            const current = [...this[listKey]];
+            for (let p of parts) {
+                p = p.trim();
+                if (p && !current.some(m => m.toLowerCase() === p.toLowerCase())) {
+                    current.push(p);
+                }
+            }
+            this[listKey] = current;
+            this[inputKey] = '';
+            const refName = isEdit ? 'editGroupMembersJson' : 'newGroupMembersJson';
+            if (this.$refs[refName]) {
+                this.$refs[refName].value = JSON.stringify(current);
+            }
+        },
+
+        removeGroupMember(index, isEdit = false) {
+            const listKey = isEdit ? 'editGroupMembers' : 'newGroupMembers';
+            const current = [...this[listKey]];
+            current.splice(index, 1);
+            this[listKey] = current;
+            const refName = isEdit ? 'editGroupMembersJson' : 'newGroupMembersJson';
+            if (this.$refs[refName]) {
+                this.$refs[refName].value = JSON.stringify(current);
+            }
+        },
+
+        handleMemberInputKeydown(event, isEdit = false) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                this.addGroupMember(isEdit);
+            }
+        },
+        handleEditGroupImageFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.editGroupImagePreview = e.target.result;
+                this.editGroupImageBase64 = e.target.result;
+                if (this.$refs.editGroupImageBase64Input) {
+                    this.$refs.editGroupImageBase64Input.value = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+            this.editGroupImageUrl = '';
+            if (this.$refs.editGroupImageUrlInput) {
+                this.$refs.editGroupImageUrlInput.value = '';
+            }
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = this.$refs.editGroupFileInput || document.querySelector('#edit_group_form input[name="image_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearEditGroupImage() {
+            this.editGroupImagePreview = '';
+            this.editGroupImageBase64 = '';
+            this.editGroupImageUrl = '';
+            if (this.$refs.editGroupImageBase64Input) this.$refs.editGroupImageBase64Input.value = '';
+            if (this.$refs.editGroupImageUrlInput) this.$refs.editGroupImageUrlInput.value = '';
+            const fileInput = this.$refs.editGroupFileInput || document.querySelector('#edit_group_form input[name="image_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        get currentGroupEras() {
+            if (!this.editingEraGroupId) return [];
+            const g = this.groups.find(item => String(item.id) === String(this.editingEraGroupId));
+            return (g && g.eras) ? g.eras : [];
+        },
+
+        onSelectEditEraGroup(groupId) {
+            this.editingEraGroupId = groupId || '';
+            const eras = this.currentGroupEras;
+            if (eras && eras.length > 0) {
+                if (!eras.some(e => String(e.id) === String(this.editingEraId))) {
+                    this.onSelectEditEra(eras[0].id);
+                }
+            } else {
+                this.onSelectEditEra('');
+            }
+        },
+
+        onSelectEditEra(eraId) {
+            this.editingEraId = eraId || '';
+            if (!eraId) {
+                this.editingEraName = '';
+                this.editingEraReleaseDate = '';
+                this.editingEraDescription = '';
+                this.editEraBannerPreview = '';
+                this.editEraBannerBase64 = '';
+                this.editEraBannerUrl = '';
+                this.editEraColorHex = '';
+                if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+                if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = '';
+                return;
+            }
+            let foundEra = null;
+            for (const g of this.groups) {
+                if (g.eras) {
+                    const e = g.eras.find(item => String(item.id) === String(eraId));
+                    if (e) {
+                        foundEra = e;
+                        break;
+                    }
+                }
+            }
+            if (foundEra) {
+                this.editingEraGroupId = foundEra.group_id || this.editingEraGroupId;
+                this.editingEraName = foundEra.name || '';
+                this.editingEraReleaseDate = foundEra.release_date || '';
+                this.editingEraDescription = foundEra.description || '';
+                this.editEraBannerPreview = foundEra.banner_url || '';
+                this.editEraBannerUrl = foundEra.banner_url || '';
+                this.editEraBannerBase64 = '';
+                this.editEraColorHex = foundEra.color_hex || '';
+                if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+                if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = foundEra.banner_url || '';
+            }
+        },
+        handleEditEraBannerFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.editEraBannerPreview = e.target.result;
+                this.editEraBannerBase64 = e.target.result;
+                if (this.$refs.editEraBannerBase64Input) {
+                    this.$refs.editEraBannerBase64Input.value = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+            this.editEraBannerUrl = '';
+            if (this.$refs.editEraBannerUrlInput) {
+                this.$refs.editEraBannerUrlInput.value = '';
+            }
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = this.$refs.editEraFileInput || document.querySelector('#edit_era_form input[name="banner_file"]');
+                if (fileInput) fileInput.files = dt.files;
+            } catch(e) {}
+        },
+        clearEditEraBanner() {
+            this.editEraBannerPreview = '';
+            this.editEraBannerBase64 = '';
+            this.editEraBannerUrl = '';
+            if (this.$refs.editEraBannerBase64Input) this.$refs.editEraBannerBase64Input.value = '';
+            if (this.$refs.editEraBannerUrlInput) this.$refs.editEraBannerUrlInput.value = '';
+            const fileInput = this.$refs.editEraFileInput || document.querySelector('#edit_era_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        handleGroupImageFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const MAX_MB = 5;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`⚠️ O arquivo selecionado possui ${sizeMb} MB.\n\nO limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve ou comprima em tinypng.com.`);
+                const fileInput = document.querySelector('input[name="image_file"]');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            let fileAttached = false;
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('input[name="image_file"]');
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                    fileAttached = true;
+                }
+            } catch(e) {
+                fileAttached = false;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.groupImagePreview = e.target.result;
+                this.groupImageBase64 = fileAttached ? '' : e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        clearGroupImage() {
+            this.groupImagePreview = '';
+            this.groupImageBase64 = '';
+            this.groupImageUrl = '';
+            const fileInput = document.querySelector('input[name="image_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        handleEraBannerFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const MAX_MB = 5;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`⚠️ O arquivo selecionado possui ${sizeMb} MB.\n\nO limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve ou comprima em tinypng.com.`);
+                const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            let fileAttached = false;
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                    fileAttached = true;
+                }
+            } catch(e) {
+                fileAttached = false;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.eraBannerPreview = e.target.result;
+                this.eraBannerBase64 = fileAttached ? '' : e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        clearEraBanner() {
+            this.eraBannerPreview = '';
+            this.eraBannerBase64 = '';
+            this.eraBannerUrl = '';
+            const fileInput = document.querySelector('#create_era_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        handleCegBannerFile(file) {
+            if (!file || file.type.indexOf('image') === -1) return;
+            const MAX_MB = 5;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`⚠️ O arquivo selecionado possui ${sizeMb} MB.\n\nO limite máximo permitido para fotos é de ${MAX_MB} MB. Por favor, escolha uma imagem mais leve ou comprima em tinypng.com.`);
+                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
+                if (fileInput) fileInput.value = '';
+                return;
+            }
+            let fileAttached = false;
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
+                if (fileInput) {
+                    fileInput.files = dt.files;
+                    fileAttached = true;
+                }
+            } catch(e) {
+                fileAttached = false;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.cegBannerPreview = e.target.result;
+                this.cegBannerBase64 = fileAttached ? '' : e.target.result;
+                if (this.$refs.cegBannerBase64Input) {
+                    this.$refs.cegBannerBase64Input.value = this.cegBannerBase64;
+                }
+            };
+            reader.readAsDataURL(file);
+            this.cegBannerUrl = '';
+            if (this.$refs.cegBannerUrlInput) {
+                this.$refs.cegBannerUrlInput.value = '';
+            }
+        },
+        clearCegBanner() {
+            this.cegBannerPreview = '';
+            this.cegBannerBase64 = '';
+            this.cegBannerUrl = '';
+            if (this.$refs.cegBannerBase64Input) this.$refs.cegBannerBase64Input.value = '';
+            if (this.$refs.cegBannerUrlInput) this.$refs.cegBannerUrlInput.value = '';
+            const fileInput = this.$refs.cegFileInput || document.querySelector('#create_ceg_form input[name="banner_file"]');
+            if (fileInput) fileInput.value = '';
+        },
+
+        openZoom(url) {
+            if (url) {
+                this.zoomImageUrl = url;
+            }
+        },
+        closeZoom() {
+            this.zoomImageUrl = null;
+        },
+
+        handleFileChange(event) {
+            const files = event.target ? event.target.files : (event.dataTransfer ? event.dataTransfer.files : null);
+            const file = files && files[0];
+            if (file && file.type.indexOf('image') !== -1) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.itemImagePreview = e.target.result;
+                    this.itemImageBase64 = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fileInputs = document.querySelectorAll('input[name="foto_arquivo"]');
+                    fileInputs.forEach(i => i.files = dt.files);
+                } catch(e) {}
+            }
+        },
+
+        handleUrlChange() {
+            if (this.itemImageUrl && this.itemImageUrl.startsWith('http')) {
+                this.itemImagePreview = this.itemImageUrl;
+            }
+        },
+
+        clearImage() {
+            this.itemImagePreview = '';
+            this.itemImageBase64 = '';
+            this.itemImageUrl = '';
+            const fileInputs = document.querySelectorAll('input[name="foto_arquivo"]');
+            fileInputs.forEach(i => i.value = '');
+        },
+
+        lookupTimeout: null,
+
+        onNameInput() {
+            this.showNameSuggestions = true;
+            // Se o usuário está alterando o nome manualmente, libera o vínculo estrito
+            this.selectedParticipantId = '';
+            this.buyerFound = false;
+        },
+
+        onPhoneInput() {
+            this.showPhoneSuggestions = true;
+            this.selectedParticipantId = '';
+            if (this.lookupTimeout) clearTimeout(this.lookupTimeout);
+            const digits = (this.buyerPhone || '').replace(/\D/g, '');
+            if (digits.length < 8) {
+                this.buyerFound = false;
+                return;
+            }
+            this.lookupTimeout = setTimeout(() => {
+                this.lookupBuyer();
+            }, 350);
+        },
+
+        async lookupBuyer() {
+            const digits = (this.buyerPhone || '').replace(/\D/g, '');
+            if (digits.length < 8) {
+                this.buyerFound = false;
+                return;
+            }
+            this.buyerSearching = true;
+            try {
+                const res = await fetch(`/api/participants/lookup/?phone=${encodeURIComponent(this.buyerPhone.trim())}`);
+                const data = await res.json();
+                if (data.found) {
+                    this.buyerFound = true;
+                    this.selectedParticipantId = data.id || '';
+                    // Não sobrescreve o nome se o usuário já estiver digitando um nome próprio
+                    if (!this.buyerName || this.buyerName.startsWith('Comprador ') || this.buyerName.startsWith('Participante ')) {
+                        this.buyerName = data.name || '';
+                    }
+                    if (!this.buyerUsername) {
+                        this.buyerUsername = data.username || '';
+                    }
+                    if (!this.buyerSocial) {
+                        this.buyerSocial = data.social_handle || '';
+                    }
+                } else {
+                    this.buyerFound = false;
+                }
+            } catch (err) {
+                console.error('Erro ao buscar participante:', err);
+            } finally {
+                this.buyerSearching = false;
+            }
+        },
+
+        getStatusBadgeClass(status) {
+            return 'bg-slate-100 text-slate-700';
+        },
+
+        isPhotocardTipo(tipoId) {
+            const targetId = tipoId || this.batchTipoItemId;
+            if (!targetId && this.tiposItem && this.tiposItem.length > 0) {
+                return true;
+            }
+            const t = (this.tiposItem || []).find(item => String(item.id) === String(targetId));
+            if (!t) return true;
+            const n = t.nome.toLowerCase();
+            return n.includes('photocard') || n.includes('card') || n.includes('pob');
+        },
+
+        getItemTypeFromTipo(tipoId) {
+            const t = (this.tiposItem || []).find(item => String(item.id) === String(tipoId));
+            if (!t) return 'PHOTOCARD';
+            const n = t.nome.toLowerCase();
+            if (n.includes('álbum') || n.includes('album')) return 'ALBUM';
+            if (n.includes('inclus')) return 'INCLUSION';
+            if (n.includes('pob')) return 'POB';
+            if (n.includes('photocard') || n.includes('card')) return 'PHOTOCARD';
+            return 'OTHER';
+        },
+
+        getCleanSubCategoryName(subCat) {
+            const clean = (subCat || 'Pob').trim();
+            if (clean.toLowerCase() === 'pob') return 'Pob';
+            if (clean.toLowerCase() === 'ld') return 'LD';
+            if (clean.toLowerCase() === 'vce') return 'VCE';
+            if (clean.toLowerCase() === 'broadcast') return 'Broadcast';
+            if (clean.toLowerCase() === 'regulares') return 'Regulares';
+            return clean;
+        },
+
+        getTipoItemNome(tipoId) {
+            const t = (this.tiposItem || []).find(item => String(item.id) === String(tipoId));
+            return t ? t.nome : 'Item';
+        },
+
+        getDefaultItemName(tipoId, subCat) {
+            const isPc = this.isPhotocardTipo(tipoId);
+            if (isPc) {
+                return this.getCleanSubCategoryName(subCat || this.batchSubCategory || 'Pob');
+            }
+            return this.getTipoItemNome(tipoId);
+        },
+
+        populateItemsFromGroup(groupId) {
+            if (!groupId) return;
+            const g = this.groups.find(item => String(item.id) === String(groupId));
+            if (!g) return;
+
+            const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
+                ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
+                : null;
+            const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const defaultName = this.getDefaultItemName(tipoId, subCat);
+
+            if (g.members && g.members.length > 0) {
+                this.items = g.members.map((m, idx) => {
+                    const mName = typeof m === 'object' ? m.name : m;
+                    return {
+                        name: defaultName,
+                        member_name: mName,
+                        item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                        sub_category: subCat,
+                        tipo_item_id: tipoId,
+                        default_price: this.batchDefaultPrice || '45.00',
+                        image_url: '',
+                        participant_id: ''
+                    };
+                });
+            } else {
+                this.items = [{
+                    name: defaultName,
+                    member_name: '',
+                    item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                    sub_category: subCat,
+                    tipo_item_id: tipoId,
+                    default_price: this.batchDefaultPrice || '45.00',
+                    image_url: '',
+                    participant_id: ''
+                }];
+            }
+        },
+
+        onCegGroupChange() {
+            if (this.selectedGroupId) {
+                this.populateItemsFromGroup(this.selectedGroupId);
+                if (this.selectedEraId) {
+                    const eraEl = document.querySelector('select[name="era_id"] option[value="' + this.selectedEraId + '"]');
+                    if (eraEl && eraEl.dataset.group && String(eraEl.dataset.group) !== String(this.selectedGroupId)) {
+                        this.selectedEraId = '';
+                    }
+                }
+            }
+        },
+
+        onCegEraChange() {
+            if (this.selectedEraId) {
+                let foundGroupId = null;
+                for (const g of this.groups) {
+                    if (g.eras && g.eras.some(e => String(e.id) === String(this.selectedEraId))) {
+                        foundGroupId = g.id;
+                        break;
+                    }
+                }
+                if (!foundGroupId) {
+                    const eraEl = document.querySelector('select[name="era_id"] option[value="' + this.selectedEraId + '"]');
+                    if (eraEl && eraEl.dataset.group) {
+                        foundGroupId = eraEl.dataset.group;
+                    }
+                }
+                if (foundGroupId && String(this.selectedGroupId) !== String(foundGroupId)) {
+                    this.selectedGroupId = foundGroupId;
+                    this.populateItemsFromGroup(foundGroupId);
+                }
+            }
+        },
+
+        onBatchTipoChange() {
+            if (this.isPhotocardTipo(this.batchTipoItemId) && !this.batchSubCategory) {
+                this.batchSubCategory = 'Pob';
+            }
+        },
+
+        applyBatchToAll() {
+            const tipoId = this.batchTipoItemId;
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const price = this.batchDefaultPrice || '45.00';
+            const defaultName = this.getDefaultItemName(tipoId, subCat);
+
+            this.items.forEach((item, idx) => {
+                if (price) {
+                    item.default_price = price;
+                }
+                if (tipoId) {
+                    item.tipo_item_id = tipoId;
+                    item.item_type = isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId);
+                }
+                if (isPc) {
+                    item.sub_category = subCat;
+                } else {
+                    item.sub_category = '';
+                }
+                item.name = defaultName;
+            });
+        },
+
+        onItemTipoChange(item, index) {
+            const isPc = this.isPhotocardTipo(item.tipo_item_id);
+            item.item_type = isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(item.tipo_item_id);
+            if (isPc) {
+                if (!item.sub_category) item.sub_category = this.batchSubCategory || 'Pob';
+            } else {
+                item.sub_category = '';
+            }
+            item.name = this.getDefaultItemName(item.tipo_item_id, item.sub_category);
+        },
+
+        onItemSubCategoryChange(item, index) {
+            item.name = this.getDefaultItemName(item.tipo_item_id, item.sub_category);
+        },
+
+        addItem() {
+            const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
+                ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
+                : null;
+            const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            this.items.push({
+                name: this.getDefaultItemName(tipoId, subCat),
+                member_name: '',
+                item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                sub_category: subCat,
+                tipo_item_id: tipoId,
+                default_price: this.batchDefaultPrice || '45.00',
+                image_url: '',
+                participant_id: ''
+            });
+        },
+        removeItem(index) {
+            if (this.items.length > 1) {
+                this.items.splice(index, 1);
+            }
+        },
+        applyBatchPrice() {
+            this.applyBatchToAll();
+        },
+        addMembersBatch() {
+            if (!this.batchMembersText.trim()) return;
+            const names = this.batchMembersText.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+            if (!names.length) return;
+
+            const defaultPhotocard = (this.tiposItem && this.tiposItem.length > 0)
+                ? (this.tiposItem.find(t => t.nome.toLowerCase().includes('photocard')) || this.tiposItem[0])
+                : null;
+            const tipoId = this.batchTipoItemId || (defaultPhotocard ? defaultPhotocard.id : '');
+            const isPc = this.isPhotocardTipo(tipoId);
+            const subCat = isPc ? (this.batchSubCategory || 'Pob') : '';
+            const defaultName = this.getDefaultItemName(tipoId, subCat);
+
+            names.forEach((name) => {
+                this.items.push({
+                    name: defaultName,
+                    member_name: name,
+                    item_type: isPc ? 'PHOTOCARD' : this.getItemTypeFromTipo(tipoId),
+                    sub_category: subCat,
+                    tipo_item_id: tipoId,
+                    default_price: this.batchDefaultPrice || '45.00',
+                    image_url: '',
+                    participant_id: ''
+                });
+            });
+            this.batchMembersText = '';
+        },
+        async submitNewTipo() {
+            const nome = (this.newTipoNome || '').trim();
+            if (!nome) return;
+            this.newTipoSubmitting = true;
+            try {
+                const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+                const csrf = csrfEl ? csrfEl.value : '';
+                const formData = new FormData();
+                formData.append('nome', nome);
+                formData.append('descricao', this.newTipoDesc || '');
+
+                const res = await fetch('/tipos-item/criar/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrf,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (!this.tiposItem.some(t => t.id === data.tipo.id)) {
+                        this.tiposItem.push(data.tipo);
+                    }
+                    this.itemTipoId = data.tipo.id;
+                    if (this.editingItem) {
+                        this.editingItem.tipo_item_id = data.tipo.id;
+                    }
+                    this.newTipoNome = '';
+                    this.newTipoDesc = '';
+                    this.showNewTipoModal = false;
+                } else {
+                    alert(data.message || 'Erro ao cadastrar tipo.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao conectar com o servidor.');
+            } finally {
+                this.newTipoSubmitting = false;
+            }
+        },
+        openCropStudioForCeg(startIndex = 0) {
+            const src = this.cegBannerPreview || this.cegBannerBase64 || this.cegBannerUrl;
+            if (!src) {
+                alert('Por favor, selecione ou envie a foto/banner da CEG no Passo 1 primeiro para poder recortar as fotos dos itens.');
+                return;
+            }
+            if (!this.items || this.items.length === 0) {
+                alert('Adicione pelo menos um integrante/item antes de abrir o estúdio de recorte.');
+                return;
+            }
+
+            this.cropStudioSourceUrl = src;
+            this.cropStudioItems = this.items;
+            this.cropStudioCurrentIndex = Math.max(0, Math.min(startIndex, this.items.length - 1));
+            this.cropStudioImageReady = false;
+            this.cropStudioOpen = true;
+
+            if (this.cropperInstance) {
+                try { this.cropperInstance.destroy(); } catch (e) {}
+                this.cropperInstance = null;
+            }
+
+            // Aguarda a transição de abertura do modal (150ms) para dimensões finais no DOM
+            setTimeout(() => {
+                this.onCropStudioImageLoad();
+            }, 150);
+        },
+        onCropStudioImageLoad() {
+            if (!this.cropStudioOpen) return;
+            const img = document.getElementById('crop-studio-target-image');
+            if (!img) return;
+
+            if (img.complete && img.naturalWidth > 0) {
+                this.initCropperInstance();
+            } else {
+                img.onload = () => {
+                    this.initCropperInstance();
+                };
+            }
+        },
+        initCropperInstance() {
+            if (!this.cropStudioOpen) return;
+            const img = document.getElementById('crop-studio-target-image');
+            if (!img) return;
+
+            if (this.cropperInstance) {
+                try { this.cropperInstance.destroy(); } catch (e) {}
+                this.cropperInstance = null;
+            }
+
+            if (typeof Cropper === 'undefined') {
+                console.warn('Cropper.js ainda não disponível. Aguardando...');
+                setTimeout(() => this.initCropperInstance(), 150);
+                return;
+            }
+
+            try {
+                this.cropperInstance = new Cropper(img, {
+                    aspectRatio: this.cropAspectRatio || (2 / 3),
+                    viewMode: 1,
+                    dragMode: 'crop',
+                    autoCrop: true,
+                    autoCropArea: 0.7,
+                    responsive: true,
+                    restore: false,
+                    checkCrossOrigin: false,
+                    zoomable: true,
+                    scalable: false,
+                    rotatable: true,
+                    movable: true,
+                    guides: true,
+                    center: true,
+                    highlight: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    ready: () => {
+                        this.cropStudioImageReady = true;
+                        if (this.cropperInstance) {
+                            this.cropperInstance.crop();
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Erro ao inicializar Cropper.js:', e);
+                this.cropStudioImageReady = true;
+            }
+        },
+        setCropAspectRatio(ratio) {
+            this.cropAspectRatio = ratio;
+            if (this.cropperInstance) {
+                this.cropperInstance.setAspectRatio(ratio);
+            }
+        },
+        cropperZoom(delta) {
+            if (this.cropperInstance) {
+                this.cropperInstance.zoom(delta);
+            }
+        },
+        cropperRotate(deg) {
+            if (this.cropperInstance) {
+                this.cropperInstance.rotate(deg);
+            }
+        },
+        cropperReset() {
+            if (this.cropperInstance) {
+                this.cropperInstance.reset();
+            }
+        },
+        selectCropStudioIndex(idx) {
+            if (idx >= 0 && idx < this.cropStudioItems.length) {
+                this.cropStudioCurrentIndex = idx;
+            }
+        },
+        cropCurrentItemAndNext() {
+            if (!this.cropperInstance) return;
+            const canvas = this.cropperInstance.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 1200,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+
+            if (!canvas) {
+                alert('Não foi possível gerar o recorte. Verifique a seleção na imagem.');
+                return;
+            }
+
+            let base64 = '';
+            try {
+                base64 = canvas.toDataURL('image/webp', 0.85);
+            } catch (e) {
+                try {
+                    base64 = canvas.toDataURL('image/jpeg', 0.85);
+                } catch (err) {
+                    console.error('Erro ao converter canvas em Base64:', err);
+                }
+            }
+
+            if (base64) {
+                const item = this.cropStudioItems[this.cropStudioCurrentIndex];
+                if (item) {
+                    item.image_base64 = base64;
+                    item.image_url = base64;
+                }
+            }
+
+            if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+                this.cropStudioCurrentIndex++;
+            } else {
+                this.closeCropStudio();
+            }
+        },
+        skipCropStudioItem() {
+            if (this.cropStudioCurrentIndex < this.cropStudioItems.length - 1) {
+                this.cropStudioCurrentIndex++;
+            } else {
+                this.closeCropStudio();
+            }
+        },
+        closeCropStudio() {
+            this.cropStudioOpen = false;
+            if (this.cropperInstance) {
+                try { this.cropperInstance.destroy(); } catch (e) {}
+                this.cropperInstance = null;
+            }
+        },
+        calculateSetTotal() {
+            return this.items.reduce((acc, item) => {
+                const val = parseFloat(String(item.default_price).replace(',', '.')) || 0;
+                return acc + val;
+            }, 0).toFixed(2);
+        }
+    }));
+});
+</script>
