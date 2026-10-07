@@ -90,6 +90,8 @@ class HomeView(View):
                 open_groups_dict[grp.id] = {
                     'id': grp.id,
                     'name': grp.name,
+                    'image_url': grp.image_url or '',
+                    'color_hex': grp.color_hex or '',
                     'cegs_count': 0
                 }
             open_groups_dict[grp.id]['cegs_count'] += 1

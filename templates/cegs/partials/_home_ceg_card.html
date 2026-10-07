@@ -1,13 +1,13 @@
-<!-- Card de Vitrine de CEG (Estética Toploader / Sleeve com Acabamento Cyber-Luxury) -->
-<div class="ceg-card group relative flex flex-col rounded-3xl border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-2xl p-2.5 transition-all duration-300 hover:shadow-glow hover:-translate-y-1 hover:border-pink-300 dark:hover:border-cyber-neon/40 select-none cursor-pointer overflow-hidden"
+<!-- Card de Vitrine de CEG (Estética Toploader / Sleeve com Acabamento Soft Y2K & Cyber-Luxury) -->
+<div class="ceg-card group relative flex flex-col rounded-3xl border border-slate-200/80 dark:border-white/10 border-t-white dark:border-t-white/25 bg-white/95 dark:bg-[#14121B]/95 backdrop-blur-xl p-2.5 transition-all duration-300 shadow-xs hover:shadow-xl dark:shadow-2xl dark:hover:shadow-[0_10px_30px_rgba(244,114,182,0.15)] hover:-translate-y-1 hover:border-pink-300 dark:hover:border-pink-500/40 select-none cursor-pointer overflow-hidden"
      style="--era-accent: {{ ceg.theme_color|default:'#F472B6' }};"
      data-price="{{ ceg.min_price_str }}"
      data-vagas="{{ ceg.available_slots_count|default:0 }}"
      data-index="{{ forloop.counter }}"
      @click="window.innerWidth < 768 ? openBottomSheet({{ ceg.id }}) : window.location.href = '{% url 'ceg_detail' ceg.slug %}'">
     
-    <!-- 1. Moldura da Foto com Recuo Estilo Sleeve Protetora -->
-    <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100 dark:bg-black/50 border border-purple-100/60 dark:border-white/10">
+    <!-- 1. Moldura da Foto com Recuo Estilo Sleeve Protetora (Toploader View) -->
+    <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100 dark:bg-black/60 border border-slate-200/60 dark:border-white/10 shadow-inner">
         
         <!-- Ambient Blur de Fundo + Foto Nítida com Fallback Inteligente -->
         {% if ceg.banner_url %}
@@ -38,23 +38,26 @@
                  loading="lazy"
                  class="relative z-10 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
         {% else %}
-            <div class="relative z-10 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-100/60 to-purple-100/60 dark:from-cyber-elevated dark:to-cyber-surface text-slate-400 dark:text-cyber-silver">
+            <div class="relative z-10 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-100/60 to-purple-100/60 dark:from-white/5 dark:to-white/[0.02] text-slate-400 dark:text-slate-500">
                 <i data-lucide="disc-3" class="w-8 h-8 opacity-40" stroke-width="1.75"></i>
             </div>
         {% endif %}
 
+        <!-- Reflexo Translúcido no Topo Estilo Sleeve Plástica -->
+        <div class="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/35 to-transparent pointer-events-none z-20 opacity-80"></div>
+
         <!-- Gradiente de Fusão na Base da Imagem -->
-        <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none"></div>
+        <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none"></div>
 
         <!-- Badges Flutuantes do Topo (Acrílico Translúcido) -->
         <div class="absolute top-2 inset-x-2 z-30 flex items-center justify-between gap-1 pointer-events-none">
             <!-- Badge de POB / Loja / Tipo -->
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md bg-white/90 dark:bg-black/75 text-slate-800 dark:text-cyber-silver shadow-xs border border-white/40 dark:border-white/10">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md bg-white/95 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-2xs border border-white/60 dark:border-white/15">
                 {{ ceg.tipo_display|default:ceg.era.name }}
             </span>
 
             <!-- Badge de Vagas Disponíveis -->
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tabular-nums backdrop-blur-md bg-emerald-500/90 text-white shadow-xs flex items-center gap-1">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tabular-nums backdrop-blur-md bg-emerald-500/95 text-white shadow-2xs flex items-center gap-1">
                 <i data-lucide="layers" class="w-3 h-3" stroke-width="1.75"></i>
                 <span>{{ ceg.available_slots_count }} vagas</span>
             </span>
@@ -72,7 +75,7 @@
     <div class="p-2 sm:p-2.5 flex-1 flex flex-col justify-between space-y-2.5">
         <div>
             <!-- Título da CEG -->
-            <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-cyber-silver line-clamp-1 group-hover:text-pink-600 dark:group-hover:text-cyber-neon transition-colors"
+            <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white line-clamp-1 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors"
                 title="{{ ceg.title }}">
                 {{ ceg.title }}
             </h3>
@@ -80,12 +83,12 @@
             <!-- Integrantes disponíveis (Chips miniaturas) -->
             <div class="mt-1.5 flex flex-wrap gap-1 items-center overflow-hidden max-h-5">
                 {% for item in ceg.grouped_available_items|slice:":3" %}
-                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-purple-50/90 dark:bg-cyber-elevated text-purple-700 dark:text-cyber-electric border border-purple-100/60 dark:border-white/5 truncate max-w-[80px]">
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-pink-50/80 dark:bg-white/[0.04] text-pink-700 dark:text-pink-300 border border-pink-200/60 dark:border-white/10 truncate max-w-[80px]">
                         {{ item.member_name|default:item.item_name }}
                     </span>
                 {% endfor %}
                 {% if ceg.grouped_available_items|length > 3 %}
-                    <span class="text-[9px] font-bold text-slate-400">
+                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">
                         +{{ ceg.grouped_available_items|length|add:"-3" }}
                     </span>
                 {% endif %}
@@ -93,10 +96,10 @@
         </div>
 
         <!-- Rodapé do Card: Preço + Botão de Ação -->
-        <div class="pt-2 border-t border-purple-100/60 dark:border-white/5 flex items-center justify-between">
+        <div class="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
             <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block leading-none">A partir de</span>
-                <span class="text-xs sm:text-sm font-black font-mono tabular-nums text-pink-600 dark:text-cyber-neon">
+                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-none tracking-wider">A partir de</span>
+                <span class="text-xs sm:text-sm font-black font-mono tabular-nums text-pink-600 dark:text-pink-400">
                     R$ {{ ceg.min_price_str }}
                 </span>
             </div>
@@ -104,7 +107,7 @@
             <!-- Botão Ver Vagas -->
             <a href="{% url 'ceg_detail' ceg.slug %}"
                @click.stop
-               class="px-3 py-1.5 rounded-full bg-purple-50 dark:bg-cyber-elevated hover:bg-pink-500 hover:text-white dark:hover:bg-cyber-neon dark:hover:text-slate-900 text-pink-700 dark:text-cyber-neon border border-purple-200/70 dark:border-white/10 font-bold text-[11px] transition-all flex items-center gap-1 group/btn shadow-2xs hover:shadow-xs active:scale-95">
+               class="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-50 to-purple-50 dark:from-white/[0.06] dark:to-white/[0.03] hover:from-pink-600 hover:to-rose-600 hover:text-white dark:hover:from-pink-600 dark:hover:to-purple-600 dark:hover:text-white text-pink-700 dark:text-pink-300 border border-pink-200/70 dark:border-white/10 font-bold text-[11px] transition-all flex items-center gap-1 group/btn shadow-2xs hover:shadow-xs active:scale-95">
                 <span>Vagas</span>
                 <i data-lucide="arrow-right" class="w-3 h-3 transition-transform group-hover/btn:translate-x-0.5" stroke-width="1.75"></i>
             </a>

@@ -1,11 +1,11 @@
-<!-- Barra de Busca Inteligente e Filtros (Grupo, Era, Membro/Bias, Tipo e Ordenação) -->
-<div class="w-full bg-white/85 dark:bg-cyber-surface/90 backdrop-blur-2xl p-4 sm:p-5 rounded-3xl border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 shadow-glass dark:shadow-cyber space-y-3.5 transition-colors">
+<!-- Barra de Busca Inteligente e Filtros (Glassmorphism Soft Y2K / Cyber-Luxury) -->
+<div class="w-full bg-white/80 dark:bg-[#14121B]/80 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-2xl space-y-3.5 transition-colors">
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         
         <!-- 1. Busca Textual -->
         <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="search" class="w-3.5 h-3.5 text-pink-500 dark:text-cyber-neon" stroke-width="1.75"></i>
+            <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-pink-500 dark:text-pink-400" stroke-width="1.75"></i>
                 <span>Buscar CEG:</span>
             </label>
             <div class="relative">
@@ -13,7 +13,7 @@
                        x-model="searchQuery"
                        @input="resetTracksScroll()"
                        placeholder="Nome, era, item..."
-                       class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all">
+                       class="w-full bg-slate-50/80 hover:bg-white focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-[#1A1724] border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:focus:border-pink-500/70 transition-all">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" stroke-width="1.75"></i>
                 <button type="button"
                         x-show="searchQuery"
@@ -27,13 +27,13 @@
 
         <!-- 2. Filtro por Grupo -->
         <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="music-2" class="w-3.5 h-3.5 text-purple-500 dark:text-cyber-electric" stroke-width="1.75"></i>
+            <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="music-2" class="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" stroke-width="1.75"></i>
                 <span>Grupo:</span>
             </label>
             <select x-model="selectedGroup"
                     @change="selectedEra = ''; resetTracksScroll()"
-                    class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all cursor-pointer">
+                    class="w-full bg-slate-50/80 hover:bg-white focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-[#1A1724] border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:focus:border-pink-500/70 transition-all cursor-pointer">
                 <option value="">Todos os Grupos</option>
                 {% for group in open_groups %}
                     <option value="{{ group.id }}">{{ group.name }} ({{ group.cegs_count }})</option>
@@ -43,13 +43,13 @@
 
         <!-- 3. Filtro por Era -->
         <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="disc-3" class="w-3.5 h-3.5 text-purple-500 dark:text-cyber-electric" stroke-width="1.75"></i>
+            <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="disc-3" class="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" stroke-width="1.75"></i>
                 <span>Era:</span>
             </label>
             <select x-model="selectedEra"
                     @change="resetTracksScroll()"
-                    class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all cursor-pointer">
+                    class="w-full bg-slate-50/80 hover:bg-white focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-[#1A1724] border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:focus:border-pink-500/70 transition-all cursor-pointer">
                 <option value="">Todas as Eras</option>
                 {% for era in open_eras %}
                     <option value="{{ era.id }}"
@@ -62,13 +62,13 @@
 
         <!-- 4. Filtro por Membro (Bias!) -->
         <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="heart" class="w-3.5 h-3.5 text-pink-500 dark:text-cyber-neon" stroke-width="1.75"></i>
+            <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="heart" class="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" stroke-width="1.75"></i>
                 <span>Membro (Bias):</span>
             </label>
             <select x-model="selectedMember"
                     @change="resetTracksScroll()"
-                    class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all cursor-pointer">
+                    class="w-full bg-slate-50/80 hover:bg-white focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-[#1A1724] border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:focus:border-pink-500/70 transition-all cursor-pointer">
                 <option value="">Todos os Membros</option>
                 {% for m in open_members %}
                     <option value="{{ m|lower }}">{{ m }}</option>
@@ -78,13 +78,13 @@
 
         <!-- 5. Filtro por Tipo de Item -->
         <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-500 dark:text-cyber-ice" stroke-width="1.75"></i>
+            <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" stroke-width="1.75"></i>
                 <span>Tipo de Item:</span>
             </label>
             <select x-model="selectedTipo"
                     @change="resetTracksScroll()"
-                    class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all cursor-pointer">
+                    class="w-full bg-slate-50/80 hover:bg-white focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-[#1A1724] border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:focus:border-pink-500/70 transition-all cursor-pointer">
                 <option value="">Qualquer tipo</option>
                 {% if count_mistas > 0 %}
                     <option value="mista">Apenas CEGs Mistas ({{ count_mistas }})</option>
@@ -102,13 +102,13 @@
 
         <!-- 6. Ordenação -->
         <div class="space-y-1">
-            <label class="block text-[10px] font-bold text-slate-500 dark:text-cyber-silver uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-purple-500 dark:text-cyber-electric" stroke-width="1.75"></i>
+            <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" stroke-width="1.75"></i>
                 <span>Ordenar:</span>
             </label>
             <select x-model="sortBy"
                     @change="sortCards()"
-                    class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl px-3 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all cursor-pointer">
+                    class="w-full bg-slate-50/80 hover:bg-white focus:bg-white dark:bg-white/[0.04] dark:hover:bg-white/[0.07] dark:focus:bg-[#1A1724] border border-slate-200/80 dark:border-white/10 text-slate-800 dark:text-white text-xs font-semibold rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:focus:border-pink-500/70 transition-all cursor-pointer">
                 <option value="recentes">Mais Recentes</option>
                 <option value="preco_asc">Menor Preço</option>
                 <option value="preco_desc">Maior Preço</option>
@@ -123,24 +123,24 @@
     <div x-show="hasActiveFilters()"
          x-cloak
          x-transition
-         class="pt-3 border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div class="flex items-center gap-2 text-slate-600 dark:text-cyber-silver font-semibold">
+         class="pt-3 border-t border-slate-200/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-semibold">
             <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
             <span>Filtros ativos:</span>
-            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 font-bold text-[11px] font-mono tabular-nums"
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100/90 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] font-mono tabular-nums"
                   x-text="totalVisibleCount() + ' CEG' + (totalVisibleCount() === 1 ? '' : 's') + ' encontrada' + (totalVisibleCount() === 1 ? '' : 's')">
             </span>
-            <span x-show="selectedMember" class="px-2.5 py-0.5 rounded-full bg-pink-100/80 dark:bg-cyber-elevated border border-pink-200/80 dark:border-white/10 text-pink-700 dark:text-cyber-neon font-bold text-[11px]">
+            <span x-show="selectedMember" class="px-2.5 py-0.5 rounded-full bg-pink-100/80 dark:bg-pink-950/50 border border-pink-200/80 dark:border-pink-800/40 text-pink-800 dark:text-pink-300 font-bold text-[11px]">
                 Membro: <span x-text="selectedMember"></span>
             </span>
-            <span x-show="searchQuery" class="px-2.5 py-0.5 rounded-full bg-purple-100/80 dark:bg-cyber-elevated border border-purple-200/80 dark:border-white/10 text-purple-700 dark:text-cyber-electric font-bold text-[11px]">
+            <span x-show="searchQuery" class="px-2.5 py-0.5 rounded-full bg-purple-100/80 dark:bg-purple-950/50 border border-purple-200/80 dark:border-purple-800/40 text-purple-800 dark:text-purple-300 font-bold text-[11px]">
                 Busca: "<span x-text="searchQuery"></span>"
             </span>
         </div>
         
         <button type="button"
                 @click="clearFilters()"
-                class="px-3 py-1 rounded-full bg-white/80 dark:bg-cyber-elevated text-slate-600 dark:text-cyber-silver hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 border border-purple-100/70 dark:border-white/10 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer">
+                class="px-3 py-1 rounded-full bg-white dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 border border-slate-200/80 dark:border-white/10 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-95">
             <i data-lucide="x" class="w-3.5 h-3.5" stroke-width="1.75"></i>
             <span>Limpar filtros</span>
         </button>
