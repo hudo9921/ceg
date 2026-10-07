@@ -62,7 +62,7 @@
 - `_header_notices.html`: Saudação com sparkles, dados de perfil e accordion de avisos contextuais.
 - `_tabs_nav.html`: Alternador de abas principais (Minhas Reservas vs Minha Caixinha).
 - `_header_metrics.html`: Indicadores interativos compactos em grade 2x2 no mobile e 4 colunas no desktop (Total, Faltam Pagar, Confirmados, Mercari).
-- `_quick_pix.html`: Central de cópia rápida Pix modularizada e responsiva (layout side-by-side no desktop com o semáforo de prazos):
+- `_quick_pix.html`: Central de cópia rápida Pix modularizada e responsiva (painel amplo e lateral com acordeão responsivo por CEG, Caixa e Mercari):
   - `_quick_pix_ceg.html`: Pendências agrupadas por CEG com detalhamento e cópia instantânea.
   - `_quick_pix_caixa.html`: Pendências agrupadas por Remessa Internacional.
   - `_quick_pix_mercari.html`: Compras avulsas no Mercari Japão consolidadas.

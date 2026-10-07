@@ -1,25 +1,26 @@
 <!-- Central de Pagamento Rápido (Quick Pix) com Alternância de Consolidação -->
 {% if cegs_com_pendencias or caixas_com_pendencias or mercari_pendencias.total_geral_pendente > 0 %}
 <div class="bg-gradient-to-r from-amber-500/5 via-pink-500/5 to-purple-500/5 dark:from-amber-500/10 dark:via-cyber-surface dark:to-purple-500/10 rounded-2xl border border-amber-300/60 dark:border-amber-500/30 p-4 sm:p-5 shadow-xs space-y-4">
-    <div class="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3 sm:gap-4">
-        <div class="flex items-start sm:items-center gap-3">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+        <!-- Bloco Lateral de Título & Subtítulo -->
+        <div class="flex items-center gap-3 min-w-0">
             <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center shadow-xs shrink-0">
                 <i data-lucide="zap" class="w-5 h-5 text-white" stroke-width="1.75"></i>
             </div>
-            <div class="space-y-1">
+            <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white whitespace-nowrap">
                         Central de Pagamento Rápido (Pix)
                     </h3>
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60"
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60 shrink-0"
                         x-show="quickPixTab === 'ceg'">
                         {{ cegs_com_pendencias|length }} {% if cegs_com_pendencias|length == 1 %}CEG com pendência{% else %}CEGs com pendências{% endif %}
                     </span>
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60"
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60 shrink-0"
                         x-show="quickPixTab === 'caixa'">
                         {{ caixas_com_pendencias|length }} {% if caixas_com_pendencias|length == 1 %}Caixa com pendência{% else %}Caixas com pendências{% endif %}
                     </span>
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60"
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60 shrink-0"
                         x-show="quickPixTab === 'mercari'">
                         {{ mercari_pendencias.items_count }} {% if mercari_pendencias.items_count == 1 %}item com pendência{% else %}itens com pendências{% endif %}
                     </span>
@@ -31,9 +32,9 @@
         </div>
 
         <!-- Alternador de Consolidação & Totais -->
-        <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3 w-full 2xl:w-auto">
+        <div class="flex flex-wrap sm:flex-nowrap items-center justify-between lg:justify-end gap-3 shrink-0">
             <!-- Tabs: CEG / Caixa / Mercari -->
-            <div class="inline-flex items-center gap-1 p-1 bg-white/80 dark:bg-cyber-elevated/80 backdrop-blur-md rounded-xl border border-amber-300/60 dark:border-white/10 text-xs font-bold shadow-xs">
+            <div class="inline-flex items-center gap-1 p-1 bg-white/80 dark:bg-cyber-elevated/80 backdrop-blur-md rounded-xl border border-amber-300/60 dark:border-white/10 text-xs font-bold shadow-xs shrink-0">
                 <button type="button" @click="quickPixTab = 'ceg'; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
                     :class="quickPixTab === 'ceg' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 dark:text-cyber-silver hover:text-slate-900 dark:hover:text-white'"
                     class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
@@ -66,8 +67,8 @@
                 </button>
             </div>
 
-            <div class="flex items-center gap-3">
-                <div class="text-right">
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="text-right shrink-0">
                     <span class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-bold"
                         x-text="quickPixTab === 'ceg' ? 'Total em CEGs' : (quickPixTab === 'caixa' ? 'Total em Caixas' : 'Total Mercari')">
                         Total a Quitar
@@ -86,7 +87,7 @@
                     </span>
                 </div>
                 <button type="button" @click="quickPixOpen = !quickPixOpen; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
-                    class="px-3 py-1.5 bg-white dark:bg-cyber-surface hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer select-none active:scale-95">
+                    class="px-3 py-1.5 bg-white dark:bg-cyber-surface hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer select-none active:scale-95 shrink-0">
                     <span x-text="quickPixOpen ? 'Recolher' : 'Expandir Chaves'"></span>
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" stroke-width="1.75" :class="quickPixOpen ? 'rotate-180' : ''"></i>
                 </button>
