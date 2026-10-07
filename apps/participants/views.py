@@ -6,8 +6,10 @@ from django.contrib import messages
 from django.contrib.auth.mixins import AccessMixin
 from django.http import JsonResponse
 from django.utils import timezone
+from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
 from .services import BulkParticipantService
+from apps.auth_otp.models import WhatsAppOTP
 from apps.auth_otp.services import OTPService
 
 
@@ -139,11 +141,19 @@ class LoginOtpView(View):
             dummy = Participant(whatsapp=cleaned)
             formatted_phone_display = dummy.formatted_phone
 
+        dev_code = None
+        if settings.DEBUG and step == 'verify' and phone:
+            cleaned = clean_phone_number(phone)
+            latest = WhatsAppOTP.objects.filter(phone=cleaned, is_used=False).first()
+            if latest and latest.is_valid():
+                dev_code = latest.code
+
         return render(request, 'participants/login_otp.html', {
             'phone': phone,
             'formatted_phone': formatted_phone_display,
             'step': step,
             'next_url': next_url,
+            'dev_code': dev_code,
         })
 
     def post(self, request):
