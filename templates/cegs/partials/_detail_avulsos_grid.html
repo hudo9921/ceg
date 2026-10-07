@@ -1,6 +1,7 @@
 <!-- ==========================================
      GRADE DE ITENS AVULSOS & EXCLUSIVOS (MERCARI / EXTRAS)
      100% Lucide Icons & Suporte Bipolar (< 200 linhas)
+     Subcomponentes: _detail_avulso_card.html, _detail_avulso_staff_units.html
      ========================================== -->
 <div x-show="viewMode !== 'SETS' && (activeSetTab === 'ALL' || activeSetTab === 'AVULSOS')"
      class="space-y-4">
@@ -20,7 +21,7 @@
                         </span>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Itens com quantidade única ou limitada (álbuns selados, pôsteres, POBs avulsos). Não são multiplicados ao adicionar novos Sets.
+                        Itens com estoque fixo (álbuns selados, pôsteres, POBs avulsos). Selecione a quantidade desejada de unidades para compra ou reserva.
                     </p>
                 </div>
             </div>
@@ -41,92 +42,11 @@
             </div>
         </div>
 
-        <!-- Grid de Itens Avulsos (5 Colunas no Desktop) -->
+        <!-- Grid de Itens Avulsos (Cards Toploader 2:3 em 5 Colunas no Desktop) -->
         {% if avulso_definitions %}
-        <div class="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-3.5">
+        <div class="p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 items-start">
             {% for idef in avulso_definitions %}
-            <div class="border rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between space-y-3 transition-all bg-white dark:bg-cyber-surface border-slate-200 dark:border-white/10 hover:border-pink-300 dark:hover:border-pink-500/50 hover:shadow-md group">
-                
-                <!-- Top: Categoria, Integrante e Ações de Admin -->
-                <div>
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            {% if idef.member_name %}
-                            <span class="text-[11px] font-black text-pink-600 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/60 px-1.5 py-0.5 rounded-md border border-pink-100 dark:border-pink-900/50 shadow-2xs truncate max-w-[85px]">
-                                {{ idef.member_name }}
-                            </span>
-                            {% endif %}
-                            <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[80px]">
-                                <i data-lucide="tag" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
-                                <span class="truncate">{{ idef.tipo_item_nome }}</span>
-                            </span>
-                        </div>
-
-                        {% if user.is_staff %}
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button type="button"
-                                @click="openEditAvulsoModal(findAvulsoItem({{ idef.id }}))"
-                                class="w-6 h-6 flex items-center justify-center bg-purple-50 dark:bg-white/[0.06] hover:bg-purple-100 text-purple-700 dark:text-pink-300 text-xs rounded-lg border border-purple-200 dark:border-white/10 transition shadow-2xs cursor-pointer active:scale-95"
-                                title="Editar item avulso">
-                                <i data-lucide="pencil" class="w-3 h-3" stroke-width="1.75"></i>
-                            </button>
-                            <button type="button"
-                                @click="openDeleteAvulsoModal(findAvulsoItem({{ idef.id }}))"
-                                class="w-6 h-6 flex items-center justify-center bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-xs rounded-lg border border-rose-200 dark:border-rose-800/60 transition shadow-2xs cursor-pointer active:scale-95"
-                                title="Excluir item avulso">
-                                <i data-lucide="trash-2" class="w-3 h-3" stroke-width="1.75"></i>
-                            </button>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Imagem do Item Avulso (se houver) -->
-                    {% if idef.image_url %}
-                    <div class="mb-3 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-100 dark:border-white/10 aspect-video relative group/img cursor-pointer"
-                         @click.stop="openZoom('{{ idef.image_url|escapejs }}', '{{ idef.name|escapejs }}')"
-                         title="Clique para ver imagem ampliada">
-                        <img src="{{ idef.image_url }}" alt="{{ idef.name }}"
-                             class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
-                        <div class="absolute inset-0 bg-slate-950/50 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-[11px] text-white font-bold gap-1.5 backdrop-blur-2xs">
-                            <i data-lucide="maximize-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
-                            <span>Ver Ampliado</span>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Nome do Item e Preço -->
-                    <div class="flex items-start justify-between gap-2">
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2" title="{{ idef.name }}">
-                            {{ idef.name }}
-                        </h3>
-                        <div class="text-right flex-shrink-0">
-                            <span class="text-sm font-black text-slate-900 dark:text-white font-mono">
-                                R$ {{ idef.default_price|floatformat:2 }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span>Estoque total: <strong>{{ idef.quantidade_avulsa }} unid.</strong></span>
-                    </div>
-                </div>
-
-                <!-- Lista de Unidades/Slots Físicos do Item -->
-                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        Unidades / Vagas
-                    </span>
-
-                    <div class="space-y-1.5">
-                        {% for slot in avulso_slots %}
-                        {% if slot.item_definition_id == idef.id %}
-                            {% include 'cegs/partials/_detail_avulsos_slot_row.html' %}
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-
-            </div>
+                {% include 'cegs/partials/_detail_avulso_card.html' %}
             {% endfor %}
         </div>
         {% else %}

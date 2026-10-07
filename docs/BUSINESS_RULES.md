@@ -52,6 +52,10 @@ Em comebacks concorridos, múltiplos colecionadores disputam o mesmo slot no mes
    - Quando múltiplos usuários disputam o mesmo integrante, o primeiro confirmado preenche o slot ativo. Os excedentes são alocados automaticamente em Sets subsequentes abertos da mesma CEG.
 3. **Fila de Espera:**
    - Se todos os sets estiverem preenchidos, os interessados restantes são enfileirados na Lista de Espera com timestamp de precisão em milissegundos para desempate auditável.
+4. **Itens Avulsos & Alocação FIFO por Quantidade:**
+   - Para itens avulsos com estoque múltiplo (álbuns, posters, POBs avulsos), o usuário seleciona a quantidade desejada diretamente no card toploader 2:3.
+   - O backend executa `ClaimService.claim_avulso_by_quantity()` protegido por mutex de claim e `ItemSlot.objects.select_for_update(of=('self',))`, ordenando os slots disponíveis por `unit_number, id` de forma crescente.
+   - Os slots são atribuídos atomicamente na ordem de chegada (ex: se há 3 unidades e o joiner compra 2, ele obtém as unidades #1 e #2; requisições concorrentes recebem as unidades subsequentes ou erro caso o estoque se esgote no milissegundo).
 
 ---
 

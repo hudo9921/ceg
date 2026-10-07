@@ -596,6 +596,138 @@ class ClaimService:
         """Retorna o histórico ordenado de tentativas de reserva do slot."""
         return ClaimAttemptLog.objects.filter(slot_id=slot_id).order_by('attempt_number')
 
+    @staticmethod
+    def claim_avulso_by_quantity(
+        ceg,
+        item_def_id: int,
+        quantity: int,
+        name: str,
+        phone: str,
+        social_handle: str = "",
+        notes: str = "",
+        username: str = "",
+        bypass_status_check: bool = False
+    ):
+        """
+        Aloca e reserva 'quantity' unidades de um item avulso para um participante.
+        Alocação atômica em ordem de chegada (unit_number, id) com select_for_update.
+        Garante que se múltiplos participantes comprarem no mesmo milissegundo,
+        o primeiro aloca as primeiras unidades e os seguintes alocam as restantes.
+        """
+        if quantity <= 0:
+            raise CEGError("A quantidade solicitada deve ser maior que zero.")
+
+        cleaned_phone = clean_phone_number(phone)
+        if not cleaned_phone:
+            raise CEGError("Número de WhatsApp inválido.")
+
+        name_clean = name.strip()
+        username_clean = username.strip()
+        social_clean = social_handle.strip()
+
+        # Validação de abertura / standby
+        if not bypass_status_check:
+            if ceg.opens_at:
+                diff_seconds = (ceg.opens_at - timezone.now()).total_seconds()
+                if diff_seconds > 1.0:
+                    raise CEGNotOpenYetError(
+                        f"A CEG ainda está em modo Standby! As reservas abrem em {ceg.opens_at.strftime('%d/%m/%Y às %H:%M:%S')}."
+                    )
+            if ceg.status not in (CEG.Status.OPEN, CEG.Status.SCHEDULED):
+                raise CEGError("Esta CEG não está aceitando reservas no momento.")
+
+        with _claim_mutex:
+            # Obtém ou cria o participante
+            participant, created = Participant.objects.get_or_create(
+                whatsapp=cleaned_phone,
+                defaults={
+                    'name': name_clean,
+                    'username': username_clean,
+                    'social_handle': social_clean,
+                }
+            )
+            updated = False
+            if name_clean and participant.name != name_clean:
+                participant.name = name_clean
+                updated = True
+            if username_clean and participant.username != username_clean:
+                participant.username = username_clean
+                updated = True
+            if social_clean and participant.social_handle != social_clean:
+                participant.social_handle = social_clean
+                updated = True
+            if updated:
+                participant.save()
+
+            created_claims = []
+            with transaction.atomic():
+                # Bloqueia os slots disponíveis para o item avulso nesta CEG
+                available_slots = list(
+                    ItemSlot.objects.select_for_update(of=('self',))
+                    .select_related('set__ceg', 'item_definition')
+                    .filter(
+                        item_definition_id=item_def_id,
+                        set__ceg=ceg,
+                        status=ItemSlot.Status.AVAILABLE
+                    )
+                    .order_by('unit_number', 'id')[:quantity]
+                )
+
+                if not available_slots:
+                    raise SlotUnavailableError(
+                        "Todas as unidades deste item avulso já foram reservadas ou esgotaram."
+                    )
+
+                now = timezone.now()
+                for slot in available_slots:
+                    rows = ItemSlot.objects.filter(
+                        id=slot.id,
+                        status=ItemSlot.Status.AVAILABLE
+                    ).update(
+                        status=ItemSlot.Status.RESERVED,
+                        claimed_by=participant,
+                        claimed_at=now
+                    )
+                    if rows == 1:
+                        slot.refresh_from_db()
+                        claim = Claim.objects.create(
+                            slot=slot,
+                            participant=participant,
+                            status=Claim.Status.PENDING,
+                            total_price=slot.price,
+                            participant_notes=notes.strip(),
+                            claimed_at=now
+                        )
+                        created_claims.append(claim)
+
+                        try:
+                            attempt_num = _get_next_attempt_number(slot.id)
+                            ClaimAttemptLog.objects.create(
+                                slot=slot,
+                                attempt_number=attempt_num,
+                                participant_name=name_clean,
+                                phone=cleaned_phone,
+                                social_handle=social_clean,
+                                result=ClaimAttemptLog.Result.SUCCESS,
+                                details=f"Unidade #{slot.unit_number} alocada com sucesso (reserva avulsa por quantidade)."
+                            )
+                        except Exception:
+                            pass
+
+                        _emit_claim_order_log(
+                            slot_id=slot.id,
+                            item_name=f"{slot.item_definition.name} (Unid. #{slot.unit_number})",
+                            set_number=0,
+                            ceg_title=ceg.title,
+                            attempt_number=1,
+                            name=name_clean,
+                            phone=cleaned_phone,
+                            social_handle=social_clean,
+                            won=True
+                        )
+
+            return created_claims
+
     @classmethod
     def reset_in_memory_counters(cls):
         """Reseta contadores em memória (usado para testes e reinicialização)."""

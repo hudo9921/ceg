@@ -1,0 +1,180 @@
+<!-- CARD DE ITEM AVULSO & EXCLUSIVO: TOPLOADER 2:3 (Qtd Stepper & FIFO) -->
+<div class="border rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between space-y-2.5 transition-all duration-200
+            {% if idef.available_count > 0 %}border-slate-200/90 dark:border-white/10 hover:border-pink-300 dark:hover:border-pink-500/50 hover:shadow-md bg-white dark:bg-cyber-surface
+            {% else %}border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 opacity-75{% endif %}"
+     x-data="{
+         itemDefId: {{ idef.id }},
+         totalCount: {{ idef.slots_count }},
+         availableCount: {{ idef.available_count }},
+         selectedQty: 1,
+         get isSelected() { return $store.claimSelection.hasAvulso(this.itemDefId); },
+         inc() { if (this.selectedQty < this.availableCount) { this.selectedQty++; if (this.isSelected) this.syncStore(); } },
+         dec() { if (this.selectedQty > 1) { this.selectedQty--; if (this.isSelected) this.syncStore(); } },
+         syncStore() {
+             $store.claimSelection.setAvulso({
+                 id: {{ idef.id }},
+                 name: '{{ idef.name|escapejs }}',
+                 member_name: '{{ idef.member_name|default:''|escapejs }}',
+                 default_price: '{{ idef.default_price|floatformat:2 }}',
+                 frete_inter: '{% if idef.first_slot.frete_inter is not None and idef.first_slot.frete_inter > 0 %}{{ idef.first_slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
+                 taxa_aduaneira: '{% if idef.first_slot.taxa_aduaneira is not None and idef.first_slot.taxa_aduaneira > 0 %}{{ idef.first_slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
+             }, this.selectedQty);
+         },
+         toggleSelection() {
+             if (this.isSelected) { $store.claimSelection.setAvulso({ id: {{ idef.id }} }, 0); }
+             else { this.syncStore(); }
+         }
+     }"
+     :class="{ 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/70 dark:bg-pink-950/40 shadow-md scale-[1.01]': isSelected }">
+
+    <!-- 1. Topo: Integrante, Tipo, Staff Actions & Preço Tabular -->
+    <div class="flex justify-between items-start gap-1">
+        <div class="flex items-center gap-1 flex-wrap">
+            {% if idef.member_name %}
+            <span class="text-[11px] font-black text-pink-700 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/70 px-1.5 py-0.5 rounded-md border border-pink-200/60 dark:border-pink-800/60 shadow-2xs truncate max-w-[85px]">
+                {{ idef.member_name }}
+            </span>
+            {% endif %}
+            <span class="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md
+                {% if idef.item_type == 'POB' or 'pob' in idef.tipo_item_nome|lower %}bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60
+                {% elif idef.item_type == 'ALBUM' or 'álbum' in idef.tipo_item_nome|lower or 'album' in idef.tipo_item_nome|lower %}bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700/60
+                {% elif idef.item_type == 'INCLUSION' or 'inclus' in idef.tipo_item_nome|lower %}bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60
+                {% elif 'lucky' in idef.tipo_item_nome|lower or 'fansign' in idef.tipo_item_nome|lower %}bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700/60
+                {% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %}">
+                <i data-lucide="tag" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
+                <span class="truncate max-w-[70px]">{{ idef.tipo_item_nome }}</span>
+            </span>
+        </div>
+
+        <div class="flex items-center gap-1 shrink-0">
+            {% if user.is_staff %}
+            <button type="button" @click.stop="openEditAvulsoModal(findAvulsoItem({{ idef.id }}))"
+                class="w-6 h-6 flex items-center justify-center bg-purple-50 dark:bg-white/[0.06] hover:bg-purple-100 text-purple-700 dark:text-pink-300 rounded-lg border border-purple-200 dark:border-white/10 transition shadow-2xs cursor-pointer active:scale-95"
+                title="Editar item avulso">
+                <i data-lucide="pencil" class="w-3 h-3" stroke-width="1.75"></i>
+            </button>
+            <button type="button" @click.stop="openDeleteAvulsoModal(findAvulsoItem({{ idef.id }}))"
+                class="w-6 h-6 flex items-center justify-center bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg border border-rose-200 dark:border-rose-800/60 transition shadow-2xs cursor-pointer active:scale-95"
+                title="Excluir item avulso">
+                <i data-lucide="trash-2" class="w-3 h-3" stroke-width="1.75"></i>
+            </button>
+            {% endif %}
+            <span class="text-xs font-black text-slate-900 dark:text-white font-mono whitespace-nowrap">
+                R$ {{ idef.default_price|floatformat:2 }}
+            </span>
+        </div>
+    </div>
+
+    <!-- 2. Imagem do Item Avulso (Toploader Proporção 2:3) -->
+    <div class="rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 aspect-[2/3] w-full relative group/img cursor-pointer shadow-2xs"
+         {% if idef.image_url %}@click.stop="openZoom('{{ idef.image_url|escapejs }}', '{{ idef.name|escapejs }}')"{% endif %}
+         title="Clique para ampliar a imagem">
+        {% if idef.image_url %}
+        <img src="{{ idef.image_url }}" alt="{{ idef.name }}" class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
+        <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-[10px] text-white font-bold gap-1 backdrop-blur-2xs">
+            <i data-lucide="maximize-2" class="w-3 h-3" stroke-width="1.75"></i>
+            <span>Ampliar</span>
+        </div>
+        {% else %}
+        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-1 p-2 text-center">
+            <i data-lucide="package" class="w-8 h-8 opacity-40" stroke-width="1.75"></i>
+            <span class="text-[9px] font-bold">Sem imagem</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. Nome do Item & Badge de Estoque -->
+    <div class="space-y-1">
+        <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-1" title="{{ idef.name }}">
+            {{ idef.name }}
+        </h3>
+        <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 dark:text-slate-400 font-bold">Estoque:</span>
+            {% if idef.available_count > 0 %}
+            <span class="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800/60 font-mono text-[10px]">
+                {{ idef.available_count }} de {{ idef.slots_count }} unid.
+            </span>
+            {% else %}
+            <span class="font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-200/80 dark:border-rose-800/60 text-[10px]">
+                Esgotado
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4. Resumo de Frete e Taxa -->
+    <div class="grid grid-cols-2 gap-1.5 p-2 bg-slate-50/80 dark:bg-white/[0.03] rounded-xl border border-slate-200/80 dark:border-white/5 text-[10px]">
+        <div class="flex flex-col min-w-0 justify-between">
+            <span class="text-[8.5px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400 truncate flex items-center gap-0.5">
+                <i data-lucide="plane" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
+                <span>Inter</span>
+            </span>
+            <span class="font-extrabold text-[11px] mt-0.5 font-mono {% if idef.first_slot.frete_inter or ceg.frete_inter %}text-slate-900 dark:text-white{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                {% if idef.first_slot.frete_inter %}R$ {{ idef.first_slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter %}R$ {{ ceg.frete_inter|floatformat:2 }}{% else %}A definir{% endif %}
+            </span>
+        </div>
+        <div class="flex flex-col min-w-0 justify-between border-l border-slate-200 dark:border-white/10 pl-1.5">
+            <span class="text-[8.5px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 truncate flex items-center gap-0.5">
+                <i data-lucide="landmark" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
+                <span>Taxa</span>
+            </span>
+            <span class="font-extrabold text-[11px] mt-0.5 font-mono {% if idef.first_slot.taxa_aduaneira or ceg.taxa_aduaneira %}text-slate-900 dark:text-white{% else %}text-slate-400 text-[10px] font-semibold{% endif %}">
+                {% if idef.first_slot.taxa_aduaneira %}R$ {{ idef.first_slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}{% else %}A definir{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- 5. Bloco de Ação: Seletor de Quantidade & Compra -->
+    <div class="pt-2 border-t border-slate-100 dark:border-white/5 space-y-2">
+        {% if idef.available_count > 0 %}
+            <div x-show="isStandby">
+                <button type="button" disabled class="w-full py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[11px] sm:text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1 border border-slate-200 dark:border-white/5">
+                    <i data-lucide="clock" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
+                    <span>Aguarde abertura</span>
+                </button>
+            </div>
+            <div x-show="!isStandby" class="space-y-2">
+                <!-- Seletor de Quantidade -->
+                <div class="flex items-center justify-between gap-2 p-1 bg-slate-50 dark:bg-white/[0.04] rounded-xl border border-slate-200/80 dark:border-white/10">
+                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1.5">Qtd:</span>
+                    <div class="flex items-center gap-1">
+                        <button type="button" @click.stop="dec()" :disabled="selectedQty <= 1"
+                            class="w-6 h-6 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 flex items-center justify-center font-black text-xs hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 cursor-pointer active:scale-95 shadow-2xs">
+                            -
+                        </button>
+                        <span class="font-mono font-black text-xs text-slate-900 dark:text-white min-w-[22px] text-center" x-text="selectedQty"></span>
+                        <button type="button" @click.stop="inc()" :disabled="selectedQty >= availableCount"
+                            class="w-6 h-6 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 flex items-center justify-center font-black text-xs hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 cursor-pointer active:scale-95 shadow-2xs">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                {% if logged_participant or user.is_authenticated %}
+                <button type="button" @click.stop="toggleSelection()"
+                        class="w-full py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95 shadow-2xs"
+                        :class="isSelected
+                            ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-dashed border-slate-300 dark:border-white/10 hover:border-pink-300 hover:text-pink-600 dark:hover:text-pink-400'">
+                    <i :data-lucide="isSelected ? 'check' : 'shopping-bag'" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
+                    <span class="truncate" x-text="isSelected ? ('Selecionado (' + selectedQty + ')') : 'Comprar / Reservar'"></span>
+                </button>
+                {% else %}
+                <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                   class="w-full py-1.5 sm:py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-black rounded-xl transition shadow-xs flex items-center justify-center gap-1 cursor-pointer text-center active:scale-95">
+                    <i data-lucide="log-in" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
+                    <span class="truncate">Entrar p/ Reservar</span>
+                </a>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="text-center py-2 px-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 rounded-xl text-slate-400 dark:text-slate-500 text-xs font-bold flex items-center justify-center gap-1">
+                <i data-lucide="lock" class="w-3 h-3" stroke-width="1.75"></i>
+                <span>Esgotado</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 6. Painel Staff: Gestão de Unidades -->
+    {% include 'cegs/partials/_detail_avulso_staff_units.html' %}
+</div>

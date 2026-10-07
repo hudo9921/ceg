@@ -126,6 +126,41 @@
                         this.slots.splice(index, 1);
                     }
                 },
+                setAvulso(itemDef, quantity) {
+                    const key = 'avulso_' + itemDef.id;
+                    const index = this.slots.findIndex(item => item.id === key);
+                    const qty = parseInt(quantity) || 0;
+                    if (qty <= 0) {
+                        if (index !== -1) this.slots.splice(index, 1);
+                        return;
+                    }
+                    const unitPrice = parseFloat(itemDef.default_price || itemDef.price || 0);
+                    const itemData = {
+                        id: key,
+                        itemDefId: itemDef.id,
+                        isAvulso: true,
+                        quantity: qty,
+                        name: itemDef.name,
+                        member: itemDef.member_name || '',
+                        setNumber: 'Avulso',
+                        unitPrice: unitPrice,
+                        price: (unitPrice * qty).toFixed(2),
+                        frete: itemDef.frete_inter || '',
+                        taxa: itemDef.taxa_aduaneira || ''
+                    };
+                    if (index === -1) {
+                        this.slots.push(itemData);
+                    } else {
+                        this.slots.splice(index, 1, itemData);
+                    }
+                },
+                getAvulsoQuantity(itemDefId) {
+                    const found = this.slots.find(item => item.id === ('avulso_' + itemDefId));
+                    return found ? found.quantity : 0;
+                },
+                hasAvulso(itemDefId) {
+                    return this.slots.some(item => item.id === ('avulso_' + itemDefId));
+                },
                 clear() {
                     this.slots = [];
                     window.dispatchEvent(new CustomEvent('claim-selection-cleared'));

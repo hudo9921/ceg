@@ -371,6 +371,16 @@ function cegDetailApp() {
          },
          // --- Participant Multi-Select Claim ---
          participantSelectedSlots: [],   // [{id, name, setNumber, price, frete, taxa}, ...]
+         get participantSelectedTotal() {
+             return this.participantSelectedSlots.reduce((acc, s) => {
+                 return acc + (s.isAvulso ? (s.unitPrice * s.quantity) : parseFloat(s.price || 0));
+             }, 0);
+         },
+         get participantSelectedCount() {
+             return this.participantSelectedSlots.reduce((acc, s) => {
+                 return acc + (s.isAvulso ? s.quantity : 1);
+             }, 0);
+         },
          bulkClaimModalOpen: false,
          bulkClaimLoading: false,
          bulkClaimResults: null,
@@ -394,6 +404,11 @@ function cegDetailApp() {
              } else {
                  this.participantSelectedSlots.splice(idx, 1);
              }
+             if (slot.isAvulso) {
+                 $store.claimSelection.setAvulso({ id: slot.itemDefId }, 0);
+             } else {
+                 $store.claimSelection.toggle(slot);
+             }
          },
          isParticipantSlotSelected(slotId) {
              return this.participantSelectedSlots.some(s => s.id === slotId);
@@ -402,6 +417,7 @@ function cegDetailApp() {
              this.participantSelectedSlots = [];
          },
          openBulkClaimModal() {
+             this.participantSelectedSlots = [...$store.claimSelection.slots];
              if (this.participantSelectedSlots.length === 0) return;
              this.bulkClaimResults = null;
              this.bulkClaimSummary = null;
@@ -419,7 +435,11 @@ function cegDetailApp() {
                          'X-CSRFToken': csrf,
                      },
                      body: JSON.stringify({
-                         slot_ids: this.participantSelectedSlots.map(s => s.id),
+                         slot_ids: this.participantSelectedSlots.filter(s => !s.isAvulso).map(s => s.id),
+                         avulso_claims: this.participantSelectedSlots.filter(s => s.isAvulso).map(s => ({
+                             item_def_id: s.itemDefId,
+                             quantity: s.quantity
+                         })),
                          name: this.formName,
                          whatsapp: this.formWhatsapp,
                          social_handle: this.formSocial,

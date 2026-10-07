@@ -13,13 +13,13 @@
         <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs font-black text-pink-300 dark:text-pink-300 shrink-0 font-mono"
-                    x-text="$store.claimSelection.slots.length + ' item' + ($store.claimSelection.slots.length > 1 ? 's' : '') + ' selecionado' + ($store.claimSelection.slots.length > 1 ? 's' : '')"></span>
+                    x-text="$store.claimSelection.slots.reduce((acc, s) => acc + (s.isAvulso ? s.quantity : 1), 0) + ' item(ns) selecionado(s)'"></span>
                 <div class="flex items-center gap-1.5 flex-wrap max-h-16 overflow-y-auto no-scrollbar">
                     <template x-for="s in $store.claimSelection.slots" :key="s.id">
                         <span
                             class="text-[10px] font-bold text-white bg-pink-600/80 dark:bg-white/[0.08] px-2 py-0.5 rounded-lg border border-pink-500/50 dark:border-white/10 flex items-center gap-1 shadow-2xs">
-                            <span x-text="'Set #' + s.setNumber + ' · ' + (s.member ? s.member : s.name)"></span>
-                            <button type="button" @click.stop="$store.claimSelection.toggle(s)"
+                            <span x-text="s.isAvulso ? ('Avulso · ' + s.name + ' (' + s.quantity + 'x)') : ('Set #' + s.setNumber + ' · ' + (s.member ? s.member : s.name))"></span>
+                            <button type="button" @click.stop="s.isAvulso ? $store.claimSelection.setAvulso({ id: s.itemDefId }, 0) : $store.claimSelection.toggle(s)"
                                 class="text-pink-200 hover:text-white ml-0.5 cursor-pointer flex items-center transition"
                                 title="Remover da seleção">
                                 <i data-lucide="x" class="w-3 h-3" stroke-width="1.75"></i>
@@ -41,7 +41,7 @@
                 class="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-sm font-black rounded-xl transition shadow-lg shadow-pink-600/25 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95">
                 <i data-lucide="shopping-bag" class="w-4 h-4" stroke-width="1.75"></i>
                 <span
-                    x-text="'Finalizar Compra (' + $store.claimSelection.slots.length + ($store.claimSelection.slots.length > 1 ? ' itens)' : ' item)')"></span>
+                    x-text="'Finalizar Compra (' + $store.claimSelection.slots.reduce((acc, s) => acc + (s.isAvulso ? s.quantity : 1), 0) + ')'"></span>
             </button>
         </div>
     </div>

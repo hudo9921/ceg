@@ -44,7 +44,8 @@
   - `_detail_slot_action.html`: Botão de compra/reserva com estado de seleção e badges de quitação.
   - `_detail_slot_payment_status.html`: Toggles de quitação para staff e visualizador de histórico de claims.
 - `_detail_avulsos_grid.html`: Orquestrador de itens avulsos e exclusivos:
-  - `_detail_avulsos_slot_row.html`: Linha de unidade física com gestão de estoque e reserva.
+  - `_detail_avulso_card.html`: Card toploader 2:3 colecionável com seletor de quantidade e alocação atômica FIFO.
+  - `_detail_avulso_staff_units.html`: Gaveta retrátil staff com gestão de cada unidade física e toggles de pagamento.
 - `_detail_polling_grid.html`: Orquestrador da grade de enquete de demanda:
   - `_detail_polling_card.html`: Card toploader de candidato da enquete com acordeão de auditoria de votos.
   - `_detail_polling_vote_modal.html`: Barra flutuante de votação múltipla e modal de submissão de votos.

@@ -264,6 +264,11 @@ class CEGDetailView(View):
         avulso_items_data = []
         for idef in avulso_definitions:
             matching_slots = [s for s in avulso_slots if s.item_definition_id == idef.id]
+            idef.matching_slots = matching_slots
+            idef.slots_count = len(matching_slots)
+            idef.available_count = len([s for s in matching_slots if s.status == ItemSlot.Status.AVAILABLE])
+            idef.first_slot = matching_slots[0] if matching_slots else None
+
             slots_data = []
             for s in matching_slots:
                 slots_data.append({
@@ -295,7 +300,7 @@ class CEGDetailView(View):
                 'quantidade_avulsa': idef.quantidade_avulsa,
                 'slots': slots_data,
                 'slots_count': len(slots_data),
-                'available_count': len([s for s in slots_data if s['status'] == ItemSlot.Status.AVAILABLE]),
+                'available_count': idef.available_count,
             })
 
         # Se o usuário for administrador/staff, carrega lista de participantes para seleção rápida e caixas
@@ -621,14 +626,15 @@ class BulkClaimView(View):
             return JsonResponse({'success': False, 'message': 'Requisição inválida.'}, status=400)
 
         slot_ids = body.get('slot_ids', [])
+        avulso_claims = body.get('avulso_claims', [])
         name = body.get('name', '').strip()
         whatsapp = body.get('whatsapp', '').strip()
         social_handle = body.get('social_handle', '').strip()
         username = body.get('username', '').strip()
         notes = body.get('notes', '').strip()
 
-        if not slot_ids:
-            return JsonResponse({'success': False, 'message': 'Nenhum slot selecionado.'}, status=400)
+        if not slot_ids and not avulso_claims:
+            return JsonResponse({'success': False, 'message': 'Nenhum slot ou item selecionado.'}, status=400)
 
         # Preenche com dados da sessão se for participante logado
         if logged_id:
@@ -655,6 +661,7 @@ class BulkClaimView(View):
         results = []
         participant_saved = False
 
+        # 1. Processa slots regulares por ID específico
         for slot_id in slot_ids:
             try:
                 slot = ItemSlot.objects.select_related('set__ceg', 'item_definition').get(
@@ -685,7 +692,6 @@ class BulkClaimView(View):
                     username=username,
                     bypass_status_check=is_staff,
                 )
-                # Salva participant_id na sessão apenas uma vez
                 if not is_staff and not participant_saved:
                     request.session['participant_id'] = claim.participant.id
                     participant_saved = True
@@ -730,6 +736,88 @@ class BulkClaimView(View):
                     'slot_id': slot_id,
                     'item_name': item_name,
                     'set_number': set_number,
+                    'success': False,
+                    'is_waiting_list': False,
+                    'message': f"Erro inesperado: {e}",
+                    'result': 'ERROR',
+                })
+
+        # 2. Processa solicitações de itens avulsos por quantidade e alocação dinâmica FIFO
+        for av in avulso_claims:
+            idef_id = av.get('item_def_id')
+            try:
+                qty = max(1, int(av.get('quantity', 1)))
+            except (ValueError, TypeError):
+                qty = 1
+
+            try:
+                idef = CEGItemDefinition.objects.get(id=idef_id, ceg=ceg)
+            except CEGItemDefinition.DoesNotExist:
+                results.append({
+                    'slot_id': None,
+                    'item_name': 'Item Avulso',
+                    'set_number': 'Avulso',
+                    'success': False,
+                    'is_waiting_list': False,
+                    'message': 'Item avulso não encontrado nesta CEG.',
+                    'result': 'ERROR',
+                })
+                continue
+
+            try:
+                claims = ClaimService.claim_avulso_by_quantity(
+                    ceg=ceg,
+                    item_def_id=idef.id,
+                    quantity=qty,
+                    name=name,
+                    phone=whatsapp,
+                    social_handle=social_handle,
+                    notes=notes,
+                    username=username,
+                    bypass_status_check=is_staff,
+                )
+                if not is_staff and not participant_saved and claims:
+                    request.session['participant_id'] = claims[0].participant.id
+                    participant_saved = True
+
+                for c in claims:
+                    results.append({
+                        'slot_id': c.slot.id,
+                        'item_name': f"{idef.name} (Unid. #{c.slot.unit_number})",
+                        'set_number': 'Avulso',
+                        'success': True,
+                        'is_waiting_list': False,
+                        'message': f"🎉 Unidade #{c.slot.unit_number} reservada com sucesso!",
+                        'result': 'SUCCESS',
+                        'total_price': str(c.total_price),
+                        'pix_key': ceg.pix_key,
+                    })
+
+                if len(claims) < qty:
+                    results.append({
+                        'slot_id': None,
+                        'item_name': idef.name,
+                        'set_number': 'Avulso',
+                        'success': False,
+                        'is_waiting_list': False,
+                        'message': f"Estoque parcial: apenas {len(claims)} de {qty} unidade(s) estavam disponíveis.",
+                        'result': 'PARTIAL',
+                    })
+            except CEGError as e:
+                results.append({
+                    'slot_id': None,
+                    'item_name': idef.name,
+                    'set_number': 'Avulso',
+                    'success': False,
+                    'is_waiting_list': False,
+                    'message': str(e),
+                    'result': 'FAILED',
+                })
+            except Exception as e:
+                results.append({
+                    'slot_id': None,
+                    'item_name': idef.name,
+                    'set_number': 'Avulso',
                     'success': False,
                     'is_waiting_list': False,
                     'message': f"Erro inesperado: {e}",

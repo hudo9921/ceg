@@ -283,3 +283,119 @@ class ItensAvulsosTestCase(TestCase):
         content = res.content.decode('utf-8')
         self.assertIn('Apenas Itens Avulsos', content)
         self.assertIn('Itens Avulsos & Exclusivos', content)
+
+    def test_claim_avulso_by_quantity_allocates_first_units(self):
+        """Testa que comprar 2 unidades de 3 aloca exatamente as duas primeiras (unit_number 1 e 2)"""
+        from apps.cegs.services import ClaimService
+
+        item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Photocard Especial Yujin',
+            item_type=CEGItemDefinition.ItemType.PHOTOCARD,
+            default_price=Decimal('50.00'),
+            is_avulso=True,
+            quantidade_avulsa=3
+        )
+        av_set = self.ceg.get_or_create_avulso_set()
+        av_set.generate_slots()
+
+        claims = ClaimService.claim_avulso_by_quantity(
+            ceg=self.ceg,
+            item_def_id=item_def.id,
+            quantity=2,
+            name='Ana DIVE',
+            phone='11988887777',
+            social_handle='@ana_dive'
+        )
+        self.assertEqual(len(claims), 2)
+        unit_numbers = [c.slot.unit_number for c in claims]
+        self.assertEqual(unit_numbers, [1, 2])
+
+        # A terceira unidade ainda deve estar livre
+        slots = list(ItemSlot.objects.filter(item_definition=item_def).order_by('unit_number'))
+        self.assertEqual(slots[0].status, ItemSlot.Status.RESERVED)
+        self.assertEqual(slots[1].status, ItemSlot.Status.RESERVED)
+        self.assertEqual(slots[2].status, ItemSlot.Status.AVAILABLE)
+
+    def test_claim_avulso_concurrency_fifo(self):
+        """Testa que múltiplas compras alocam por ordem de chegada até esgotar"""
+        from apps.cegs.services import ClaimService, SlotUnavailableError
+
+        item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Poster Oficial Limitado',
+            item_type=CEGItemDefinition.ItemType.OTHER,
+            default_price=Decimal('30.00'),
+            is_avulso=True,
+            quantidade_avulsa=3
+        )
+        av_set = self.ceg.get_or_create_avulso_set()
+        av_set.generate_slots()
+
+        # Comprador A compra 2 unidades (pega #1 e #2)
+        claims_a = ClaimService.claim_avulso_by_quantity(
+            ceg=self.ceg,
+            item_def_id=item_def.id,
+            quantity=2,
+            name='Comprador A',
+            phone='11911111111',
+            social_handle='@comprador_a'
+        )
+        self.assertEqual([c.slot.unit_number for c in claims_a], [1, 2])
+
+        # Comprador B pede 2 unidades, mas só resta 1 (pega #3)
+        claims_b = ClaimService.claim_avulso_by_quantity(
+            ceg=self.ceg,
+            item_def_id=item_def.id,
+            quantity=2,
+            name='Comprador B',
+            phone='11922222222',
+            social_handle='@comprador_b'
+        )
+        self.assertEqual(len(claims_b), 1)
+        self.assertEqual(claims_b[0].slot.unit_number, 3)
+
+        # Comprador C tenta comprar quando está esgotado
+        with self.assertRaises(SlotUnavailableError):
+            ClaimService.claim_avulso_by_quantity(
+                ceg=self.ceg,
+                item_def_id=item_def.id,
+                quantity=1,
+                name='Comprador C',
+                phone='11933333333',
+                social_handle='@comprador_c'
+            )
+
+    def test_bulk_claim_view_with_avulso_claims(self):
+        """Testa o endpoint /bulk-claim/ recebendo requisições com avulso_claims"""
+        item_def = CEGItemDefinition.objects.create(
+            ceg=self.ceg,
+            name='Álbum Limitado',
+            item_type=CEGItemDefinition.ItemType.ALBUM,
+            default_price=Decimal('90.00'),
+            is_avulso=True,
+            quantidade_avulsa=2
+        )
+        av_set = self.ceg.get_or_create_avulso_set()
+        av_set.generate_slots()
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        res = self.client.post(
+            f'/ceg/{self.ceg.slug}/bulk-claim/',
+            data={
+                'slot_ids': [],
+                'avulso_claims': [{'item_def_id': item_def.id, 'quantity': 2}],
+                'name': 'DIVE Fã',
+                'whatsapp': '11999998888',
+                'social_handle': '@dive_fan'
+            },
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(data['summary']['succeeded'], 2)
+
