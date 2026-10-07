@@ -4,6 +4,25 @@
 {% include 'analytics/partials/_status_app_filters.html' %}
 
 <script>
+function safeJsonParse(elementId, fallback) {
+    try {
+        const el = document.getElementById(elementId);
+        if (!el || !el.textContent || !el.textContent.trim()) return fallback;
+        return JSON.parse(el.textContent);
+    } catch (e) {
+        return fallback;
+    }
+}
+
+function mergeComponentObjects(target, ...sources) {
+    for (const source of sources) {
+        if (!source) continue;
+        const descriptors = Object.getOwnPropertyDescriptors(source);
+        Object.defineProperties(target, descriptors);
+    }
+    return target;
+}
+
 function cegStatusState() {
     return {
         selectedCategory: '{{ category|default:"all" }}',
@@ -16,46 +35,27 @@ function cegStatusState() {
         itemDragOver: false,
         editItemModalOpen: false,
         editingItem: {},
-        itemImagePreview: '',
-        itemImageBase64: '',
-        itemImageUrl: '',
-        newTipoModalOpen: false,
-        newTipoNome: '',
-        newTipoDescricao: '',
-        addSetModalOpen: false,
-        addSetCegId: '',
-        addSetCegTitle: '',
-        addSetNumber: '',
-        addSetNotes: '',
-        addSetIsActive: true,
-        editCegModalOpen: false,
-        editingCeg: {},
-        cegBannerPreview: '',
-        cegBannerBase64: '',
-        cegBannerUrl: '',
-        removeBannerFlag: false,
-        cegBannerError: '',
-        cegDragOver: false,
-        tiposItem: JSON.parse(document.getElementById('tipos-item-data')?.textContent || '[]'),
-        mercariItems: JSON.parse(document.getElementById('mercari-items-data')?.textContent || '[]'),
-        filterOptions: JSON.parse(document.getElementById('filter-options-data')?.textContent || '{"groups":[],"eras":[]}'),
-        setsIncomplete: JSON.parse(document.getElementById('sets-incomplete-data')?.textContent || '[]'),
-        setsFechados: JSON.parse(document.getElementById('sets-fechados-data')?.textContent || '[]'),
-        setsPagos: JSON.parse(document.getElementById('sets-pagos-data')?.textContent || '[]'),
-        setsTerminados: JSON.parse(document.getElementById('sets-terminados-data')?.textContent || '[]'),
-        cegsOverview: JSON.parse(document.getElementById('cegs-overview-data')?.textContent || '[]'),
-        cegShareMap: JSON.parse(document.getElementById('ceg-share-map-data')?.textContent || '{}'),
-        shareModalOpen: false,
-        shareCopied: false,
-        shareEmoji: '🟢',
-        shareShowSoldOut: false,
-        shareIncludePrice: false,
-        currentShareCeg: null
+        itemImagePreview: '', itemImageBase64: '', itemImageUrl: '',
+        newTipoModalOpen: false, newTipoNome: '', newTipoDescricao: '',
+        addSetModalOpen: false, addSetCegId: '', addSetCegTitle: '', addSetNumber: '', addSetNotes: '', addSetIsActive: true,
+        editCegModalOpen: false, editingCeg: {}, cegBannerPreview: '', cegBannerBase64: '', cegBannerUrl: '',
+        removeBannerFlag: false, cegBannerError: '', cegDragOver: false,
+        tiposItem: safeJsonParse('tipos-item-data', []),
+        mercariItems: safeJsonParse('mercari-items-data', []),
+        filterOptions: safeJsonParse('filter-options-data', { groups: [], eras: [] }),
+        setsIncomplete: safeJsonParse('sets-incomplete-data', []),
+        setsFechados: safeJsonParse('sets-fechados-data', []),
+        setsPagos: safeJsonParse('sets-pagos-data', []),
+        setsTerminados: safeJsonParse('sets-terminados-data', []),
+        cegsOverview: safeJsonParse('cegs-overview-data', []),
+        cegShareMap: safeJsonParse('ceg-share-map-data', {}),
+        shareModalOpen: false, shareCopied: false, shareEmoji: '🟢',
+        shareShowSoldOut: false, shareIncludePrice: false, currentShareCeg: null
     };
 }
 
 function cegStatusApp() {
-    return Object.assign(
+    return mergeComponentObjects(
         cegStatusState(),
         cegStatusFilterMethods(),
         cegStatusShareMethods(),
@@ -65,7 +65,8 @@ function cegStatusApp() {
             onFilterChange() { this.updateUrl(); },
             onGroupChange() {
                 if (this.selectedGroup && this.selectedEra) {
-                    const eraObj = this.filterOptions.eras.find(e => String(e.id) === String(this.selectedEra));
+                    const eras = this.filterOptions?.eras || [];
+                    const eraObj = eras.find(e => String(e.id) === String(this.selectedEra));
                     if (!eraObj || String(eraObj.group_id) !== String(this.selectedGroup)) {
                         this.selectedEra = '';
                     }
@@ -111,11 +112,11 @@ function cegStatusApp() {
                 return '';
             },
             getPagosFilterLabel() {
-                if (this.pagosSubFilter === 'frete_pago') return '✈️ Frete Internacional Quitado';
-                if (this.pagosSubFilter === 'frete_aberto') return '⏳ Frete Internacional Em Aberto (Pendente)';
-                if (this.pagosSubFilter === 'taxa_paga') return '🏛️ Taxa Aduaneira Quitada';
-                if (this.pagosSubFilter === 'taxa_aberto') return '⏳ Taxa Aduaneira Em Aberto (Pendente)';
-                if (this.pagosSubFilter === 'terminados') return '🏆 Sets Terminados (Tudo 100% Pago)';
+                if (this.pagosSubFilter === 'frete_pago') return 'Frete Internacional Quitado';
+                if (this.pagosSubFilter === 'frete_aberto') return 'Frete Internacional Em Aberto (Pendente)';
+                if (this.pagosSubFilter === 'taxa_paga') return 'Taxa Aduaneira Quitada';
+                if (this.pagosSubFilter === 'taxa_aberto') return 'Taxa Aduaneira Em Aberto (Pendente)';
+                if (this.pagosSubFilter === 'terminados') return 'Sets Terminados (Tudo 100% Pago)';
                 return '';
             },
             isPagoSetVisible(isTerminado, hasFrete, fretePago, fretePending, hasTaxa, taxaPaga, taxaPending) {
@@ -128,7 +129,7 @@ function cegStatusApp() {
                 return true;
             },
             hasNoVisiblePagos() {
-                const visible = this.setsPagos.filter(s => {
+                const visible = (this.setsPagos || []).filter(s => {
                     if (!this.matchSetObj(s)) return false;
                     return this.isPagoSetVisible(s.is_terminado, s.has_frete, s.frete_inter_paid, s.frete_inter_pending, s.has_taxa, s.taxa_aduaneira_paid, s.taxa_aduaneira_pending);
                 });
@@ -149,34 +150,24 @@ function cegStatusApp() {
                 if (this.activeCardFilter === 'fechados' || this.activeCardFilter === 'completed') return `Filtrando: ${count} CEG(s) com sets fechados`;
                 if (this.activeCardFilter === 'pagos') return `Filtrando: ${count} CEG(s) com sets 100% pagos`;
                 if (this.activeCardFilter === 'terminados') return `Filtrando: ${count} CEG(s) com sets terminados`;
-                return `Exibindo ${count} de ${this.cegsOverview.length} CEG(s)`;
+                return `Exibindo ${count} de ${(this.cegsOverview || []).length} CEG(s)`;
             },
             init() {
                 window.addEventListener('paste', (e) => {
-                    if (this.editItemModalOpen) {
-                        const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
-                        if (!items) return;
-                        for (let i = 0; i < items.length; i++) {
-                            if (items[i].type.indexOf('image') !== -1) {
-                                const imageFile = items[i].getAsFile();
-                                if (imageFile) {
-                                    e.preventDefault();
+                    if (!this.editItemModalOpen && !this.editCegModalOpen) return;
+                    const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+                    if (!items) return;
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            const imageFile = items[i].getAsFile();
+                            if (imageFile) {
+                                e.preventDefault();
+                                if (this.editItemModalOpen) {
                                     this.handleFileChange({ target: { files: [imageFile] } });
-                                    break;
-                                }
-                            }
-                        }
-                    } else if (this.editCegModalOpen) {
-                        const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData))?.items;
-                        if (!items) return;
-                        for (let i = 0; i < items.length; i++) {
-                            if (items[i].type.indexOf('image') !== -1) {
-                                const imageFile = items[i].getAsFile();
-                                if (imageFile) {
-                                    e.preventDefault();
+                                } else if (this.editCegModalOpen) {
                                     this.handleCegBannerFile({ target: { files: [imageFile] } });
-                                    break;
                                 }
+                                break;
                             }
                         }
                     }

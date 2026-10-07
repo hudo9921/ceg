@@ -2,8 +2,9 @@
 function cegStatusFilterMethods() {
     return {
         get availableEras() {
-            if (!this.selectedGroup) return this.filterOptions.eras;
-            return this.filterOptions.eras.filter(e => String(e.group_id) === String(this.selectedGroup));
+            const eras = this.filterOptions?.eras || [];
+            if (!this.selectedGroup) return eras;
+            return eras.filter(e => String(e.group_id) === String(this.selectedGroup));
         },
         matchSearch(text) {
             if (!this.searchQuery || !this.searchQuery.trim()) return true;
@@ -46,19 +47,22 @@ function cegStatusFilterMethods() {
             return this.isCegRowVisible(c.is_ativa, c.has_incomplete_sets, c.closed_sets_count, c.paid_sets_count, c.finished_sets_count);
         },
         get incompleteCount() {
-            return this.setsIncomplete.filter(s => this.matchSetObj(s)).length;
+            return (this.setsIncomplete || []).filter(s => this.matchSetObj(s)).length;
         },
         get closedCount() {
-            return this.setsFechados.filter(s => this.matchSetObj(s)).length;
+            return (this.setsFechados || []).filter(s => this.matchSetObj(s)).length;
         },
         get paidCount() {
-            return this.setsPagos.filter(s => this.matchSetObj(s)).length;
+            return (this.setsPagos || []).filter(s => this.matchSetObj(s)).length;
         },
         get finishedCount() {
-            return this.setsTerminados.filter(s => this.matchSetObj(s)).length;
+            return (this.setsTerminados || []).filter(s => this.matchSetObj(s)).length;
+        },
+        get completedCount() {
+            return this.finishedCount;
         },
         get activeCegsCount() {
-            return this.cegsOverview.filter(c => {
+            return (this.cegsOverview || []).filter(c => {
                 if (!c.has_incomplete_sets) return false;
                 if (this.selectedGroup && String(c.group_id) !== String(this.selectedGroup)) return false;
                 if (this.selectedEra && String(c.era_id) !== String(this.selectedEra)) return false;
@@ -70,8 +74,16 @@ function cegStatusFilterMethods() {
                 return true;
             }).length;
         },
+        get paidCegsCount() {
+            const list = (this.setsPagos || []).filter(s => this.matchSetObj(s));
+            return new Set(list.map(s => s.ceg_id)).size;
+        },
+        get completedCegsCount() {
+            const list = (this.setsTerminados || []).filter(s => this.matchSetObj(s));
+            return new Set(list.map(s => s.ceg_id)).size;
+        },
         get visibleCegsCount() {
-            return this.cegsOverview.filter(c => this.matchCegObj(c)).length;
+            return (this.cegsOverview || []).filter(c => this.matchCegObj(c)).length;
         },
         get hasActiveFilters() {
             return Boolean(
@@ -84,12 +96,14 @@ function cegStatusFilterMethods() {
         },
         get currentGroupName() {
             if (!this.selectedGroup) return 'Todos os Grupos';
-            const g = this.filterOptions.groups.find(x => String(x.id) === String(this.selectedGroup));
+            const groups = this.filterOptions?.groups || [];
+            const g = groups.find(x => String(x.id) === String(this.selectedGroup));
             return g ? g.name : 'Todos os Grupos';
         },
         get currentEraName() {
             if (!this.selectedEra) return '';
-            const e = this.filterOptions.eras.find(x => String(x.id) === String(this.selectedEra));
+            const eras = this.filterOptions?.eras || [];
+            const e = eras.find(x => String(x.id) === String(this.selectedEra));
             return e ? e.name : '';
         }
     };
