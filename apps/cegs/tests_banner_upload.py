@@ -171,3 +171,80 @@ class BannerUploadTests(TestCase):
         messages_list = list(response.context['messages'])
         self.assertTrue(any("ultrapassa o limite" in str(m) for m in messages_list))
 
+
+class HomeBannerConfigTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser('admin_home_banner', 'admin_hb@test.com', 'adminpass123')
+        self.regular_user = User.objects.create_user('joiner_hb', 'joiner_hb@test.com', 'userpass123')
+
+    def test_home_banner_config_defaults(self):
+        from apps.cegs.models import HomeBannerConfig
+        config = HomeBannerConfig()
+        self.assertEqual(config.get_light_url(), '/static/images/banner_masterlist.png')
+        self.assertEqual(config.get_dark_url(), '/static/images/banner_masterlist.png')
+
+        config.banner_light_url = 'https://example.com/light.jpg'
+        self.assertEqual(config.get_light_url(), 'https://example.com/light.jpg')
+        # Dark falls back to light if empty
+        self.assertEqual(config.get_dark_url(), 'https://example.com/light.jpg')
+
+        config.banner_dark_url = 'https://example.com/dark.jpg'
+        self.assertEqual(config.get_dark_url(), 'https://example.com/dark.jpg')
+
+    def test_update_home_banner_view_staff_only(self):
+        # Unauthenticated: redirects to login
+        response = self.client.post(reverse('update_home_banner'), {'banner_light_url': 'https://example.com/l.jpg'})
+        self.assertEqual(response.status_code, 302)
+
+        # Regular non-staff user: redirects to login with message
+        self.client.login(username='joiner_hb', password='userpass123')
+        response = self.client.post(reverse('update_home_banner'), {'banner_light_url': 'https://example.com/l.jpg'})
+        self.assertEqual(response.status_code, 302)
+
+    def test_update_home_banner_view_success(self):
+        from apps.cegs.models import HomeBannerConfig
+        self.client.login(username='admin_home_banner', password='adminpass123')
+        response = self.client.post(
+            reverse('update_home_banner'),
+            {
+                'banner_light_url': 'https://example.com/light-banner.jpg',
+                'banner_dark_url': 'https://example.com/dark-banner.jpg',
+            },
+            follow=True
+        )
+        self.assertEqual(response.status_code, 200)
+        active_config = HomeBannerConfig.get_active()
+        self.assertEqual(active_config.banner_light_url, 'https://example.com/light-banner.jpg')
+        self.assertEqual(active_config.banner_dark_url, 'https://example.com/dark-banner.jpg')
+
+    def test_update_home_banner_view_ajax(self):
+        self.client.login(username='admin_home_banner', password='adminpass123')
+        response = self.client.post(
+            reverse('update_home_banner'),
+            {
+                'banner_light_url': 'https://example.com/ajax-light.jpg',
+                'banner_dark_url': 'https://example.com/ajax-dark.jpg',
+            },
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(data.get('banner_light_url'), 'https://example.com/ajax-light.jpg')
+        self.assertEqual(data.get('banner_dark_url'), 'https://example.com/ajax-dark.jpg')
+
+    def test_home_view_renders_dual_banner_config(self):
+        from apps.cegs.models import HomeBannerConfig
+        HomeBannerConfig.objects.create(
+            banner_light_url='https://example.com/home-light.png',
+            banner_dark_url='https://example.com/home-dark.png',
+            is_active=True
+        )
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('home_banner', response.context)
+        self.assertContains(response, 'https://example.com/home-light.png')
+        self.assertContains(response, 'https://example.com/home-dark.png')
+
+

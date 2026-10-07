@@ -14,7 +14,7 @@ from django.db.models import Q, Count, Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from apps.groups.models import Era
-from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem
+from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem, HomeBannerConfig
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
 from .creations_views import StaffRequiredMixin
@@ -134,6 +134,8 @@ class HomeView(View):
                 if hasattr(c, 'share_data'):
                     ceg_share_map[c.id] = c.share_data
 
+        home_banner = HomeBannerConfig.get_active()
+
         return render(request, 'home.html', {
             'active_cegs': active_cegs,
             'full_cegs': full_cegs,
@@ -146,8 +148,64 @@ class HomeView(View):
             'closed_cegs': closed_cegs,
             'ceg_share_map': ceg_share_map,
             'ceg_share_map_json': json.dumps(ceg_share_map),
+            'home_banner': home_banner,
             'now': now,
         })
+
+
+class UpdateHomeBannerView(StaffRequiredMixin, View):
+    """Atualiza as imagens de banner da tela inicial (Modo Claro e Modo Escuro)."""
+    def post(self, request):
+        banner_config = HomeBannerConfig.objects.filter(is_active=True).first()
+        if not banner_config:
+            banner_config = HomeBannerConfig()
+
+        # Banner Modo Claro
+        light_file = request.FILES.get('banner_light_file')
+        light_url = request.POST.get('banner_light_url', '').strip()
+        light_b64 = request.POST.get('banner_light_b64', '').strip()
+        if light_file or light_b64:
+            try:
+                banner_config.banner_light_url = process_image_upload(
+                    file_obj=light_file,
+                    base64_str=light_b64,
+                    folder='banners',
+                    fallback_url=light_url
+                )
+            except Exception as e:
+                logger.error(f"Erro ao processar banner claro: {e}")
+        elif light_url:
+            banner_config.banner_light_url = light_url
+
+        # Banner Modo Escuro
+        dark_file = request.FILES.get('banner_dark_file')
+        dark_url = request.POST.get('banner_dark_url', '').strip()
+        dark_b64 = request.POST.get('banner_dark_b64', '').strip()
+        if dark_file or dark_b64:
+            try:
+                banner_config.banner_dark_url = process_image_upload(
+                    file_obj=dark_file,
+                    base64_str=dark_b64,
+                    folder='banners',
+                    fallback_url=dark_url
+                )
+            except Exception as e:
+                logger.error(f"Erro ao processar banner escuro: {e}")
+        elif dark_url:
+            banner_config.banner_dark_url = dark_url
+
+        banner_config.is_active = True
+        banner_config.save()
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+            return JsonResponse({
+                'success': True,
+                'banner_light_url': banner_config.get_light_url(),
+                'banner_dark_url': banner_config.get_dark_url(),
+            })
+
+        messages.success(request, 'Banners da Tela Inicial atualizados com sucesso!')
+        return redirect('home')
 
 
 class CEGDetailView(View):

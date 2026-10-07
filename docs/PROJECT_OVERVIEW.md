@@ -36,6 +36,7 @@ ceg/
 - **`Set` & `ItemSlot`:** Cada lote de compra forma um Set contendo slots individuais para cada membro da banda.
 - **`ItemIndividual`:** Itens avulsos comprados no Mercari Japão ou leilões.
 - **`ItemVitrine`:** Photocards e produtos à pronta entrega disponíveis na loja pública.
+- **`HomeBannerConfig`:** Configuração dinâmica dos banners da vitrine principal, com suporte a artes independentes para Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
 
 ### 2.2. `apps.participants`
 - **`Participant`:** Usuário final identificado por número de WhatsApp, chave secreta e perfil social.

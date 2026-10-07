@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio, ItemVitrine
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio, ItemVitrine, HomeBannerConfig
 
 
 @admin.register(TipoItem)
@@ -584,6 +584,14 @@ class ItemVitrineAdmin(admin.ModelAdmin):
     search_fields = ('titulo', 'integrante', 'descricao', 'group__name', 'era__name')
     prepopulated_fields = {'slug': ('titulo',)}
     list_editable = ('status', 'destaque', 'preco', 'quantidade')
+
+
+@admin.register(HomeBannerConfig)
+class HomeBannerConfigAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'banner_light_url', 'banner_dark_url', 'is_active', 'updated_at')
+    list_editable = ('is_active',)
+    fields = ('banner_light_url', 'banner_dark_url', 'alt_text', 'is_active', 'updated_at')
+    readonly_fields = ('updated_at',)
 
 
 

@@ -1,0 +1,124 @@
+{% load static %}
+{% if user.is_staff %}
+<!-- Modal de Edição dos Banners da Home (Modo Claro & Modo Escuro) -->
+<div x-data="{
+    isOpen: false,
+    lightPreview: '{{ home_banner.get_light_url }}',
+    darkPreview: '{{ home_banner.get_dark_url }}',
+    isSubmitting: false,
+    openModal() {
+        this.isOpen = true;
+        this.$nextTick(() => { if (window.lucide) window.lucide.createIcons(); });
+    },
+    closeModal() {
+        this.isOpen = false;
+    },
+    onLightFile(e) {
+        const file = e.target.files[0];
+        if (file) { this.lightPreview = URL.createObjectURL(file); }
+    },
+    onDarkFile(e) {
+        const file = e.target.files[0];
+        if (file) { this.darkPreview = URL.createObjectURL(file); }
+    }
+}"
+@open-banner-modal.window="openModal()"
+@keydown.escape.window="closeModal()"
+x-show="isOpen"
+x-cloak
+class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+
+    <div class="relative w-full max-w-2xl bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-2xl rounded-3xl p-5 sm:p-7 shadow-glass dark:shadow-cyber border border-purple-100/80 dark:border-white/10 space-y-5 my-auto"
+         @click.away="closeModal()">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3.5 border-b border-purple-100/60 dark:border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-pink-100 dark:bg-cyber-elevated border border-pink-200/80 dark:border-pink-500/30 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
+                    <i data-lucide="sparkles" class="w-5 h-5" stroke-width="1.75"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-900 dark:text-cyber-silver text-base leading-tight">
+                        Personalizar Banners da Home
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Defina artes exclusivas para o Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
+                    </p>
+                </div>
+            </div>
+            <button type="button" @click="closeModal()"
+                    class="p-2 rounded-full bg-slate-100 dark:bg-cyber-elevated text-slate-400 hover:text-slate-700 dark:hover:text-cyber-silver transition cursor-pointer active:scale-90">
+                <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
+            </button>
+        </div>
+
+        <!-- Formulário de Envio -->
+        <form action="{% url 'update_home_banner' %}" method="POST" enctype="multipart/form-data" class="space-y-5" @submit="isSubmitting = true">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Seção 1: Banner Modo Claro -->
+                <div class="p-4 rounded-2xl bg-[#FAF5FF]/80 dark:bg-cyber-elevated/50 border border-purple-100 dark:border-white/5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/40 text-[11px] font-black text-purple-900 dark:text-purple-300">
+                            <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500" stroke-width="1.75"></i>
+                            <span>Modo Claro (Soft Y2K)</span>
+                        </span>
+                    </div>
+
+                    <!-- Prévia Modo Claro -->
+                    <div class="w-full h-24 rounded-xl overflow-hidden border border-purple-200/80 dark:border-white/10 bg-white dark:bg-slate-950 flex items-center justify-center relative shadow-inner">
+                        <img :src="lightPreview" alt="Prévia Modo Claro" class="w-full h-full object-cover object-center">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver">Enviar Arquivo ou Imagem:</label>
+                        <input type="file" name="banner_light_file" accept="image/*" @change="onLightFile($event)"
+                               class="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 dark:file:bg-purple-900/40 file:text-purple-900 dark:file:text-purple-200 hover:file:bg-purple-200 cursor-pointer">
+                        <input type="url" name="banner_light_url" value="{{ home_banner.banner_light_url }}" placeholder="Ou informe uma URL externa..."
+                               class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-cyber-surface border border-purple-200/80 dark:border-white/10 text-slate-800 dark:text-cyber-silver placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-purple-400">
+                    </div>
+                </div>
+
+                <!-- Seção 2: Banner Modo Escuro -->
+                <div class="p-4 rounded-2xl bg-slate-900/40 dark:bg-cyber-elevated/70 border border-slate-700/40 dark:border-pink-500/20 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-pink-100/80 dark:bg-pink-950/60 border border-pink-200 dark:border-pink-800/40 text-[11px] font-black text-pink-700 dark:text-cyber-neon">
+                            <i data-lucide="moon" class="w-3.5 h-3.5 text-cyber-neon" stroke-width="1.75"></i>
+                            <span>Modo Escuro (Cyber-Luxury)</span>
+                        </span>
+                    </div>
+
+                    <!-- Prévia Modo Escuro -->
+                    <div class="w-full h-24 rounded-xl overflow-hidden border border-pink-500/20 bg-slate-950 flex items-center justify-center relative shadow-inner">
+                        <img :src="darkPreview" alt="Prévia Modo Escuro" class="w-full h-full object-cover object-center">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-cyber-silver">Enviar Arquivo ou Imagem:</label>
+                        <input type="file" name="banner_dark_file" accept="image/*" @change="onDarkFile($event)"
+                               class="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-pink-100 dark:file:bg-pink-900/40 file:text-pink-900 dark:file:text-pink-200 hover:file:bg-pink-200 cursor-pointer">
+                        <input type="url" name="banner_dark_url" value="{{ home_banner.banner_dark_url }}" placeholder="Ou informe uma URL externa..."
+                               class="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-cyber-surface border border-purple-200/80 dark:border-white/10 text-slate-800 dark:text-cyber-silver placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-pink-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="pt-3 border-t border-purple-100/60 dark:border-white/5 flex items-center justify-end gap-2.5">
+                <button type="button" @click="closeModal()"
+                        class="px-4.5 py-2.5 rounded-full font-bold text-xs bg-slate-100 dark:bg-cyber-elevated text-slate-600 dark:text-cyber-silver hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="submit" :disabled="isSubmitting"
+                        class="px-5 py-2.5 rounded-full font-black text-xs shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-2 cursor-pointer
+                               bg-gradient-to-r from-pink-200/90 via-purple-200/90 to-indigo-200/90 hover:from-pink-300 hover:to-purple-300 text-purple-950 border border-purple-300/80
+                               dark:bg-gradient-to-r dark:from-purple-900/90 dark:via-purple-800/80 dark:to-pink-950/90 dark:hover:from-purple-800 dark:hover:to-pink-900 dark:text-pink-200 dark:border-pink-500/40 dark:shadow-[0_0_15px_rgba(244,114,182,0.22)]">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-purple-800 dark:text-cyber-neon" stroke-width="1.75"></i>
+                    <span x-text="isSubmitting ? 'Salvando...' : 'Salvar Banners'">Salvar Banners</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}

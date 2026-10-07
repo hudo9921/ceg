@@ -5,9 +5,27 @@
         <!-- Aura suave no fundo do banner -->
         <div class="absolute inset-0 bg-gradient-to-r from-purple-100/50 via-pink-100/40 to-purple-100/50 dark:from-purple-950/20 dark:via-pink-950/10 dark:to-purple-950/20 pointer-events-none"></div>
 
-        <img src="{% static 'images/banner_masterlist.png' %}"
-             alt="ValCegs Masterlist"
-             class="w-full h-full object-cover sm:object-contain object-center relative z-10">
+        <!-- Banner Modo Claro (Soft Y2K) -->
+        <img src="{{ home_banner.get_light_url }}"
+             alt="{{ home_banner.alt_text|default:'ValCegs Masterlist' }}"
+             class="dark:hidden w-full h-full object-cover sm:object-contain object-center relative z-10 transition-opacity duration-300">
+
+        <!-- Banner Modo Escuro (Cyber-Luxury) -->
+        <img src="{{ home_banner.get_dark_url }}"
+             alt="{{ home_banner.alt_text|default:'ValCegs Masterlist' }}"
+             class="hidden dark:block w-full h-full object-cover sm:object-contain object-center relative z-10 transition-opacity duration-300">
+
+        {% if user.is_staff %}
+        <!-- Botão Flutuante de Gestão de Banners para Organizador/Staff -->
+        <button type="button"
+                @click="$dispatch('open-banner-modal')"
+                class="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md backdrop-blur-md transition-all duration-200 cursor-pointer
+                       bg-white/90 hover:bg-white text-purple-950 border border-purple-200/90 hover:scale-105 active:scale-95
+                       dark:bg-cyber-surface/90 dark:hover:bg-cyber-elevated dark:text-pink-200 dark:border-pink-500/40 dark:shadow-[0_0_15px_rgba(244,114,182,0.25)]">
+            <i data-lucide="image-plus" class="w-3.5 h-3.5 text-pink-500 dark:text-cyber-neon" stroke-width="1.75"></i>
+            <span class="text-[11px] font-black">Editar Banners</span>
+        </button>
+        {% endif %}
     </div>
     
     <!-- Faixa de Ações Rápidas com Destaque Especular -->

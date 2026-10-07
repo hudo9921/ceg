@@ -19,9 +19,10 @@
 
 ## 🗺️ 2. Inventário Completo das 21 Telas Modulares
 
-### 2.1. Vitrine da Home (`home.html` — 69 linhas)
+### 2.1. Vitrine da Home (`home.html` — 72 linhas)
 - `_home_chips_bar.html`: Pílulas roláveis com avatares de artistas e contadores dinâmicos.
-- `_home_hero_spotlight.html`: Card de destaque com degradê e CTAs em pílula.
+- `_home_hero_spotlight.html`: Card de destaque com suporte dinâmico a banners bipolares (Soft Y2K para Modo Claro e Cyber-Luxury para Modo Escuro) e gatilho de edição para staff.
+- `_home_banner_edit_modal.html`: Modal de personalização dos banners da Home exclusivo para staff, com upload direto de arquivos e URLs externas para ambos os modos.
 - `_home_filter_bar.html`: Filtro cirúrgico com busca por bias/integrante, era, grupo, tipo e ordenação.
 - `_home_group_carousel.html`: Trilhos horizontais snap com efeito *peek-a-boo* no mobile e 3 modos desktop (setas, `@wheel`, *drag-to-scroll*).
 - `_home_ceg_card.html`: Card toploader de vitrine com badges translúcidos, preço mono tabular e cascata de imagens.

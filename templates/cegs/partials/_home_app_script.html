@@ -46,30 +46,17 @@ function homeApp() {
         },
 
         hasActiveFilters() {
-            return Boolean(
-                (this.searchQuery && this.searchQuery.trim()) ||
-                this.selectedGroup ||
-                this.selectedEra ||
-                this.selectedMember ||
-                this.selectedTipo ||
-                this.sortBy !== 'recentes'
-            );
+            return Boolean((this.searchQuery && this.searchQuery.trim()) || this.selectedGroup || this.selectedEra || this.selectedMember || this.selectedTipo || this.sortBy !== 'recentes');
         },
-
         isCegVisible(id) {
             const ceg = this.cegsMetaMap[id];
             if (!ceg) return false;
-
             if (this.searchQuery && this.searchQuery.trim()) {
                 const q = this.searchQuery.toLowerCase().trim();
                 if (!ceg.searchCorpus.toLowerCase().includes(q)) return false;
             }
-            if (this.selectedGroup && String(this.selectedGroup) !== String(ceg.groupId)) {
-                return false;
-            }
-            if (this.selectedEra && String(this.selectedEra) !== String(ceg.eraId)) {
-                return false;
-            }
+            if (this.selectedGroup && String(this.selectedGroup) !== String(ceg.groupId)) return false;
+            if (this.selectedEra && String(this.selectedEra) !== String(ceg.eraId)) return false;
             if (this.selectedMember) {
                 const memTarget = this.selectedMember.toLowerCase().trim();
                 if (!ceg.membersStr.toLowerCase().includes(memTarget)) return false;
@@ -86,31 +73,22 @@ function homeApp() {
             }
             return true;
         },
-
         isGroupVisible(groupId) {
-            if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) {
-                return false;
-            }
+            if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
             for (const id in this.cegsMetaMap) {
                 const ceg = this.cegsMetaMap[id];
-                if (String(ceg.groupId) === String(groupId) && this.isCegVisible(id)) {
-                    return true;
-                }
+                if (String(ceg.groupId) === String(groupId) && this.isCegVisible(id)) return true;
             }
             return false;
         },
-
         getGroupVisibleCount(groupId) {
             let count = 0;
             for (const id in this.cegsMetaMap) {
                 const ceg = this.cegsMetaMap[id];
-                if (String(ceg.groupId) === String(groupId) && this.isCegVisible(id)) {
-                    count++;
-                }
+                if (String(ceg.groupId) === String(groupId) && this.isCegVisible(id)) count++;
             }
             return count;
         },
-
         totalVisibleCount() {
             let count = 0;
             for (const id in this.cegsMetaMap) {
@@ -118,7 +96,6 @@ function homeApp() {
             }
             return count;
         },
-
         resetTracksScroll() {
             this.$nextTick(() => {
                 document.querySelectorAll('[data-carousel-track]').forEach(track => {
@@ -126,7 +103,6 @@ function homeApp() {
                 });
             });
         },
-
         clearFilters() {
             this.searchQuery = '';
             this.selectedGroup = '';

@@ -2194,4 +2194,32 @@ class ItemVitrine(models.Model):
         return self.status == self.Status.DISPONIVEL and self.quantidade > 0
 
 
+class HomeBannerConfig(models.Model):
+    """Configuração dos banners do Hero da Tela Inicial (Modo Claro e Modo Escuro)."""
+    banner_light_url = models.URLField('URL do Banner (Modo Claro)', max_length=500, blank=True)
+    banner_dark_url = models.URLField('URL do Banner (Modo Escuro)', max_length=500, blank=True)
+    alt_text = models.CharField('Texto Alternativo', max_length=200, default='ValCegs Masterlist')
+    is_active = models.BooleanField('Ativo', default=True)
+    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração do Banner da Home'
+        verbose_name_plural = 'Configurações de Banners da Home'
+
+    def __str__(self):
+        return f"Banner da Home (ID {self.id or 'default'})"
+
+    def get_light_url(self) -> str:
+        return self.banner_light_url.strip() if self.banner_light_url else '/static/images/banner_masterlist.png'
+
+    def get_dark_url(self) -> str:
+        if self.banner_dark_url and self.banner_dark_url.strip():
+            return self.banner_dark_url.strip()
+        return self.get_light_url()
+
+    @classmethod
+    def get_active(cls):
+        return cls.objects.filter(is_active=True).order_by('-updated_at').first() or cls()
+
+
 

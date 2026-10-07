@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     HomeView,
+    UpdateHomeBannerView,
     CEGDetailView,
     ClaimSlotView,
     BulkClaimView,
@@ -82,6 +83,7 @@ from apps.participants.views import BulkParticipantCreateView
 
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
+    path('home/banner/update/', UpdateHomeBannerView.as_view(), name='update_home_banner'),
     path('cegs/alocar-joiners/', CEGBulkAllocatorView.as_view(), name='bulk_joiner_allocator_global'),
     path('ceg/<slug:slug>/', CEGDetailView.as_view(), name='ceg_detail'),
     path('ceg/<slug:slug>/vote/', CEGVoteView.as_view(), name='ceg_vote'),
