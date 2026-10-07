@@ -167,14 +167,21 @@
             font-family: 'Outfit', sans-serif;
         }
 
-        /* Ambient Mesh Glow no Modo Claro (Soft Y2K) */
+        /* Ambient Mesh Glow no Modo Claro (Soft Y2K Pastel Dream) */
         html:not(.dark) body {
-            background-color: #F8F7FA !important;
+            background-color: #F4EEF9 !important;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(252, 231, 243, 0.45) 0px, transparent 40%),
-                radial-gradient(at 100% 0%, rgba(233, 213, 255, 0.35) 0px, transparent 40%),
-                radial-gradient(at 50% 100%, rgba(204, 251, 241, 0.25) 0px, transparent 50%) !important;
+                radial-gradient(at 5% 5%, rgba(252, 231, 243, 0.85) 0px, transparent 55%),
+                radial-gradient(at 95% 10%, rgba(233, 213, 255, 0.8) 0px, transparent 50%),
+                radial-gradient(at 50% 95%, rgba(204, 251, 241, 0.55) 0px, transparent 55%),
+                radial-gradient(at 85% 60%, rgba(254, 249, 195, 0.45) 0px, transparent 50%) !important;
             background-attachment: fixed !important;
+        }
+
+        /* Sombras Pastéis e Bordas de Papelaria Colecionável no Modo Claro */
+        html:not(.dark) .shadow-glass,
+        html:not(.dark) .ceg-card {
+            box-shadow: 0 8px 24px -4px rgba(216, 180, 254, 0.28), 0 2px 6px -1px rgba(244, 114, 182, 0.12) !important;
         }
 
         /* ========================================================================= */

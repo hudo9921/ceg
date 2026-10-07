@@ -1,29 +1,29 @@
 {% load static %}
 <!-- Hero Banner Flutuante (Spotlight Vitrine ValCegs) -->
 <div class="relative overflow-hidden rounded-[28px] border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 bg-white/70 dark:bg-cyber-surface/70 backdrop-blur-2xl shadow-glass dark:shadow-cyber transition-all duration-300">
-    <div class="w-full relative aspect-[21/7] sm:aspect-[24/6] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-slate-900/90 dark:bg-[#0E0C16]">
-        <!-- Aura ambiente sutil de palco (sem degradê berrante) -->
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(192,132,252,0.18),transparent_65%)] pointer-events-none"></div>
+    <div class="w-full relative aspect-[21/7] sm:aspect-[24/6] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#F5EEFB] via-[#FDF2F8] to-[#F5EEFB] dark:bg-[#0E0C16]">
+        <!-- Aura ambiente sutil de palco no escuro -->
+        <div class="absolute inset-0 bg-transparent dark:bg-[radial-gradient(ellipse_at_top,_rgba(192,132,252,0.18),transparent_65%)] pointer-events-none"></div>
 
         <img src="{% static 'images/banner_masterlist.png' %}"
              alt="ValCegs Masterlist"
-             class="w-full h-full object-cover sm:object-contain object-center opacity-85 dark:opacity-75 transition-opacity">
+             class="w-full h-full object-cover sm:object-contain object-center opacity-90 dark:opacity-75 transition-opacity">
         
-        <!-- Vinhetas de fusão suave (laterais e base) para eliminar cortes secos -->
-        <div class="absolute inset-y-0 left-0 w-16 sm:w-28 bg-gradient-to-r from-slate-900/90 dark:from-[#0E0C16] to-transparent pointer-events-none"></div>
-        <div class="absolute inset-y-0 right-0 w-16 sm:w-28 bg-gradient-to-l from-slate-900/90 dark:from-[#0E0C16] to-transparent pointer-events-none"></div>
-        <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-cyber-surface to-transparent pointer-events-none"></div>
+        <!-- Vinhetas de fusão suave (laterais e base) ajustadas para cada modo -->
+        <div class="absolute inset-y-0 left-0 w-16 sm:w-28 bg-gradient-to-r from-[#F5EEFB] dark:from-[#0E0C16] to-transparent pointer-events-none"></div>
+        <div class="absolute inset-y-0 right-0 w-16 sm:w-28 bg-gradient-to-l from-[#F5EEFB] dark:from-[#0E0C16] to-transparent pointer-events-none"></div>
+        <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/95 dark:from-cyber-surface to-transparent pointer-events-none"></div>
     </div>
     
     <!-- Faixa de Ações Rápidas com Destaque Especular -->
-    <div class="p-3.5 sm:p-5 bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-md border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
+    <div class="p-3.5 sm:p-5 bg-white/90 dark:bg-cyber-surface/95 backdrop-blur-md border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-100 to-pink-100 dark:from-cyber-elevated dark:to-cyber-surface border border-purple-200/60 dark:border-white/10 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs shrink-0">
+            <div class="w-10 h-10 rounded-2xl bg-purple-100/80 dark:bg-cyber-elevated border border-purple-200/80 dark:border-white/10 flex items-center justify-center text-purple-700 dark:text-cyber-neon shadow-xs shrink-0">
                 <i data-lucide="sparkles" class="w-4.5 h-4.5" stroke-width="1.75"></i>
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-pink-100/80 dark:bg-pink-950/50 border border-pink-200/80 dark:border-pink-800/40 text-[10px] font-black uppercase tracking-wider text-pink-700 dark:text-cyber-neon">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pink-100/90 dark:bg-pink-950/50 border border-pink-200 dark:border-pink-800/40 text-[10px] font-black uppercase tracking-wider text-pink-700 dark:text-cyber-neon">
                         <span class="relative flex h-1.5 w-1.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-pink-500"></span>
@@ -36,14 +36,16 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <!-- Botão Primário de Luxo (Sem degradê berrante: Preto no claro, Branco/Glow no escuro) -->
             <a href="{% url 'vitrine_list' %}"
-               class="px-4 py-2 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm rounded-full shadow-md shadow-pink-500/20 hover:shadow-lg hover:shadow-pink-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-2 group">
+               class="px-4.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 font-black text-xs sm:text-sm rounded-full shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-2 group">
                 <i data-lucide="shopping-bag" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                 <span>Vitrine Pronta Entrega</span>
                 <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" stroke-width="1.75"></i>
             </a>
+            <!-- Botão Secundário Pastel / Acrílico -->
             <a href="{% url 'my_claims' %}"
-               class="px-4 py-2 bg-white/80 dark:bg-cyber-elevated hover:bg-purple-50 dark:hover:bg-purple-900/40 text-slate-700 dark:text-cyber-silver hover:text-pink-600 dark:hover:text-cyber-neon border border-purple-200/80 dark:border-white/10 font-bold text-xs sm:text-sm rounded-full hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-1.5">
+               class="px-4 py-2.5 bg-purple-50/80 dark:bg-cyber-elevated hover:bg-purple-100/90 dark:hover:bg-purple-900/40 text-purple-900 dark:text-cyber-silver hover:text-purple-950 dark:hover:text-cyber-neon border border-purple-200/80 dark:border-white/10 font-bold text-xs sm:text-sm rounded-full hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-1.5">
                 <i data-lucide="user" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                 <span>Minhas Reservas</span>
             </a>

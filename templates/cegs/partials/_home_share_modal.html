@@ -88,7 +88,7 @@
                     class="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer select-none active:scale-95"
                     :class="shareCopied
                         ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
-                        : 'bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-500 text-white shadow-md shadow-pink-500/20'">
+                        : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-sm'">
                 <i data-lucide="check" x-show="shareCopied" class="w-4 h-4" stroke-width="1.75"></i>
                 <i data-lucide="copy" x-show="!shareCopied" class="w-4 h-4" stroke-width="1.75"></i>
                 <span x-text="shareCopied ? 'Copiado para o Clipboard!' : 'Copiar Texto Completo'"></span>
