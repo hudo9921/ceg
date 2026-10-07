@@ -4,28 +4,28 @@
 
 {% block content %}
 <!-- JSON Payloads for Alpine.js reactive store -->
-{{ tipos_item_json|json_script:"tipos-item-data" }}
-{{ mercari_items_json|json_script:"mercari-items-data" }}
-{{ filter_options_json|json_script:"filter-options-data" }}
-{{ sets_incomplete_json|json_script:"sets-incomplete-data" }}
-{{ sets_fechados_json|json_script:"sets-fechados-data" }}
-{{ sets_pagos_json|json_script:"sets-pagos-data" }}
-{{ sets_terminados_json|json_script:"sets-terminados-data" }}
-{{ cegs_overview_json|json_script:"cegs-overview-data" }}
-{{ ceg_share_map_json|json_script:"ceg-share-map-data" }}
+{{ filter_options|json_script:"filter-options-data" }}
+{{ mercari_status.items|default:"[]"|json_script:"mercari-items-data" }}
+{{ tipos_item|default:"[]"|json_script:"tipos-item-data" }}
+{{ sets_incomplete|default:"[]"|json_script:"sets-incomplete-data" }}
+{{ sets_fechados|default:"[]"|json_script:"sets-fechados-data" }}
+{{ sets_pagos|default:"[]"|json_script:"sets-pagos-data" }}
+{{ sets_terminados|default:"[]"|json_script:"sets-terminados-data" }}
+{{ cegs_overview|default:"[]"|json_script:"cegs-overview-data" }}
+{{ ceg_share_map|default:"{}"|json_script:"ceg-share-map-data" }}
 
 <div x-data="cegStatusApp()" class="max-w-7xl mx-auto space-y-6">
     <!-- Top Navigation & Action Shortcuts -->
     {% include 'analytics/partials/_status_top_nav.html' %}
 
-    <!-- Top KPI Metric Cards (Ciclo de Vida) -->
-    {% include 'analytics/partials/_status_lifecycle_cards.html' %}
+    <!-- Category Pills Switcher -->
+    {% include 'analytics/partials/_status_category_bar.html' %}
 
     <!-- Search, Group/Era Filters & Reset -->
     {% include 'analytics/partials/_status_header_filters.html' %}
 
-    <!-- Category Pills Switcher -->
-    {% include 'analytics/partials/_status_category_bar.html' %}
+    <!-- Top KPI Metric Cards (Ciclo de Vida) -->
+    {% include 'analytics/partials/_status_lifecycle_cards.html' %}
 
     <!-- Occupancy and General Progress Bar -->
     {% include 'analytics/partials/_status_occupancy_bar.html' %}
