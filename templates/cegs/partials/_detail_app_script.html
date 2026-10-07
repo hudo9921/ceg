@@ -393,8 +393,9 @@ function cegDetailApp() {
              if (this.selectedSlotIds.length === 0) return;
              window.dispatchEvent(new CustomEvent('bulk-claim-add-selected', { detail: { ids: [...this.selectedSlotIds] } }));
              setTimeout(() => {
-                 this.participantSelectedSlots = [...$store.claimSelection.slots];
-                 $store.claimSelection.openModal();
+                 const store = window.Alpine ? Alpine.store('claimSelection') : null;
+                 this.participantSelectedSlots = [...(store ? store.slots : [])];
+                 if (store) store.openModal();
              }, 60);
          },
          toggleParticipantSlot(slot) {
@@ -404,10 +405,13 @@ function cegDetailApp() {
              } else {
                  this.participantSelectedSlots.splice(idx, 1);
              }
-             if (slot.isAvulso) {
-                 $store.claimSelection.setAvulso({ id: slot.itemDefId }, 0);
-             } else {
-                 $store.claimSelection.toggle(slot);
+             const store = window.Alpine ? Alpine.store('claimSelection') : null;
+             if (store) {
+                 if (slot.isAvulso) {
+                     store.setAvulso({ id: slot.itemDefId }, 0);
+                 } else {
+                     store.toggle(slot);
+                 }
              }
          },
          isParticipantSlotSelected(slotId) {
@@ -417,14 +421,35 @@ function cegDetailApp() {
              this.participantSelectedSlots = [];
          },
          openBulkClaimModal() {
-             this.participantSelectedSlots = [...$store.claimSelection.slots];
+             const store = window.Alpine ? Alpine.store('claimSelection') : null;
+             this.participantSelectedSlots = [...(store ? store.slots : [])];
              if (this.participantSelectedSlots.length === 0) return;
              this.bulkClaimResults = null;
              this.bulkClaimSummary = null;
              this.bulkClaimModalOpen = true;
          },
+         selectParticipantForBulk(pId) {
+             if (!pId) {
+                 this.formName = '{{ prefilled_name|default:''|escapejs }}';
+                 this.formUsername = '{{ prefilled_username|default:''|escapejs }}';
+                 this.formWhatsapp = '{{ prefilled_whatsapp|default:''|escapejs }}';
+                 this.formSocial = '{{ prefilled_social|default:''|escapejs }}';
+                 return;
+             }
+             const p = this.allParticipants.find(item => String(item.id) === String(pId));
+             if (p) {
+                 this.formName = p.name || '';
+                 this.formUsername = p.username || '';
+                 this.formWhatsapp = p.whatsapp || '';
+                 this.formSocial = p.social_handle || '';
+             }
+         },
          async submitBulkClaim() {
              if (this.bulkClaimLoading) return;
+             if (!this.formWhatsapp) {
+                 alert('Por favor, informe ou selecione o WhatsApp do participante para confirmar a reserva.');
+                 return;
+             }
              this.bulkClaimLoading = true;
              try {
                  const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
@@ -458,8 +483,21 @@ function cegDetailApp() {
                      this.bulkClaimResults = data.results;
                      this.bulkClaimSummary = data.summary;
                      // Remove from selection the ones that succeeded
-                     const successIds = new Set(data.results.filter(r => r.success).map(r => r.slot_id));
-                     this.participantSelectedSlots = this.participantSelectedSlots.filter(s => !successIds.has(s.id));
+                     const successSlotIds = new Set(data.results.filter(r => r.success && r.slot_id).map(r => r.slot_id));
+                     this.participantSelectedSlots = this.participantSelectedSlots.filter(s => {
+                         if (s.isAvulso) return false;
+                         return !successSlotIds.has(s.id);
+                     });
+                     const store = window.Alpine ? Alpine.store('claimSelection') : null;
+                     if (store) {
+                         data.results.filter(r => r.success && r.slot_id).forEach(r => {
+                             const idx = store.slots.findIndex(s => s.id === r.slot_id);
+                             if (idx !== -1) store.slots.splice(idx, 1);
+                         });
+                         if (data.summary && data.summary.succeeded > 0) {
+                             store.slots = store.slots.filter(s => !s.isAvulso);
+                         }
+                     }
                  } else {
                      alert(data.message || 'Erro ao processar reserva.');
                  }

@@ -3,27 +3,20 @@
             {% if idef.available_count > 0 %}border-slate-200/90 dark:border-white/10 hover:border-pink-300 dark:hover:border-pink-500/50 hover:shadow-md bg-white dark:bg-cyber-surface
             {% else %}border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 opacity-75{% endif %}"
      x-data="{
-         itemDefId: {{ idef.id }},
-         totalCount: {{ idef.slots_count }},
-         availableCount: {{ idef.available_count }},
-         selectedQty: 1,
+         itemDefId: {{ idef.id }}, totalCount: {{ idef.slots_count }}, availableCount: {{ idef.available_count }}, selectedQty: 1,
          get isSelected() { return $store.claimSelection.hasAvulso(this.itemDefId); },
          inc() { if (this.selectedQty < this.availableCount) { this.selectedQty++; if (this.isSelected) this.syncStore(); } },
          dec() { if (this.selectedQty > 1) { this.selectedQty--; if (this.isSelected) this.syncStore(); } },
          syncStore() {
              $store.claimSelection.setAvulso({
-                 id: {{ idef.id }},
-                 name: '{{ idef.name|escapejs }}',
-                 member_name: '{{ idef.member_name|default:''|escapejs }}',
+                 id: {{ idef.id }}, name: '{{ idef.name|escapejs }}', member_name: '{{ idef.member_name|default:''|escapejs }}',
                  default_price: '{{ idef.default_price|floatformat:2 }}',
                  frete_inter: '{% if idef.first_slot.frete_inter is not None and idef.first_slot.frete_inter > 0 %}{{ idef.first_slot.frete_inter|floatformat:2 }}{% elif ceg.frete_inter is not None and ceg.frete_inter > 0 %}{{ ceg.frete_inter|floatformat:2 }}{% endif %}',
                  taxa_aduaneira: '{% if idef.first_slot.taxa_aduaneira is not None and idef.first_slot.taxa_aduaneira > 0 %}{{ idef.first_slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
              }, this.selectedQty);
          },
-         toggleSelection() {
-             if (this.isSelected) { $store.claimSelection.setAvulso({ id: {{ idef.id }} }, 0); }
-             else { this.syncStore(); }
-         }
+         buyDirect() { this.syncStore(); $store.claimSelection.openModal(); $dispatch('sync-claim-selection'); },
+         toggleSelection() { if (this.isSelected) { $store.claimSelection.setAvulso({ id: {{ idef.id }} }, 0); } else { this.buyDirect(); } }
      }"
      :class="{ 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/70 dark:bg-pink-950/40 shadow-md scale-[1.01]': isSelected }">
 
@@ -151,14 +144,27 @@
                 </div>
 
                 {% if logged_participant or user.is_authenticated %}
-                <button type="button" @click.stop="toggleSelection()"
-                        class="w-full py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95 shadow-2xs"
-                        :class="isSelected
-                            ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-xs'
-                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-dashed border-slate-300 dark:border-white/10 hover:border-pink-300 hover:text-pink-600 dark:hover:text-pink-400'">
-                    <i :data-lucide="isSelected ? 'check' : 'shopping-bag'" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
-                    <span class="truncate" x-text="isSelected ? ('Selecionado (' + selectedQty + ')') : 'Comprar / Reservar'"></span>
-                </button>
+                <template x-if="!isSelected">
+                    <button type="button" @click.stop="buyDirect()"
+                            class="w-full py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95 shadow-2xs bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white shadow-xs">
+                        <i data-lucide="shopping-bag" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
+                        <span>Comprar / Reservar</span>
+                    </button>
+                </template>
+                <template x-if="isSelected">
+                    <div class="flex items-center gap-1 w-full">
+                        <button type="button" @click.stop="$store.claimSelection.openModal(); $dispatch('sync-claim-selection')"
+                                class="flex-1 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95 shadow-xs bg-gradient-to-r from-pink-600 to-rose-600 text-white">
+                            <i data-lucide="check" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
+                            <span class="truncate" x-text="'Finalizar (' + selectedQty + ' un.)'"></span>
+                        </button>
+                        <button type="button" @click.stop="$store.claimSelection.setAvulso({ id: {{ idef.id }} }, 0)"
+                                class="w-8 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-white/[0.08] hover:bg-rose-100 hover:text-rose-600 text-slate-500 dark:text-slate-400 flex items-center justify-center text-xs transition cursor-pointer active:scale-95"
+                                title="Remover da seleção">
+                            <i data-lucide="x" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                        </button>
+                    </div>
+                </template>
                 {% else %}
                 <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
                    class="w-full py-1.5 sm:py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-black rounded-xl transition shadow-xs flex items-center justify-center gap-1 cursor-pointer text-center active:scale-95">

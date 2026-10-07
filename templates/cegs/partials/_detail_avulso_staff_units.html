@@ -56,19 +56,48 @@
                      }
                  }
              }">
-            <div class="flex items-center justify-between text-[10px]">
-                <span class="font-black text-slate-700 dark:text-slate-300 font-mono">
-                    #{{ slot.unit_number }}
-                </span>
-                {% if slot.claimed_by %}
-                <span class="font-bold text-pink-600 dark:text-pink-400 truncate max-w-[110px]" title="{{ slot.claimed_by.display_name }}">
-                    {{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}
-                </span>
-                {% else %}
-                <span class="font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded text-[9px]">
-                    Disponível
-                </span>
-                {% endif %}
+            <div class="flex items-center justify-between text-[10px] gap-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="font-black text-slate-700 dark:text-slate-300 font-mono">
+                        #{{ slot.unit_number }}
+                    </span>
+                    {% if slot.claimed_by %}
+                    <span class="font-bold text-pink-600 dark:text-pink-400 truncate max-w-[100px]" title="{{ slot.claimed_by.display_name }}">
+                        {{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}
+                    </span>
+                    {% else %}
+                    <span class="font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded text-[9px]">
+                        Disponível
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <template x-if="claimLogsBySlot[{{ slot.id }}] && claimLogsBySlot[{{ slot.id }}].length > 0">
+                        <button type="button" @click.stop="openSlotLogsModal({{ slot.id }})"
+                            class="text-[9px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                            title="Ver histórico de reservas">
+                            <i data-lucide="history" class="w-2.5 h-2.5" stroke-width="1.75"></i>
+                            <span x-text="'Logs (' + claimLogsBySlot[{{ slot.id }}].length + ')'"></span>
+                        </button>
+                    </template>
+                    <button type="button"
+                        @click.stop="openManageSlotModal({
+                            id: {{ slot.id }}, itemDefId: {{ idef.id }},
+                            name: '{{ idef.name|escapejs }} (Unid. #{{ slot.unit_number }})',
+                            member: '{{ idef.member_name|default:''|escapejs }}',
+                            itemType: '{{ idef.item_type }}', tipoItemId: '{{ idef.tipo_item_id|default:'' }}',
+                            setNumber: 'Avulso #{{ slot.unit_number }}', price: '{{ slot.price|stringformat:'.2f' }}', status: '{{ slot.status }}',
+                            statusDisplay: '{% if slot.status == 'PAID' %}Confirmado / Pago{% elif slot.status == 'RESERVED' %}Reservado{% else %}Disponível{% endif %}',
+                            claimedById: '{{ slot.claimed_by.id|default:'' }}', claimedByName: '{{ slot.claimed_by.display_name|default:''|escapejs }}',
+                            claimedByHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}', isItemPaid: isItemPaid
+                        })"
+                        class="text-[9px] font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                        title="Gerenciar vaga, trocar joiner ou status">
+                        <i data-lucide="settings-2" class="w-2.5 h-2.5" stroke-width="1.75"></i>
+                        <span>Gerenciar</span>
+                    </button>
+                </div>
             </div>
 
             {% if slot.claimed_by %}

@@ -657,6 +657,31 @@ class BulkClaimView(View):
                     'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
                     'message': 'Sessão expirada. Por favor, autentique novamente.'
                 }, status=401)
+        elif is_staff and not whatsapp:
+            # Fallback para staff autenticado quando nenhum joiner for selecionado na lista
+            from apps.participants.models import Participant
+            p = Participant.objects.filter(username=request.user.username).first()
+            if not p and request.user.email:
+                p = Participant.objects.filter(email=request.user.email).first()
+            if p and p.whatsapp:
+                whatsapp = p.whatsapp
+                name = name or p.name
+                username = username or p.username
+                social_handle = social_handle or p.social_handle
+            else:
+                staff_name = request.user.get_full_name() or request.user.username or "Admin Staff"
+                staff_part, _ = Participant.objects.get_or_create(
+                    whatsapp="5511999990000",
+                    defaults={
+                        'name': staff_name,
+                        'username': request.user.username,
+                        'social_handle': f"@{request.user.username}",
+                    }
+                )
+                whatsapp = staff_part.whatsapp
+                name = name or staff_part.name
+                username = username or staff_part.username
+                social_handle = social_handle or staff_part.social_handle
 
         results = []
         participant_saved = False
@@ -784,6 +809,7 @@ class BulkClaimView(View):
                     results.append({
                         'slot_id': c.slot.id,
                         'item_name': f"{idef.name} (Unid. #{c.slot.unit_number})",
+                        'name': f"{idef.name} (Unid. #{c.slot.unit_number})",
                         'set_number': 'Avulso',
                         'success': True,
                         'is_waiting_list': False,
@@ -797,6 +823,7 @@ class BulkClaimView(View):
                     results.append({
                         'slot_id': None,
                         'item_name': idef.name,
+                        'name': idef.name,
                         'set_number': 'Avulso',
                         'success': False,
                         'is_waiting_list': False,
@@ -807,6 +834,7 @@ class BulkClaimView(View):
                 results.append({
                     'slot_id': None,
                     'item_name': idef.name,
+                    'name': idef.name,
                     'set_number': 'Avulso',
                     'success': False,
                     'is_waiting_list': False,
@@ -817,6 +845,7 @@ class BulkClaimView(View):
                 results.append({
                     'slot_id': None,
                     'item_name': idef.name,
+                    'name': idef.name,
                     'set_number': 'Avulso',
                     'success': False,
                     'is_waiting_list': False,

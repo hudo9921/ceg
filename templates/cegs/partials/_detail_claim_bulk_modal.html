@@ -58,8 +58,15 @@
 
                 {% if user.is_staff %}
                 <!-- Admin: Selecionar Participante Cadastrado -->
-                <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-700/50 space-y-1">
-                    <span class="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">Modo Admin — Selecionar Joiner</span>
+                <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-700/50 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300">Modo Admin — Selecionar Joiner</span>
+                        <template x-if="formWhatsapp">
+                            <span class="text-[9px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
+                                Selecionado
+                            </span>
+                        </template>
+                    </div>
                     <select @change="selectParticipantForBulk($event.target.value)"
                         class="w-full bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white cursor-pointer">
                         <option value="">-- Escolher Participante Cadastrado --</option>
@@ -67,6 +74,12 @@
                             <option :value="p.id" x-text="p.name + (p.whatsapp ? ' (' + p.whatsapp + ')' : '')"></option>
                         </template>
                     </select>
+                    <template x-if="formWhatsapp">
+                        <div class="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 pt-0.5">
+                            <i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
+                            <span>Reserva para: <strong x-text="formName"></strong> (<span class="font-mono text-[10px]" x-text="formWhatsapp"></span>)</span>
+                        </div>
+                    </template>
                 </div>
                 {% endif %}
 
@@ -121,14 +134,15 @@
         <!-- Resultados Pós-Envio -->
         <template x-if="bulkClaimResults">
             <div class="p-5 sm:p-6 space-y-4">
-                <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-black text-base">
-                    <i data-lucide="check-circle" class="w-5 h-5" stroke-width="1.75"></i>
-                    <span>Reserva Concluída!</span>
+                <div class="flex items-center gap-2 font-black text-base"
+                     :class="(bulkClaimSummary && bulkClaimSummary.succeeded > 0) ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                    <i :data-lucide="(bulkClaimSummary && bulkClaimSummary.succeeded > 0) ? 'check-circle' : 'alert-circle'" class="w-5 h-5" stroke-width="1.75"></i>
+                    <span x-text="(bulkClaimSummary && bulkClaimSummary.succeeded > 0) ? 'Reserva Concluída!' : 'Atenção na Reserva'"></span>
                 </div>
                 <div class="divide-y divide-slate-100 dark:divide-white/5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/10 max-h-48 overflow-y-auto">
-                    <template x-for="r in bulkClaimResults" :key="r.slot_id">
+                    <template x-for="(r, idx) in bulkClaimResults" :key="r.slot_id || idx">
                         <div class="flex items-center justify-between p-3 text-xs">
-                            <span class="font-bold text-slate-800 dark:text-slate-200" x-text="r.name"></span>
+                            <span class="font-bold text-slate-800 dark:text-slate-200" x-text="r.name || r.item_name"></span>
                             <span class="font-bold text-[10px] px-2 py-0.5 rounded-full"
                                 :class="r.success ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'"
                                 x-text="r.message"></span>
