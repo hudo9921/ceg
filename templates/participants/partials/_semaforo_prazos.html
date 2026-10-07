@@ -1,45 +1,70 @@
 {% if prazos_proximos %}
-<!-- Semáforo de Prazos Próximos de Pagamento -->
-<div class="bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-4 sm:p-5 shadow-xs space-y-3">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div class="flex items-center gap-2.5">
+<!-- Semáforo de Prazos Próximos de Pagamento (Carrossel Horizontal com Snap) -->
+<div class="bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-4 sm:p-5 shadow-xs space-y-3.5"
+     x-data="{ isDown: false, startX: 0, scrollLeftPos: 0 }">
+    <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 flex items-center justify-center shrink-0">
-                <i data-lucide="clock" class="w-5 h-5 text-rose-500"></i>
+                <i data-lucide="clock" class="w-5 h-5 text-rose-500" stroke-width="1.75"></i>
             </div>
-            <div>
-                <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>Prazos Próximos de Pagamento</span>
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full {% if prazos_urgentes_count > 0 %}bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse{% else %}bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-cyber-silver{% endif %}">
-                        {{ prazos_proximos|length }} {% if prazos_proximos|length == 1 %}prazo pendente{% else %}prazos pendentes{% endif %}
+            <div class="min-w-0">
+                <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2 truncate">
+                    <span>Prazos Próximos</span>
+                    <span class="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 {% if prazos_urgentes_count > 0 %}bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse{% else %}bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-cyber-silver{% endif %}">
+                        {{ prazos_proximos|length }} {% if prazos_proximos|length == 1 %}prazo{% else %}prazos{% endif %}
                     </span>
                 </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Acompanhe seus prazos de pagamento de item, frete internacional e taxa aduaneira para não perder suas reservas.
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    Acompanhe pagamentos de itens, fretes e taxas aduaneiras.
                 </p>
             </div>
         </div>
 
-        {% if prazos_urgentes_count > 0 %}
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 self-start sm:self-auto">
-            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-500"></i>
-            <span>{{ prazos_urgentes_count }} {% if prazos_urgentes_count == 1 %}prazo requer atenção{% else %}prazos requerem atenção{% endif %}</span>
+        <!-- Ações do Topo: Badges de Atenção & Setas de Navegação -->
+        <div class="flex items-center gap-1.5 shrink-0">
+            {% if prazos_urgentes_count > 0 %}
+            <span class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50">
+                <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-500" stroke-width="1.75"></i>
+                <span>{{ prazos_urgentes_count }} urgente{{ prazos_urgentes_count|pluralize }}</span>
+            </span>
+            {% endif %}
+
+            {% if prazos_proximos|length > 1 %}
+            <div class="flex items-center gap-1">
+                <button type="button" @click="$refs.prazosTrack.scrollBy({ left: -310, behavior: 'smooth' })"
+                    class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-rose-100 dark:hover:bg-rose-950/40 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center transition border border-slate-200/80 dark:border-white/10 cursor-pointer active:scale-95 shadow-2xs"
+                    title="Prazos anteriores">
+                    <i data-lucide="chevron-left" class="w-4 h-4" stroke-width="1.75"></i>
+                </button>
+                <button type="button" @click="$refs.prazosTrack.scrollBy({ left: 310, behavior: 'smooth' })"
+                    class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-rose-100 dark:hover:bg-rose-950/40 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center transition border border-slate-200/80 dark:border-white/10 cursor-pointer active:scale-95 shadow-2xs"
+                    title="Próximos prazos">
+                    <i data-lucide="chevron-right" class="w-4 h-4" stroke-width="1.75"></i>
+                </button>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
-    <!-- Grid de Cards de Prazos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+    <!-- Trilho Carrossel com Snap (Touch, Mouse Drag & Wheel) -->
+    <div x-ref="prazosTrack"
+         @wheel.prevent="$refs.prazosTrack.scrollLeft += ($event.deltaY || $event.deltaX)"
+         @mousedown="isDown = true; startX = $event.pageX - $refs.prazosTrack.offsetLeft; scrollLeftPos = $refs.prazosTrack.scrollLeft"
+         @mouseleave="isDown = false"
+         @mouseup="isDown = false"
+         @mousemove="if(!isDown) return; $event.preventDefault(); const x = $event.pageX - $refs.prazosTrack.offsetLeft; const walk = (x - startX) * 1.5; $refs.prazosTrack.scrollLeft = scrollLeftPos - walk;"
+         class="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar py-1 px-0.5 cursor-grab active:cursor-grabbing select-none">
         {% for p in prazos_proximos %}
-        <div class="p-3.5 rounded-xl border {{ p.urgencia_class }} bg-white/60 dark:bg-white/5 backdrop-blur-xs flex flex-col justify-between gap-3 shadow-2xs transition">
+        <div class="w-[260px] sm:w-[290px] shrink-0 snap-start p-3.5 rounded-2xl border {{ p.urgencia_class }} bg-white/70 dark:bg-cyber-surface/90 backdrop-blur-xs flex flex-col justify-between gap-2.5 shadow-2xs hover:shadow-xs transition">
             <div class="space-y-1.5">
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-1.5">
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-white/80 dark:bg-black/40 shadow-2xs border border-black/5 dark:border-white/10">
                         {% if p.tipo == 'ITEM' %}
-                            <i data-lucide="package" class="w-3 h-3 text-amber-500"></i>
+                            <i data-lucide="package" class="w-3 h-3 text-amber-500" stroke-width="1.75"></i>
                         {% elif p.tipo == 'FRETE' %}
-                            <i data-lucide="plane" class="w-3 h-3 text-sky-500"></i>
+                            <i data-lucide="plane" class="w-3 h-3 text-sky-500" stroke-width="1.75"></i>
                         {% else %}
-                            <i data-lucide="landmark" class="w-3 h-3 text-purple-500"></i>
+                            <i data-lucide="landmark" class="w-3 h-3 text-purple-500" stroke-width="1.75"></i>
                         {% endif %}
                         <span>{{ p.tipo_label }}</span>
                     </span>
@@ -53,7 +78,7 @@
                         {{ p.origem }}
                     </h4>
                     {% if p.remessa_nome %}
-                    <span class="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
                         Remessa: {{ p.remessa_nome }}
                     </span>
                     {% endif %}
@@ -62,30 +87,30 @@
 
             <div class="pt-2 border-t border-black/5 dark:border-white/10 flex items-center justify-between gap-2">
                 <div>
-                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">A pagar:</span>
-                    <strong class="text-sm font-black text-slate-900 dark:text-white font-mono">
+                    <span class="text-[9.5px] text-slate-500 dark:text-slate-400 block font-medium">A pagar:</span>
+                    <strong class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-mono">
                         R$ {{ p.valor|floatformat:2 }}
                     </strong>
-                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block">
+                    <span class="text-[9.5px] text-slate-500 dark:text-slate-400 block">
                         Até {{ p.prazo|date:"d/m H:i" }}
                     </span>
                 </div>
 
-                <div class="flex items-center gap-1.5 shrink-0">
+                <div class="flex items-center gap-1 shrink-0">
                     {% if p.pix_key %}
                     <button type="button" @click="copyPix('{{ p.pix_key }}', '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}')"
-                        class="px-2.5 py-1.5 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer"
+                        class="px-2.5 py-1.5 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1 cursor-pointer"
                         title="Copiar Chave Pix para {{ p.tipo_label }}">
-                        <i data-lucide="check" class="w-3 h-3 stroke-[3]" x-show="copiedPixCegId === '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}'"></i>
-                        <i data-lucide="copy" class="w-3 h-3" x-show="copiedPixCegId !== '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}'"></i>
-                        <span class="text-[11px]" x-text="copiedPixCegId === '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}' ? 'Copiada!' : 'Pix'"></span>
+                        <i data-lucide="check" class="w-3 h-3 stroke-[2.5]" x-show="copiedPixCegId === '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}'"></i>
+                        <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}'"></i>
+                        <span class="text-[10px]" x-text="copiedPixCegId === '{% if p.ceg_id %}{{ p.ceg_id }}_{{ p.tipo }}{% else %}{{ p.tipo }}_{{ forloop.counter }}{% endif %}' ? 'Copiada!' : 'Pix'"></span>
                     </button>
                     {% endif %}
                     {% if p.ceg_slug %}
                     <a href="{% url 'ceg_detail' slug=p.ceg_slug %}"
-                        class="p-1.5 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver rounded-lg border border-purple-100/70 dark:border-white/10 text-xs transition shadow-xs flex items-center justify-center"
+                        class="p-1.5 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver rounded-xl border border-purple-100/70 dark:border-white/10 text-xs transition shadow-xs flex items-center justify-center cursor-pointer"
                         title="Ver detalhes da CEG">
-                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="external-link" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     </a>
                     {% endif %}
                 </div>

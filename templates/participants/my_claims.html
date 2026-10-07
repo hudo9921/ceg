@@ -12,8 +12,13 @@
     <!-- ABA 1: MINHAS RESERVAS / CEGS -->
     <div x-show="activeMainTab === 'reservas'" class="space-y-8">
         {% include 'participants/partials/_header_metrics.html' %}
-        {% include 'participants/partials/_quick_pix.html' %}
-        {% include 'participants/partials/_semaforo_prazos.html' %}
+        <!-- Resumo Financeiro & Prazos Próximos (Side-by-side no Desktop) -->
+        {% if total_any_unpaid_count > 0 or prazos_proximos %}
+        <div class="grid grid-cols-1 {% if prazos_proximos and total_any_unpaid_count > 0 %}xl:grid-cols-2{% endif %} gap-4 items-start">
+            {% include 'participants/partials/_quick_pix.html' %}
+            {% include 'participants/partials/_semaforo_prazos.html' %}
+        </div>
+        {% endif %}
         {% include 'participants/partials/_filtro_caixas.html' %}
 
         <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->

@@ -1,10 +1,10 @@
 <!-- Central de Pagamento Rápido (Quick Pix) com Alternância de Consolidação -->
 {% if cegs_com_pendencias or caixas_com_pendencias or mercari_pendencias.total_geral_pendente > 0 %}
 <div class="bg-gradient-to-r from-amber-500/5 via-pink-500/5 to-purple-500/5 dark:from-amber-500/10 dark:via-cyber-surface dark:to-purple-500/10 rounded-2xl border border-amber-300/60 dark:border-amber-500/30 p-4 sm:p-5 shadow-xs space-y-4">
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3 sm:gap-4">
         <div class="flex items-start sm:items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center shadow-xs shrink-0">
-                <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                <i data-lucide="zap" class="w-5 h-5 text-white" stroke-width="1.75"></i>
             </div>
             <div class="space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -31,13 +31,13 @@
         </div>
 
         <!-- Alternador de Consolidação & Totais -->
-        <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3 w-full lg:w-auto">
+        <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3 w-full 2xl:w-auto">
             <!-- Tabs: CEG / Caixa / Mercari -->
             <div class="inline-flex items-center gap-1 p-1 bg-white/80 dark:bg-cyber-elevated/80 backdrop-blur-md rounded-xl border border-amber-300/60 dark:border-white/10 text-xs font-bold shadow-xs">
                 <button type="button" @click="quickPixTab = 'ceg'; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
                     :class="quickPixTab === 'ceg' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 dark:text-cyber-silver hover:text-slate-900 dark:hover:text-white'"
                     class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="package" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span>Por CEG</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono"
                         :class="quickPixTab === 'ceg' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300'">
@@ -47,7 +47,7 @@
                 <button type="button" @click="quickPixTab = 'caixa'; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
                     :class="quickPixTab === 'caixa' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 dark:text-cyber-silver hover:text-slate-900 dark:hover:text-white'"
                     class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="globe" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span>Por Caixa</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono"
                         :class="quickPixTab === 'caixa' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300'">
@@ -57,7 +57,7 @@
                 <button type="button" @click="quickPixTab = 'mercari'; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
                     :class="quickPixTab === 'mercari' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 dark:text-cyber-silver hover:text-slate-900 dark:hover:text-white'"
                     class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
-                    <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="shopping-bag" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span>Mercari</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono"
                         :class="quickPixTab === 'mercari' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300'">
@@ -88,7 +88,7 @@
                 <button type="button" @click="quickPixOpen = !quickPixOpen; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
                     class="px-3 py-1.5 bg-white dark:bg-cyber-surface hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer select-none active:scale-95">
                     <span x-text="quickPixOpen ? 'Recolher' : 'Expandir Chaves'"></span>
-                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" :class="quickPixOpen ? 'rotate-180' : ''"></i>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" stroke-width="1.75" :class="quickPixOpen ? 'rotate-180' : ''"></i>
                 </button>
             </div>
         </div>

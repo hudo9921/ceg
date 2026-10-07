@@ -58,16 +58,16 @@
 - `_detail_admin_modals.html`: Suite completa de modais administrativos (Editar CEG, Prazos/Taxas, Slot, Disputa, Avulsos).
 - `_detail_app_script.html`: Motor Alpine.js (`cegDetailApp`) com carrinho `$store.claimSelection` e contadores.
 
-### 2.3. Portal do Participante (`my_claims.html` — 40 linhas)
+### 2.3. Portal do Participante (`my_claims.html` — 45 linhas)
 - `_header_notices.html`: Saudação com sparkles, dados de perfil e accordion de avisos contextuais.
 - `_tabs_nav.html`: Alternador de abas principais (Minhas Reservas vs Minha Caixinha).
-- `_header_metrics.html`: Indicadores interativos de itens (Total, Faltam Pagar, Confirmados, Mercari).
-- `_quick_pix.html`: Central de cópia rápida Pix modularizada:
+- `_header_metrics.html`: Indicadores interativos compactos em grade 2x2 no mobile e 4 colunas no desktop (Total, Faltam Pagar, Confirmados, Mercari).
+- `_quick_pix.html`: Central de cópia rápida Pix modularizada e responsiva (layout side-by-side no desktop com o semáforo de prazos):
   - `_quick_pix_ceg.html`: Pendências agrupadas por CEG com detalhamento e cópia instantânea.
   - `_quick_pix_caixa.html`: Pendências agrupadas por Remessa Internacional.
   - `_quick_pix_mercari.html`: Compras avulsas no Mercari Japão consolidadas.
-- `_semaforo_prazos.html`: Monitoramento de prazos críticos de pagamento de itens, frete e taxa.
-- `_filtro_caixas.html`: Carrossel de remessas com bandeiras e gaveta informativa de rastreio.
+- `_semaforo_prazos.html`: Monitoramento de prazos críticos de pagamento com carrossel horizontal snap, navegação por setas e suporte a arraste.
+- `_filtro_caixas.html`: Trilho horizontal snap de remessas com badges tipográficos limpos e gaveta informativa de rastreio.
 - `_filtros_painel.html`: Painel de busca instantânea, dropdowns de grupo/CEG e toggle Galeria/Tabela.
 - `_cegs_list.html`: Grid contínuo e orquestrador da galeria de pastas:
   - `_cegs_list_folder_card.html`: Pasta fechada sleeve 2:3 e aberta gatefold album 4:3.

@@ -2,8 +2,8 @@
     <!-- Banner de Atalho para Caixinha -->
     <div class="bg-gradient-to-r from-pink-50 via-rose-50 to-pink-50 dark:from-cyber-surface dark:via-cyber-surface dark:to-cyber-surface border border-pink-200/90 dark:border-pink-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center flex-shrink-0 shadow-xs">
-                <i data-lucide="package" class="w-5 h-5"></i>
+            <div class="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center shrink-0 shadow-xs">
+                <i data-lucide="package" class="w-5 h-5" stroke-width="1.75"></i>
             </div>
             <div>
                 <h4 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
@@ -15,56 +15,56 @@
             </div>
         </div>
         <button type="button" @click="activeMainTab = 'caixinha'"
-                class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
+                class="px-3.5 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer">
             <span>Ver Minha Caixinha</span>
-            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.75"></i>
         </button>
     </div>
     {% endif %}
 
-    <!-- Metric Cards: Contagem de Itens e Status Interativo -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Metric Cards: Contagem de Itens e Status Interativo (2x2 Mobile, 4x Desktop) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <!-- Card 1: Total de Itens -->
         <div @click="resetToAll()"
             :class="(statusFilter === 'ALL' && categoryFilter === 'ALL' && selectedCaixa === 'ALL') ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/20 dark:bg-cyber-surface dark:border-pink-500/50 shadow-xs' : 'border-slate-200/80 dark:border-white/10 bg-white dark:bg-cyber-surface hover:border-slate-300 dark:hover:border-white/20'"
-            class="p-5 rounded-2xl border shadow-xs space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <div class="text-xs font-bold text-slate-400 dark:text-cyber-silver uppercase tracking-wider">Total de Itens</div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full transition"
+            class="p-3.5 sm:p-5 rounded-2xl border shadow-xs space-y-1 sm:space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+            <div class="flex items-center justify-between gap-1">
+                <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-cyber-silver uppercase tracking-wider truncate">Total de Itens</div>
+                <span class="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full transition shrink-0"
                     :class="(statusFilter === 'ALL' && categoryFilter === 'ALL' && selectedCaixa === 'ALL') ? 'bg-pink-100 text-pink-700 dark:bg-pink-950/70 dark:text-pink-300' : 'bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-cyber-silver'">
                     Todos
                 </span>
             </div>
-            <div class="flex items-baseline gap-2">
-                <span class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_claims_count|add:itens_individuais_count }}</span>
-                <span class="text-sm font-semibold text-slate-500 dark:text-cyber-silver">{% if total_claims_count|add:itens_individuais_count == 1 %}item total{% else %}itens no total{% endif %}</span>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_claims_count|add:itens_individuais_count }}</span>
+                <span class="text-xs sm:text-sm font-semibold text-slate-500 dark:text-cyber-silver">{% if total_claims_count|add:itens_individuais_count == 1 %}item{% else %}itens{% endif %}</span>
             </div>
-            <div class="text-[11px] text-slate-500 dark:text-cyber-silver">
+            <div class="text-[10px] sm:text-[11px] text-slate-500 dark:text-cyber-silver truncate">
                 <span x-show="categoryFilter !== 'ALL' || selectedCaixa !== 'ALL' || statusFilter !== 'ALL'"
-                    class="text-pink-600 dark:text-pink-400 font-bold">Clique para ver tudo</span>
-                <span x-show="categoryFilter === 'ALL' && selectedCaixa === 'ALL' && statusFilter === 'ALL'">Reservas em CEGs e compras avulsas</span>
+                    class="text-pink-600 dark:text-pink-400 font-bold">Ver tudo</span>
+                <span x-show="categoryFilter === 'ALL' && selectedCaixa === 'ALL' && statusFilter === 'ALL'">CEGs e avulsos</span>
             </div>
         </div>
 
         <!-- Card 2: Aguardando Pagamento (Número de Itens Pendentes) -->
         <div @click="statusFilter = statusFilter === 'PENDING' ? 'ALL' : 'PENDING'"
             :class="statusFilter === 'PENDING' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-50/80 dark:bg-cyber-surface dark:border-amber-500/60 shadow-md' : 'border-amber-200 dark:border-amber-500/30 bg-amber-50/40 dark:bg-cyber-surface hover:bg-amber-50/70 dark:hover:bg-amber-950/20'"
-            class="p-5 rounded-2xl border shadow-xs space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <div class="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Aguardando Pagamento</div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full transition"
+            class="p-3.5 sm:p-5 rounded-2xl border shadow-xs space-y-1 sm:space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+            <div class="flex items-center justify-between gap-1">
+                <div class="text-[10px] sm:text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider truncate">Aguardando Pagamento</div>
+                <span class="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full transition shrink-0"
                     :class="statusFilter === 'PENDING' ? 'bg-amber-600 text-white' : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60'">
-                    Faltam Pagar
+                    A Pagar
                 </span>
             </div>
-            <div class="flex items-baseline gap-2">
-                <span class="text-2xl sm:text-3xl font-black text-amber-900 dark:text-amber-300">{{ pending_claims_count }}</span>
-                <span class="text-sm font-bold text-amber-700 dark:text-amber-400/80">{% if pending_claims_count == 1 %}item pendente{% else %}itens pendentes{% endif %}</span>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-xl sm:text-3xl font-black text-amber-900 dark:text-amber-300">{{ pending_claims_count }}</span>
+                <span class="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-400/80">{% if pending_claims_count == 1 %}pendente{% else %}pendentes{% endif %}</span>
             </div>
-            <div class="text-[11px] text-amber-800 dark:text-cyber-silver flex items-center justify-between">
-                <span>Clique para filtrar itens a pagar</span>
+            <div class="text-[10px] sm:text-[11px] text-amber-800 dark:text-cyber-silver flex items-center justify-between truncate">
+                <span>Itens a pagar</span>
                 {% if total_pending_all > 0 %}
-                <span class="font-black text-amber-900 dark:text-amber-300 text-xs">R$ {{ total_pending_all|floatformat:2 }}</span>
+                <span class="font-black text-amber-900 dark:text-amber-300 text-[11px] sm:text-xs font-mono">R$ {{ total_pending_all|floatformat:2 }}</span>
                 {% endif %}
             </div>
         </div>
@@ -72,42 +72,42 @@
         <!-- Card 3: Pagamentos Confirmados (Número de Itens Confirmados) -->
         <div @click="statusFilter = statusFilter === 'PAID' ? 'ALL' : 'PAID'"
             :class="statusFilter === 'PAID' ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/80 dark:bg-cyber-surface dark:border-emerald-500/60 shadow-md' : 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/40 dark:bg-cyber-surface hover:bg-emerald-50/70 dark:hover:bg-emerald-950/20'"
-            class="p-5 rounded-2xl border shadow-xs space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <div class="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Pagamentos Confirmados</div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full transition"
+            class="p-3.5 sm:p-5 rounded-2xl border shadow-xs space-y-1 sm:space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+            <div class="flex items-center justify-between gap-1">
+                <div class="text-[10px] sm:text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider truncate">Confirmados</div>
+                <span class="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full transition shrink-0"
                     :class="statusFilter === 'PAID' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700/60'">
-                    Confirmados
+                    Pagos
                 </span>
             </div>
-            <div class="flex items-baseline gap-2">
-                <span class="text-2xl sm:text-3xl font-black text-emerald-900 dark:text-emerald-300">{{ paid_claims_count }}</span>
-                <span class="text-sm font-bold text-emerald-700 dark:text-emerald-400/80">{% if paid_claims_count == 1 %}item pago{% else %}itens pagos{% endif %}</span>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-xl sm:text-3xl font-black text-emerald-900 dark:text-emerald-300">{{ paid_claims_count }}</span>
+                <span class="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400/80">{% if paid_claims_count == 1 %}pago{% else %}pagos{% endif %}</span>
             </div>
-            <div class="text-[11px] text-emerald-800 dark:text-cyber-silver">
-                <span>Clique para filtrar itens já pagos</span>
+            <div class="text-[10px] sm:text-[11px] text-emerald-800 dark:text-cyber-silver truncate">
+                <span>Filtrar já pagos</span>
             </div>
         </div>
 
         <!-- Card 4: Itens Mercari / Avulsos (Clicável para Filtrar) -->
         <div @click="toggleMercariFilter()"
             :class="categoryFilter === 'MERCARI' ? 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/70 dark:bg-cyber-surface dark:border-pink-500/60 shadow-md' : 'border-slate-200/80 dark:border-white/10 bg-white dark:bg-cyber-surface hover:border-pink-300 hover:bg-pink-50/20 dark:hover:border-pink-500/30'"
-            class="p-5 rounded-2xl border shadow-xs space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <div class="text-xs font-bold text-slate-400 dark:text-cyber-silver uppercase tracking-wider">Itens Mercari</div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full transition"
+            class="p-3.5 sm:p-5 rounded-2xl border shadow-xs space-y-1 sm:space-y-1.5 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+            <div class="flex items-center justify-between gap-1">
+                <div class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-cyber-silver uppercase tracking-wider truncate">Itens Mercari</div>
+                <span class="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full transition shrink-0"
                     :class="categoryFilter === 'MERCARI' ? 'bg-pink-600 text-white' : 'bg-pink-100 text-pink-700 dark:bg-pink-950/70 dark:text-pink-300'">
                     Avulsos
                 </span>
             </div>
-            <div class="flex items-baseline gap-2">
-                <span class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ itens_individuais_count|default:0 }}</span>
-                <span class="text-sm font-semibold text-slate-500 dark:text-cyber-silver">{% if itens_individuais_count == 1 %}item avulso{% else %}itens avulsos{% endif %}</span>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ itens_individuais_count|default:0 }}</span>
+                <span class="text-xs sm:text-sm font-semibold text-slate-500 dark:text-cyber-silver">{% if itens_individuais_count == 1 %}avulso{% else %}avulsos{% endif %}</span>
             </div>
-            <div class="text-[11px] text-slate-500 dark:text-cyber-silver flex items-center justify-between">
-                <span x-text="categoryFilter === 'MERCARI' ? 'Filtrando apenas Mercari' : 'Clique para filtrar Mercari'"></span>
+            <div class="text-[10px] sm:text-[11px] text-slate-500 dark:text-cyber-silver flex items-center justify-between truncate">
+                <span x-text="categoryFilter === 'MERCARI' ? 'Apenas Mercari' : 'Filtrar Mercari'"></span>
                 {% if itens_frete_unpaid_count > 0 or itens_taxa_unpaid_count > 0 %}
-                <span class="font-bold text-amber-600 dark:text-amber-400 text-[11px]">Frete/Taxa a pagar</span>
+                <span class="font-bold text-amber-600 dark:text-amber-400 text-[10px] sm:text-[11px]">Frete/Taxa</span>
                 {% endif %}
             </div>
         </div>
