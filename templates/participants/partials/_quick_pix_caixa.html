@@ -1,181 +1,191 @@
-<!-- CONTEÚDO DO ACORDEÃO QUICK PIX: 2. POR CAIXA / REMESSA INTERNACIONAL -->
-<div x-show="quickPixOpen && quickPixTab === 'caixa'" x-collapse class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-    {% for c_data in caixas_com_pendencias %}
-    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-3.5 shadow-xs space-y-2.5 flex flex-col justify-between hover:border-pink-300 dark:hover:border-cyber-neon/40 transition-all">
-        <div class="space-y-2">
-            <!-- Cabeçalho da Caixa: Origem/Status + Valor e Nome Truncado com Tooltip/Toggle -->
-            <div class="space-y-1">
-                <div class="flex items-center justify-between gap-1.5">
-                    <div class="flex items-center gap-1 flex-wrap min-w-0">
-                        <span class="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1 truncate" title="{{ c_data.origem_display|default:'Remessa' }}">
-                            <i data-lucide="globe" class="w-2.5 h-2.5 text-purple-500" stroke-width="1.75"></i>
-                            <span>{{ c_data.origem_display|default:"Remessa" }}</span>
+<!-- CONTEÚDO DO ACORDEÃO QUICK PIX: 2. POR CAIXA / REMESSA (CARROSSEL SE >= 3) -->
+<div x-show="quickPixOpen && quickPixTab === 'caixa'" x-collapse class="pt-1"
+     x-data="{ isDown: false, startX: 0, scrollLeftPos: 0 }">
+    <div id="quickPixCaixaTrack"
+         x-ref="caixaTrack"
+         @wheel.prevent="$refs.caixaTrack.scrollLeft += ($event.deltaY || $event.deltaX)"
+         @mousedown="isDown = true; startX = $event.pageX - $refs.caixaTrack.offsetLeft; scrollLeftPos = $refs.caixaTrack.scrollLeft"
+         @mouseleave="isDown = false"
+         @mouseup="isDown = false"
+         @mousemove="if(!isDown) return; $event.preventDefault(); const x = $event.pageX - $refs.caixaTrack.offsetLeft; const walk = (x - startX) * 1.5; $refs.caixaTrack.scrollLeft = scrollLeftPos - walk;"
+         class="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar py-1 px-0.5 cursor-grab active:cursor-grabbing select-none items-stretch">
+        {% for c_data in caixas_com_pendencias %}
+        <div class="{% if caixas_com_pendencias|length == 1 %}w-full sm:max-w-md{% elif caixas_com_pendencias|length == 2 %}w-[260px] sm:w-[calc(50%-6px)]{% else %}w-[260px] sm:w-[275px]{% endif %} shrink-0 snap-start bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-3.5 shadow-xs space-y-2.5 flex flex-col justify-between hover:border-pink-300 dark:hover:border-cyber-neon/40 transition-all">
+            <div class="space-y-2">
+                <!-- Cabeçalho da Caixa: Origem/Status + Valor e Nome Truncado com Tooltip/Toggle -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between gap-1.5">
+                        <div class="flex items-center gap-1 flex-wrap min-w-0">
+                            <span class="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1 truncate" title="{{ c_data.origem_display|default:'Remessa' }}">
+                                <i data-lucide="globe" class="w-2.5 h-2.5 text-purple-500" stroke-width="1.75"></i>
+                                <span>{{ c_data.origem_display|default:"Remessa" }}</span>
+                            </span>
+                            {% if c_data.status_display %}
+                            <span class="text-[9px] px-1 py-0.2 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-cyber-silver rounded-md font-semibold shrink-0">
+                                {{ c_data.status_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <span class="text-xs font-black text-amber-700 dark:text-amber-300 font-mono px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/60 rounded-md border border-amber-200 dark:border-amber-800/60 whitespace-nowrap shrink-0">
+                            R$ {{ c_data.total_geral_pendente|floatformat:2 }}
                         </span>
-                        {% if c_data.status_display %}
-                        <span class="text-[9px] px-1 py-0.2 bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-cyber-silver rounded-md font-semibold shrink-0">
-                            {{ c_data.status_display }}
-                        </span>
-                        {% endif %}
                     </div>
-                    <span class="text-xs font-black text-amber-700 dark:text-amber-300 font-mono px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/60 rounded-md border border-amber-200 dark:border-amber-800/60 whitespace-nowrap shrink-0">
-                        R$ {{ c_data.total_geral_pendente|floatformat:2 }}
+                    <div x-data="{ expanded: false }">
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white cursor-pointer select-none transition-all hover:text-purple-600 dark:hover:text-purple-400"
+                            :class="expanded ? 'break-words' : 'truncate'"
+                            @click="expanded = !expanded"
+                            title="{{ c_data.nome }} (toque para expandir)">
+                            {{ c_data.nome }}
+                        </h4>
+                    </div>
+                    {% if c_data.codigo_rastreio %}
+                    <span class="text-[9px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate" title="{{ c_data.codigo_rastreio }}">
+                        <i data-lucide="package" class="w-2.5 h-2.5 text-sky-500" stroke-width="1.75"></i>
+                        <span>{{ c_data.codigo_rastreio }}</span>
                     </span>
+                    {% endif %}
                 </div>
-                <div x-data="{ expanded: false }">
-                    <h4 class="text-xs font-bold text-slate-900 dark:text-white cursor-pointer select-none transition-all hover:text-purple-600 dark:hover:text-purple-400"
-                        :class="expanded ? 'break-words' : 'truncate'"
-                        @click="expanded = !expanded"
-                        title="{{ c_data.nome }} (toque para expandir)">
-                        {{ c_data.nome }}
-                    </h4>
+
+                <!-- CEGs ou itens contidos nesta caixa -->
+                {% if c_data.cegs_names_list %}
+                <div class="text-[10px] text-slate-600 dark:text-slate-400 truncate bg-slate-50 dark:bg-white/5 p-1.5 rounded-lg border border-slate-100 dark:border-white/5" title="CEGs: {{ c_data.cegs_names_list|join:', ' }}">
+                    <span class="font-bold text-slate-700 dark:text-slate-300">CEGs:</span>
+                    {{ c_data.cegs_names_list|join:", " }}
                 </div>
-                {% if c_data.codigo_rastreio %}
-                <span class="text-[9px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate" title="{{ c_data.codigo_rastreio }}">
-                    <i data-lucide="package" class="w-2.5 h-2.5 text-sky-500" stroke-width="1.75"></i>
-                    <span>{{ c_data.codigo_rastreio }}</span>
-                </span>
-                {% endif %}
-            </div>
-
-            <!-- CEGs ou itens contidos nesta caixa -->
-            {% if c_data.cegs_names_list %}
-            <div class="text-[10px] text-slate-600 dark:text-slate-400 truncate bg-slate-50 dark:bg-white/5 p-1.5 rounded-lg border border-slate-100 dark:border-white/5" title="CEGs: {{ c_data.cegs_names_list|join:', ' }}">
-                <span class="font-bold text-slate-700 dark:text-slate-300">CEGs:</span>
-                {{ c_data.cegs_names_list|join:", " }}
-            </div>
-            {% elif c_data.mercari_count > 0 %}
-            <div class="text-[10px] text-pink-600 dark:text-pink-400 font-semibold bg-pink-50 dark:bg-pink-950/30 p-1.5 rounded-lg border border-pink-100 dark:border-pink-900/40 flex items-center gap-1 truncate">
-                <i data-lucide="shopping-bag" class="w-3 h-3 text-pink-500" stroke-width="1.75"></i>
-                <span>{{ c_data.mercari_count }} item(ns) Mercari</span>
-            </div>
-            {% endif %}
-
-            <!-- Breakdown das pendências da Caixa -->
-            <div class="flex flex-wrap items-center gap-1 text-[10px]">
-                {% if c_data.total_items_pending > 0 %}
-                <span class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 rounded-md font-semibold inline-flex items-center gap-1">
-                    <i data-lucide="package" class="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
-                    <span>Itens: R$ {{ c_data.total_items_pending|floatformat:2 }}</span>
-                </span>
-                {% endif %}
-                {% if c_data.total_frete_pending > 0 %}
-                <span class="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 rounded-md font-semibold inline-flex items-center gap-1">
-                    <i data-lucide="plane" class="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" stroke-width="1.75"></i>
-                    <span>Frete: R$ {{ c_data.total_frete_pending|floatformat:2 }}</span>
-                </span>
-                {% endif %}
-                {% if c_data.total_taxa_pending > 0 %}
-                <span class="px-1.5 py-0.5 bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 rounded-md font-semibold inline-flex items-center gap-1">
-                    <i data-lucide="landmark" class="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" stroke-width="1.75"></i>
-                    <span>Taxa: R$ {{ c_data.total_taxa_pending|floatformat:2 }}</span>
-                </span>
-                {% endif %}
-            </div>
-
-            {% if c_data.pix_instructions %}
-            <div class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 bg-slate-50 dark:bg-white/5 p-1.5 rounded-lg border border-slate-100 dark:border-white/5 flex items-start gap-1">
-                <i data-lucide="pin" class="w-2.5 h-2.5 text-amber-500 shrink-0 mt-0.5" stroke-width="1.75"></i>
-                <span>{{ c_data.pix_instructions }}</span>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Chave Pix e Ação -->
-        <div class="pt-2 border-t border-purple-100/60 dark:border-white/10 space-y-2">
-            {% if c_data.has_distinct_pix_keys %}
-            <div class="space-y-1">
-                <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Chaves Pix da Remessa:</span>
-                {% if c_data.total_items_pending > 0 and c_data.pix_key_item %}
-                <div class="p-1.5 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-800/50 space-y-1">
-                    <div class="flex items-center justify-between text-[10px]">
-                        <span class="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
-                            <i data-lucide="package" class="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
-                            <span>Pix Itens:</span>
-                            <span class="font-mono">R$ {{ c_data.total_items_pending|floatformat:2 }}</span>
-                        </span>
-                    </div>
-                    <div class="flex items-center justify-between gap-1.5">
-                        <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key_item }}">{{ c_data.pix_key_item }}</span>
-                        <button type="button" @click="copyPix('{{ c_data.pix_key_item }}', 'caixa_{{ c_data.id }}_item')"
-                            class="px-2 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
-                            <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}_item'"></i>
-                            <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}_item'"></i>
-                            <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}_item' ? 'Copiada!' : 'Copiar'"></span>
-                        </button>
-                    </div>
+                {% elif c_data.mercari_count > 0 %}
+                <div class="text-[10px] text-pink-600 dark:text-pink-400 font-semibold bg-pink-50 dark:bg-pink-950/30 p-1.5 rounded-lg border border-pink-100 dark:border-pink-900/40 flex items-center gap-1 truncate">
+                    <i data-lucide="shopping-bag" class="w-3 h-3 text-pink-500" stroke-width="1.75"></i>
+                    <span>{{ c_data.mercari_count }} item(ns) Mercari</span>
                 </div>
                 {% endif %}
 
-                {% if c_data.total_frete_pending > 0 and c_data.pix_key_frete %}
-                <div class="p-1.5 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-200/80 dark:border-blue-800/50 space-y-1">
-                    <div class="flex items-center justify-between text-[10px]">
-                        <span class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1">
-                            <i data-lucide="plane" class="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" stroke-width="1.75"></i>
-                            <span>Pix Frete:</span>
-                            <span class="font-mono">R$ {{ c_data.total_frete_pending|floatformat:2 }}</span>
-                        </span>
-                    </div>
-                    <div class="flex items-center justify-between gap-1.5">
-                        <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key_frete }}">{{ c_data.pix_key_frete }}</span>
-                        <button type="button" @click="copyPix('{{ c_data.pix_key_frete }}', 'caixa_{{ c_data.id }}_frete')"
-                            class="px-2 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
-                            <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}_frete'"></i>
-                            <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}_frete'"></i>
-                            <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}_frete' ? 'Copiada!' : 'Copiar'"></span>
-                        </button>
-                    </div>
+                <!-- Breakdown das pendências da Caixa -->
+                <div class="flex flex-wrap items-center gap-1 text-[10px]">
+                    {% if c_data.total_items_pending > 0 %}
+                    <span class="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 rounded-md font-semibold inline-flex items-center gap-1">
+                        <i data-lucide="package" class="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
+                        <span>Itens: R$ {{ c_data.total_items_pending|floatformat:2 }}</span>
+                    </span>
+                    {% endif %}
+                    {% if c_data.total_frete_pending > 0 %}
+                    <span class="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 rounded-md font-semibold inline-flex items-center gap-1">
+                        <i data-lucide="plane" class="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" stroke-width="1.75"></i>
+                        <span>Frete: R$ {{ c_data.total_frete_pending|floatformat:2 }}</span>
+                    </span>
+                    {% endif %}
+                    {% if c_data.total_taxa_pending > 0 %}
+                    <span class="px-1.5 py-0.5 bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 rounded-md font-semibold inline-flex items-center gap-1">
+                        <i data-lucide="landmark" class="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" stroke-width="1.75"></i>
+                        <span>Taxa: R$ {{ c_data.total_taxa_pending|floatformat:2 }}</span>
+                    </span>
+                    {% endif %}
                 </div>
-                {% endif %}
 
-                {% if c_data.total_taxa_pending > 0 and c_data.pix_key_taxa %}
-                <div class="p-1.5 bg-purple-50/70 dark:bg-purple-950/30 rounded-xl border border-purple-200/80 dark:border-purple-800/50 space-y-1">
-                    <div class="flex items-center justify-between text-[10px]">
-                        <span class="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1">
-                            <i data-lucide="landmark" class="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" stroke-width="1.75"></i>
-                            <span>Pix Taxa:</span>
-                            <span class="font-mono">R$ {{ c_data.total_taxa_pending|floatformat:2 }}</span>
-                        </span>
-                    </div>
-                    <div class="flex items-center justify-between gap-1.5">
-                        <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key_taxa }}">{{ c_data.pix_key_taxa }}</span>
-                        <button type="button" @click="copyPix('{{ c_data.pix_key_taxa }}', 'caixa_{{ c_data.id }}_taxa')"
-                            class="px-2 py-1 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
-                            <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}_taxa'"></i>
-                            <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}_taxa'"></i>
-                            <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}_taxa' ? 'Copiada!' : 'Copiar'"></span>
-                        </button>
-                    </div>
+                {% if c_data.pix_instructions %}
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 bg-slate-50 dark:bg-white/5 p-1.5 rounded-lg border border-slate-100 dark:border-white/5 flex items-start gap-1">
+                    <i data-lucide="pin" class="w-2.5 h-2.5 text-amber-500 shrink-0 mt-0.5" stroke-width="1.75"></i>
+                    <span>{{ c_data.pix_instructions }}</span>
                 </div>
                 {% endif %}
             </div>
-            {% else %}
-            {% if c_data.pix_key %}
-            <div class="flex items-center justify-between gap-1.5 p-1.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
-                <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key }}">{{ c_data.pix_key }}</span>
-                <button type="button" @click="copyPix('{{ c_data.pix_key }}', 'caixa_{{ c_data.id }}')"
-                    class="px-2.5 py-1 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
-                    <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}'"></i>
-                    <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}'"></i>
-                    <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}' ? 'Copiada!' : 'Pix'"></span>
-                </button>
-            </div>
-            {% endif %}
-            {% endif %}
 
-            <div class="flex items-center justify-between gap-2 pt-0.5">
-                <button type="button"
-                    @click="selectedCaixa = '{{ c_data.id }}'; onCaixaChange(); $nextTick(() => { document.getElementById('painel-filtros')?.scrollIntoView({ behavior: 'smooth' }); })"
-                    class="text-[10px] font-bold text-pink-600 dark:text-cyber-neon hover:underline flex items-center gap-1 cursor-pointer">
-                    <span>Filtrar por esta Caixa ({{ c_data.items_count }} itens)</span>
-                    <i data-lucide="arrow-right" class="w-2.5 h-2.5" stroke-width="1.75"></i>
-                </button>
+            <!-- Chave Pix e Ação -->
+            <div class="pt-2 border-t border-purple-100/60 dark:border-white/10 space-y-2">
+                {% if c_data.has_distinct_pix_keys %}
+                <div class="space-y-1">
+                    <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Chaves Pix da Remessa:</span>
+                    {% if c_data.total_items_pending > 0 and c_data.pix_key_item %}
+                    <div class="p-1.5 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200/80 dark:border-amber-800/50 space-y-1">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                                <i data-lucide="package" class="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
+                                <span>Pix Itens:</span>
+                                <span class="font-mono">R$ {{ c_data.total_items_pending|floatformat:2 }}</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key_item }}">{{ c_data.pix_key_item }}</span>
+                            <button type="button" @click="copyPix('{{ c_data.pix_key_item }}', 'caixa_{{ c_data.id }}_item')"
+                                class="px-2 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                                <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}_item'"></i>
+                                <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}_item'"></i>
+                                <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}_item' ? 'Copiada!' : 'Copiar'"></span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if c_data.total_frete_pending > 0 and c_data.pix_key_frete %}
+                    <div class="p-1.5 bg-blue-50/70 dark:bg-blue-950/30 rounded-xl border border-blue-200/80 dark:border-blue-800/50 space-y-1">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1">
+                                <i data-lucide="plane" class="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" stroke-width="1.75"></i>
+                                <span>Pix Frete:</span>
+                                <span class="font-mono">R$ {{ c_data.total_frete_pending|floatformat:2 }}</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key_frete }}">{{ c_data.pix_key_frete }}</span>
+                            <button type="button" @click="copyPix('{{ c_data.pix_key_frete }}', 'caixa_{{ c_data.id }}_frete')"
+                                class="px-2 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                                <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}_frete'"></i>
+                                <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}_frete'"></i>
+                                <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}_frete' ? 'Copiada!' : 'Copiar'"></span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if c_data.total_taxa_pending > 0 and c_data.pix_key_taxa %}
+                    <div class="p-1.5 bg-purple-50/70 dark:bg-purple-950/30 rounded-xl border border-purple-200/80 dark:border-purple-800/50 space-y-1">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1">
+                                <i data-lucide="landmark" class="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" stroke-width="1.75"></i>
+                                <span>Pix Taxa:</span>
+                                <span class="font-mono">R$ {{ c_data.total_taxa_pending|floatformat:2 }}</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key_taxa }}">{{ c_data.pix_key_taxa }}</span>
+                            <button type="button" @click="copyPix('{{ c_data.pix_key_taxa }}', 'caixa_{{ c_data.id }}_taxa')"
+                                class="px-2 py-1 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                                <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}_taxa'"></i>
+                                <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}_taxa'"></i>
+                                <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}_taxa' ? 'Copiada!' : 'Copiar'"></span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                {% if c_data.pix_key %}
+                <div class="flex items-center justify-between gap-1.5 p-1.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                    <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.pix_key }}">{{ c_data.pix_key }}</span>
+                    <button type="button" @click="copyPix('{{ c_data.pix_key }}', 'caixa_{{ c_data.id }}')"
+                        class="px-2.5 py-1 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
+                        <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === 'caixa_{{ c_data.id }}'"></i>
+                        <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== 'caixa_{{ c_data.id }}'"></i>
+                        <span class="text-[10px]" x-text="copiedPixCegId === 'caixa_{{ c_data.id }}' ? 'Copiada!' : 'Pix'"></span>
+                    </button>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <div class="flex items-center justify-between gap-2 pt-0.5">
+                    <button type="button"
+                        @click="selectedCaixa = '{{ c_data.id }}'; onCaixaChange(); $nextTick(() => { document.getElementById('painel-filtros')?.scrollIntoView({ behavior: 'smooth' }); })"
+                        class="text-[10px] font-bold text-pink-600 dark:text-cyber-neon hover:underline flex items-center gap-1 cursor-pointer">
+                        <span>Filtrar por esta Caixa ({{ c_data.items_count }} itens)</span>
+                        <i data-lucide="arrow-right" class="w-2.5 h-2.5" stroke-width="1.75"></i>
+                    </button>
+                </div>
             </div>
         </div>
+        {% empty %}
+        <div class="w-full py-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-5 flex flex-col items-center justify-center gap-2">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500 opacity-80" stroke-width="1.75"></i>
+            <span>Nenhuma pendência financeira vinculada a caixas no momento.</span>
+        </div>
+        {% endfor %}
     </div>
-    {% empty %}
-    <div class="col-span-full py-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-cyber-surface rounded-2xl border border-purple-100/70 dark:border-white/10 p-5 flex flex-col items-center justify-center gap-2">
-        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500 opacity-80" stroke-width="1.75"></i>
-        <span>Nenhuma pendência financeira vinculada a caixas no momento.</span>
-    </div>
-    {% endfor %}
 </div>

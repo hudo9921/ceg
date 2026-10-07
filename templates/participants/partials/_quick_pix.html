@@ -28,11 +28,30 @@
                 </div>
             </div>
 
-            <button type="button" @click="quickPixOpen = !quickPixOpen; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
-                class="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-white dark:bg-cyber-surface hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer select-none active:scale-95 shrink-0">
-                <span x-text="quickPixOpen ? 'Recolher' : 'Expandir'"></span>
-                <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" stroke-width="1.75" :class="quickPixOpen ? 'rotate-180' : ''"></i>
-            </button>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <!-- Setas de navegação do carrossel (quando houver a partir de 3 itens) -->
+                <div class="flex items-center gap-1"
+                     x-show="quickPixOpen && ((quickPixTab === 'ceg' && {{ cegs_com_pendencias|length }} > 2) || (quickPixTab === 'caixa' && {{ caixas_com_pendencias|length }} > 2))">
+                    <button type="button"
+                        @click="const el = document.getElementById(quickPixTab === 'ceg' ? 'quickPixCegTrack' : 'quickPixCaixaTrack'); if (el) el.scrollBy({ left: -285, behavior: 'smooth' })"
+                        class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white dark:bg-white/[0.06] hover:bg-amber-100 dark:hover:bg-amber-950/40 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 flex items-center justify-center transition border border-slate-200/80 dark:border-white/10 cursor-pointer active:scale-95 shadow-2xs"
+                        title="Anterior">
+                        <i data-lucide="chevron-left" class="w-3.5 h-3.5 sm:w-4 sm:h-4" stroke-width="1.75"></i>
+                    </button>
+                    <button type="button"
+                        @click="const el = document.getElementById(quickPixTab === 'ceg' ? 'quickPixCegTrack' : 'quickPixCaixaTrack'); if (el) el.scrollBy({ left: 285, behavior: 'smooth' })"
+                        class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white dark:bg-white/[0.06] hover:bg-amber-100 dark:hover:bg-amber-950/40 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 flex items-center justify-center transition border border-slate-200/80 dark:border-white/10 cursor-pointer active:scale-95 shadow-2xs"
+                        title="Próximo">
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 sm:w-4 sm:h-4" stroke-width="1.75"></i>
+                    </button>
+                </div>
+
+                <button type="button" @click="quickPixOpen = !quickPixOpen; $nextTick(() => window.dispatchEvent(new Event('icons-refresh')))"
+                    class="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-white dark:bg-cyber-surface hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer select-none active:scale-95 shrink-0">
+                    <span x-text="quickPixOpen ? 'Recolher' : 'Expandir'"></span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200" stroke-width="1.75" :class="quickPixOpen ? 'rotate-180' : ''"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Linha 2: Tabs na Esquerda & Total na Direita -->
