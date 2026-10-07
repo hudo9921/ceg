@@ -632,6 +632,10 @@ class BulkClaimView(View):
         social_handle = body.get('social_handle', '').strip()
         username = body.get('username', '').strip()
         notes = body.get('notes', '').strip()
+        entrega_tipo = body.get('entrega_tipo', 'CAIXINHA').strip().upper()
+        pref_label = "Guardar na Caixinha" if entrega_tipo == "CAIXINHA" else "Envio Imediato"
+        if f"[Preferência: {pref_label}]" not in notes:
+            notes = f"[Preferência: {pref_label}] {notes}".strip()
 
         if not slot_ids and not avulso_claims:
             return JsonResponse({'success': False, 'message': 'Nenhum slot ou item selecionado.'}, status=400)

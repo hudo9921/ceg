@@ -2,7 +2,7 @@
 <div x-data="{ sidebarCollapsed: true, gomMenuOpen: {% if 'creations' in request.path or 'caixa' in request.path or 'status' in request.path or 'auditoria' in request.path or 'envio' in request.path or 'vendas' in request.path or 'consulta-joiner' in request.path %}true{% else %}false{% endif %} }" class="relative">
     
     <!-- 1. SIDEBAR VERTICAL RETRÁTIL (DESKTOP) -->
-    <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 flex-col justify-between transition-all duration-300 ease-in-out border-r border-purple-100/70 dark:border-white/10 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-xl shadow-xs"
+    <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 z-50 flex-col justify-between transition-all duration-300 ease-in-out border-r border-purple-100/70 dark:border-white/10 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-xl shadow-xs"
            :class="sidebarCollapsed ? 'w-20' : 'w-64'"
            @mouseenter="sidebarCollapsed = false"
            @mouseleave="sidebarCollapsed = true">

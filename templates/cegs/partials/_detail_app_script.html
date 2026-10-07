@@ -385,6 +385,7 @@ function cegDetailApp() {
          bulkClaimLoading: false,
          bulkClaimResults: null,
          bulkClaimSummary: null,
+         bulkEntregaTipo: 'CAIXINHA',
          formName: '{{ prefilled_name|default:''|escapejs }}',
          formWhatsapp: '{{ prefilled_whatsapp|default:''|escapejs }}',
          formSocial: '{{ prefilled_social|default:''|escapejs }}',
@@ -469,6 +470,7 @@ function cegDetailApp() {
                          whatsapp: this.formWhatsapp,
                          social_handle: this.formSocial,
                          username: this.formUsername,
+                         entrega_tipo: this.bulkEntregaTipo || 'CAIXINHA',
                      })
                  });
                  if (res.status === 401) {
@@ -511,6 +513,7 @@ function cegDetailApp() {
              this.bulkClaimModalOpen = false;
              this.bulkClaimResults = null;
              this.bulkClaimSummary = null;
+             this.bulkEntregaTipo = 'CAIXINHA';
          },
          // Listen for slot-toggle events from nested card scopes
          handleSlotToggle(event) {
@@ -581,6 +584,7 @@ function cegDetailApp() {
                          whatsapp: this.formWhatsapp,
                          social_handle: this.formSocial,
                          username: this.formUsername,
+                         entrega_tipo: this.bulkEntregaTipo || 'CAIXINHA',
                      })
                  });
                  const data = await res.json();
