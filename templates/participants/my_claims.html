@@ -12,11 +12,11 @@
     <!-- ABA 1: MINHAS RESERVAS / CEGS -->
     <div x-show="activeMainTab === 'reservas'" class="space-y-8">
         {% include 'participants/partials/_header_metrics.html' %}
-        <!-- Semáforo de Prazos Próximos (Carrossel Horizontal Snap) -->
-        {% include 'participants/partials/_semaforo_prazos.html' %}
-
-        <!-- Central de Pagamento Rápido (Quick Pix Amplo e Lateral) -->
-        {% include 'participants/partials/_quick_pix.html' %}
+        <!-- Central de Pagamento Rápido e Semáforo de Prazos (Lado a lado no desktop, empilhados no mobile) -->
+        <div class="grid grid-cols-1 {% if prazos_proximos %}xl:grid-cols-2{% endif %} gap-4 items-start">
+            {% include 'participants/partials/_quick_pix.html' %}
+            {% include 'participants/partials/_semaforo_prazos.html' %}
+        </div>
         {% include 'participants/partials/_filtro_caixas.html' %}
 
         <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->
