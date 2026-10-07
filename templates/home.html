@@ -30,25 +30,25 @@
             <div x-show="hasActiveFilters() && totalVisibleCount() === 0"
                  x-cloak
                  x-transition
-                 class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 border border-purple-100/70 dark:border-white/10 space-y-3">
-                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
-                    <i data-lucide="search-x" class="w-6 h-6"></i>
+                 class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-xl border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 shadow-glass dark:shadow-cyber space-y-3">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
+                    <i data-lucide="search-x" class="w-6 h-6" stroke-width="1.75"></i>
                 </div>
                 <h3 class="text-base font-black text-slate-800 dark:text-cyber-silver">Nenhuma CEG encontrada</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Tente ajustar os filtros ou buscar por outro termo.</p>
                 <div class="pt-2">
                     <button type="button"
                             @click="clearFilters()"
-                            class="px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs transition shadow-xs cursor-pointer">
+                            class="px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-pink-500/20 active:scale-95 transition-all cursor-pointer">
                         Limpar todos os filtros
                     </button>
                 </div>
             </div>
         {% else %}
             <!-- Estado Vazio: Nenhuma CEG Aberta no Momento -->
-            <div class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 border border-purple-100/70 dark:border-white/10 space-y-3">
-                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
-                    <i data-lucide="inbox" class="w-6 h-6"></i>
+            <div class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-xl border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 shadow-glass dark:shadow-cyber space-y-3">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
+                    <i data-lucide="inbox" class="w-6 h-6" stroke-width="1.75"></i>
                 </div>
                 <h3 class="text-base font-black text-slate-800 dark:text-cyber-silver">Nenhuma CEG aberta no momento</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Novas compras em grupo serão abertas em breve. Fique de olho nos anúncios!</p>

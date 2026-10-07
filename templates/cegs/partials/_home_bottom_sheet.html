@@ -1,4 +1,4 @@
-<!-- Bottom Sheet (Gaveta Inferior Ergonômica para Mobile) -->
+<!-- Bottom Sheet (Gaveta Inferior Ergonômica para Mobile com Acabamento Cyber-Luxury) -->
 <div x-show="bottomSheetOpen"
      x-cloak
      class="relative z-50 md:hidden"
@@ -6,7 +6,7 @@
      role="dialog"
      aria-modal="true">
     
-    <!-- Backdrop com Blur -->
+    <!-- Backdrop com Blur Suave -->
     <div x-show="bottomSheetOpen"
          x-transition:enter="transition-opacity ease-out duration-300"
          x-transition:enter-start="opacity-0"
@@ -14,7 +14,7 @@
          x-transition:leave="transition-opacity ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+         class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
          @click="closeBottomSheet()"></div>
 
     <!-- Gaveta Deslizante que Sobe do Rodapé -->
@@ -26,11 +26,11 @@
              x-transition:leave="transition ease-in duration-200 transform"
              x-transition:leave-start="translate-y-0"
              x-transition:leave-end="translate-y-full"
-             class="w-full bg-white dark:bg-cyber-surface rounded-t-[32px] border-t border-purple-100/70 dark:border-white/10 shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+             class="w-full bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-2xl rounded-t-[32px] border-t border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
             
-            <!-- Barra Superior Cinza para Arrastar/Fechar -->
+            <!-- Barra Superior Acetinada para Arrastar/Fechar -->
             <div class="flex justify-center -mt-1 pb-2">
-                <div class="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                <div class="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-white/20"></div>
             </div>
 
             <!-- Cabeçalho do Card Selecionado -->
@@ -43,22 +43,22 @@
                 </div>
                 <button type="button"
                         @click="closeBottomSheet()"
-                        class="p-2 rounded-full bg-slate-100 dark:bg-cyber-elevated text-slate-400 hover:text-slate-600 dark:hover:text-cyber-silver cursor-pointer">
-                    <i data-lucide="x" class="w-4 h-4"></i>
+                        class="p-2 rounded-full bg-slate-100 dark:bg-cyber-elevated text-slate-400 hover:text-slate-600 dark:hover:text-cyber-silver cursor-pointer transition active:scale-90">
+                    <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
                 </button>
             </div>
 
             <!-- Preço e Vagas Disponíveis -->
-            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-purple-50/60 dark:bg-cyber-elevated border border-purple-100/60 dark:border-white/5">
+            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-purple-50/50 dark:bg-cyber-elevated border border-purple-100/60 dark:border-white/5">
                 <div>
                     <span class="text-[10px] uppercase font-bold text-slate-400 block">Preço</span>
-                    <span class="text-base font-black font-mono text-pink-600 dark:text-cyber-neon"
+                    <span class="text-base font-black font-mono tabular-nums text-pink-600 dark:text-cyber-neon"
                           x-text="'R$ ' + (activeSheetCeg?.price || '0.00')"></span>
                 </div>
                 <div>
                     <span class="text-[10px] uppercase font-bold text-slate-400 block">Vagas Livres</span>
-                    <span class="text-base font-black font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                        <i data-lucide="layers" class="w-4 h-4"></i>
+                    <span class="text-base font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                        <i data-lucide="layers" class="w-4 h-4" stroke-width="1.75"></i>
                         <span x-text="activeSheetCeg?.vagas + ' slots'"></span>
                     </span>
                 </div>
@@ -75,12 +75,12 @@
                 </div>
             </div>
 
-            <!-- Botão de Ação no Alcance do Polegar -->
+            <!-- Botão de Ação no Alcance do Polegar (Altura Ergonômica 48px+) -->
             <div class="pt-2">
                 <a :href="activeSheetCeg?.url"
-                   class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-700 hover:to-rose-600 text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2">
+                   class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-500 text-white font-black text-sm shadow-md shadow-pink-500/25 active:scale-98 transition-all flex items-center justify-center gap-2">
                     <span>Acessar e Escolher Photocards</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.75"></i>
                 </a>
             </div>
 

@@ -1,6 +1,6 @@
 {% load static %}
 <!-- Hero Banner Flutuante (Spotlight Vitrine ValCegs) -->
-<div class="relative overflow-hidden rounded-[28px] border border-purple-100/70 dark:border-white/10 bg-white/60 dark:bg-cyber-surface/60 backdrop-blur-xl shadow-y2k dark:shadow-cyber transition-all duration-300">
+<div class="relative overflow-hidden rounded-[28px] border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 bg-white/70 dark:bg-cyber-surface/70 backdrop-blur-2xl shadow-glass dark:shadow-cyber transition-all duration-300">
     <div class="w-full relative aspect-[21/7] sm:aspect-[24/6] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-gradient-to-r from-pink-400 via-rose-300 to-purple-500">
         <img src="{% static 'images/banner_masterlist.png' %}"
              alt="ValCegs Masterlist"
@@ -9,27 +9,36 @@
         <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent dark:from-cyber-surface/90"></div>
     </div>
     
-    <!-- Faixa de Ações Rápidas em Pílula -->
+    <!-- Faixa de Ações Rápidas com Destaque Especular -->
     <div class="p-3.5 sm:p-5 bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-md border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-2xl bg-purple-100 dark:bg-cyber-elevated flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs shrink-0">
-                <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-100 to-pink-100 dark:from-cyber-elevated dark:to-cyber-surface border border-purple-200/60 dark:border-white/10 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs shrink-0">
+                <i data-lucide="sparkles" class="w-4.5 h-4.5" stroke-width="1.75"></i>
             </div>
             <div>
-                <h2 class="text-xs sm:text-sm font-black text-slate-800 dark:text-cyber-silver tracking-tight">ValCegs Masterlist &bull; Compras em Grupo</h2>
-                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Garanta seus Photocards, POBs e Inclusões com trava de concorrência no segundo zero.</p>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-pink-100/80 dark:bg-pink-950/50 border border-pink-200/80 dark:border-pink-800/40 text-[10px] font-black uppercase tracking-wider text-pink-700 dark:text-cyber-neon">
+                        <span class="relative flex h-1.5 w-1.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-pink-500"></span>
+                        </span>
+                        <span>Segundo Zero Ativo</span>
+                    </span>
+                    <h2 class="text-xs sm:text-sm font-black text-slate-800 dark:text-cyber-silver tracking-tight hidden sm:inline">ValCegs Masterlist</h2>
+                </div>
+                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">Garanta seus Photocards, POBs e Inclusões com trava de concorrência em tempo real.</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
             <a href="{% url 'vitrine_list' %}"
-               class="px-4 py-2 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-700 hover:to-rose-600 text-white font-bold text-xs sm:text-sm rounded-full shadow-xs transition flex items-center gap-2 group">
-                <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+               class="px-4 py-2 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm rounded-full shadow-md shadow-pink-500/20 hover:shadow-lg hover:shadow-pink-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-2 group">
+                <i data-lucide="shopping-bag" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                 <span>Vitrine Pronta Entrega</span>
-                <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"></i>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" stroke-width="1.75"></i>
             </a>
             <a href="{% url 'my_claims' %}"
-               class="px-4 py-2 bg-purple-50/80 dark:bg-cyber-elevated hover:bg-purple-100 dark:hover:bg-purple-900/40 text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 font-bold text-xs sm:text-sm rounded-full transition flex items-center gap-1.5">
-                <i data-lucide="user" class="w-3.5 h-3.5"></i>
+               class="px-4 py-2 bg-white/80 dark:bg-cyber-elevated hover:bg-purple-50 dark:hover:bg-purple-900/40 text-slate-700 dark:text-cyber-silver hover:text-pink-600 dark:hover:text-cyber-neon border border-purple-200/80 dark:border-white/10 font-bold text-xs sm:text-sm rounded-full hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center gap-1.5">
+                <i data-lucide="user" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                 <span>Minhas Reservas</span>
             </a>
         </div>
