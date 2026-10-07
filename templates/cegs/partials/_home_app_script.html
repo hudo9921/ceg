@@ -17,10 +17,12 @@ function homeApp() {
                 id: {{ ceg.id }},
                 title: "{{ ceg.title|escapejs }}",
                 group_era: "{{ ceg.era.group.name|escapejs }} • {{ ceg.era.name|escapejs }}",
+                banner_url: "{{ ceg.banner_url|default:ceg.era.banner_url|default:ceg.era.group.image_url|default:''|escapejs }}",
                 price: "{{ ceg.min_price_str }}",
                 vagas: {{ ceg.available_slots_count|default:0 }},
                 url: "{% url 'ceg_detail' ceg.slug %}",
                 members: [{% for item in ceg.grouped_available_items %}"{{ item.member_name|default:item.item_name|escapejs }}",{% endfor %}],
+                items: [{% for item in ceg.grouped_available_items %}{ name: "{{ item.member_name|default:item.item_name|escapejs }}", item_name: "{{ item.item_name|escapejs }}", price: "{{ item.price|floatformat:2 }}", sets: "{{ item.sets_text|escapejs }}" }{% if not forloop.last %},{% endif %}{% endfor %}],
                 groupId: "{{ ceg.era.group.id }}",
                 eraId: "{{ ceg.era.id }}",
                 searchCorpus: "{{ ceg.title|escapejs }} {{ ceg.era.group.name|escapejs }} {{ ceg.era.name|escapejs }} {{ ceg.available_members_str|escapejs }}",
@@ -170,16 +172,10 @@ function homeApp() {
                 }
             });
 
-            let body = lines.join('\n');
-            if (!body) body = '🎉 Todas as vagas foram preenchidas!';
-
-            let priceSection = '';
-            if (this.shareIncludePrice && this.currentShareCeg.price_display) {
-                priceSection = `\n\n💵 Valor: ${this.currentShareCeg.price_display} cada`;
-            }
-
+            let body = lines.join('\n') || 'Todas as vagas foram preenchidas!';
+            let priceSection = (this.shareIncludePrice && this.currentShareCeg.price_display) ? `\n\nValor: ${this.currentShareCeg.price_display} cada` : '';
             const url = window.location.origin + '/ceg/' + this.currentShareCeg.slug + '/';
-            return `${title}\n\n${body}${priceSection}\n\n🔗 Link: ${url}`;
+            return `${title}\n\n${body}${priceSection}\n\nLink: ${url}`;
         },
         async copyShareText() {
             try {

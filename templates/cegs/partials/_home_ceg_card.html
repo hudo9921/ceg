@@ -56,11 +56,15 @@
                 {{ ceg.tipo_display|default:ceg.era.name }}
             </span>
 
-            <!-- Badge de Vagas Disponíveis -->
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tabular-nums backdrop-blur-md bg-emerald-500/95 text-white shadow-2xs flex items-center gap-1">
+            <!-- Badge de Vagas Disponíveis (Clicável para Ver Lista Completa de Vagas) -->
+            <button type="button"
+                    @click.stop="openBottomSheet({{ ceg.id }})"
+                    title="Clique para ver quem tem vaga nesta CEG"
+                    class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tabular-nums backdrop-blur-md bg-emerald-500/95 hover:bg-emerald-600 text-white shadow-2xs flex items-center gap-1 cursor-pointer transition hover:scale-105 active:scale-95 pointer-events-auto">
                 <i data-lucide="layers" class="w-3 h-3" stroke-width="1.75"></i>
                 <span>{{ ceg.available_slots_count }} vagas</span>
-            </span>
+                <i data-lucide="chevron-right" class="w-2.5 h-2.5 opacity-80" stroke-width="2"></i>
+            </button>
         </div>
 
         <!-- Grupo e Era no Rodapé da Imagem -->
@@ -80,17 +84,22 @@
                 {{ ceg.title }}
             </h3>
 
-            <!-- Integrantes disponíveis (Chips miniaturas) -->
+            <!-- Integrantes disponíveis (Chips miniaturas + Gatilho Ver Todas) -->
             <div class="mt-1.5 flex flex-wrap gap-1 items-center overflow-hidden max-h-5">
                 {% for item in ceg.grouped_available_items|slice:":3" %}
-                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-pink-50/80 dark:bg-white/[0.04] text-pink-700 dark:text-pink-300 border border-pink-200/60 dark:border-white/10 truncate max-w-[80px]">
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-pink-50/80 dark:bg-white/[0.04] text-pink-700 dark:text-pink-300 border border-pink-200/60 dark:border-white/10 truncate max-w-[80px]"
+                          title="{{ item.member_name|default:item.item_name }} ({{ item.sets_text }})">
                         {{ item.member_name|default:item.item_name }}
                     </span>
                 {% endfor %}
                 {% if ceg.grouped_available_items|length > 3 %}
-                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">
-                        +{{ ceg.grouped_available_items|length|add:"-3" }}
-                    </span>
+                    <button type="button"
+                            @click.stop="openBottomSheet({{ ceg.id }})"
+                            title="Ver todos os {{ ceg.grouped_available_items|length }} itens disponíveis nesta CEG"
+                            class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-pink-100 hover:bg-pink-200 dark:bg-pink-950/60 dark:hover:bg-pink-900/80 text-pink-700 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/40 cursor-pointer transition hover:scale-105 active:scale-95 shadow-2xs flex items-center gap-0.5">
+                        <span>+{{ ceg.grouped_available_items|length|add:"-3" }}</span>
+                        <span class="underline">vagas</span>
+                    </button>
                 {% endif %}
             </div>
         </div>
