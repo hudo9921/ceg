@@ -12,6 +12,10 @@
             document.documentElement.classList.remove('dark');
         }
     </script>
+    <!-- Google Fonts: Outfit (Cyber/High-end) & JetBrains Mono (Tech/Tabular) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -19,6 +23,10 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                    },
                     screens: {
                         'xs': '480px',
                     },
@@ -155,6 +163,20 @@
     <style>
         [x-cloak] { display: none !important; }
 
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Ambient Mesh Glow no Modo Claro (Soft Y2K) */
+        html:not(.dark) body {
+            background-color: #F8F7FA !important;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(252, 231, 243, 0.45) 0px, transparent 40%),
+                radial-gradient(at 100% 0%, rgba(233, 213, 255, 0.35) 0px, transparent 40%),
+                radial-gradient(at 50% 100%, rgba(204, 251, 241, 0.25) 0px, transparent 50%) !important;
+            background-attachment: fixed !important;
+        }
+
         /* ========================================================================= */
         /* VALCEGS DARK MODE GLOBAL PALETTE & COMPONENT STYLING                      */
         /* ========================================================================= */
@@ -162,9 +184,14 @@
             color-scheme: dark;
         }
 
-        /* 1. Body & Base Background (Obsidiana Cyber-Luxury) */
+        /* 1. Body & Base Background (Obsidiana Cyber-Luxury com Ambient Aura) */
         html.dark body {
             background-color: #0B0A0F !important;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(192, 132, 252, 0.07) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(244, 114, 182, 0.05) 0px, transparent 45%),
+                radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.04) 0px, transparent 55%) !important;
+            background-attachment: fixed !important;
             color: #E2E8F0 !important;
         }
 

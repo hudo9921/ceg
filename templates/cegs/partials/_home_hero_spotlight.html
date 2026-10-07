@@ -1,12 +1,18 @@
 {% load static %}
 <!-- Hero Banner Flutuante (Spotlight Vitrine ValCegs) -->
 <div class="relative overflow-hidden rounded-[28px] border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 bg-white/70 dark:bg-cyber-surface/70 backdrop-blur-2xl shadow-glass dark:shadow-cyber transition-all duration-300">
-    <div class="w-full relative aspect-[21/7] sm:aspect-[24/6] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-gradient-to-r from-pink-400 via-rose-300 to-purple-500">
+    <div class="w-full relative aspect-[21/7] sm:aspect-[24/6] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-slate-900/90 dark:bg-[#0E0C16]">
+        <!-- Aura ambiente sutil de palco (sem degradê berrante) -->
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(192,132,252,0.18),transparent_65%)] pointer-events-none"></div>
+
         <img src="{% static 'images/banner_masterlist.png' %}"
              alt="ValCegs Masterlist"
-             class="w-full h-full object-cover sm:object-contain object-center">
-        <!-- Fusão gradiente suave na base -->
-        <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent dark:from-cyber-surface/90"></div>
+             class="w-full h-full object-cover sm:object-contain object-center opacity-85 dark:opacity-75 transition-opacity">
+        
+        <!-- Vinhetas de fusão suave (laterais e base) para eliminar cortes secos -->
+        <div class="absolute inset-y-0 left-0 w-16 sm:w-28 bg-gradient-to-r from-slate-900/90 dark:from-[#0E0C16] to-transparent pointer-events-none"></div>
+        <div class="absolute inset-y-0 right-0 w-16 sm:w-28 bg-gradient-to-l from-slate-900/90 dark:from-[#0E0C16] to-transparent pointer-events-none"></div>
+        <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-cyber-surface to-transparent pointer-events-none"></div>
     </div>
     
     <!-- Faixa de Ações Rápidas com Destaque Especular -->

@@ -13,13 +13,13 @@
                        x-model="searchQuery"
                        @input="resetTracksScroll()"
                        placeholder="Nome, era, item..."
-                       class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl pl-8.5 pr-7 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all">
-                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" stroke-width="1.75"></i>
+                       class="w-full bg-purple-50/50 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 text-slate-800 dark:text-cyber-silver text-xs font-semibold rounded-2xl pl-10 pr-8 py-2.5 focus:bg-white dark:focus:bg-cyber-surface focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 dark:focus:border-cyber-neon transition-all">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" stroke-width="1.75"></i>
                 <button type="button"
                         x-show="searchQuery"
                         x-cloak
                         @click="searchQuery = ''; resetTracksScroll()"
-                        class="absolute right-2 top-2.5 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
                     <i data-lucide="x" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                 </button>
             </div>
