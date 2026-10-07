@@ -73,8 +73,10 @@
 - `_creations_modal_group.html`: Criação e edição de grupos musicais.
 - `_creations_modal_era.html`: Criação e edição de Eras com paleta hex.
 - `_creations_modal_ceg.html`: Modal mestre de criação de CEGs:
-  - `_creations_modal_ceg_info.html`: Informações gerais, contagem regressiva, remessa, prazos, taxas e Pix.
-  - `_creations_modal_ceg_items.html`: Prateleira dinâmica de photocards, estúdio de recorte e pré-reservas.
+  - `_creations_modal_ceg_info.html`: Informações gerais, contagem regressiva e banner.
+  - `_creations_modal_ceg_logistics.html`: Remessa/caixa internacional, prazos, taxas e dados Pix.
+  - `_creations_modal_ceg_items.html`: Prateleira dinâmica de photocards, ações em lote e rodapé com totais.
+  - `_creations_modal_ceg_item_row.html`: Card de cada photocard com estúdio de recorte e pré-reserva.
 - `_creations_modal_set.html`: Adição de novos Sets em CEGs existentes.
 - `_creations_modal_mercari.html`: Criação de itens avulsos do Mercari JP (dados, comprador, comprovante).
 - `_creations_app_script.html`: Motor Alpine.js (`creationsHub`) com JSON de grupos/eras/participantes e clipboard.

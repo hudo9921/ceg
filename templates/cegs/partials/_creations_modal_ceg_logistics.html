@@ -1,0 +1,109 @@
+<!-- SEÇÕES 3 A 5: LOGÍSTICA, PRAZOS, TAXAS, PIX E REGRAS DA CEG -->
+
+<!-- Seção 3: Vincular a uma Caixa / Remessa Internacional -->
+<div class="p-4 sm:p-5 bg-blue-50/40 dark:bg-blue-950/20 rounded-2xl border border-blue-200/70 dark:border-blue-500/20 space-y-3">
+    <div class="flex items-center justify-between">
+        <span class="text-xs font-black text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="plane" class="w-3.5 h-3.5 text-sky-500"></i>
+            <span>3. Caixa / Remessa Internacional (Opcional)</span>
+        </span>
+        <a href="{% url 'caixa_create' %}" target="_blank"
+           class="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-bold flex items-center gap-1 hover:underline">
+            <i data-lucide="plus" class="w-3 h-3"></i>
+            <span>Nova Caixa ↗</span>
+        </a>
+    </div>
+    <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+        Atrele esta CEG a uma remessa internacional existente (Coreia do Sul, Japão/Mercari, etc.). Ao atualizar o status da caixa, o envio desta CEG será atualizado automaticamente em cascata.
+    </p>
+
+    <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Selecione a Caixa Existente</label>
+        <select name="caixa_id"
+                class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs">
+            <option value="">-- Nenhuma (Deixar sem caixa / vincular posteriormente) --</option>
+            {% for c in caixas %}
+                <option value="{{ c.id }}">
+                    [{{ c.origem }}] {{ c.nome }} — {{ c.get_status_display }}{% if c.codigo_rastreio %} (Rastreio: {{ c.codigo_rastreio }}){% endif %}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<!-- Seção 4: Prazos e Taxas (Frete Internacional e Taxa Aduaneira) -->
+<div class="p-4 sm:p-5 bg-purple-50/40 dark:bg-purple-950/20 rounded-2xl border border-purple-200/70 dark:border-purple-500/20 space-y-3">
+    <div class="flex items-center justify-between">
+        <span class="text-xs font-black text-purple-900 dark:text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="credit-card" class="w-3.5 h-3.5 text-purple-500"></i>
+            <span>4. Prazos e Taxas (Item, Frete Inter e Taxa Aduaneira)</span>
+        </span>
+        <span class="text-[10px] bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold px-2 py-0.5 rounded-md border border-purple-200/50 dark:border-white/10">
+            Opcional / Atualizável a qualquer momento
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Prazo Pagamento do Item</label>
+            <input type="datetime-local" name="prazo_pagamento_item"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Frete Internacional (R$)</label>
+            <input type="number" step="0.01" min="0" name="frete_inter" placeholder="Ex: 35.00 (ou vazio)"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Prazo Pagamento Frete Inter</label>
+            <input type="datetime-local" name="prazo_pagamento_frete_inter"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-100/70 dark:border-white/10">
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Taxa Aduaneira (R$)</label>
+            <input type="number" step="0.01" min="0" name="taxa_aduaneira" placeholder="Ex: 25.00 (ou vazio)"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Prazo Pagamento Taxa Aduaneira</label>
+            <input type="datetime-local" name="prazo_pagamento_taxa_aduaneira"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+    </div>
+</div>
+
+<!-- Seção 5: Chave Pix & Regras -->
+<div class="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-3">
+    <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+        <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+        <span>5. Chave Pix do Organizador & Regras da CEG</span>
+    </span>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Chave Pix *</label>
+            <input type="text" name="pix_key"
+                   placeholder="Ex: email@pix.com ou telefone"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono font-bold text-pink-600 dark:text-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Instruções para Pagamento</label>
+            <input type="text" name="pix_instructions"
+                   placeholder="Ex: Enviar comprovante no WhatsApp com seu @ em até 2h"
+                   class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Regras e Informações da CEG</label>
+        <textarea name="description" rows="2"
+                  placeholder="Regras de frete (nacional/internacional), prazos de envio e avisos..."
+                  class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"></textarea>
+    </div>
+</div>

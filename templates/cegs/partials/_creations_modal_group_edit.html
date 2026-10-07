@@ -2,11 +2,11 @@
 <div x-show="activeModal === 'edit-group' || activeModal === 'edit_group'" x-cloak
      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
      @keydown.escape.window="closeModal()">
-    <div class="bg-white/98 dark:bg-cyber-surface/98 w-full max-w-lg rounded-3xl shadow-2xl border border-purple-100/80 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]"
+    <div class="bg-white dark:bg-[#14121B] w-full max-w-lg rounded-3xl shadow-2xl border border-purple-100 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]"
          @click.away="closeModal()">
         
         <!-- Header do Modal -->
-        <div class="p-5 border-b border-purple-100/70 dark:border-white/10 flex items-center justify-between bg-purple-100/60 dark:bg-cyber-elevated/70">
+        <div class="p-5 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-50 via-pink-50 to-white dark:from-purple-950/30 dark:via-pink-950/30 dark:to-[#14121B]">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-200/50 dark:border-purple-500/20">
                     <i data-lucide="edit-3" class="w-5 h-5"></i>
