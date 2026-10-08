@@ -68,20 +68,12 @@
         <!-- Gradiente de Fusão na Base da Imagem -->
         <div class="absolute inset-0 z-20 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none"></div>
 
-        <!-- Badges Flutuantes do Topo (Acrílico Translúcido) -->
-        <div class="absolute top-2 inset-x-2 z-30 flex items-center justify-between gap-1 pointer-events-none">
-            <!-- Badge de POB / Loja / Tipo / Era com Halo Luminoso da Era -->
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-2xs flex items-center gap-1.5 border"
-                  style="background-color: color-mix(in srgb, var(--era-accent) 15%, rgba(255,255,255,0.92)); border-color: color-mix(in srgb, var(--era-accent) 35%, rgba(255,255,255,0.4));">
-                <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: var(--era-accent); box-shadow: 0 0 6px var(--era-accent);"></span>
-                <span class="text-slate-900 dark:text-white font-extrabold">{{ ceg.tipo_display|default:ceg.era.name }}</span>
-            </span>
-
-            <!-- Badge de Vagas Disponíveis (Clicável para Ver Lista Completa de Vagas) -->
+        <!-- Topo da Imagem: Badge de Vagas Disponíveis no Canto Direito -->
+        <div class="absolute top-2 right-2 z-30 pointer-events-auto">
             <button type="button"
                     @click.stop="openBottomSheet({{ ceg.id }})"
                     title="Clique para ver quem tem vaga nesta CEG"
-                    class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tabular-nums backdrop-blur-md bg-emerald-500/95 hover:bg-emerald-600 text-white shadow-2xs flex items-center gap-1 cursor-pointer transition hover:scale-105 active:scale-95 pointer-events-auto">
+                    class="px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tabular-nums backdrop-blur-md bg-emerald-500/95 hover:bg-emerald-600 text-white shadow-2xs flex items-center gap-1 cursor-pointer transition hover:scale-105 active:scale-95">
                 <i data-lucide="layers" class="w-3 h-3" stroke-width="1.75"></i>
                 <span>{{ ceg.available_slots_count }} vagas</span>
                 <i data-lucide="chevron-right" class="w-2.5 h-2.5 opacity-80" stroke-width="2"></i>
