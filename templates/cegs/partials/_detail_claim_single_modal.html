@@ -72,7 +72,7 @@
                 </span>
                 <select @change="selectParticipantForClaim($event.target.value)"
                     class="w-full bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white cursor-pointer">
-                    <option value="">-- Escolher por Nome ou WhatsApp --</option>
+                    <option value="">-- Selecione um participante cadastrado --</option>
                     <template x-for="p in allParticipants" :key="p.id">
                         <option :value="p.id" x-text="p.name + (p.username ? ' (' + p.username + ')' : '') + ' • ' + p.whatsapp"></option>
                     </template>

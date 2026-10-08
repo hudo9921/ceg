@@ -446,6 +446,9 @@ class ViewsAndAnalyticsIntegrationTests(TestCase):
             opens_at=timezone.now() - timedelta(minutes=10),
             pix_key='newjeans@pix.com'
         )
+        item_nj = CEGItemDefinition.objects.create(ceg=expired_scheduled_ceg, name='PC Hanni', member_name='Hanni', default_price=30.00)
+        set_nj = CEGSet.objects.create(ceg=expired_scheduled_ceg, set_number=1)
+        ItemSlot.objects.create(set=set_nj, item_definition=item_nj, status=ItemSlot.Status.AVAILABLE, price=30.00)
 
         # Ao acessar a Home, a CEG deve ser promovida para OPEN
         response = self.client.get('/')
