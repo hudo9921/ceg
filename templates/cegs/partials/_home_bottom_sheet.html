@@ -43,7 +43,7 @@
                 </template>
                 <div class="min-w-0 flex-1">
                     <span class="text-[10px] font-black uppercase tracking-wider block truncate"
-                          :style="'color: var(--era-accent);'"
+                          :style="'color: var(--era-title-color, var(--era-accent));'"
                           x-text="activeSheetCeg?.group_era"></span>
                     <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-snug line-clamp-2"
                         x-text="activeSheetCeg?.title"></h3>
@@ -61,7 +61,7 @@
             <div>
                 <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">A partir de</span>
                 <span class="text-sm sm:text-base font-black font-mono tabular-nums"
-                      :style="'color: var(--era-accent);'"
+                      :style="'color: var(--era-price-color, var(--era-accent));'"
                       x-text="'R$ ' + (activeSheetCeg?.price || '0.00')"></span>
             </div>
             <div>

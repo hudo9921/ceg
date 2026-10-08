@@ -220,6 +220,45 @@
         }
 
         /* ========================================================================= */
+        /* COMPONENTES DE VITRINE: CEG CARD (Paleta Bipolar Soft Y2K & Cyber-Luxury)  */
+        /* ========================================================================= */
+        .ceg-card {
+            --card-chip-bg: color-mix(in srgb, var(--era-accent) 12%, #ffffff);
+            --card-chip-border: color-mix(in srgb, var(--era-accent) 26%, rgba(0, 0, 0, 0.08));
+            --card-chip-text: color-mix(in srgb, var(--era-accent) 40%, #0f172a);
+            --card-rem-bg: color-mix(in srgb, var(--era-accent) 18%, #ffffff);
+            --card-rem-border: color-mix(in srgb, var(--era-accent) 35%, rgba(0, 0, 0, 0.12));
+            --card-rem-text: color-mix(in srgb, var(--era-accent) 65%, #0f172a);
+            --card-price-color: color-mix(in srgb, var(--era-accent) 70%, #0f172a);
+            --card-btn-bg: color-mix(in srgb, var(--era-accent) 10%, transparent);
+            --card-btn-border: color-mix(in srgb, var(--era-accent) 30%, transparent);
+            --card-btn-text: color-mix(in srgb, var(--era-accent) 70%, #0f172a);
+        }
+
+        html.dark .ceg-card {
+            --card-chip-bg: color-mix(in srgb, var(--era-accent) 18%, #161322);
+            --card-chip-border: color-mix(in srgb, var(--era-accent) 35%, rgba(255, 255, 255, 0.12));
+            --card-chip-text: #ffffff;
+            --card-rem-bg: color-mix(in srgb, var(--era-accent) 25%, #161322);
+            --card-rem-border: color-mix(in srgb, var(--era-accent) 50%, rgba(255, 255, 255, 0.18));
+            --card-rem-text: color-mix(in srgb, var(--era-accent) 45%, #ffffff);
+            --card-price-color: color-mix(in srgb, var(--era-accent) 50%, #ffffff);
+            --card-btn-bg: color-mix(in srgb, var(--era-accent) 16%, transparent);
+            --card-btn-border: color-mix(in srgb, var(--era-accent) 45%, transparent);
+            --card-btn-text: color-mix(in srgb, var(--era-accent) 40%, #ffffff);
+        }
+
+        [style*="--era-accent"] {
+            --era-price-color: color-mix(in srgb, var(--era-accent) 70%, #0f172a);
+            --era-title-color: color-mix(in srgb, var(--era-accent) 75%, #0f172a);
+        }
+
+        html.dark [style*="--era-accent"] {
+            --era-price-color: color-mix(in srgb, var(--era-accent) 45%, #ffffff);
+            --era-title-color: color-mix(in srgb, var(--era-accent) 40%, #ffffff);
+        }
+
+        /* ========================================================================= */
         /* VALCEGS DARK MODE GLOBAL PALETTE & COMPONENT STYLING                      */
         /* ========================================================================= */
         html.dark {

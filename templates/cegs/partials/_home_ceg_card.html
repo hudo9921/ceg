@@ -87,7 +87,7 @@
             </span>
             <span class="text-white/60 text-[10px]">&bull;</span>
             <span class="text-[11px] font-black drop-shadow-md truncate"
-                  style="color: color-mix(in srgb, var(--era-accent) 85%, white);">
+                  style="color: color-mix(in srgb, var(--era-accent) 65%, white);">
                 {{ ceg.era.name }}
             </span>
         </div>
@@ -109,7 +109,7 @@
                             @click.stop="openBottomSheet({{ ceg.id }})"
                             title="{{ item.display_name|default:item.member_name|default:item.item_name }} ({{ item.sets_text }}) - Clique para ver vagas"
                             class="text-[9px] font-bold px-2 py-0.5 rounded-md truncate max-w-[82px] cursor-pointer transition active:scale-95 border"
-                            style="background-color: color-mix(in srgb, var(--era-accent) 10%, rgba(255,255,255,0.85)); border-color: color-mix(in srgb, var(--era-accent) 26%, rgba(255,255,255,0.2)); color: color-mix(in srgb, var(--era-accent) 88%, #1e1b26);">
+                            style="background-color: var(--card-chip-bg); border-color: var(--card-chip-border); color: var(--card-chip-text);">
                         {{ item.display_name|default:item.member_name|default:item.item_name }}
                     </button>
                 {% endfor %}
@@ -119,7 +119,7 @@
                             @click.stop="openBottomSheet({{ ceg.id }})"
                             title="Ver todas as {{ ceg.available_slots_count }} vagas disponíveis nesta CEG"
                             class="text-[9px] font-black px-1.5 py-0.5 rounded-md cursor-pointer transition hover:scale-105 active:scale-95 shadow-2xs flex items-center gap-0.5 border"
-                            style="background-color: color-mix(in srgb, var(--era-accent) 18%, rgba(255,255,255,0.85)); border-color: color-mix(in srgb, var(--era-accent) 40%, rgba(255,255,255,0.3)); color: var(--era-accent);">
+                            style="background-color: var(--card-rem-bg); border-color: var(--card-rem-border); color: var(--card-rem-text);">
                         <span>+{{ ceg.preview_remaining_count }}</span>
                         <span class="underline">vaga{{ ceg.preview_remaining_count|pluralize:"s" }}</span>
                     </button>
@@ -132,7 +132,7 @@
             <div>
                 <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-none tracking-wider">A partir de</span>
                 <span class="text-xs sm:text-sm font-black font-mono tabular-nums"
-                      style="color: var(--era-accent);">
+                      style="color: var(--card-price-color);">
                     R$ {{ ceg.min_price_str }}
                 </span>
             </div>
@@ -151,9 +151,9 @@
                 <a href="{% url 'ceg_detail' ceg.slug %}"
                    @click.stop
                    class="px-3 py-1.5 rounded-full font-bold text-[11px] transition-all flex items-center gap-1 group/btn shadow-2xs hover:shadow-xs active:scale-95 border"
-                   style="background-color: color-mix(in srgb, var(--era-accent) 10%, transparent); border-color: color-mix(in srgb, var(--era-accent) 30%, transparent); color: var(--era-accent);"
+                   style="background-color: var(--card-btn-bg); border-color: var(--card-btn-border); color: var(--card-btn-text);"
                    onmouseenter="this.style.backgroundColor='var(--era-accent)'; this.style.color='#ffffff'; this.style.borderColor='var(--era-accent)';"
-                   onmouseleave="this.style.backgroundColor='color-mix(in srgb, var(--era-accent) 10%, transparent)'; this.style.color='var(--era-accent)'; this.style.borderColor='color-mix(in srgb, var(--era-accent) 30%, transparent)';">
+                   onmouseleave="this.style.backgroundColor='var(--card-btn-bg)'; this.style.color='var(--card-btn-text)'; this.style.borderColor='var(--card-btn-border)';">
                     <span>Vagas</span>
                     <i data-lucide="arrow-right" class="w-3 h-3 transition-transform group-hover/btn:translate-x-0.5" stroke-width="1.75"></i>
                 </a>
