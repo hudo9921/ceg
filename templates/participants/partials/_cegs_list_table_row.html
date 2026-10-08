@@ -1,0 +1,105 @@
+<tr x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
+    class="hover:bg-purple-50/50 dark:hover:bg-white/5 transition">
+    <td class="py-2.5 text-center">
+        <div class="w-9 h-12 rounded-lg bg-slate-100 dark:bg-black/40 overflow-hidden border border-purple-100 dark:border-white/10 mx-auto flex-shrink-0 cursor-pointer hover:opacity-85 transition shadow-2xs"
+             @click="openPreview('{{ claim.id }}')">
+            {% if claim.slot.item_definition.image_url %}
+            <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}" class="w-full h-full object-cover">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center text-[10px]">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-400"></i>
+            </div>
+            {% endif %}
+        </div>
+    </td>
+    <td class="py-3 font-bold text-slate-900 dark:text-white">
+        Set #{{ claim.slot.set.set_number }}
+    </td>
+    <td class="py-3 font-semibold">
+        {{ claim.slot.item_definition.name }}
+    </td>
+    <td class="py-3">
+        {% if claim.slot.item_definition.member_name %}
+        <span class="px-2 py-0.5 bg-pink-50 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold rounded-lg border border-pink-100 dark:border-white/10">
+            {{ claim.slot.item_definition.member_name }}
+        </span>
+        {% else %}
+        <span class="text-slate-400">-</span>
+        {% endif %}
+    </td>
+    <td class="py-3">
+        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {{ claim.lifecycle.badge_class }} inline-flex items-center gap-1" title="{{ claim.lifecycle.detail }}">
+            <span>{{ claim.lifecycle.icon }}</span>
+            <span>{{ claim.lifecycle.label }}</span>
+        </span>
+    </td>
+    <td class="py-3 font-bold text-slate-900 dark:text-white font-mono">
+        R$ {{ claim.total_price|floatformat:2 }}
+    </td>
+    <td class="py-3 text-center">
+        {% if claim.slot.is_item_paid %}
+        <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold rounded-lg text-[11px] inline-flex items-center gap-0.5">
+            <i data-lucide="check" class="w-3 h-3"></i> Pago
+        </span>
+        {% else %}
+        <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold rounded-lg text-[11px] inline-flex items-center gap-0.5">
+            <i data-lucide="clock" class="w-3 h-3"></i> Pendente
+        </span>
+        {% endif %}
+    </td>
+    <td class="py-3 text-center">
+        {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}
+        <div class="font-bold font-mono text-slate-900 dark:text-slate-100 text-xs">
+            R$ {{ claim.slot.frete_inter|floatformat:2 }}
+        </div>
+        {% if claim.slot.is_frete_inter_paid %}
+        <span class="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 font-bold rounded-lg text-[10px]">
+            <i data-lucide="check" class="w-2.5 h-2.5"></i> Pago
+        </span>
+        {% else %}
+        <span class="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold rounded-lg text-[10px]">
+            <i data-lucide="clock" class="w-2.5 h-2.5"></i> Pendente
+        </span>
+        {% endif %}
+        {% else %}
+        <span class="text-slate-300 dark:text-slate-600 font-bold text-xs" title="Não aplicável">—</span>
+        {% endif %}
+    </td>
+    <td class="py-3 text-center">
+        {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}
+        <div class="font-bold font-mono text-slate-900 dark:text-slate-100 text-xs">
+            R$ {{ claim.slot.taxa_aduaneira|floatformat:2 }}
+        </div>
+        {% if claim.slot.is_taxa_aduaneira_paid %}
+        <span class="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 font-bold rounded-lg text-[10px]">
+            <i data-lucide="check" class="w-2.5 h-2.5"></i> Paga
+        </span>
+        {% else %}
+        <span class="inline-flex items-center gap-0.5 mt-0.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold rounded-lg text-[10px]">
+            <i data-lucide="clock" class="w-2.5 h-2.5"></i> Pendente
+        </span>
+        {% endif %}
+        {% else %}
+        <span class="text-slate-300 dark:text-slate-600 font-bold text-xs" title="Não aplicável">—</span>
+        {% endif %}
+    </td>
+    <td class="py-3 text-center">
+        {% if claim.slot.pacote_nacional %}
+        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold {% if claim.slot.pacote_nacional.status == 'ENVIADO' %}bg-emerald-100 text-emerald-800{% elif claim.slot.pacote_nacional.status == 'ENTREGUE' %}bg-slate-100 text-slate-700{% else %}bg-blue-100 text-blue-800{% endif %}"
+            title="Transportadora: {{ claim.slot.pacote_nacional.transportadora }}{% if claim.slot.pacote_nacional.codigo_rastreio %} | Rastreio: {{ claim.slot.pacote_nacional.codigo_rastreio }}{% endif %}">
+            <i data-lucide="package" class="w-3 h-3"></i>
+            <span>{{ claim.slot.pacote_nacional.identificador }}</span>
+            {% if claim.slot.pacote_nacional.codigo_rastreio %}
+            <a href="{{ claim.slot.pacote_nacional.tracking_url }}" target="_blank"
+                class="text-blue-600 hover:text-blue-800 underline ml-0.5"
+                title="Rastrear">↗</a>
+            {% endif %}
+        </span>
+        {% else %}
+        <span class="text-slate-300 dark:text-slate-600 font-bold text-xs" title="Aguardando empacotamento nacional">—</span>
+        {% endif %}
+    </td>
+    <td class="py-3 text-slate-400">
+        {{ claim.claimed_at|date:"d/m/Y H:i" }}
+    </td>
+</tr>

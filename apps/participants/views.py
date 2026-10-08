@@ -945,8 +945,40 @@ class MyClaimsView(View):
         pacotes_em_andamento = [p for p in pacotes_nacionais if p.status != PacoteNacional.Status.ENTREGUE]
         pacotes_recebidos = [p for p in pacotes_nacionais if p.status == PacoteNacional.Status.ENTREGUE]
 
+        claims_preview_dict = {
+            str(claim.id): {
+                'title': claim.slot.item_definition.name,
+                'member': claim.slot.item_definition.member_name or '',
+                'image': claim.slot.item_definition.image_url or '',
+                'ceg': claim.slot.set.ceg.title,
+                'set': claim.slot.set.set_number,
+                'price': f"{claim.total_price:.2f}",
+                'claimedAt': claim.claimed_at.strftime('%d/%m/%Y %H:%M'),
+                'lifecycle': {
+                    'stage': claim.lifecycle.get('stage', 1),
+                    'code': claim.lifecycle.get('code', ''),
+                    'label': claim.lifecycle.get('label', ''),
+                    'icon': claim.lifecycle.get('icon', ''),
+                    'badgeClass': claim.lifecycle.get('badge_class', ''),
+                    'detail': claim.lifecycle.get('detail', ''),
+                },
+                'pixKey': claim.slot.set.ceg.pix_key or '',
+                'cegId': str(claim.slot.set.ceg.id),
+                'isItemPaid': bool(claim.status == Claim.Status.PAID or claim.slot.is_item_paid),
+                'freteInter': f"{(claim.slot.frete_inter or 0):.2f}",
+                'isFretePaid': bool(claim.slot.is_frete_inter_paid),
+                'taxaAduaneira': f"{(claim.slot.taxa_aduaneira or 0):.2f}",
+                'isTaxaPaid': bool(claim.slot.is_taxa_aduaneira_paid),
+                'pacoteId': claim.slot.pacote_nacional.identificador if claim.slot.pacote_nacional else '',
+                'pacoteTracking': claim.slot.pacote_nacional.codigo_rastreio if (claim.slot.pacote_nacional and claim.slot.pacote_nacional.codigo_rastreio) else '',
+                'pacoteUrl': claim.slot.pacote_nacional.tracking_url if (claim.slot.pacote_nacional and claim.slot.pacote_nacional.tracking_url) else '',
+            }
+            for claim in claims_list
+        }
+
         return render(request, 'participants/my_claims.html', {
             'participant': participant,
+            'claims_preview_dict': claims_preview_dict,
             'cegs_groups': list(cegs_dict.values()),
             'groups_filter_list': groups_filter_list,
             'cegs_filter_list': cegs_filter_list,

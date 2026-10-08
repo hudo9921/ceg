@@ -28,6 +28,14 @@
             console.error('Erro ao ler caixinha-prontos-data:', e);
         }
 
+        let claimsData = {};
+        try {
+            const elClaims = document.getElementById('claims-preview-data');
+            if (elClaims) claimsData = JSON.parse(elClaims.textContent);
+        } catch (e) {
+            console.error('Erro ao ler claims-preview-data:', e);
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const initialTab = urlParams.get('tab') === 'caixinha' ? 'caixinha' : 'reservas';
 
@@ -79,9 +87,17 @@
             quickPixTab: '{% if cegs_com_pendencias %}ceg{% elif caixas_com_pendencias %}caixa{% else %}mercari{% endif %}',
             previewModalOpen: false,
             previewItem: null,
-            openPreview(item) {
-                this.previewItem = item;
+            claimsData: claimsData,
+            openPreview(itemOrId) {
+                if (typeof itemOrId === 'object' && itemOrId !== null) {
+                    this.previewItem = itemOrId;
+                } else {
+                    this.previewItem = this.claimsData[String(itemOrId)] || null;
+                }
                 this.previewModalOpen = true;
+                this.$nextTick(() => {
+                    window.dispatchEvent(new Event('icons-refresh'));
+                });
             },
             closePreview() {
                 this.previewModalOpen = false;
@@ -121,6 +137,14 @@
                 countAnyUnpaid: c.count_any_unpaid !== undefined ? c.count_any_unpaid : (c.count_pending + (c.count_inter_unpaid || 0) + (c.count_taxa_unpaid || 0)),
                 searchText: (c.search_text || (c.title + ' ' + (c.caixa_nome || ''))).toLowerCase()
             })),
+            get cegsMap() {
+                if (!this._cegsMap) {
+                    const map = {};
+                    this.allCegs.forEach(c => { map[c.id] = c; });
+                    this._cegsMap = map;
+                }
+                return this._cegsMap;
+            },
             expandedCegs: {},
             copiedPixCegId: null,
             galleryDisplayMode: (function() {
@@ -129,6 +153,9 @@
             setGalleryDisplayMode(mode) {
                 this.galleryDisplayMode = mode;
                 try { localStorage.setItem('ceg_gallery_display_mode', mode); } catch(e) {}
+                this.$nextTick(() => {
+                    window.dispatchEvent(new Event('icons-refresh'));
+                });
             },
             activeCegFolder: null,
             openCegFolder(cegId) {
@@ -144,6 +171,15 @@
                     map[c.id] = false;
                 });
                 this.expandedCegs = map;
+                this.$watch('activeMainTab', () => {
+                    this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+                });
+                this.$watch('viewMode', () => {
+                    this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+                });
+                this.$watch('galleryDisplayMode', () => {
+                    this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+                });
             },
             toggleCeg(cegId) {
                 const id = String(cegId);
@@ -155,7 +191,7 @@
             isCegExpanded(cegId) {
                 const id = String(cegId);
                 if (this.searchQuery) {
-                    const found = this.allCegs.find(c => c.id === id);
+                    const found = this.cegsMap[id];
                     if (found && found.searchText && found.searchText.includes(this.searchQuery.toLowerCase().trim())) {
                         return true;
                     }
@@ -366,7 +402,7 @@
 
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase().trim();
-                const found = this.allCegs.find(c => c.id === String(cegId));
+                const found = this.cegsMap[String(cegId)];
                 if (found && found.searchText && !found.searchText.includes(q)) {
                     return false;
                 }

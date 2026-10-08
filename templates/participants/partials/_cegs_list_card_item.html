@@ -1,32 +1,6 @@
 <!-- CARD DO PHOTOCARD (Sleeve Colecionável 2:3 no Fluxo Contínuo da Pasta Expandida) -->
 <div x-show="isCegExpanded('{{ group.ceg.id }}') && matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
-    @click="openPreview({
-        title: '{{ claim.slot.item_definition.name|escapejs }}',
-        member: '{{ claim.slot.item_definition.member_name|default:''|escapejs }}',
-        image: '{{ claim.slot.item_definition.image_url|default:''|escapejs }}',
-        ceg: '{{ group.ceg.title|escapejs }}',
-        set: '{{ claim.slot.set.set_number }}',
-        price: '{{ claim.total_price|floatformat:2 }}',
-        claimedAt: '{{ claim.claimed_at|date:'d/m/Y H:i' }}',
-        lifecycle: {
-            stage: {{ claim.lifecycle.stage }},
-            code: '{{ claim.lifecycle.code }}',
-            label: '{{ claim.lifecycle.label|escapejs }}',
-            icon: '{{ claim.lifecycle.icon|escapejs }}',
-            badgeClass: '{{ claim.lifecycle.badge_class|escapejs }}',
-            detail: '{{ claim.lifecycle.detail|escapejs }}'
-        },
-        pixKey: '{{ group.ceg.pix_key|default:''|escapejs }}',
-        cegId: '{{ group.ceg.id }}',
-        isItemPaid: {% if claim.status == 'PAID' or claim.slot.is_item_paid %}true{% else %}false{% endif %},
-        freteInter: '{{ claim.slot.frete_inter|default:0|floatformat:2 }}',
-        isFretePaid: {% if claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %},
-        taxaAduaneira: '{{ claim.slot.taxa_aduaneira|default:0|floatformat:2 }}',
-        isTaxaPaid: {% if claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %},
-        pacoteId: '{{ claim.slot.pacote_nacional.identificador|default:''|escapejs }}',
-        pacoteTracking: '{{ claim.slot.pacote_nacional.codigo_rastreio|default:''|escapejs }}',
-        pacoteUrl: '{{ claim.slot.pacote_nacional.tracking_url|default:''|escapejs }}'
-    })"
+    @click="openPreview('{{ claim.id }}')"
     class="group relative aspect-[2/3] w-full h-full rounded-2xl overflow-hidden border border-purple-100/80 dark:border-white/10 bg-white dark:bg-cyber-surface shadow-2xs hover:shadow-xl hover:border-pink-400 dark:hover:border-cyber-neon transition-all duration-200 cursor-pointer select-none flex flex-col justify-between">
     
     <!-- 1. TOPO / FOTO DO PHOTOCARD (Limpa, sem degradê cobrindo a imagem) -->

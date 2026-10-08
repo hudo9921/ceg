@@ -68,11 +68,14 @@
   - `_quick_pix_mercari.html`: Compras avulsas no Mercari Japão consolidadas.
 - `_semaforo_prazos.html`: Monitoramento de prazos críticos de pagamento com carrossel horizontal snap, navegação por setas e suporte a arraste.
 - `_filtro_caixas.html`: Trilho horizontal snap de remessas com badges tipográficos limpos e gaveta informativa de rastreio.
-- `_filtros_painel.html`: Painel de busca instantânea, dropdowns de grupo/CEG e toggle Galeria/Tabela.
+- `_filtros_painel.html`: Painel de busca instantânea, dropdowns de grupo/CEG e toggle Galeria/Tabela:
+  - `_filtros_painel_status_chips.html`: Pílulas de status operacional e chips dinâmicos de filtros ativos.
 - `_cegs_list.html`: Grid contínuo e orquestrador da galeria de pastas:
   - `_cegs_list_folder_card.html`: Pasta fechada sleeve 2:3 e aberta gatefold album 4:3.
   - `_cegs_list_card_item.html`: Card sleeve colecionável 2:3 com semáforo integrado.
-  - `_cegs_list_table_view.html`: Visualização analítica em tabela com acordeão expansível.
+  - `_cegs_list_table_view.html`: Visualização analítica em tabela com acordeão expansível:
+    - `_cegs_list_table_row.html`: Linha da tabela resumida por CEG com badges, contadores e botão de expansão.
+    - `_cegs_list_table_drawer.html`: Gaveta retrátil da CEG suportando visualizações em Galeria e Tabela Detalhada.
 - `_mercari_section.html`: Compras avulsas no Mercari Japão com cards translúcidos.
 - `_caixinha_tab.html`: Orquestrador de hold e envios nacionais:
   - `_caixinha_prontos.html`: Itens prontos para envio com seleção múltipla.

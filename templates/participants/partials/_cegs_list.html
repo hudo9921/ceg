@@ -48,18 +48,23 @@
 </div>
 
 <!-- 1. GRID UNIFICADO DE PASTAS E PHOTOCARDS (Flow Grid Contínuo: 2 Colunas Aberto, 1 Coluna Fechado) -->
-<div x-show="viewMode === 'gallery' && galleryDisplayMode === 'folders'"
-    class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
-    {% for group in cegs_groups %}
-        <!-- Card da Pasta da CEG (Fechada 2:3 ou Gatefold Aberta 4:3) -->
-        {% include 'participants/partials/_cegs_list_folder_card.html' %}
+<template x-if="viewMode === 'gallery' && galleryDisplayMode === 'folders'">
+    <div class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
+        {% for group in cegs_groups %}
+            <!-- Card da Pasta da CEG (Fechada 2:3 ou Gatefold Aberta 4:3) -->
+            {% include 'participants/partials/_cegs_list_folder_card.html' %}
 
-        <!-- Photocards da CEG (Injetados no grid em fluxo contínuo ao lado da pasta) -->
-        {% for claim in group.claims %}
-            {% include 'participants/partials/_cegs_list_card_item.html' %}
+            <!-- Photocards da CEG (Injetados no grid em fluxo contínuo ao lado da pasta) -->
+            {% for claim in group.claims %}
+                {% include 'participants/partials/_cegs_list_card_item.html' %}
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
-</div>
+    </div>
+</template>
 
 <!-- 2. VISÃO EM TABELA & ACORDEÃO (Modo Tabela ou Visão Completa de Todos os Cards) -->
-{% include 'participants/partials/_cegs_list_table_view.html' %}
+<template x-if="viewMode === 'table' || galleryDisplayMode === 'all'">
+    <div>
+        {% include 'participants/partials/_cegs_list_table_view.html' %}
+    </div>
+</template>

@@ -1,0 +1,140 @@
+<!-- Gaveta Expansível de Detalhes dos Itens -->
+<template x-if="isCegExpanded('{{ group.ceg.id }}')">
+    <div class="border-t border-purple-100/70 dark:border-white/10 bg-slate-50/40 dark:bg-cyber-surface/50">
+
+        {% if group.ceg.pix_instructions and group.total_geral_pendente > 0 %}
+        <div class="px-5 pt-3.5 pb-1">
+            <div class="p-3 bg-amber-50/70 dark:bg-cyber-elevated border border-amber-200/70 dark:border-amber-500/20 rounded-xl text-xs text-slate-700 dark:text-cyber-silver flex items-start gap-2.5">
+                <i data-lucide="pin" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"></i>
+                <div class="space-y-0.5">
+                    <span class="font-bold text-amber-900 dark:text-amber-300">Instruções do Organizador desta CEG:</span>
+                    <p class="text-slate-600 dark:text-slate-400">{{ group.ceg.pix_instructions }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 1. MODO GALERIA (Photocards Visuais - Design Sleeve Compacto 2:3) -->
+        <template x-if="viewMode === 'gallery'">
+            <div class="p-3 sm:p-4">
+                <div class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2.5 sm:gap-3">
+                    {% for claim in group.claims %}
+                    <div x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
+                        @click="openPreview('{{ claim.id }}')"
+                        class="group relative aspect-[2/3] w-full rounded-xl overflow-hidden border border-purple-100/80 dark:border-white/10 bg-slate-900 shadow-2xs hover:shadow-xl hover:border-pink-400 dark:hover:border-cyber-neon transition-all duration-200 cursor-pointer select-none">
+                        
+                        {% if claim.slot.item_definition.image_url %}
+                        <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
+                             loading="lazy"
+                             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        {% else %}
+                        <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-pink-900/30 via-slate-900 to-purple-950/40">
+                            <i data-lucide="sparkles" class="w-6 h-6 text-pink-400 mb-1 opacity-80"></i>
+                            <span class="text-[11px] font-extrabold text-pink-300 line-clamp-2">
+                                {{ claim.slot.item_definition.member_name|default:claim.slot.item_definition.name }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Top Bar Overlay -->
+                        <div class="absolute top-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none z-10">
+                            <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-black/65 backdrop-blur-md text-white border border-white/10 shadow-xs">
+                                Set #{{ claim.slot.set.set_number }}
+                            </span>
+                            <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-black/65 backdrop-blur-md text-white border border-white/10 shadow-xs flex items-center gap-0.5 max-w-[65%] truncate"
+                                  title="{{ claim.lifecycle.detail }}">
+                                <span>{{ claim.lifecycle.icon }}</span>
+                                <span class="truncate">{{ claim.lifecycle.label }}</span>
+                            </span>
+                        </div>
+
+                        <!-- Bottom Gradient Overlay -->
+                        <div class="absolute inset-x-0 bottom-0 p-2 pt-6 bg-gradient-to-t from-black/95 via-black/80 to-transparent flex flex-col justify-end z-10 space-y-1">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="text-[11px] sm:text-xs font-black text-pink-300 truncate drop-shadow-xs" title="{{ claim.slot.item_definition.member_name }}">
+                                    {{ claim.slot.item_definition.member_name|default:claim.slot.item_definition.name }}
+                                </span>
+                                <span class="text-[10px] sm:text-[11px] font-mono font-black text-white flex-shrink-0 drop-shadow-xs">
+                                    R$ {{ claim.total_price|floatformat:2 }}
+                                </span>
+                            </div>
+
+                            {% if claim.slot.item_definition.member_name %}
+                            <div class="text-[9px] text-slate-300 truncate leading-tight opacity-90" title="{{ claim.slot.item_definition.name }}">
+                                {{ claim.slot.item_definition.name }}
+                            </div>
+                            {% endif %}
+
+                            <div class="grid grid-cols-3 gap-1 pt-0.5 text-[8px] font-black text-center tracking-tight">
+                                <div class="py-0.5 rounded backdrop-blur-xs flex items-center justify-center gap-0.5 {% if claim.status == 'PAID' or claim.slot.is_item_paid %}bg-emerald-500/25 text-emerald-300 border border-emerald-500/30{% else %}bg-amber-500/30 text-amber-200 border border-amber-500/40{% endif %}"
+                                     title="Item: {% if claim.status == 'PAID' or claim.slot.is_item_paid %}Pago{% else %}Pendente (R$ {{ claim.total_price|floatformat:2 }}){% endif %}">
+                                    {% if claim.status == 'PAID' or claim.slot.is_item_paid %}<i data-lucide="check" class="w-2.5 h-2.5"></i> Item{% else %}<i data-lucide="clock" class="w-2.5 h-2.5"></i> Item{% endif %}
+                                </div>
+
+                                <div class="py-0.5 rounded backdrop-blur-xs flex items-center justify-center gap-0.5 {% if not claim.slot.frete_inter or claim.slot.frete_inter == 0 %}bg-white/5 text-slate-400 border border-white/5{% elif claim.slot.is_frete_inter_paid %}bg-blue-500/25 text-blue-300 border border-blue-500/30{% else %}bg-amber-500/30 text-amber-200 border border-amber-500/40{% endif %}"
+                                     title="Frete: {% if not claim.slot.frete_inter or claim.slot.frete_inter == 0 %}Sem frete lançado{% elif claim.slot.is_frete_inter_paid %}Pago (R$ {{ claim.slot.frete_inter|floatformat:2 }}){% else %}Pendente (R$ {{ claim.slot.frete_inter|floatformat:2 }}){% endif %}">
+                                    {% if not claim.slot.frete_inter or claim.slot.frete_inter == 0 %}— Fr{% elif claim.slot.is_frete_inter_paid %}<i data-lucide="check" class="w-2.5 h-2.5"></i> Fr{% else %}<i data-lucide="clock" class="w-2.5 h-2.5"></i> Fr{% endif %}
+                                </div>
+
+                                <div class="py-0.5 rounded backdrop-blur-xs flex items-center justify-center gap-0.5 {% if not claim.slot.taxa_aduaneira or claim.slot.taxa_aduaneira == 0 %}bg-white/5 text-slate-400 border border-white/5{% elif claim.slot.is_taxa_aduaneira_paid %}bg-purple-500/25 text-purple-300 border border-purple-500/30{% else %}bg-amber-500/30 text-amber-200 border border-amber-500/40{% endif %}"
+                                     title="Taxa: {% if not claim.slot.taxa_aduaneira or claim.slot.taxa_aduaneira == 0 %}Sem taxa lançada{% elif claim.slot.is_taxa_aduaneira_paid %}Paga (R$ {{ claim.slot.taxa_aduaneira|floatformat:2 }}){% else %}Pendente (R$ {{ claim.slot.taxa_aduaneira|floatformat:2 }}){% endif %}">
+                                    {% if not claim.slot.taxa_aduaneira or claim.slot.taxa_aduaneira == 0 %}— Tx{% elif claim.slot.is_taxa_aduaneira_paid %}<i data-lucide="check" class="w-2.5 h-2.5"></i> Tx{% else %}<i data-lucide="clock" class="w-2.5 h-2.5"></i> Tx{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none z-20">
+                            <span class="px-2.5 py-1 rounded-full bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md text-slate-900 dark:text-white text-[10px] font-bold shadow-md flex items-center gap-1">
+                                <i data-lucide="search" class="w-3 h-3 text-pink-500"></i>
+                                <span>Detalhes</span>
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </template>
+
+        <!-- 2. MODO TABELA (Visão Detalhada Analítica) -->
+        <template x-if="viewMode === 'table'">
+            <div class="px-5 py-4 overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-purple-100/70 dark:border-white/10 text-slate-400 font-bold uppercase tracking-wider">
+                            <th class="py-2.5 w-12 text-center">Foto</th>
+                            <th class="py-2.5">Set</th>
+                            <th class="py-2.5">Item / Inclusão</th>
+                            <th class="py-2.5">Integrante</th>
+                            <th class="py-2.5">Ciclo / Status</th>
+                            <th class="py-2.5">Item (R$)</th>
+                            <th class="py-2.5 text-center">1. Item</th>
+                            <th class="py-2.5 text-center">
+                                2. Frete Inter
+                                {% if group.single_frete_inter and group.single_frete_inter > 0 %}
+                                <span class="block text-[9px] text-blue-600 dark:text-blue-400 font-semibold lowercase">(R$ {{ group.single_frete_inter|floatformat:2 }})</span>
+                                {% elif group.ceg.frete_inter and group.ceg.frete_inter > 0 and not group.has_multiple_fretes %}
+                                <span class="block text-[9px] text-blue-600 dark:text-blue-400 font-semibold lowercase">(R$ {{ group.ceg.frete_inter|floatformat:2 }})</span>
+                                {% endif %}
+                            </th>
+                            <th class="py-2.5 text-center">
+                                3. Taxa
+                                {% if group.single_taxa_aduaneira and group.single_taxa_aduaneira > 0 %}
+                                <span class="block text-[9px] text-purple-600 dark:text-purple-400 font-semibold lowercase">(R$ {{ group.single_taxa_aduaneira|floatformat:2 }})</span>
+                                {% elif group.ceg.taxa_aduaneira and group.ceg.taxa_aduaneira > 0 and not group.has_multiple_taxas %}
+                                <span class="block text-[9px] text-purple-600 dark:text-purple-400 font-semibold lowercase">(R$ {{ group.ceg.taxa_aduaneira|floatformat:2 }})</span>
+                                {% endif %}
+                            </th>
+                            <th class="py-2.5 text-center">4. Envio Nacional</th>
+                            <th class="py-2.5">Data da Reserva</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-purple-100/50 dark:divide-white/5 text-slate-700 dark:text-cyber-silver">
+                        {% for claim in group.claims %}
+                            {% include 'participants/partials/_cegs_list_table_row.html' %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </template>
+    </div>
+</template>

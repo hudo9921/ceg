@@ -1,14 +1,16 @@
     <!-- ABA 2: MINHA CAIXINHA / PEDIR ENVIO -->
     <div x-show="activeMainTab === 'caixinha'" class="space-y-6">
+        <template x-if="activeMainTab === 'caixinha'">
+            <div class="space-y-6">
+                <!-- 1. Header, Google Forms Banner e Itens Prontos com Formulário de Envio -->
+                {% include 'participants/partials/_caixinha_prontos.html' %}
 
-        <!-- 1. Header, Google Forms Banner e Itens Prontos com Formulário de Envio -->
-        {% include 'participants/partials/_caixinha_prontos.html' %}
+                <!-- 2. Itens Aguardando Liberação / Bloqueados -->
+                {% include 'participants/partials/_caixinha_bloqueados.html' %}
 
-        <!-- 2. Itens Aguardando Liberação / Bloqueados -->
-        {% include 'participants/partials/_caixinha_bloqueados.html' %}
-
-        <!-- 3. Pacotes em Andamento e Histórico de Entregas -->
-        {% include 'participants/partials/_caixinha_pacotes.html' %}
-
+                <!-- 3. Pacotes em Andamento e Histórico de Entregas -->
+                {% include 'participants/partials/_caixinha_pacotes.html' %}
+            </div>
+        </template>
     </div>
     <!-- FIM ABA 2 (CAIXINHA) -->
