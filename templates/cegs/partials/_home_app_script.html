@@ -19,6 +19,7 @@ function homeApp() {
                 group_era: "{{ ceg.era.group.name|escapejs }} • {{ ceg.era.name|escapejs }}",
                 banner_url: "{{ ceg.banner_url|default:ceg.era.banner_url|default:ceg.era.group.image_url|default:''|escapejs }}",
                 price: "{{ ceg.min_price_str }}",
+                theme_color: "{{ ceg.theme_color|default:'#F472B6'|escapejs }}",
                 vagas: {{ ceg.available_slots_count|default:0 }},
                 url: "{% url 'ceg_detail' ceg.slug %}",
                 members: [{% for item in ceg.grouped_available_items %}"{{ item.member_name|default:item.item_name|escapejs }}",{% endfor %}],

@@ -1,6 +1,9 @@
+{# templates/cegs/partials/_home_ceg_card.html #}
 <!-- Card de Vitrine de CEG (Estética Toploader / Sleeve com Acabamento Soft Y2K & Cyber-Luxury) -->
-<div class="ceg-card group relative flex flex-col rounded-3xl border border-slate-200/80 dark:border-white/10 border-t-white dark:border-t-white/25 bg-white/95 dark:bg-[#14121B]/95 backdrop-blur-xl p-2.5 transition-all duration-300 shadow-xs hover:shadow-xl dark:shadow-2xl dark:hover:shadow-[0_10px_30px_rgba(244,114,182,0.15)] hover:-translate-y-1 hover:border-pink-300 dark:hover:border-pink-500/40 select-none cursor-pointer overflow-hidden"
-     style="--era-accent: {{ ceg.theme_color|default:'#F472B6' }};"
+<div class="ceg-card group relative flex flex-col rounded-3xl border border-slate-200/80 dark:border-white/10 border-t-white dark:border-t-white/25 bg-white/95 dark:bg-[#14121B]/95 backdrop-blur-xl p-2.5 transition-all duration-300 shadow-xs hover:shadow-xl dark:shadow-2xl hover:-translate-y-1 select-none cursor-pointer overflow-hidden"
+     style="--era-accent: {{ ceg.theme_color|default:'#F472B6' }}; --era-glow: color-mix(in srgb, var(--era-accent) 25%, transparent); --era-border-hover: color-mix(in srgb, var(--era-accent) 55%, transparent);"
+     onmouseenter="this.style.borderColor='var(--era-border-hover)'; this.style.boxShadow='0 12px 32px -4px var(--era-glow)';"
+     onmouseleave="this.style.borderColor=''; this.style.boxShadow='';"
      data-price="{{ ceg.min_price_str }}"
      data-vagas="{{ ceg.available_slots_count|default:0 }}"
      data-index="{{ forloop.counter }}"
@@ -10,6 +13,9 @@
      data-tipos="{{ ceg.tipo_ids_str }}"
      @click="window.innerWidth < 768 ? openBottomSheet({{ ceg.id }}) : window.location.href = '{% url 'ceg_detail' ceg.slug %}'">
     
+    <!-- 0. Lombada do Álbum (Spine Tape Superior com a Cor da Era) -->
+    <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--era-accent)] to-transparent opacity-80 group-hover:opacity-100 group-hover:h-1.5 transition-all duration-300 pointer-events-none z-30"></div>
+
     <!-- 1. Moldura da Foto com Recuo Estilo Sleeve Protetora (Toploader View) -->
     <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100 dark:bg-black/60 border border-slate-200/60 dark:border-white/10 shadow-inner">
         
@@ -18,28 +24,37 @@
             <img src="{{ ceg.banner_url }}"
                  alt=""
                  aria-hidden="true"
+                 loading="lazy"
+                 decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 dark:opacity-40">
             <img src="{{ ceg.banner_url }}"
                  alt="{{ ceg.title }}"
                  loading="lazy"
+                 decoding="async"
                  class="relative z-10 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
         {% elif ceg.era.banner_url %}
             <img src="{{ ceg.era.banner_url }}"
                  alt=""
                  aria-hidden="true"
+                 loading="lazy"
+                 decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 dark:opacity-40">
             <img src="{{ ceg.era.banner_url }}"
                  alt="{{ ceg.title }}"
                  loading="lazy"
+                 decoding="async"
                  class="relative z-10 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
         {% elif ceg.era.group.image_url %}
             <img src="{{ ceg.era.group.image_url }}"
                  alt=""
                  aria-hidden="true"
+                 loading="lazy"
+                 decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 dark:opacity-40">
             <img src="{{ ceg.era.group.image_url }}"
                  alt="{{ ceg.title }}"
                  loading="lazy"
+                 decoding="async"
                  class="relative z-10 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
         {% else %}
             <div class="relative z-10 w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-100/60 to-purple-100/60 dark:from-white/5 dark:to-white/[0.02] text-slate-400 dark:text-slate-500">
@@ -55,9 +70,11 @@
 
         <!-- Badges Flutuantes do Topo (Acrílico Translúcido) -->
         <div class="absolute top-2 inset-x-2 z-30 flex items-center justify-between gap-1 pointer-events-none">
-            <!-- Badge de POB / Loja / Tipo -->
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md bg-white/95 dark:bg-slate-900/90 text-slate-800 dark:text-white shadow-2xs border border-white/60 dark:border-white/15">
-                {{ ceg.tipo_display|default:ceg.era.name }}
+            <!-- Badge de POB / Loja / Tipo / Era com Halo Luminoso da Era -->
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-2xs flex items-center gap-1.5 border"
+                  style="background-color: color-mix(in srgb, var(--era-accent) 15%, rgba(255,255,255,0.92)); border-color: color-mix(in srgb, var(--era-accent) 35%, rgba(255,255,255,0.4));">
+                <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: var(--era-accent); box-shadow: 0 0 6px var(--era-accent);"></span>
+                <span class="text-slate-900 dark:text-white font-extrabold">{{ ceg.tipo_display|default:ceg.era.name }}</span>
             </span>
 
             <!-- Badge de Vagas Disponíveis (Clicável para Ver Lista Completa de Vagas) -->
@@ -71,10 +88,15 @@
             </button>
         </div>
 
-        <!-- Grupo e Era no Rodapé da Imagem -->
-        <div class="absolute bottom-2 left-2 right-2 z-30 pointer-events-none">
-            <span class="text-[11px] font-extrabold text-white drop-shadow-md truncate block">
-                {{ ceg.era.group.name }} &bull; {{ ceg.era.name }}
+        <!-- Grupo e Era no Rodapé da Imagem com Destaque na Cor da Era -->
+        <div class="absolute bottom-2 left-2 right-2 z-30 pointer-events-none flex items-center gap-1.5">
+            <span class="text-[11px] font-extrabold text-white drop-shadow-md truncate">
+                {{ ceg.era.group.name }}
+            </span>
+            <span class="text-white/60 text-[10px]">&bull;</span>
+            <span class="text-[11px] font-black drop-shadow-md truncate"
+                  style="color: color-mix(in srgb, var(--era-accent) 85%, white);">
+                {{ ceg.era.name }}
             </span>
         </div>
     </div>
@@ -83,18 +105,19 @@
     <div class="p-2 sm:p-2.5 flex-1 flex flex-col justify-between space-y-2.5">
         <div>
             <!-- Título da CEG -->
-            <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white line-clamp-1 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors"
+            <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white line-clamp-1 transition-colors"
                 title="{{ ceg.title }}">
                 {{ ceg.title }}
             </h3>
 
-            <!-- Integrantes disponíveis (Chips miniaturas + Gatilho Universal de Vagas) -->
+            <!-- Integrantes disponíveis (Chips miniaturas com Identidade Visual da Era) -->
             <div class="mt-1.5 flex flex-wrap gap-1 items-center overflow-hidden max-h-6">
                 {% for item in ceg.preview_chips %}
                     <button type="button"
                             @click.stop="openBottomSheet({{ ceg.id }})"
                             title="{{ item.display_name|default:item.member_name|default:item.item_name }} ({{ item.sets_text }}) - Clique para ver vagas"
-                            class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-pink-50/80 dark:bg-white/[0.04] hover:bg-pink-100 dark:hover:bg-white/[0.08] text-pink-700 dark:text-pink-300 border border-pink-200/60 dark:border-white/10 truncate max-w-[82px] cursor-pointer transition active:scale-95">
+                            class="text-[9px] font-bold px-2 py-0.5 rounded-md truncate max-w-[82px] cursor-pointer transition active:scale-95 border"
+                            style="background-color: color-mix(in srgb, var(--era-accent) 10%, rgba(255,255,255,0.85)); border-color: color-mix(in srgb, var(--era-accent) 26%, rgba(255,255,255,0.2)); color: color-mix(in srgb, var(--era-accent) 88%, #1e1b26);">
                         {{ item.display_name|default:item.member_name|default:item.item_name }}
                     </button>
                 {% endfor %}
@@ -103,7 +126,8 @@
                     <button type="button"
                             @click.stop="openBottomSheet({{ ceg.id }})"
                             title="Ver todas as {{ ceg.available_slots_count }} vagas disponíveis nesta CEG"
-                            class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-pink-100 hover:bg-pink-200 dark:bg-pink-950/70 dark:hover:bg-pink-900/90 text-pink-700 dark:text-pink-300 border border-pink-200/90 dark:border-pink-800/50 cursor-pointer transition hover:scale-105 active:scale-95 shadow-2xs flex items-center gap-0.5">
+                            class="text-[9px] font-black px-1.5 py-0.5 rounded-md cursor-pointer transition hover:scale-105 active:scale-95 shadow-2xs flex items-center gap-0.5 border"
+                            style="background-color: color-mix(in srgb, var(--era-accent) 18%, rgba(255,255,255,0.85)); border-color: color-mix(in srgb, var(--era-accent) 40%, rgba(255,255,255,0.3)); color: var(--era-accent);">
                         <span>+{{ ceg.preview_remaining_count }}</span>
                         <span class="underline">vaga{{ ceg.preview_remaining_count|pluralize:"s" }}</span>
                     </button>
@@ -111,11 +135,12 @@
             </div>
         </div>
 
-        <!-- Rodapé do Card: Preço + Botão de Ação -->
+        <!-- Rodapé do Card: Preço na Cor da Era + Botão de Ação -->
         <div class="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
             <div>
                 <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-none tracking-wider">A partir de</span>
-                <span class="text-xs sm:text-sm font-black font-mono tabular-nums text-pink-600 dark:text-pink-400">
+                <span class="text-xs sm:text-sm font-black font-mono tabular-nums"
+                      style="color: var(--era-accent);">
                     R$ {{ ceg.min_price_str }}
                 </span>
             </div>
@@ -133,7 +158,10 @@
                 {% endif %}
                 <a href="{% url 'ceg_detail' ceg.slug %}"
                    @click.stop
-                   class="px-3 py-1.5 rounded-full bg-gradient-to-r from-pink-50 to-purple-50 dark:from-white/[0.06] dark:to-white/[0.03] hover:from-pink-600 hover:to-rose-600 hover:text-white dark:hover:from-pink-600 dark:hover:to-purple-600 dark:hover:text-white text-pink-700 dark:text-pink-300 border border-pink-200/70 dark:border-white/10 font-bold text-[11px] transition-all flex items-center gap-1 group/btn shadow-2xs hover:shadow-xs active:scale-95">
+                   class="px-3 py-1.5 rounded-full font-bold text-[11px] transition-all flex items-center gap-1 group/btn shadow-2xs hover:shadow-xs active:scale-95 border"
+                   style="background-color: color-mix(in srgb, var(--era-accent) 10%, transparent); border-color: color-mix(in srgb, var(--era-accent) 30%, transparent); color: var(--era-accent);"
+                   onmouseenter="this.style.backgroundColor='var(--era-accent)'; this.style.color='#ffffff'; this.style.borderColor='var(--era-accent)';"
+                   onmouseleave="this.style.backgroundColor='color-mix(in srgb, var(--era-accent) 10%, transparent)'; this.style.color='var(--era-accent)'; this.style.borderColor='color-mix(in srgb, var(--era-accent) 30%, transparent)';">
                     <span>Vagas</span>
                     <i data-lucide="arrow-right" class="w-3 h-3 transition-transform group-hover/btn:translate-x-0.5" stroke-width="1.75"></i>
                 </a>
