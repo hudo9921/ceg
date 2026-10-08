@@ -21,11 +21,12 @@
                     {% for claim in group.claims %}
                     <div x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
                         @click="openPreview('{{ claim.id }}')"
+                        style="content-visibility: auto; contain-intrinsic-size: 150px 225px;"
                         class="group relative aspect-[2/3] w-full rounded-xl overflow-hidden border border-purple-100/80 dark:border-white/10 bg-slate-900 shadow-2xs hover:shadow-xl hover:border-pink-400 dark:hover:border-cyber-neon transition-all duration-200 cursor-pointer select-none">
                         
                         {% if claim.slot.item_definition.image_url %}
                         <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
-                             loading="lazy"
+                             loading="lazy" decoding="async"
                              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                         {% else %}
                         <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-pink-900/30 via-slate-900 to-purple-950/40">

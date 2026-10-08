@@ -4,7 +4,7 @@
         <div class="w-9 h-12 rounded-lg bg-slate-100 dark:bg-black/40 overflow-hidden border border-purple-100 dark:border-white/10 mx-auto flex-shrink-0 cursor-pointer hover:opacity-85 transition shadow-2xs"
              @click="openPreview('{{ claim.id }}')">
             {% if claim.slot.item_definition.image_url %}
-            <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}" class="w-full h-full object-cover">
+            <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
             {% else %}
             <div class="w-full h-full flex items-center justify-center text-[10px]">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-400"></i>

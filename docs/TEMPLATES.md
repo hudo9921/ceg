@@ -71,8 +71,9 @@
 - `_filtros_painel.html`: Painel de busca instantânea, dropdowns de grupo/CEG e toggle Galeria/Tabela:
   - `_filtros_painel_status_chips.html`: Pílulas de status operacional e chips dinâmicos de filtros ativos.
 - `_cegs_list.html`: Grid contínuo e orquestrador da galeria de pastas:
-  - `_cegs_list_folder_card.html`: Pasta fechada sleeve 2:3 e aberta gatefold album 4:3.
-  - `_cegs_list_card_item.html`: Card sleeve colecionável 2:3 com semáforo integrado.
+  - `_cegs_list_folder_card.html`: Pasta fechada sleeve 2:3 otimizada (imagem única, async decode e content-visibility):
+    - `_cegs_list_folder_gatefold.html`: Card gatefold 4:3 aberto sob demanda com logística, rastreio e botões Pix.
+  - `_cegs_list_card_item.html`: Card sleeve colecionável 2:3 montado sob demanda com semáforo integrado.
   - `_cegs_list_table_view.html`: Visualização analítica em tabela com acordeão expansível:
     - `_cegs_list_table_row.html`: Linha da tabela resumida por CEG com badges, contadores e botão de expansão.
     - `_cegs_list_table_drawer.html`: Gaveta retrátil da CEG suportando visualizações em Galeria e Tabela Detalhada.

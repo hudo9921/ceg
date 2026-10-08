@@ -1,108 +1,105 @@
+{# templates/participants/partials/_cegs_list_card_item.html #}
 <!-- CARD DO PHOTOCARD (Sleeve Colecionável 2:3 no Fluxo Contínuo da Pasta Expandida) -->
-<div x-show="isCegExpanded('{{ group.ceg.id }}') && matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
-    @click="openPreview('{{ claim.id }}')"
-    class="group relative aspect-[2/3] w-full h-full rounded-2xl overflow-hidden border border-purple-100/80 dark:border-white/10 bg-white dark:bg-cyber-surface shadow-2xs hover:shadow-xl hover:border-pink-400 dark:hover:border-cyber-neon transition-all duration-200 cursor-pointer select-none flex flex-col justify-between">
-    
-    <!-- 1. TOPO / FOTO DO PHOTOCARD (Limpa, sem degradê cobrindo a imagem) -->
-    <div class="relative flex-1 min-h-0 w-full overflow-hidden bg-slate-100 dark:bg-black/40">
-        {% if claim.slot.item_definition.image_url %}
-        <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
-             loading="lazy"
-             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-        {% else %}
-        <div class="w-full h-full flex flex-col items-center justify-center p-2 text-center text-slate-400 dark:text-slate-500">
-            <i data-lucide="sparkles" class="w-6 h-6 text-pink-400 mb-1 opacity-70"></i>
-            <span class="text-[10px] font-bold line-clamp-2 text-slate-600 dark:text-cyber-silver">{{ claim.slot.item_definition.name }}</span>
-        </div>
-        {% endif %}
-
-        <!-- Topo Sobre a Foto: Set # e Ciclo de Vida -->
-        <div class="absolute top-2 inset-x-2 z-10 flex items-start justify-between gap-1 pointer-events-none">
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-black/75 backdrop-blur-md text-white border border-white/10 shadow-xs">
-                #{{ claim.slot.set.set_number }}
-            </span>
-
-            {% if claim.lifecycle.code == 'ITEM_PAID' or claim.lifecycle.code == 'DELIVERED' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-600 text-white dark:bg-emerald-400 dark:text-slate-950 border border-emerald-400/50 dark:border-emerald-300 shadow-xs shadow-emerald-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="check" class="w-3 h-3 stroke-[3]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
-            {% elif claim.lifecycle.code == 'PENDING_PAYMENT' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500 text-white dark:bg-amber-400 dark:text-slate-950 border border-amber-300/50 dark:border-amber-200 shadow-xs shadow-amber-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="clock" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
-            {% elif claim.lifecycle.code == 'IN_TRANSIT' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 border border-sky-300/50 dark:border-sky-200 shadow-xs shadow-sky-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="plane" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
-            {% elif claim.lifecycle.code == 'SHIPPED' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-600 text-white dark:bg-blue-400 dark:text-slate-950 border border-blue-300/50 dark:border-blue-200 shadow-xs shadow-blue-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="truck" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
-            {% elif claim.lifecycle.code == 'READY_CAIXINHA' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-pink-600 text-white dark:bg-pink-400 dark:text-slate-950 border border-pink-300/50 dark:border-pink-200 shadow-xs shadow-pink-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="package" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
-            {% elif claim.lifecycle.code == 'CUSTOMS_PENDING' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-600 text-white dark:bg-purple-400 dark:text-slate-950 border border-purple-300/50 dark:border-purple-200 shadow-xs shadow-purple-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="alert-triangle" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
-            {% elif claim.lifecycle.code == 'CUSTOMS_CLEARING' %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-teal-600 text-white dark:bg-teal-400 dark:text-slate-950 border border-teal-300/50 dark:border-teal-200 shadow-xs shadow-teal-500/30 flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="shield-check" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
+<template x-if="isCegExpanded('{{ group.ceg.id }}')">
+    <div x-show="matchesRow(statusFilter, '{{ claim.status }}', {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 and not claim.slot.is_frete_inter_paid %}true{% else %}false{% endif %}, {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 and not claim.slot.is_taxa_aduaneira_paid %}true{% else %}false{% endif %}) && matchesSearch('{{ claim.slot.item_definition.name|escapejs }} {{ claim.slot.item_definition.member_name|default:''|escapejs }} {{ group.ceg.title|escapejs }}')"
+        @click="openPreview('{{ claim.id }}')"
+        style="content-visibility: auto; contain-intrinsic-size: 150px 225px;"
+        class="group relative aspect-[2/3] w-full h-full rounded-2xl overflow-hidden border border-purple-100/80 dark:border-white/10 bg-white dark:bg-cyber-surface shadow-2xs hover:shadow-xl hover:border-pink-400 dark:hover:border-cyber-neon transition-all duration-200 cursor-pointer select-none flex flex-col justify-between">
+        
+        <!-- 1. TOPO / FOTO DO PHOTOCARD (Limpa, sem degradê cobrindo a imagem) -->
+        <div class="relative flex-1 min-h-0 w-full overflow-hidden bg-slate-100 dark:bg-black/40">
+            {% if claim.slot.item_definition.image_url %}
+            <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
+                 loading="lazy" decoding="async"
+                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
             {% else %}
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-950 border border-white/20 shadow-xs flex items-center gap-1 backdrop-blur-xs"
-                  title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
-                <i data-lucide="sparkles" class="w-3 h-3 stroke-[2.5]"></i>
-                <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
-            </span>
+            <div class="w-full h-full flex flex-col items-center justify-center p-2 text-center text-slate-400 dark:text-slate-500">
+                <i data-lucide="sparkles" class="w-6 h-6 text-pink-400 mb-1 opacity-70" stroke-width="1.75"></i>
+                <span class="text-[10px] font-bold line-clamp-2 text-slate-600 dark:text-cyber-silver">{{ claim.slot.item_definition.name }}</span>
+            </div>
             {% endif %}
+
+            <!-- Topo Sobre a Foto: Set # e Ciclo de Vida -->
+            <div class="absolute top-2 inset-x-2 z-10 flex items-start justify-between gap-1 pointer-events-none">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-black/75 backdrop-blur-md text-white border border-white/10 shadow-xs">
+                    #{{ claim.slot.set.set_number }}
+                </span>
+
+                {% if claim.lifecycle.code == 'ITEM_PAID' or claim.lifecycle.code == 'DELIVERED' %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-600 text-white dark:bg-emerald-400 dark:text-slate-950 border border-emerald-400/50 dark:border-emerald-300 shadow-xs shadow-emerald-500/30 flex items-center gap-1 backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <i data-lucide="check" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
+                </span>
+                {% elif claim.lifecycle.code == 'PENDING_PAYMENT' %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500 text-white dark:bg-amber-400 dark:text-slate-950 border border-amber-300/50 dark:border-amber-200 shadow-xs shadow-amber-500/30 flex items-center gap-1 backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <i data-lucide="clock" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
+                </span>
+                {% elif claim.lifecycle.code == 'IN_TRANSIT' %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 border border-sky-300/50 dark:border-sky-200 shadow-xs shadow-sky-500/30 flex items-center gap-1 backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <i data-lucide="plane" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
+                </span>
+                {% elif claim.lifecycle.code == 'SHIPPED' %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-600 text-white dark:bg-blue-400 dark:text-slate-950 border border-blue-300/50 dark:border-blue-200 shadow-xs shadow-blue-500/30 flex items-center gap-1 backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <i data-lucide="truck" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
+                </span>
+                {% elif claim.lifecycle.code == 'READY_CAIXINHA' %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-pink-600 text-white dark:bg-pink-400 dark:text-slate-950 border border-pink-300/50 dark:border-pink-200 shadow-xs shadow-pink-500/30 flex items-center gap-1 backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <i data-lucide="package" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
+                </span>
+                {% elif claim.lifecycle.code == 'CUSTOMS_PENDING' %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-600 text-white dark:bg-purple-400 dark:text-slate-950 border border-purple-300/50 dark:border-purple-200 shadow-xs shadow-purple-500/30 flex items-center gap-1 backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <i data-lucide="alert-triangle" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="hidden sm:inline font-black">{{ claim.lifecycle.label }}</span>
+                </span>
+                {% else %}
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-slate-800 text-white border border-white/10 shadow-xs backdrop-blur-xs"
+                      title="{{ claim.lifecycle.label }}: {{ claim.lifecycle.detail }}">
+                    <span>{{ claim.lifecycle.label }}</span>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 2. RODAPÉ INFORMATIVO -->
+        <div class="p-2 sm:p-2.5 bg-white dark:bg-cyber-surface border-t border-purple-100/60 dark:border-white/10 space-y-1">
+            <!-- Linha 1: Nome do Membro / Item e Valor -->
+            <div class="flex items-center justify-between gap-1">
+                {% if claim.slot.item_definition.member_name %}
+                <span class="text-[11px] font-black text-pink-600 dark:text-cyber-neon truncate" title="{{ claim.slot.item_definition.member_name }}">
+                    {{ claim.slot.item_definition.member_name }}
+                </span>
+                {% else %}
+                <span class="text-[10px] font-bold text-slate-700 dark:text-cyber-silver truncate" title="{{ claim.slot.item_definition.name }}">
+                    {{ claim.slot.item_definition.name }}
+                </span>
+                {% endif %}
+                <span class="text-[10px] font-mono font-black text-slate-900 dark:text-white flex-shrink-0">
+                    R$ {{ claim.total_price|floatformat:2 }}
+                </span>
+            </div>
+
+            <!-- Linha 2: Semáforo de Pagamentos em 3 Chips Miniaturas -->
+            <div class="grid grid-cols-3 gap-1 pt-0.5 border-t border-purple-100/50 dark:border-white/10 text-[8px] font-black text-center">
+                <span class="py-0.5 rounded flex items-center justify-center gap-0.5 {% if claim.status == 'PAID' or claim.slot.is_item_paid %}bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/80 dark:text-white dark:border-transparent{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/80 dark:text-white dark:border-transparent{% endif %}">
+                    {% if claim.status == 'PAID' or claim.slot.is_item_paid %}<i data-lucide="check" class="w-2.5 h-2.5" stroke-width="1.75"></i> Pago{% else %}<i data-lucide="clock" class="w-2.5 h-2.5" stroke-width="1.75"></i> Item{% endif %}
+                </span>
+                <span class="py-0.5 rounded flex items-center justify-center gap-0.5 {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/80 dark:text-white dark:border-transparent{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/80 dark:text-white dark:border-transparent{% endif %}{% else %}bg-slate-100 text-slate-400 border border-slate-200/60 dark:bg-white/5 dark:text-slate-400 dark:border-transparent{% endif %}">
+                    {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}<i data-lucide="check" class="w-2.5 h-2.5" stroke-width="1.75"></i> Frete{% else %}<i data-lucide="clock" class="w-2.5 h-2.5" stroke-width="1.75"></i> Frete{% endif %}{% else %}—{% endif %}
+                </span>
+                <span class="py-0.5 rounded flex items-center justify-center gap-0.5 {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-500/80 dark:text-white dark:border-transparent{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/80 dark:text-white dark:border-transparent{% endif %}{% else %}bg-slate-100 text-slate-400 border border-slate-200/60 dark:bg-white/5 dark:text-slate-400 dark:border-transparent{% endif %}">
+                    {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}<i data-lucide="check" class="w-2.5 h-2.5" stroke-width="1.75"></i> Taxa{% else %}<i data-lucide="clock" class="w-2.5 h-2.5" stroke-width="1.75"></i> Taxa{% endif %}{% else %}—{% endif %}
+                </span>
+            </div>
         </div>
     </div>
-
-    <!-- 2. BASE: FAIXA DE INFORMAÇÕES E SEMÁFORO DE PAGAMENTOS (Abaixo da foto) -->
-    <div class="p-2 sm:p-2.5 bg-white dark:bg-cyber-surface border-t border-purple-100/70 dark:border-white/10 flex flex-col gap-1 flex-shrink-0">
-        <!-- Linha 1: Integrante & Preço -->
-        <div class="flex items-center justify-between gap-1">
-            {% if claim.slot.item_definition.member_name %}
-            <span class="text-[11px] font-black text-pink-600 dark:text-cyber-neon truncate" title="{{ claim.slot.item_definition.member_name }}">
-                {{ claim.slot.item_definition.member_name }}
-            </span>
-            {% else %}
-            <span class="text-[10px] font-bold text-slate-700 dark:text-cyber-silver truncate" title="{{ claim.slot.item_definition.name }}">
-                {{ claim.slot.item_definition.name }}
-            </span>
-            {% endif %}
-            <span class="text-[10px] font-mono font-black text-slate-900 dark:text-white flex-shrink-0">
-                R$ {{ claim.total_price|floatformat:2 }}
-            </span>
-        </div>
-
-        <!-- Linha 2: Semáforo de Pagamentos em 3 Chips Miniaturas -->
-        <div class="grid grid-cols-3 gap-1 pt-0.5 border-t border-purple-100/50 dark:border-white/10 text-[8px] font-black text-center">
-            <span class="py-0.5 rounded flex items-center justify-center gap-0.5 {% if claim.status == 'PAID' or claim.slot.is_item_paid %}bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/80 dark:text-white dark:border-transparent{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/80 dark:text-white dark:border-transparent{% endif %}">
-                {% if claim.status == 'PAID' or claim.slot.is_item_paid %}<i data-lucide="check" class="w-2.5 h-2.5"></i> Pago{% else %}<i data-lucide="clock" class="w-2.5 h-2.5"></i> Item{% endif %}
-            </span>
-            <span class="py-0.5 rounded flex items-center justify-center gap-0.5 {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/80 dark:text-white dark:border-transparent{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/80 dark:text-white dark:border-transparent{% endif %}{% else %}bg-slate-100 text-slate-400 border border-slate-200/60 dark:bg-white/5 dark:text-slate-400 dark:border-transparent{% endif %}">
-                {% if claim.slot.frete_inter and claim.slot.frete_inter > 0 %}{% if claim.slot.is_frete_inter_paid %}<i data-lucide="check" class="w-2.5 h-2.5"></i> Frete{% else %}<i data-lucide="clock" class="w-2.5 h-2.5"></i> Frete{% endif %}{% else %}—{% endif %}
-            </span>
-            <span class="py-0.5 rounded flex items-center justify-center gap-0.5 {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-500/80 dark:text-white dark:border-transparent{% else %}bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/80 dark:text-white dark:border-transparent{% endif %}{% else %}bg-slate-100 text-slate-400 border border-slate-200/60 dark:bg-white/5 dark:text-slate-400 dark:border-transparent{% endif %}">
-                {% if claim.slot.taxa_aduaneira and claim.slot.taxa_aduaneira > 0 %}{% if claim.slot.is_taxa_aduaneira_paid %}<i data-lucide="check" class="w-2.5 h-2.5"></i> Taxa{% else %}<i data-lucide="clock" class="w-2.5 h-2.5"></i> Taxa{% endif %}{% else %}—{% endif %}
-            </span>
-        </div>
-    </div>
-</div>
+</template>

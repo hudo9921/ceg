@@ -1,7 +1,9 @@
+{# templates/participants/partials/_cegs_list_folder_card.html #}
 <!-- CARD DA CEG (Slot da Pasta - Alterna entre Capa Fechada 2:3 e Gatefold Aberto 4:3) -->
 <div x-show="matchesCeg('{{ group.group.id }}', '{{ group.ceg.id }}', '{{ group.caixa_id|default:'' }}', {{ group.count_pending }}, {{ group.count_paid }}, {{ group.count_inter_unpaid }}, {{ group.count_taxa_unpaid }}, {{ group.count_any_unpaid|default:0 }})"
     data-ceg-id="{{ group.ceg.id }}"
     :class="isCegExpanded('{{ group.ceg.id }}') ? 'col-span-2 aspect-[4/3]' : 'aspect-[2/3]'"
+    style="content-visibility: auto; contain-intrinsic-size: 180px 270px;"
     class="w-full rounded-2xl relative select-none transition-all duration-300">
     
     <!-- ESTADO 1: PASTA FECHADA (Capa do Álbum) -->
@@ -9,23 +11,21 @@
         @click="toggleCeg('{{ group.ceg.id }}')"
         class="group w-full h-full rounded-2xl overflow-hidden border border-purple-100/70 dark:border-white/10 bg-slate-900 shadow-xs hover:shadow-xl hover:border-pink-400 dark:hover:border-cyber-neon transition-all duration-200 cursor-pointer flex flex-col justify-between relative">
         
-        <!-- Banner ou Imagem (Fundo Borrado + Imagem Inteira sem Cortes) -->
+        <!-- Banner / Imagem Otimizada da Pasta (Imagem única, sem filtros de blur pesados na GPU) -->
         {% with cover_url=group.ceg.banner_url|default:group.ceg.era.banner_url|default:group.ceg.era.group.image_url|default:group.claims.0.slot.item_definition.image_url %}
         {% if cover_url %}
-        <img src="{{ cover_url }}" alt="" aria-hidden="true" loading="lazy"
-            class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-70 dark:opacity-40 pointer-events-none">
-        <img src="{{ cover_url }}" alt="{{ group.ceg.title }}" loading="lazy"
-            class="absolute inset-0 w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105 pointer-events-none">
+        <div class="absolute inset-0 bg-slate-900">
+            <img src="{{ cover_url }}" alt="{{ group.ceg.title }}" loading="lazy" decoding="async"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none"></div>
+        </div>
         {% else %}
         <div class="absolute inset-0 bg-gradient-to-br from-pink-100 via-purple-100 to-slate-100 dark:from-cyber-elevated dark:via-cyber-surface dark:to-slate-900 flex flex-col items-center justify-center p-3 text-center">
-            <i data-lucide="folder" class="w-8 h-8 text-pink-500 mb-1 opacity-70"></i>
+            <i data-lucide="folder" class="w-8 h-8 text-pink-500 mb-1 opacity-70" stroke-width="1.75"></i>
             <span class="text-[10px] font-bold text-slate-500 dark:text-cyber-silver line-clamp-2">{{ group.ceg.era.group.name }}</span>
         </div>
         {% endif %}
         {% endwith %}
-
-        <!-- Degradê Sutil na Base -->
-        <div class="absolute inset-x-0 bottom-0 h-28 sm:h-32 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none"></div>
 
         <!-- Topo: Grupo/Era e Quantidade -->
         <div class="relative z-10 p-2 sm:p-2.5 flex items-start justify-between gap-1 pointer-events-none">
@@ -33,7 +33,7 @@
                 {{ group.ceg.era.group.name }}
             </span>
             <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-600/90 backdrop-blur-md text-white shadow-xs flex items-center gap-1">
-                <i data-lucide="layers" class="w-3 h-3"></i>
+                <i data-lucide="layers" class="w-3 h-3" stroke-width="1.75"></i>
                 <span>{{ group.claims|length }}</span>
             </span>
         </div>
@@ -41,7 +41,7 @@
         <!-- Centro Hover Badge -->
         <div class="relative z-10 p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
             <span class="px-3 py-1 rounded-full bg-white/95 dark:bg-cyber-surface/95 text-slate-900 dark:text-white text-[11px] font-black shadow-lg flex items-center gap-1.5 backdrop-blur-md border border-white/20">
-                <i data-lucide="folder-open" class="w-3.5 h-3.5 text-pink-500"></i>
+                <i data-lucide="folder-open" class="w-3.5 h-3.5 text-pink-500" stroke-width="1.75"></i>
                 <span>Abrir</span>
             </span>
         </div>
@@ -54,7 +54,7 @@
 
             {% if group.ceg.caixa %}
             <div class="flex items-center gap-1 text-[10px] text-blue-300 font-bold truncate">
-                <i data-lucide="package" class="w-3 h-3 text-sky-400 shrink-0"></i>
+                <i data-lucide="package" class="w-3 h-3 text-sky-400 shrink-0" stroke-width="1.75"></i>
                 <span class="truncate">{{ group.ceg.caixa.nome }}</span>
             </div>
             {% endif %}
@@ -62,209 +62,25 @@
             <div class="pt-1 border-t border-white/10 flex items-center justify-between text-[9.5px]">
                 {% if group.total_geral_pendente > 0 %}
                 <span class="text-pink-300 font-black flex items-center gap-1">
-                    <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                    <i data-lucide="clock" class="w-2.5 h-2.5" stroke-width="1.75"></i>
                     <span>R$ {{ group.total_geral_pendente|floatformat:2 }} pendente</span>
                 </span>
                 {% else %}
                 <span class="text-emerald-400 font-bold flex items-center gap-1">
-                    <i data-lucide="check-circle" class="w-3 h-3"></i>
+                    <i data-lucide="check-circle" class="w-3 h-3" stroke-width="1.75"></i>
                     <span>Quitado</span>
                 </span>
                 {% endif %}
                 <span class="text-pink-400 font-bold text-[9.5px] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                     <span>Abrir</span>
-                    <i data-lucide="arrow-right" class="w-2.5 h-2.5"></i>
+                    <i data-lucide="arrow-right" class="w-2.5 h-2.5" stroke-width="1.75"></i>
                 </span>
             </div>
         </div>
     </div>
 
-    <!-- ESTADO 2: PASTA ABERTA (Card Gatefold Duplo com Topo Unificado e 2 Colunas Nativas) -->
-    <div x-show="isCegExpanded('{{ group.ceg.id }}')"
-        x-cloak
-        class="w-full h-full rounded-2xl overflow-hidden border-2 border-pink-500/80 bg-gradient-to-br from-white via-pink-50/40 to-purple-50/30 dark:from-cyber-obsidian dark:via-cyber-surface dark:to-cyber-elevated text-slate-900 dark:text-white shadow-xl p-3 sm:p-3.5 flex flex-col justify-between relative">
-        
-        <!-- 1. LINHA DO TOPO UNIFICADA -->
-        <div class="pb-2 sm:pb-2.5 border-b border-purple-100/80 dark:border-white/10 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2 min-w-0 flex-1">
-                <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-pink-100 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-pink-200 dark:border-white/10 truncate flex-shrink-0">
-                    {{ group.ceg.era.group.name }}
-                </span>
-                <a href="{% url 'ceg_detail' slug=group.ceg.slug %}"
-                   title="{{ group.ceg.title }}"
-                   class="text-xs sm:text-sm font-black text-slate-900 dark:text-white hover:text-pink-600 dark:hover:text-cyber-neon transition truncate leading-snug flex items-center gap-1">
-                    <span>{{ group.ceg.title }}</span>
-                    <i data-lucide="external-link" class="w-3 h-3 text-pink-500 dark:text-cyber-neon opacity-70"></i>
-                </a>
-            </div>
-
-            <div class="flex items-center gap-1.5 flex-shrink-0">
-                <span class="hidden xs:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-50 dark:bg-white/10 text-slate-700 dark:text-cyber-silver border border-purple-100 dark:border-transparent">
-                    <i data-lucide="folder" class="w-3 h-3 text-pink-500"></i>
-                    <span>{{ group.claims|length }} {% if group.claims|length == 1 %}card{% else %}cards{% endif %}</span>
-                </span>
-                <button type="button" @click.stop="toggleCeg('{{ group.ceg.id }}')"
-                    title="Recolher Pasta"
-                    class="px-2.5 py-1 rounded-xl bg-pink-600 hover:bg-pink-700 dark:bg-pink-600/80 dark:hover:bg-pink-600 text-white text-[10px] font-black flex items-center gap-1 transition cursor-pointer shadow-xs active:scale-95">
-                    <i data-lucide="chevron-up" class="w-3 h-3"></i>
-                    <span>Fechar</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- 2. CORPO DIVIDIDO EM 2 PARTES -->
-        <div class="grid grid-cols-2 gap-3 pt-2.5 flex-1 min-h-0">
-            
-            <!-- PARTE 1: LOGÍSTICA & REMESSA (Lado Esquerdo) -->
-            <div class="flex flex-col justify-between h-full min-w-0 pr-1.5 border-r border-purple-100/80 dark:border-white/10">
-                <div class="space-y-2">
-                    <div class="text-[9px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                        <i data-lucide="plane" class="w-3 h-3 text-sky-500"></i>
-                        <span>Logística & Remessa</span>
-                    </div>
-
-                    {% if group.ceg.caixa %}
-                    <div class="space-y-0.5">
-                        <div class="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Caixa Internacional:</div>
-                        <div class="flex items-center justify-between gap-1 text-[11px] font-bold text-blue-700 dark:text-blue-300">
-                            <span class="flex items-center gap-1 truncate">
-                                <i data-lucide="package" class="w-3 h-3 text-sky-500 shrink-0"></i>
-                                <a href="{% url 'caixa_detail' slug=group.ceg.caixa.slug %}" class="hover:underline truncate">{{ group.ceg.caixa.nome }}</a>
-                            </span>
-                            {% if group.ceg.caixa.codigo_rastreio %}
-                            <a href="{{ group.ceg.caixa.tracking_url }}" target="_blank" class="text-blue-600 dark:text-blue-400 font-mono text-[9px] hover:underline flex items-center gap-0.5 shrink-0" title="Rastrear">
-                                <span>Rastreio</span>
-                                <i data-lucide="external-link" class="w-2.5 h-2.5"></i>
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="space-y-0.5 pt-1 border-t border-purple-100/60 dark:border-white/5">
-                        <div class="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status do Envio:</div>
-                        <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 text-[10px]">
-                            <i data-lucide="truck" class="w-3 h-3 text-sky-500"></i>
-                            <span class="truncate">{{ group.ceg.get_shipping_status_display }}</span>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-slate-500 dark:text-slate-400 text-[10px] italic py-1 flex items-center gap-1">
-                        <i data-lucide="info" class="w-3 h-3"></i>
-                        <span>Sem remessa vinculada</span>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Prazos & Semáforo -->
-                <div class="pt-1.5 border-t border-purple-100/80 dark:border-white/10 space-y-1">
-                    <div class="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Prazos & Urgência:</div>
-                    {% if group.prazo_destaque %}
-                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold {{ group.prazo_destaque.urgencia_class }} max-w-full truncate">
-                        <i data-lucide="clock" class="w-3 h-3 shrink-0"></i>
-                        <span class="truncate">{{ group.prazo_destaque.tipo_label }}: {{ group.prazo_destaque.urgencia_badge }}</span>
-                    </div>
-                    {% else %}
-                    <div class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-                        <i data-lucide="check-circle" class="w-3 h-3"></i>
-                        <span>Prazos em dia</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- PARTE 2: FINANCEIRO & CHECKOUT (Lado Direito) -->
-            <div class="flex flex-col justify-between h-full min-w-0 pl-1.5">
-                {% if group.total_geral_pendente > 0 %}
-                <div class="p-2 sm:p-2.5 rounded-xl bg-white/90 dark:bg-cyber-surface/90 border border-pink-200/80 dark:border-white/10 shadow-xs space-y-1 text-[10px]">
-                    <div class="text-[8.5px] font-black uppercase tracking-wider text-pink-700 dark:text-pink-300 flex items-center justify-between">
-                        <span>Valores a Pagar</span>
-                        <span class="text-[8px] px-1 py-0.2 rounded bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-500/30">Pendente</span>
-                    </div>
-
-                    <div class="space-y-0.5 pt-0.5 border-t border-slate-200/60 dark:border-white/5 text-[10px]">
-                        {% if group.total_pending > 0 %}
-                        <div class="flex items-center justify-between">
-                            <span class="flex items-center gap-1 text-amber-700 dark:text-amber-300 font-semibold truncate">
-                                <i data-lucide="package" class="w-2.5 h-2.5"></i>
-                                <span>Itens:</span>
-                            </span>
-                            <span class="font-mono font-bold text-amber-700 dark:text-amber-300 shrink-0">R$ {{ group.total_pending|floatformat:2 }}</span>
-                        </div>
-                        {% endif %}
-
-                        {% if group.total_frete_inter_pendente > 0 %}
-                        <div class="flex items-center justify-between">
-                            <span class="flex items-center gap-1 text-blue-700 dark:text-blue-300 font-semibold truncate">
-                                <i data-lucide="plane" class="w-2.5 h-2.5"></i>
-                                <span>Frete a Pagar:</span>
-                            </span>
-                            <span class="font-mono font-bold text-blue-700 dark:text-blue-300 shrink-0">R$ {{ group.total_frete_inter_pendente|floatformat:2 }}</span>
-                        </div>
-                        {% endif %}
-
-                        {% if group.total_taxa_aduaneira_pendente > 0 %}
-                        <div class="flex items-center justify-between">
-                            <span class="flex items-center gap-1 text-purple-700 dark:text-purple-300 font-semibold truncate">
-                                <i data-lucide="landmark" class="w-2.5 h-2.5"></i>
-                                <span>Taxa a Pagar:</span>
-                            </span>
-                            <span class="font-mono font-bold text-purple-700 dark:text-purple-300 shrink-0">R$ {{ group.total_taxa_aduaneira_pendente|floatformat:2 }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="pt-1 border-t border-purple-100/80 dark:border-white/10 flex flex-wrap items-baseline justify-between gap-x-1">
-                        <span class="text-[9px] font-bold text-slate-800 dark:text-white leading-tight">Total a Pagar nesta CEG:</span>
-                        <span class="text-xs sm:text-sm font-black text-pink-600 dark:text-cyber-neon font-mono shrink-0">
-                            R$ {{ group.total_geral_pendente|floatformat:2 }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Botões Pix -->
-                <div class="pt-1">
-                    {% if group.has_distinct_pix_keys %}
-                    <div class="flex items-center gap-1">
-                        {% if group.total_pending > 0 and group.pix_key_item %}
-                        <button type="button" @click="copyPix('{{ group.pix_key_item }}', '{{ group.ceg.id }}_item')"
-                            class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[8.5px] rounded-lg transition text-center cursor-pointer shadow-xs truncate flex items-center justify-center gap-1">
-                            <i data-lucide="package" class="w-2.5 h-2.5"></i>
-                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}_item' ? 'Copiado!' : 'Pix Item'"></span>
-                        </button>
-                        {% endif %}
-                        {% if group.total_frete_inter_pendente > 0 and group.pix_key_frete %}
-                        <button type="button" @click="copyPix('{{ group.pix_key_frete }}', '{{ group.ceg.id }}_frete')"
-                            class="flex-1 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-[8.5px] rounded-lg transition text-center cursor-pointer shadow-xs truncate flex items-center justify-center gap-1">
-                            <i data-lucide="plane" class="w-2.5 h-2.5"></i>
-                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}_frete' ? 'Copiado!' : 'Pix Frete'"></span>
-                        </button>
-                        {% endif %}
-                        {% if group.total_taxa_aduaneira_pendente > 0 and group.pix_key_taxa %}
-                        <button type="button" @click="copyPix('{{ group.pix_key_taxa }}', '{{ group.ceg.id }}_taxa')"
-                            class="flex-1 py-1.5 bg-purple-500 hover:bg-purple-600 text-white font-bold text-[8.5px] rounded-lg transition text-center cursor-pointer shadow-xs truncate flex items-center justify-center gap-1">
-                            <i data-lucide="landmark" class="w-2.5 h-2.5"></i>
-                            <span x-text="copiedPixCegId === '{{ group.ceg.id }}_taxa' ? 'Copiado!' : 'Pix Taxa'"></span>
-                        </button>
-                        {% endif %}
-                    </div>
-                    {% elif group.ceg.pix_key %}
-                    <button type="button" @click="copyPix('{{ group.ceg.pix_key }}', '{{ group.ceg.id }}')"
-                        class="w-full py-1.5 px-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
-                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                        <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Pix'"></span>
-                    </button>
-                    {% endif %}
-                </div>
-
-                {% else %}
-                <div class="flex-1 flex flex-col items-center justify-center p-3 text-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 space-y-1">
-                    <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500"></i>
-                    <div class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Tudo Quitado!</div>
-                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Nenhum valor pendente nesta CEG.</div>
-                </div>
-                {% endif %}
-            </div>
-
-        </div>
-    </div>
+    <!-- ESTADO 2: PASTA ABERTA (Montado no DOM apenas quando expandido) -->
+    <template x-if="isCegExpanded('{{ group.ceg.id }}')">
+        {% include 'participants/partials/_cegs_list_folder_gatefold.html' %}
+    </template>
 </div>
