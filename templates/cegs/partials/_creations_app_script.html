@@ -420,7 +420,27 @@ document.addEventListener('alpine:init', () => {
                 }
             }
         },
+        closeNewTipoModal() {
+            this.showNewTipoModal = false;
+            this.newTipoNome = '';
+            this.newTipoDesc = '';
+        },
+        handleGlobalEscape() {
+            if (this.cropStudioOpen) {
+                this.closeCropStudio();
+                return;
+            }
+            if (this.showNewTipoModal) {
+                this.closeNewTipoModal();
+                return;
+            }
+            if (this.activeModal) {
+                this.closeModal();
+                return;
+            }
+        },
         closeModal() {
+            if (this.showNewTipoModal) return;
             this.activeModal = null;
             this.groupImagePreview = '';
             this.groupImageBase64 = '';

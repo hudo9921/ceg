@@ -3,7 +3,7 @@
 {% block title %}Hub de Criações — Painel do Organizador{% endblock %}
 
 {% block content %}
-<div x-data="creationsHub()" class="space-y-8">
+<div x-data="creationsHub()" @keydown.escape.window="handleGlobalEscape()" class="space-y-8">
 
     {% include 'cegs/partials/_creations_header.html' %}
     {% include 'cegs/partials/_creations_filter_bar.html' %}
