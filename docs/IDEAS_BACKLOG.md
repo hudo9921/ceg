@@ -82,3 +82,66 @@
 - **Mecânica:** Efeito sonoro de "tick" suave em abas e "chime" discreto ao confirmar pagamentos, com controle liga/desliga obrigatório no perfil.
 - **Status:** Guardado para implementação futura.
 
+---
+
+## 🛍️ 4. Experiência do Participante / Joiner
+
+### 📍 4.1. Linha do Tempo Visual do Photocard ("Onde está meu item?")
+- **Contexto:** Reduzir a ansiedade dos colecionadores durante os 2 a 4 meses de espera entre o pagamento na Ásia e a entrega física no Brasil.
+- **Mecânica:**
+  - Substituir o status textual estático por uma régua de progresso visual estilo Shopee/Amazon em cada CEG no painel do participante (`/me/`):
+    `[Reserva Confirmada]` ➔ `[Comprado na Ásia]` ➔ `[A caminho do Brasil (Caixa #X)]` ➔ `[Na Alfândega]` ➔ `[Chegou na GOM (Em triagem)]` ➔ `[Guardado na Caixinha / Enviado]`.
+  - O participante acompanha visualmente onde está o lote sem precisar perguntar no WhatsApp.
+- **Status:** Guardado para implementação futura.
+
+### 📦 4.2. O "Cofre da Caixinha" com Solicitação de Envio com 1 Clique
+- **Contexto:** Facilitar a vida do colecionador que acumula dezenas de photocards na caixinha para economizar no frete nacional.
+- **Mecânica:**
+  - Uma aba dedicada chamada **"Meu Cofre / Minha Caixinha"** com visualização em grid de todos os photocards já fisicamente em posse da GOM.
+  - Botão destacado: **"📦 Solicitar Envio da Minha Caixinha"**.
+  - Modal com conferência do endereço cadastrado, seleção da modalidade de envio (Mini Envios, PAC, Sedex) e envio automático da solicitação para a fila de empacotamento da GOM.
+- **Status:** Guardado para implementação futura.
+
+### 💖 4.3. "Alerta de Bias" & Lista de Desejos (Wishlist / ISO)
+- **Contexto:** Ajudar colecionadores a conseguirem vagas concorridas dos seus integrantes favoritos antes que esgotem no Segundo Zero.
+- **Mecânica:**
+  - No perfil do usuário, permitir selecionar seus grupos e integrantes favoritos (*Bias*).
+  - Destaque visual na vitrine e filtros dedicados (*"Apenas meus Bias"*).
+  - Notificação prioritária quando uma nova CEG do grupo abrir ou quando um slot do integrante for cancelado/liberado em repescagem.
+- **Status:** Guardado para implementação futura.
+
+### 📱 4.4. Notificações Ativas de Prazos (WhatsApp & E-mail)
+- **Contexto:** Lembrar participantes distraídos dos prazos de pagamentos das fases subsequentes (Frete Internacional e Taxa Aduaneira) para evitar calotes involuntários.
+- **Mecânica:**
+  - Disparos automáticos e personalizados via bot de WhatsApp ou e-mail nos marcos temporais da CEG:
+    - Abertura de prazo de Frete Internacional / Taxa com valor individual e Pix.
+    - Lembrete de 24h antes do vencimento.
+    - Notificação com código de rastreio nacional quando a caixa ou pacote for postado.
+- **Status:** Guardado para implementação futura.
+
+---
+
+## ⚡ 5. Eficiência Operacional para a GOM / Admin
+
+### 🏷️ 5.1. "Mesa de Triagem & Packing List" (Separação Física de Photocards)
+- **Contexto:** Auxiliar a organizadora no momento mais caótico da operação: quando a remessa internacional chega com 200 a 400 photocards misturados e precisam ser empacotados sem erros de troca de integrantes.
+- **Mecânica:**
+  - **Ficha por Photocard:** Busca rápida onde a admin digita/seleciona o card em mãos e a tela mostra exatamente quem comprou cada unidade (ex: *"1 para @ana, 1 para @carol"*).
+  - **Packing List com Checkbox:** Ao empacotar o envelope de um participante, uma lista conferível com checkboxes de todos os photocards e brindes que devem estar dentro daquele envio antes de lacrar o plástico bolha.
+- **Status:** Guardado para implementação futura.
+
+### 🚨 5.2. Régua de Cobrança Automática & Repescagem de Inadimplentes
+- **Contexto:** Eliminar o desgaste diário da organizadora de mandar dezenas de mensagens manuais de cobrança e agilizar a liberação de vagas presas por caloteiros.
+- **Mecânica:**
+  - Botão de disparo em lote *"Cobrar Inadimplentes da Fase X"* que envia mensagem direta formatada via WhatsApp com valores, chave Pix e link de envio do comprovante.
+  - Temporizador de tolerância (ex: 24h/48h): se não houver resposta ou pagamento, a admin ativa **"Liberar Repescagem"**, que reabre o slot como disponível no site e notifica a lista de espera.
+- **Status:** Guardado para implementação futura.
+
+### 🔗 5.3. Importador Rápido de Anúncios Asiáticos (Mercari Japan, Bunjang, Neokyo)
+- **Contexto:** Agilizar a criação de CEGs de lotes usados e photocards raros garimpados em marketplaces japoneses e coreanos.
+- **Mecânica:**
+  - No formulário de criação de CEG/Item, campo *"Importar por Link"*.
+  - A organizadora cola o link do Mercari/Bunjang; o backend realiza web scraping dos metadados públicos trazendo imagem principal em alta resolução, título do produto e preço original em Iene (¥) ou Won (₩), aplicando automaticamente a conversão cambial do dia para Reais (R$).
+- **Status:** Guardado para implementação futura.
+
+
