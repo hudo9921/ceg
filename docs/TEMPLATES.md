@@ -98,8 +98,11 @@
   - `_creations_modal_ceg_items.html`: Prateleira dinâmica de photocards, ações em lote e rodapé com totais.
   - `_creations_modal_ceg_item_row.html`: Card de cada photocard com estúdio de recorte e pré-reserva.
 - `_creations_modal_set.html`: Adição de novos Sets em CEGs existentes.
-- `_creations_modal_mercari.html`: Criação de itens avulsos do Mercari JP (dados, comprador, comprovante).
-- `_creations_app_script.html`: Motor Alpine.js (`creationsHub`) com JSON de grupos/eras/participantes e clipboard.
+- `_creations_modal_mercari.html`: Criação de itens avulsos do Mercari JP (dados, comprador, comprovante):
+  - `_creations_modal_mercari_col_left.html`: Coluna esquerda com descrição, tipo, link, quantidade, preço e comprador com busca e vínculo automático.
+  - `_creations_modal_mercari_col_right.html`: Coluna direita com caixa Mercari, status inicial e upload/Ctrl+V de proof.
+- `_creations_modal_tipo_item.html`: Modal sobreposto para cadastro instantâneo de novos Tipos de Item compartilhado no sistema.
+- `_creations_app_script.html`: Motor Alpine.js (`creationsHub`) com JSON de grupos/eras/participantes, autocomplete de compradores e clipboard.
 
 ### 2.5. Caixas & Remessas Internacionais
 - **Dashboard (`caixas_list.html` — 111 linhas):**

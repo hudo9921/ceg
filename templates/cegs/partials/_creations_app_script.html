@@ -106,6 +106,14 @@ document.addEventListener('alpine:init', () => {
         newTipoSubmitting: false,
         selectedCaixaId: hubData.selectedCaixaId || '',
         selectedParticipantId: '',
+        selectedBuyerId: '',
+        buyerParticipantId: '',
+        buyerNameQuery: '',
+        buyerPhoneQuery: '',
+        buyerSocialQuery: '',
+        showBuyerNameSuggestions: false,
+        showBuyerPhoneSuggestions: false,
+        buyerSuggestions: [],
         buyerPhone: '',
         buyerName: '',
         buyerUsername: '',
@@ -197,45 +205,128 @@ document.addEventListener('alpine:init', () => {
             return this.caixas.find(c => String(c.id) === String(this.selectedCaixaId)) || null;
         },
 
-        onSelectExistingParticipant(pId) {
+        onSelectBuyer(pId) {
+            this.selectedBuyerId = pId || '';
+            this.buyerParticipantId = pId || '';
             this.selectedParticipantId = pId || '';
             if (!pId) {
-                this.resetToNewParticipant();
+                this.buyerNameQuery = '';
+                this.buyerPhoneQuery = '';
+                this.buyerSocialQuery = '';
+                this.buyerName = '';
+                this.buyerPhone = '';
+                this.buyerUsername = '';
+                this.buyerSocial = '';
+                this.buyerFound = false;
+                this.showBuyerNameSuggestions = false;
+                this.showBuyerPhoneSuggestions = false;
+                this.buyerSuggestions = [];
                 return;
             }
             const p = this.participants.find(item => String(item.id) === String(pId));
             if (p) {
+                this.buyerNameQuery = p.name || '';
+                this.buyerPhoneQuery = p.whatsapp || '';
+                this.buyerSocialQuery = p.social_handle || (p.username ? '@' + p.username : '');
                 this.buyerName = p.name || '';
                 this.buyerPhone = p.whatsapp || '';
                 this.buyerUsername = p.username || '';
-                this.buyerSocial = p.social_handle || '';
+                this.buyerSocial = p.social_handle || (p.username ? '@' + p.username : '');
                 this.buyerFound = true;
-                this.showNameSuggestions = false;
-                this.showPhoneSuggestions = false;
+                this.showBuyerNameSuggestions = false;
+                this.showBuyerPhoneSuggestions = false;
+                this.buyerSuggestions = [];
             }
+        },
+
+        selectBuyerSuggestion(s) {
+            if (!s) return;
+            this.onSelectBuyer(s.id);
+        },
+
+        onBuyerNameInput() {
+            this.filterBuyerSuggestions('name');
+            this.showBuyerNameSuggestions = true;
+            this.buyerName = this.buyerNameQuery;
+            if (this.buyerParticipantId) {
+                const currentP = this.participants.find(p => String(p.id) === String(this.buyerParticipantId));
+                if (!currentP || currentP.name !== this.buyerNameQuery) {
+                    this.buyerParticipantId = '';
+                    this.selectedBuyerId = '';
+                    this.selectedParticipantId = '';
+                    this.buyerFound = false;
+                }
+            }
+        },
+
+        onBuyerPhoneInput() {
+            this.filterBuyerSuggestions('phone');
+            this.showBuyerPhoneSuggestions = true;
+            this.buyerPhone = this.buyerPhoneQuery;
+            const cleaned = (this.buyerPhoneQuery || '').replace(/\D/g, '');
+            const match = this.participants.find(p => (p.whatsapp || '').replace(/\D/g, '') === cleaned);
+            if (match) {
+                this.buyerParticipantId = match.id;
+                this.selectedBuyerId = match.id;
+                this.selectedParticipantId = match.id;
+                this.buyerFound = true;
+                if (!this.buyerNameQuery) {
+                    this.buyerNameQuery = match.name || '';
+                    this.buyerName = match.name || '';
+                }
+                if (!this.buyerSocialQuery) {
+                    this.buyerSocialQuery = match.social_handle || (match.username ? '@' + match.username : '');
+                    this.buyerSocial = this.buyerSocialQuery;
+                }
+            } else if (this.buyerParticipantId) {
+                const currentP = this.participants.find(p => String(p.id) === String(this.buyerParticipantId));
+                if (currentP && (currentP.whatsapp || '').replace(/\D/g, '') !== cleaned) {
+                    this.buyerParticipantId = '';
+                    this.selectedBuyerId = '';
+                    this.selectedParticipantId = '';
+                    this.buyerFound = false;
+                }
+            }
+        },
+
+        filterBuyerSuggestions(type) {
+            if (type === 'name') {
+                const term = (this.buyerNameQuery || '').toLowerCase().trim();
+                if (!term) {
+                    this.buyerSuggestions = this.participants.slice(0, 5);
+                    return;
+                }
+                this.buyerSuggestions = this.participants.filter(p => {
+                    const n = (p.name || '').toLowerCase();
+                    const u = (p.username || '').toLowerCase();
+                    const s = (p.social_handle || '').toLowerCase();
+                    return n.includes(term) || u.includes(term) || s.includes(term);
+                }).slice(0, 6);
+            } else {
+                const term = (this.buyerPhoneQuery || '').replace(/\D/g, '');
+                if (!term) {
+                    this.buyerSuggestions = this.participants.slice(0, 5);
+                    return;
+                }
+                this.buyerSuggestions = this.participants.filter(p => {
+                    const ph = (p.whatsapp || '').replace(/\D/g, '');
+                    const n = (p.name || '').toLowerCase();
+                    return ph.includes(term) || n.includes((this.buyerPhoneQuery || '').toLowerCase());
+                }).slice(0, 6);
+            }
+        },
+
+        onSelectExistingParticipant(pId) {
+            this.onSelectBuyer(pId);
         },
 
         selectParticipant(p) {
             if (!p) return;
-            this.selectedParticipantId = p.id;
-            this.buyerName = p.name || '';
-            this.buyerPhone = p.whatsapp || '';
-            this.buyerUsername = p.username || '';
-            this.buyerSocial = p.social_handle || '';
-            this.buyerFound = true;
-            this.showNameSuggestions = false;
-            this.showPhoneSuggestions = false;
+            this.onSelectBuyer(p.id);
         },
 
         resetToNewParticipant() {
-            this.selectedParticipantId = '';
-            this.buyerName = '';
-            this.buyerPhone = '';
-            this.buyerUsername = '';
-            this.buyerSocial = '';
-            this.buyerFound = false;
-            this.showNameSuggestions = false;
-            this.showPhoneSuggestions = false;
+            this.onSelectBuyer('');
         },
 
         get filteredParticipantsByName() {
@@ -298,16 +389,27 @@ document.addEventListener('alpine:init', () => {
                 this.itemImagePreview = '';
                 this.itemImageBase64 = '';
                 this.itemImageUrl = '';
+                this.selectedBuyerId = '';
+                this.buyerParticipantId = '';
+                this.buyerNameQuery = '';
+                this.buyerPhoneQuery = '';
+                this.buyerSocialQuery = '';
                 this.buyerPhone = '';
                 this.buyerName = '';
                 this.buyerUsername = '';
                 this.buyerSocial = '';
                 this.buyerFound = false;
                 this.selectedParticipantId = '';
+                this.showBuyerNameSuggestions = false;
+                this.showBuyerPhoneSuggestions = false;
                 this.showNameSuggestions = false;
                 this.showPhoneSuggestions = false;
+                this.buyerSuggestions = [];
                 if (hubData.selectedCaixaId) {
                     this.selectedCaixaId = hubData.selectedCaixaId;
+                }
+                if (this.tiposItem && this.tiposItem.length > 0 && !this.itemTipoId) {
+                    this.itemTipoId = this.tiposItem[0].id;
                 }
             } else if (name === 'ceg') {
                 if (!this.selectedGroupId && this.groups && this.groups.length > 0) {
@@ -995,12 +1097,16 @@ document.addEventListener('alpine:init', () => {
                         this.tiposItem.push(data.tipo);
                     }
                     this.itemTipoId = data.tipo.id;
+                    this.batchTipoItemId = data.tipo.id;
                     if (this.editingItem) {
                         this.editingItem.tipo_item_id = data.tipo.id;
                     }
                     this.newTipoNome = '';
                     this.newTipoDesc = '';
                     this.showNewTipoModal = false;
+                    this.$nextTick(() => {
+                        if (window.lucide) window.lucide.createIcons();
+                    });
                 } else {
                     alert(data.message || 'Erro ao cadastrar tipo.');
                 }

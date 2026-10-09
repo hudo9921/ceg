@@ -1,0 +1,59 @@
+<!-- MODAL NOVO TIPO DE ITEM (POP-UP SOBREPOSTO) -->
+<div x-show="showNewTipoModal" x-cloak
+     class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs"
+     @keydown.escape.window="showNewTipoModal = false">
+    <div class="bg-white dark:bg-[#14121B] rounded-3xl border border-violet-200/70 dark:border-white/10 max-w-md w-full p-6 shadow-2xl space-y-4 transform transition-all"
+         @click.away="showNewTipoModal = false">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center border-b border-violet-100 dark:border-white/10 pb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                    <i data-lucide="tag" class="w-4 h-4"></i>
+                </div>
+                <h4 class="text-sm font-black text-slate-900 dark:text-white">
+                    Novo Tipo de Item
+                </h4>
+            </div>
+            <button type="button" @click="showNewTipoModal = false"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Formulário Dinâmico de Tipo de Item -->
+        <form @submit.prevent="submitNewTipo()" class="space-y-4 text-xs">
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1.5">Nome do Tipo de Item *</label>
+                <input type="text" x-model="newTipoNome" required placeholder="Ex: Mini Poster, Keyring, Inclusão, Labubu"
+                       class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:bg-white transition">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1.5">Descrição (Opcional)</label>
+                <input type="text" x-model="newTipoDesc" placeholder="Breve detalhe sobre esta categoria de item"
+                       class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl text-slate-700 dark:text-cyber-silver focus:ring-2 focus:ring-violet-500 focus:bg-white transition">
+            </div>
+
+            <div class="p-3 bg-violet-50/60 dark:bg-violet-950/30 rounded-xl border border-violet-200/60 dark:border-white/10 flex items-start gap-2">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5"></i>
+                <p class="text-[10px] text-slate-600 dark:text-slate-300 leading-tight">
+                    Este tipo ficará disponível imediatamente para todas as CEGs, Itens Individuais, Caixas e Remessas do sistema.
+                </p>
+            </div>
+
+            <div class="flex justify-end gap-2.5 pt-3 border-t border-violet-100 dark:border-white/10">
+                <button type="button" @click="showNewTipoModal = false"
+                        class="px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver font-bold rounded-xl transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="submit" :disabled="newTipoSubmitting"
+                        class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-black rounded-xl transition shadow-md shadow-violet-500/25 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:scale-[1.02]">
+                    <span x-show="newTipoSubmitting" class="animate-spin"><i data-lucide="loader-2" class="w-3.5 h-3.5"></i></span>
+                    <i x-show="!newTipoSubmitting" data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Criar Tipo</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

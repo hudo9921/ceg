@@ -130,6 +130,7 @@ urlpatterns = [
 
     # Itens Individuais (Pedidos Mercari / JP / etc.)
     path('itens-individuais/create/', CreateItemIndividualView.as_view(), name='create_item_individual'),
+    path('itens-individuais/criar/', CreateItemIndividualView.as_view()),
     path('itens-individuais/<int:item_id>/update/', UpdateItemIndividualView.as_view(), name='update_item_individual'),
     path('itens-individuais/<int:item_id>/toggle-payment/', ToggleItemPaymentView.as_view(), name='toggle_item_payment'),
     path('itens-individuais/<int:item_id>/delete/', DeleteItemIndividualView.as_view(), name='delete_item_individual'),

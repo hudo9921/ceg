@@ -412,5 +412,35 @@ class ItemIndividualTests(TestCase):
         self.assertContains(res, f'openEditItem({item.id})')
         self.assertContains(res, 'Editar Pedido Individual Mercari')
 
+    def test_create_item_individual_via_creations_modal_fields(self):
+        """Testa criação de ItemIndividual enviando os campos do formulário do modal (comprador_nome, comprador_whatsapp, etc.)"""
+        from apps.cegs.models import TipoItem
+        tipo_inclusao, _ = TipoItem.objects.get_or_create(nome='Inclusão')
+
+        payload = {
+            'nome': 'DVD KARY Mercari JP',
+            'tipo_item_id': tipo_inclusao.id,
+            'link_pedido': 'https://jp.mercari.com/item/m999888',
+            'quantidade': '5',
+            'preco_produto': '85.00',
+            'comprador_id': str(self.participant.id),
+            'comprador_nome': self.participant.name,
+            'comprador_whatsapp': self.participant.whatsapp,
+            'comprador_social': '@kary',
+            'observacoes': 'Anotações de teste',
+            'status': 'COMPRADO',
+        }
+
+        res = self.client.post(reverse('create_item_individual'), data=payload, follow=True)
+        self.assertEqual(res.status_code, 200)
+
+        created = ItemIndividual.objects.filter(nome='DVD KARY Mercari JP').first()
+        self.assertIsNotNone(created)
+        self.assertEqual(created.comprador, self.participant)
+        self.assertEqual(created.tipo_item, tipo_inclusao)
+        self.assertEqual(created.quantidade, 5)
+        self.assertEqual(created.preco_produto, Decimal('85.00'))
+        self.assertEqual(created.observacoes, 'Anotações de teste')
+
 
 

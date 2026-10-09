@@ -25,6 +25,7 @@
         <form id="create_item_individual_form" action="{% url 'create_item_individual' %}" method="POST" enctype="multipart/form-data"
               class="flex flex-col flex-1 min-h-0">
             {% csrf_token %}
+            <input type="hidden" name="foto_base64" :value="itemImageBase64">
 
             <!-- Corpo Rolável com Layout Retangular em 2 Colunas (lg:grid-cols-12) -->
             <div class="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6">

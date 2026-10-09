@@ -84,17 +84,17 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
         caixa_id = request.POST.get('caixa_id', '').strip()
         status = request.POST.get('status', ItemIndividual.Status.COMPRADO).strip()
 
-        whatsapp = request.POST.get('whatsapp', '').strip()
-        comprador_nome = request.POST.get('comprador_nome', '').strip()
-        comprador_username = request.POST.get('comprador_username', '').strip()
-        comprador_social = request.POST.get('comprador_social', '').strip()
+        whatsapp = (request.POST.get('whatsapp') or request.POST.get('comprador_whatsapp') or '').strip()
+        comprador_nome = (request.POST.get('comprador_nome') or '').strip()
+        comprador_username = (request.POST.get('comprador_username') or '').strip()
+        comprador_social = (request.POST.get('comprador_social') or '').strip()
 
-        preco_produto = parse_optional_decimal(request.POST.get('preco_produto'))
+        preco_produto = parse_optional_decimal(request.POST.get('preco_produto') or request.POST.get('valor_item'))
         frete_inter = parse_optional_decimal(request.POST.get('frete_inter'))
         frete_inter_pago = request.POST.get('frete_inter_pago') in ('on', 'true', '1', True)
         taxa_aduaneira = parse_optional_decimal(request.POST.get('taxa_aduaneira'))
         taxa_aduaneira_paga = request.POST.get('taxa_aduaneira_paga') in ('on', 'true', '1', True)
-        observacoes = request.POST.get('observacoes', '').strip()
+        observacoes = (request.POST.get('observacoes') or request.POST.get('notes') or '').strip()
         foto_url = request.POST.get('foto_url', '').strip()
         next_url = request.POST.get('next_url', '').strip()
 
@@ -106,7 +106,7 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
             messages.error(request, "O nome / descrição do item é obrigatório.")
             return redirect(next_url or '/creations/?category=mercari')
 
-        participant_id = request.POST.get('participant_id', '').strip()
+        participant_id = (request.POST.get('participant_id') or request.POST.get('comprador_id') or '').strip()
         comprador = None
 
         if participant_id:

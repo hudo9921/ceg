@@ -22,7 +22,7 @@
             </button>
         </div>
 
-        <select name="tipo_item_id" required
+        <select name="tipo_item_id" required x-model="itemTipoId"
                 class="w-full bg-white dark:bg-cyber-surface border border-violet-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500">
             <option value="">-- Selecione o Tipo do Produto --</option>
             <template x-for="t in tiposItem" :key="t.id">
@@ -48,7 +48,7 @@
 
         <div class="sm:col-span-3">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Preço (R$)</label>
-            <input type="number" step="0.01" min="0" name="valor_item" placeholder="Ex: 85.00"
+            <input type="number" step="0.01" min="0" name="preco_produto" placeholder="Ex: 85.00"
                    class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-black text-rose-600 dark:text-rose-400 focus:ring-2 focus:ring-rose-500">
         </div>
     </div>
@@ -82,6 +82,7 @@
         </div>
 
         <input type="hidden" name="comprador_id" :value="buyerParticipantId">
+        <input type="hidden" name="participant_id" :value="buyerParticipantId">
 
         <!-- Campos de Nome, WhatsApp e Social com Autocomplete Instantâneo -->
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1 border-t border-purple-100/70 dark:border-white/10">
@@ -123,6 +124,7 @@
                        @focus="filterBuyerSuggestions('phone'); showBuyerPhoneSuggestions = true"
                        placeholder="11999998888"
                        class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-rose-500">
+                <input type="hidden" name="whatsapp" :value="buyerPhoneQuery">
 
                 <!-- Sugestões de Clientes Existentes -->
                 <div x-show="showBuyerPhoneSuggestions && buyerSuggestions.length > 0"
@@ -148,6 +150,7 @@
                 <input type="text" name="comprador_social" x-model="buyerSocialQuery"
                        placeholder="@user"
                        class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-white focus:ring-2 focus:ring-rose-500">
+                <input type="hidden" name="comprador_username" :value="buyerUsername">
             </div>
         </div>
 
@@ -161,7 +164,7 @@
     <!-- Observações Internas -->
     <div>
         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Observações Internas (Opcional)</label>
-        <textarea name="notes" rows="2"
+        <textarea name="observacoes" rows="2"
                   placeholder="Anotações de split, envio conjunto ou detalhes do pedido..."
                   class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs text-slate-800 dark:text-white focus:ring-2 focus:ring-rose-500 focus:bg-white dark:focus:bg-cyber-surface transition"></textarea>
     </div>
