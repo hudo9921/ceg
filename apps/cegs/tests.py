@@ -2,6 +2,7 @@ import json
 import threading
 from decimal import Decimal
 from django.test import TestCase, TransactionTestCase, Client
+from django.core.cache import cache
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User
@@ -227,6 +228,7 @@ class OTPServiceTests(TestCase):
 
 class ViewsAndAnalyticsIntegrationTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = Client()
         self.group = KpopGroup.objects.create(name='tripleS', slug='triples')
         self.era = Era.objects.create(group=self.group, name='ASSEMBLE24', slug='assemble24')
@@ -461,6 +463,40 @@ class ViewsAndAnalyticsIntegrationTests(TestCase):
         self.assertContains(response, 'Filtrar Grupo:')
         self.assertContains(response, 'tripleS')
         self.assertContains(response, 'NewJeans')
+
+    def test_home_status_transition_throttled_by_cache(self):
+        """Verifica que a sincronização automática de status é throttled por cache para poupar o banco"""
+        cache.clear()
+
+        # 1. Primeiro request preenche o throttle no cache
+        res1 = self.client.get('/')
+        self.assertEqual(res1.status_code, 200)
+        self.assertTrue(cache.get('home_ceg_status_sync_throttle'))
+
+        # 2. Cria uma nova CEG com opens_at no passado
+        group_throttle = KpopGroup.objects.create(name='aespa', slug='aespa-test')
+        era_throttle = Era.objects.create(group=group_throttle, name='Supernova', slug='supernova-test')
+        ceg_throttle = CEG.objects.create(
+            era=era_throttle,
+            title='CEG aespa Passada',
+            slug='ceg-aespa-passada',
+            status=CEG.Status.SCHEDULED,
+            opens_at=timezone.now() - timedelta(minutes=5),
+            pix_key='aespa@pix.com'
+        )
+
+        # 3. Segundo request com o cache ativo: não executa a query de UPDATE
+        res2 = self.client.get('/')
+        self.assertEqual(res2.status_code, 200)
+        ceg_throttle.refresh_from_db()
+        self.assertEqual(ceg_throttle.status, CEG.Status.SCHEDULED)
+
+        # 4. Limpando o cache (simulando expiração dos 30s): a virada é executada
+        cache.delete('home_ceg_status_sync_throttle')
+        res3 = self.client.get('/')
+        self.assertEqual(res3.status_code, 200)
+        ceg_throttle.refresh_from_db()
+        self.assertEqual(ceg_throttle.status, CEG.Status.OPEN)
 
 
 class CreationsHubIntegrationTests(TestCase):

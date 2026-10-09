@@ -13,6 +13,7 @@ from django.db import transaction
 from django.db.models import Q, Count, Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.core.cache import cache
 from apps.groups.models import Era
 from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem, HomeBannerConfig
 from apps.participants.models import Participant, Claim
@@ -28,28 +29,33 @@ class HomeView(View):
         now = timezone.now()
 
         # 1. Transição Automática de Status:
-        # CEGs agendadas cujo horário de abertura já chegou passam para OPEN
-        CEG.objects.filter(
-            status=CEG.Status.SCHEDULED,
-            opens_at__lte=now
-        ).update(status=CEG.Status.OPEN)
+        # Throttle via cache de 30s para evitar UPDATEs e locks de escrita no banco a cada GET na Home
+        status_sync_key = 'home_ceg_status_sync_throttle'
+        if not cache.get(status_sync_key):
+            # CEGs agendadas cujo horário de abertura já chegou passam para OPEN
+            CEG.objects.filter(
+                status=CEG.Status.SCHEDULED,
+                opens_at__lte=now
+            ).update(status=CEG.Status.OPEN)
 
-        # CEGs abertas que passaram do encerramento SÓ passam para CLOSED se NÃO houverem mais vagas disponíveis
-        expired_open_cegs = CEG.objects.filter(
-            status=CEG.Status.OPEN,
-            closes_at__lte=now
-        )
-        if expired_open_cegs.exists():
-            cegs_with_available_slots = set(
-                ItemSlot.objects.filter(
-                    set__ceg__in=expired_open_cegs,
-                    set__is_active=True,
-                    status=ItemSlot.Status.AVAILABLE
-                ).values_list('set__ceg_id', flat=True).distinct()
+            # CEGs abertas que passaram do encerramento SÓ passam para CLOSED se NÃO houverem mais vagas disponíveis
+            expired_open_cegs = CEG.objects.filter(
+                status=CEG.Status.OPEN,
+                closes_at__lte=now
             )
-            expired_open_cegs.exclude(
-                id__in=cegs_with_available_slots
-            ).update(status=CEG.Status.CLOSED)
+            if expired_open_cegs.exists():
+                cegs_with_available_slots = set(
+                    ItemSlot.objects.filter(
+                        set__ceg__in=expired_open_cegs,
+                        set__is_active=True,
+                        status=ItemSlot.Status.AVAILABLE
+                    ).values_list('set__ceg_id', flat=True).distinct()
+                )
+                expired_open_cegs.exclude(
+                    id__in=cegs_with_available_slots
+                ).update(status=CEG.Status.CLOSED)
+
+            cache.set(status_sync_key, True, timeout=30)
 
         # 2. Busca CEGs abertas
         raw_open_cegs = list(
