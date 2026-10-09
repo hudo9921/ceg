@@ -1231,9 +1231,8 @@
     class="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
     style="z-index: 99999;"
     @keydown.escape.window="showNewTipoModal = false"
-    @click.self.stop="showNewTipoModal = false">
-    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-sm w-full p-5 shadow-2xl space-y-4 border border-purple-100/60 dark:border-white/5 transform transition-all"
-        @click.stop>
+    @click.self="showNewTipoModal = false">
+    <div class="bg-white dark:bg-cyber-surface rounded-3xl border border-purple-100/70 dark:border-white/10 max-w-sm w-full p-5 shadow-2xl space-y-4 border border-purple-100/60 dark:border-white/5 transform transition-all">
         <div class="flex justify-between items-center border-b border-purple-100/60 dark:border-white/5 pb-2">
             <h4 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                 <span><i data-lucide="tag" class="w-4 h-4"></i></span> Novo Tipo de Item

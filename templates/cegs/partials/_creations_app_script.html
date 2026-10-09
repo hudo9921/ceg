@@ -420,6 +420,11 @@ document.addEventListener('alpine:init', () => {
                 }
             }
         },
+        openNewTipoModal() {
+            this.newTipoNome = '';
+            this.newTipoDesc = '';
+            this.showNewTipoModal = true;
+        },
         closeNewTipoModal() {
             this.showNewTipoModal = false;
             this.newTipoNome = '';
