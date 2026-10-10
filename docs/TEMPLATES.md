@@ -79,9 +79,12 @@
     - `_cegs_list_table_drawer.html`: Gaveta retrátil da CEG suportando visualizações em Galeria e Tabela Detalhada.
 - `_mercari_section.html`: Compras avulsas no Mercari Japão com cards translúcidos.
 - `_caixinha_tab.html`: Orquestrador de hold e envios nacionais:
-  - `_caixinha_prontos.html`: Itens prontos para envio com seleção múltipla.
+  - `_caixinha_prontos.html`: Itens prontos para envio com formulário de solicitação:
+    - `_caixinha_prontos_grid.html`: Grid de photocards e itens prontos com proporção 2:3, fotos, badges de integrante e zoom lightbox.
   - `_caixinha_bloqueados.html`: Itens retidos com pendências financeiras ou alfandegárias.
-  - `_caixinha_pacotes.html`: Histórico e rastreio de pacotes nacionais gerados.
+  - `_caixinha_pacotes.html`: Orquestrador de pacotes nacionais:
+    - `_caixinha_pacotes_andamento.html`: Envios em andamento com status, rastreio e fotos dos photocards.
+    - `_caixinha_pacotes_recebidos.html`: Histórico de pacotes entregues e avaliações.
 - `_modais.html`: Orquestrador de modais (Perfil, Zoom de photocard, Confirmação e Cancelamento de pacotes).
 - `_my_claims_app_script.html`: Motor Alpine.js (`myClaimsApp`) desacoplado com filtros, cópia Pix e caixinha.
 
@@ -180,11 +183,14 @@
   - `_joiner_financial_panel.html`: Balanço financeiro (Pago vs Pendente em Itens, Frete e Taxa).
   - `_joiner_items_table.html`: Tabela completa de itens com botões rápidos de quitação de pagamento.
   - `_joiner_packages_section.html`: Histórico de envios e pacotes nacionais gerados.
-- **Central de Envios Nacionais (`envios_nacionais.html` — 29 linhas):**
+- **Central de Envios Nacionais (`envios_nacionais.html` — 30 linhas):**
   - `_envios_header.html`, `_envios_metrics.html`, `_envios_filters.html`: KPIs e busca de envios pendentes.
   - `_envios_grid.html`: Grade de solicitações de envio aguardando despacho.
-  - `_envios_package_card.html`: Card de pacote com itens, transportadora e etiqueta.
+  - `_envios_package_card.html`: Card de pacote com itens, transportadora e etiqueta:
+    - `_envios_package_items_list.html`: Listagem detalhada de photocards e compras com fotos ampliáveis, integrante e CEG.
   - `_envios_modal_dispatch.html`: Modal de despacho com inserção de código de rastreamento.
+  - `_envios_modal_edit.html`: Modal de edição operacional de pacotes.
+  - `_envios_modal_image_zoom.html`: Lightbox de zoom de alta definição para conferência visual dos photocards pela GOM.
   - `_envios_app_script.html`: Motor Alpine.js (`enviosApp`).
 
 ### 2.9. Ferramentas Operacionais & Administração
@@ -192,6 +198,14 @@
   - `_allocator_header.html`, `_allocator_tabs_nav.html`, `_allocator_paste_input.html`, `_allocator_matrix_table.html`, `_allocator_app_script.html`.
 - **Auditoria & Logs (`auditoria.html` — 27 linhas):**
   - `_auditoria_header.html`, `_auditoria_kpi_cards.html`, `_auditoria_filters.html`, `_auditoria_table.html`, `_auditoria_modal_detail.html`, `_auditoria_app_script.html`.
+- **Central de Notificações da GOM (`notificacoes.html` — 17 linhas):**
+  - `_notificacoes_header.html`: Título, badges dinâmicos de pendências e botão de marcar todas como lidas.
+  - `_notificacoes_tabs.html`: Abas de filtros por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes, Cadastros) e busca.
+  - `_notificacoes_list.html`: Feed operacional com cards, miniaturas de photocard, chips de CEG/Joiner e marcação instantânea.
+  - `_notificacoes_pagination.html`: Paginação preservando filtros.
+  - `_notificacoes_app_script.html`: Script Alpine.js com requisições assíncronas para leitura de notificações sem recarregar.
+- **Navegação Global Híbrida (`sidebar_dock_nav.html` — 181 linhas):**
+  - `_dock_nav_mobile.html`: Dock bar flutuante mobile (Godly style) modularizada (< 50 linhas).
 - **Cadastro em Massa de Participantes (`bulk_create.html` — 30 linhas):**
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**

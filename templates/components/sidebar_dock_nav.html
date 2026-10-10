@@ -1,5 +1,5 @@
 <!-- Componente de Navegação Híbrida: Sidebar Deezer/Linear (Desktop) + Dock Flutuante Godly (Mobile) -->
-<div x-data="{ sidebarCollapsed: true, gomMenuOpen: {% if 'creations' in request.path or 'caixa' in request.path or 'status' in request.path or 'auditoria' in request.path or 'envio' in request.path or 'vendas' in request.path or 'consulta-joiner' in request.path %}true{% else %}false{% endif %} }" class="relative">
+<div x-data="{ sidebarCollapsed: true, gomMenuOpen: {% if 'creations' in request.path or 'caixa' in request.path or 'status' in request.path or 'auditoria' in request.path or 'notificacoes' in request.path or 'envio' in request.path or 'vendas' in request.path or 'consulta-joiner' in request.path %}true{% else %}false{% endif %} }" class="relative">
     
     <!-- 1. SIDEBAR VERTICAL RETRÁTIL (DESKTOP) -->
     <aside class="hidden lg:flex fixed left-0 top-0 bottom-0 z-50 flex-col justify-between transition-all duration-300 ease-in-out border-r border-purple-100/70 dark:border-white/10 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-xl shadow-xs"
@@ -114,6 +114,19 @@
                         <span class="truncate">Envios Nacionais</span>
                     </a>
 
+                    <a href="{% url 'gom_notifications' %}"
+                       class="group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'notificacoes' in request.path or request.resolver_match.url_name == 'gom_notifications' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <i data-lucide="bell" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500"></i>
+                            <span class="truncate">Notificações GOM</span>
+                        </div>
+                        {% if gom_unread_notifications_count > 0 %}
+                            <span class="gom-unread-badge px-1.5 py-0.2 text-[9px] font-black rounded-full bg-rose-500 text-white shadow-xs">
+                                {{ gom_unread_notifications_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+
                     <a href="{% url 'auditoria_logs' %}"
                        class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'auditoria' in request.path or 'logs' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
                         <i data-lucide="shield" class="w-3.5 h-3.5 flex-shrink-0 text-indigo-500"></i>
@@ -182,54 +195,5 @@
     </aside>
 
     <!-- 2. DOCK BAR FLUTUANTE INSPIRADO EM GODLY.WEBSITE (MOBILE & TABLET) -->
-    <div class="lg:hidden fixed bottom-3 inset-x-3 z-40 pointer-events-none">
-        <nav class="max-w-md mx-auto pointer-events-auto bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-2xl border border-purple-100/80 dark:border-white/10 rounded-3xl p-1.5 shadow-glass flex items-center justify-around">
-            
-            <!-- CEGs (Compass) -->
-            <a href="{% url 'home' %}"
-               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if request.resolver_match.url_name == 'home' or request.path == '/' %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                <i data-lucide="compass" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black mt-0.5">CEGs</span>
-            </a>
-
-            <!-- Vitrine (Sparkles) -->
-            <a href="{% url 'vitrine_list' %}"
-               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if 'vitrine' in request.path %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                <i data-lucide="sparkles" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black mt-0.5">Vitrine</span>
-            </a>
-
-            <!-- Minhas Reservas (ShoppingBag) -->
-            <a href="{% url 'my_claims' %}"
-               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if 'me' in request.path and not 'caixinha' in request.GET.tab %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black mt-0.5">Compras</span>
-            </a>
-
-            <!-- Caixinha (Boxes) -->
-            <a href="{% url 'my_claims' %}?tab=caixinha"
-               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if request.GET.tab == 'caixinha' %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-                <i data-lucide="boxes" class="w-5 h-5"></i>
-                <span class="text-[9px] font-black mt-0.5">Caixinha</span>
-            </a>
-
-            <!-- Perfil / Login (User) -->
-            {% if logged_participant %}
-                <a href="{% url 'my_claims' %}"
-                   class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-pink-600 dark:text-cyber-neon transition">
-                    <div class="w-5 h-5 rounded-full bg-pink-500 text-white flex items-center justify-center text-[10px] font-black">
-                        {{ logged_participant.display_name|slice:":1"|upper }}
-                    </div>
-                    <span class="text-[9px] font-black mt-0.5">Perfil</span>
-                </a>
-            {% else %}
-                <a href="{% url 'login_otp' %}"
-                   class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 dark:text-slate-400 transition hover:text-pink-600">
-                    <i data-lucide="user" class="w-5 h-5"></i>
-                    <span class="text-[9px] font-black mt-0.5">Entrar</span>
-                </a>
-            {% endif %}
-        </nav>
-    </div>
+    {% include 'components/_dock_nav_mobile.html' %}
 </div>
-

@@ -706,6 +706,15 @@
             </a>
             <div class="flex items-center gap-2">
                 {% if request.user.is_authenticated and request.user.is_staff %}
+                    <a href="{% url 'gom_notifications' %}"
+                       class="relative p-1.5 rounded-xl bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center justify-center">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                        {% if gom_unread_notifications_count > 0 %}
+                            <span class="gom-unread-badge absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                                {{ gom_unread_notifications_count }}
+                            </span>
+                        {% endif %}
+                    </a>
                     <a href="{% url 'creations_hub' %}"
                        class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center gap-1">
                         <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-500"></i>

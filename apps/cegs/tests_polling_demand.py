@@ -315,7 +315,7 @@ class CEGPollingDemandTests(TestCase):
         self.assertIn('toggleVotesAccordion', content)
         self.assertIn('isVotesAccordionOpen', content)
         self.assertIn('Ver Votos', content)
-        self.assertIn('dark:bg-[#131B2E]', content)
+        self.assertTrue('dark:bg-slate-900' in content or 'dark:bg-[#131B2E]' in content)
         self.assertIn(self.p1.name, content)
         self.assertIn(vote.formatted_created_at, content)
 

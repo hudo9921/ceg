@@ -1,0 +1,112 @@
+<!-- Abas de Navegação e Filtros Rápidos por Tipo de Ação -->
+<div class="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100/70 dark:border-white/10 p-4 sm:p-5 shadow-sm space-y-4">
+    <!-- Linha 1: Abas Principais (Scroll Horizontal no Mobile) -->
+    <div class="flex items-center justify-between gap-3 flex-wrap lg:flex-nowrap border-b border-purple-100/60 dark:border-white/5 pb-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full lg:w-auto py-1">
+            <!-- Aba 1: Todas -->
+            <a href="?action_type=all{% if unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap {% if action_type == 'all' %}bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+                <span>Todas</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if action_type == 'all' %}bg-white/20 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400{% endif %}">
+                    {{ total_notifications }}
+                </span>
+            </a>
+
+            <!-- Aba 2: Claims & Reservas -->
+            <a href="?action_type=claims{% if unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap {% if action_type == 'claims' %}bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <i data-lucide="sparkles" class="w-4 h-4 text-pink-400 {% if action_type == 'claims' %}text-white{% endif %}"></i>
+                <span>Claims</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if action_type == 'claims' %}bg-white/20 text-white{% else %}bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300{% endif %}">
+                    {{ count_claims }}
+                </span>
+            </a>
+
+            <!-- Aba 3: Solicitações de Envio -->
+            <a href="?action_type=solicitacoes{% if unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap {% if action_type == 'solicitacoes' %}bg-emerald-600 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <i data-lucide="truck" class="w-4 h-4 text-emerald-500 {% if action_type == 'solicitacoes' %}text-white{% endif %}"></i>
+                <span>Solicitações de Envio</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if action_type == 'solicitacoes' %}bg-white/20 text-white{% else %}bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300{% endif %}">
+                    {{ count_solicitacoes }}
+                </span>
+            </a>
+
+            <!-- Aba 4: Pagamentos -->
+            <a href="?action_type=pagamentos{% if unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap {% if action_type == 'pagamentos' %}bg-amber-600 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <i data-lucide="credit-card" class="w-4 h-4 text-amber-500 {% if action_type == 'pagamentos' %}text-white{% endif %}"></i>
+                <span>Pagamentos</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if action_type == 'pagamentos' %}bg-white/20 text-white{% else %}bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-300{% endif %}">
+                    {{ count_pagamentos }}
+                </span>
+            </a>
+
+            <!-- Aba 5: Enquetes / Demanda -->
+            <a href="?action_type=enquetes{% if unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap {% if action_type == 'enquetes' %}bg-sky-600 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <i data-lucide="vote" class="w-4 h-4 text-sky-500 {% if action_type == 'enquetes' %}text-white{% endif %}"></i>
+                <span>Enquetes</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if action_type == 'enquetes' %}bg-white/20 text-white{% else %}bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300{% endif %}">
+                    {{ count_enquetes }}
+                </span>
+            </a>
+
+            <!-- Aba 6: Cadastros -->
+            <a href="?action_type=cadastros{% if unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap {% if action_type == 'cadastros' %}bg-purple-600 text-white shadow-xs{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <i data-lucide="user-plus" class="w-4 h-4 text-purple-500 {% if action_type == 'cadastros' %}text-white{% endif %}"></i>
+                <span>Cadastros</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if action_type == 'cadastros' %}bg-white/20 text-white{% else %}bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300{% endif %}">
+                    {{ count_cadastros }}
+                </span>
+            </a>
+        </div>
+
+        <!-- Alternador Apenas Não Lidas -->
+        <a href="?action_type={{ action_type }}{% if not unread_only %}&unread=true{% endif %}{% if q %}&q={{ q }}{% endif %}"
+           class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border whitespace-nowrap cursor-pointer {% if unread_only %}bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/60{% else %}bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-white/10 hover:bg-slate-100{% endif %}">
+            <span class="w-2 h-2 rounded-full {% if unread_only %}bg-rose-500 animate-pulse{% else %}bg-slate-300 dark:bg-slate-600{% endif %}"></span>
+            <span>Apenas Não Lidas</span>
+            {% if total_unread > 0 %}
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-200/60 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200">
+                    {{ total_unread }}
+                </span>
+            {% endif %}
+        </a>
+    </div>
+
+    <!-- Linha 2: Busca e Resumo -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <form method="GET" action="{% url 'gom_notifications' %}" class="flex-1 relative">
+            <input type="hidden" name="action_type" value="{{ action_type }}">
+            {% if unread_only %}
+                <input type="hidden" name="unread" value="true">
+            {% endif %}
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="search" class="w-4 h-4"></i>
+            </span>
+            <input type="text"
+                   name="q"
+                   value="{{ q }}"
+                   placeholder="Buscar por participante, photocard, CEG ou mensagem..."
+                   class="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition">
+            {% if q %}
+                <a href="?action_type={{ action_type }}{% if unread_only %}&unread=true{% endif %}"
+                   class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </a>
+            {% endif %}
+        </form>
+
+        <div class="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2 self-end sm:self-auto">
+            <span>Exibindo <strong>{{ total_filtered }}</strong> notificação(ões)</span>
+            {% if q or unread_only or action_type != 'all' %}
+                <a href="{% url 'gom_notifications' %}" class="text-pink-600 dark:text-cyber-neon hover:underline font-bold text-[11px]">
+                    Limpar filtros
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

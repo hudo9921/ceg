@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Central de Notificações — Painel GOM | ValCegs Manager{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="notificacoesApp()">
+    <div style="display: none;">{% csrf_token %}</div>
+
+    <!-- Cabeçalho Principal -->
+    {% include 'cegs/partials/_notificacoes_header.html' %}
+
+    <!-- Abas e Filtros por Tipo de Ação -->
+    {% include 'cegs/partials/_notificacoes_tabs.html' %}
+
+    <!-- Feed / Lista de Notificações -->
+    {% include 'cegs/partials/_notificacoes_list.html' %}
+
+    <!-- Paginação -->
+    {% include 'cegs/partials/_notificacoes_pagination.html' %}
+</div>
+
+<!-- Scripts Reativos do Feed de Notificações -->
+{% include 'cegs/partials/_notificacoes_app_script.html' %}
+{% endblock %}

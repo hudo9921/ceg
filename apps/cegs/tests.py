@@ -2025,6 +2025,7 @@ class CEGAvailabilityAndSortingTests(TestCase):
 
 class CEGAvailableSlotsKeepOpenTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.group = KpopGroup.objects.create(name='LE SSERAFIM', slug='le-sserafim')
         self.era = Era.objects.create(group=self.group, name='Pureflow', slug='pureflow')
         self.past_closes_at = timezone.now() - timedelta(days=5)
@@ -2053,6 +2054,7 @@ class CEGAvailableSlotsKeepOpenTests(TestCase):
 
     def test_home_view_does_not_close_ceg_with_available_slots(self):
         """Verifica que a HomeView mantém aberta CEG com vagas mesmo com closes_at expirado."""
+        cache.delete('home_ceg_status_sync_throttle')
         client = Client()
         res = client.get('/')
         self.assertEqual(res.status_code, 200)
@@ -2081,6 +2083,7 @@ class CEGAvailableSlotsKeepOpenTests(TestCase):
         )
         # Agora não há vagas disponíveis
         self.assertFalse(self.ceg.is_open_for_claims)
+        cache.delete('home_ceg_status_sync_throttle')
         client = Client()
         client.get('/')
         self.ceg.refresh_from_db()

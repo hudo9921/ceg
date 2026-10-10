@@ -82,6 +82,13 @@ class AuditService:
             if created_at:
                 log_entry.created_at = created_at
             log_entry.save()
+
+            # Dispara notificação operacional correspondente para a GOM
+            try:
+                AuditService.create_gom_notification_from_event(log_entry)
+            except Exception:
+                pass
+
             return log_entry
         except Exception as e:
             logger.error(f"Erro ao registrar AuditLog ({event_type}): {e}", exc_info=True)
@@ -588,3 +595,125 @@ class AuditService:
             + counts['packages']
         )
         return counts
+
+    @staticmethod
+    def create_gom_notification_from_event(log_entry):
+        """
+        Cria automaticamente uma GOMNotification operacional a partir de um AuditLog registrado.
+        """
+        try:
+            from apps.cegs.models import AuditLog, GOMNotification
+
+            ev = log_entry.event_type
+            notif_type = None
+            title = ""
+            message = ""
+            action_url = ""
+            action_label = "Ver Detalhes"
+
+            p_name = log_entry.participant_name or "Participante"
+            p_phone = log_entry.participant_phone or ""
+            ceg_title = log_entry.ceg.title if log_entry.ceg else ""
+
+            if ev == AuditLog.EventType.CLAIM_SUCCESS:
+                notif_type = GOMNotification.NotificationType.CLAIM
+                slot_info = ""
+                if log_entry.slot and hasattr(log_entry.slot, 'item_definition'):
+                    slot_info = f" ({log_entry.slot.item_definition.name})"
+                title = f"Novo Claim: {p_name}{slot_info}"
+                message = f"{p_name} garantiu um photocard/slot na CEG '{ceg_title}'."
+                action_url = f"/cegs/{log_entry.ceg.slug}/" if log_entry.ceg and log_entry.ceg.slug else "/creations/"
+                action_label = "Ver na CEG"
+
+            elif ev == AuditLog.EventType.CLAIM_CANCELLED:
+                notif_type = GOMNotification.NotificationType.CLAIM_CANCELLED
+                title = f"Claim Liberado / Cancelado: {ceg_title}"
+                message = f"Um slot foi cancelado ou liberado para repescagem na CEG '{ceg_title}'."
+                action_url = f"/cegs/{log_entry.ceg.slug}/" if log_entry.ceg and log_entry.ceg.slug else "/creations/"
+                action_label = "Ver na CEG"
+
+            elif ev == AuditLog.EventType.PACKAGE_REQUESTED:
+                notif_type = GOMNotification.NotificationType.PACKAGE_REQUEST
+                pkg_id = log_entry.pacote_nacional.identificador if log_entry.pacote_nacional else ""
+                title = f"Solicitação de Envio: {p_name}"
+                message = f"{p_name} solicitou o envio nacional de seus itens da caixinha (Pacote {pkg_id})."
+                action_url = "/cegs/envios/nacionais/"
+                action_label = "Ver Envios Nacionais"
+
+            elif ev in (
+                AuditLog.EventType.PAYMENT_ITEM,
+                AuditLog.EventType.PAYMENT_FRETE_INTER,
+                AuditLog.EventType.PAYMENT_TAXA,
+                AuditLog.EventType.PAYMENT_FRETE_NACIONAL,
+            ):
+                notif_type = GOMNotification.NotificationType.PAYMENT
+                title = f"Pagamento Atualizado: {log_entry.action_label[:50]}"
+                message = f"{log_entry.action_label} — Participante: {p_name}"
+                query_param = p_phone or p_name
+                action_url = f"/cegs/consulta-joiner/?q={query_param}"
+                action_label = "Ver no Joiner 360º"
+
+            elif ev in (AuditLog.EventType.POLLING_VOTE, AuditLog.EventType.POLLING_CONVERTED):
+                notif_type = GOMNotification.NotificationType.POLLING
+                title = "Voto de Interesse em Demanda" if ev == AuditLog.EventType.POLLING_VOTE else "Enquete Convertida em Set"
+                message = log_entry.action_label
+                action_url = f"/cegs/{log_entry.ceg.slug}/" if log_entry.ceg and log_entry.ceg.slug else "/creations/"
+                action_label = "Ver Enquete"
+
+            elif ev == AuditLog.EventType.ACCOUNT_CREATED:
+                notif_type = GOMNotification.NotificationType.ACCOUNT
+                title = f"Novo Joiner: {p_name}"
+                message = f"{p_name} ({p_phone}) cadastrou-se na plataforma."
+                action_url = f"/cegs/consulta-joiner/?q={p_phone or p_name}"
+                action_label = "Ver Joiner"
+
+            if notif_type:
+                return GOMNotification.objects.create(
+                    notification_type=notif_type,
+                    title=title,
+                    message=message,
+                    participant=log_entry.participant,
+                    ceg=log_entry.ceg,
+                    slot=log_entry.slot,
+                    pacote_nacional=log_entry.pacote_nacional,
+                    audit_log=log_entry,
+                    action_url=action_url,
+                    action_label=action_label,
+                    created_at=log_entry.created_at,
+                    metadata=log_entry.metadata or {},
+                )
+        except Exception as e:
+            logger.warning(f"Erro ao gerar GOMNotification a partir do AuditLog: {e}")
+        return None
+
+    @classmethod
+    def sync_recent_gom_notifications(cls, limit=50):
+        """
+        Gera notificações retroativas para a GOM a partir dos AuditLogs existentes
+        caso a tabela de GOMNotification esteja vazia.
+        """
+        try:
+            from apps.cegs.models import AuditLog, GOMNotification
+            if GOMNotification.objects.exists():
+                return 0
+
+            actionable_events = [
+                AuditLog.EventType.CLAIM_SUCCESS,
+                AuditLog.EventType.CLAIM_CANCELLED,
+                AuditLog.EventType.PACKAGE_REQUESTED,
+                AuditLog.EventType.PAYMENT_ITEM,
+                AuditLog.EventType.PAYMENT_FRETE_INTER,
+                AuditLog.EventType.PAYMENT_TAXA,
+                AuditLog.EventType.PAYMENT_FRETE_NACIONAL,
+                AuditLog.EventType.POLLING_VOTE,
+                AuditLog.EventType.ACCOUNT_CREATED,
+            ]
+            logs = AuditLog.objects.filter(event_type__in=actionable_events).order_by('-created_at')[:limit]
+            created_count = 0
+            for log in reversed(list(logs)):
+                if cls.create_gom_notification_from_event(log):
+                    created_count += 1
+            return created_count
+        except Exception as e:
+            logger.warning(f"Erro ao sincronizar notificações retroativas da GOM: {e}")
+            return 0

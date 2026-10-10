@@ -2244,4 +2244,111 @@ class HomeBannerConfig(models.Model):
         return cls.objects.filter(is_active=True).order_by('-updated_at').first() or cls()
 
 
+class GOMNotification(models.Model):
+    """
+    Notificação operacional para a GOM (administração).
+    Categoriza eventos em tempo real como Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros.
+    """
+    class NotificationType(models.TextChoices):
+        CLAIM = 'CLAIM', 'Claim / Reserva de Photocard'
+        PACKAGE_REQUEST = 'PACKAGE_REQUEST', 'Solicitação de Envio Nacional'
+        PAYMENT = 'PAYMENT', 'Pagamento Registrado'
+        CLAIM_CANCELLED = 'CLAIM_CANCELLED', 'Claim Cancelado / Liberado'
+        POLLING = 'POLLING', 'Voto / Demanda em Enquete'
+        ACCOUNT = 'ACCOUNT', 'Novo Cadastro de Joiner'
+        SYSTEM = 'SYSTEM', 'Aviso Operacional'
+
+    notification_type = models.CharField(
+        'Tipo de Notificação',
+        max_length=40,
+        choices=NotificationType.choices,
+        default=NotificationType.SYSTEM,
+        db_index=True
+    )
+    title = models.CharField('Título', max_length=255)
+    message = models.TextField('Mensagem / Detalhes')
+
+    # Relações contextuais opcionais
+    participant = models.ForeignKey(
+        'participants.Participant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='gom_notifications',
+        verbose_name='Participante'
+    )
+    ceg = models.ForeignKey(
+        'cegs.CEG',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='gom_notifications',
+        verbose_name='CEG'
+    )
+    slot = models.ForeignKey(
+        'cegs.ItemSlot',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='gom_notifications',
+        verbose_name='Slot do Item'
+    )
+    pacote_nacional = models.ForeignKey(
+        'cegs.PacoteNacional',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='gom_notifications',
+        verbose_name='Pacote Nacional'
+    )
+    audit_log = models.ForeignKey(
+        'cegs.AuditLog',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='gom_notifications',
+        verbose_name='Log de Auditoria Origem'
+    )
+
+    action_url = models.CharField('URL de Ação', max_length=500, blank=True)
+    action_label = models.CharField('Texto do Botão', max_length=80, blank=True, default='Ver Detalhes')
+
+    is_read = models.BooleanField('Lida', default=False, db_index=True)
+    created_at = models.DateTimeField('Data e Hora', default=timezone.now, db_index=True)
+    read_at = models.DateTimeField('Lida em', null=True, blank=True)
+    metadata = models.JSONField('Metadados', default=dict, blank=True)
+
+    class Meta:
+        verbose_name = 'Notificação da GOM'
+        verbose_name_plural = 'Notificações da GOM'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.get_notification_type_display()}] {self.title} ({'Lida' if self.is_read else 'Nova'})"
+
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
+    @property
+    def photocard_image_url(self) -> str:
+        """Resolve a melhor imagem para visualização (photocard -> banner ceg -> banner era -> group logo)."""
+        if self.slot and getattr(self.slot, 'item_definition', None) and self.slot.item_definition.image_url:
+            return self.slot.item_definition.image_url
+        if self.ceg:
+            if self.ceg.banner_url:
+                return self.ceg.banner_url
+            if self.ceg.era and self.ceg.era.banner_url:
+                return self.ceg.era.banner_url
+            if self.ceg.era and self.ceg.era.group and self.ceg.era.group.image_url:
+                return self.ceg.era.group.image_url
+        if self.pacote_nacional:
+            first_slot = self.pacote_nacional.slots.select_related('item_definition').first()
+            if first_slot and first_slot.item_definition and first_slot.item_definition.image_url:
+                return first_slot.item_definition.image_url
+        return ''
+
+
 

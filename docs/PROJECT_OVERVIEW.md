@@ -37,6 +37,7 @@ ceg/
 - **`ItemIndividual`:** Itens avulsos comprados no Mercari Japão ou leilões.
 - **`ItemVitrine`:** Photocards e produtos à pronta entrega disponíveis na loja pública.
 - **`HomeBannerConfig`:** Configuração dinâmica dos banners da vitrine principal, com suporte a artes independentes para Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
+- **`GOMNotification`:** Central de notificações operacionais em tempo real para a GOM com categorização por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).
 
 ### 2.2. `apps.participants`
 - **`Participant`:** Usuário final identificado por número de WhatsApp, chave secreta e perfil social.

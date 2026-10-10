@@ -79,6 +79,11 @@ from .polling_views import (
     ConsolidatePollingView,
     CEGPollingSummaryAPIView,
 )
+from .gom_notifications_views import (
+    GOMNotificationsView,
+    MarkGOMNotificationReadView,
+    MarkAllGOMNotificationsReadView,
+)
 from apps.participants.views import BulkParticipantCreateView
 
 urlpatterns = [
@@ -153,6 +158,14 @@ urlpatterns = [
     # Auditoria e Logs de Atividades
     path('auditoria/', AuditDashboardView.as_view(), name='auditoria_logs'),
     path('logs/', AuditDashboardView.as_view(), name='auditoria_logs_alias'),
+
+    # Central de Notificações da GOM (por Tipo de Ação)
+    path('notificacoes/', GOMNotificationsView.as_view(), name='gom_notifications'),
+    path('cegs/notificacoes/', GOMNotificationsView.as_view()),
+    path('notificacoes/<int:notification_id>/read/', MarkGOMNotificationReadView.as_view(), name='mark_gom_notification_read'),
+    path('cegs/notificacoes/<int:notification_id>/read/', MarkGOMNotificationReadView.as_view()),
+    path('notificacoes/read-all/', MarkAllGOMNotificationsReadView.as_view(), name='mark_all_gom_notifications_read'),
+    path('cegs/notificacoes/read-all/', MarkAllGOMNotificationsReadView.as_view()),
 
     # Vitrine de Pronta Entrega
     path('vitrine/', VitrineListView.as_view(), name='vitrine_list'),

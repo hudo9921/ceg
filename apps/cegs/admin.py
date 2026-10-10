@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio, ItemVitrine, HomeBannerConfig
+from .models import CEG, CEGItemDefinition, CEGSet, ItemSlot, ClaimAttemptLog, Caixa, ItemIndividual, TipoItem, CaixaItemRate, ItemWaitingList, PacoteNacional, AuditLog, ConfiguracaoEnvio, ItemVitrine, HomeBannerConfig, GOMNotification
 
 
 @admin.register(TipoItem)
@@ -594,4 +594,13 @@ class HomeBannerConfigAdmin(admin.ModelAdmin):
     readonly_fields = ('updated_at',)
 
 
+@admin.register(GOMNotification)
+class GOMNotificationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'notification_type', 'participant', 'ceg', 'is_read', 'created_at')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('title', 'message', 'participant__name', 'ceg__title')
+    actions = ['marcar_como_lidas']
 
+    def marcar_como_lidas(self, request, queryset):
+        queryset.update(is_read=True)
+    marcar_como_lidas.short_description = 'Marcar selecionadas como lidas'

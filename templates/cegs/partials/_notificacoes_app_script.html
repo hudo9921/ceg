@@ -1,0 +1,125 @@
+<!-- Script Alpine.js para Notificações da GOM -->
+<script>
+    function notificacoesApp() {
+        return {
+            unreadCount: {{ total_unread|default:0 }},
+            isMarkingAll: false,
+
+            getCSRFToken() {
+                const input = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (input && input.value) return input.value;
+                const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+                if (cookie) return cookie.split('=')[1];
+                return '{{ csrf_token }}';
+            },
+
+            updateSidebarBadges(count) {
+                document.querySelectorAll('.gom-unread-badge').forEach(badge => {
+                    if (count > 0) {
+                        badge.textContent = count;
+                        badge.style.display = '';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                });
+            },
+
+            async markOneAsRead(notifId) {
+                try {
+                    const response = await fetch(`/notificacoes/${notifId}/read/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data && data.success) {
+                        this.unreadCount = data.unread_count;
+                        this.updateSidebarBadges(data.unread_count);
+
+                        // Atualiza a aparência do card específico no DOM
+                        const card = document.getElementById(`notif-card-${notifId}`);
+                        if (card) {
+                            card.classList.remove('border-l-4', 'border-l-pink-500', 'dark:border-l-cyber-neon', 'border-purple-200', 'dark:border-pink-500/30', 'bg-purple-50/20', 'dark:bg-slate-900/90');
+                            card.classList.add('border-slate-200/80', 'dark:border-white/10', 'opacity-90');
+                        }
+
+                        const unreadBadge = document.getElementById(`badge-unread-${notifId}`);
+                        if (unreadBadge) unreadBadge.remove();
+
+                        const markBtn = document.getElementById(`btn-mark-${notifId}`);
+                        if (markBtn) {
+                            markBtn.outerHTML = `
+                                <span class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                    <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                                    <span class="hidden sm:inline">Lida</span>
+                                </span>
+                            `;
+                        }
+
+                        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                            window.lucide.createIcons();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao marcar notificação como lida:', error);
+                }
+            },
+
+            async markAllAsRead() {
+                if (this.isMarkingAll || this.unreadCount === 0) return;
+                this.isMarkingAll = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action_type', '{{ action_type|default:"all" }}');
+
+                    const response = await fetch('/notificacoes/read-all/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': this.getCSRFToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: formData
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data && data.success) {
+                        this.unreadCount = data.unread_count;
+                        this.updateSidebarBadges(data.unread_count);
+
+                        // Atualiza todos os cards visíveis
+                        document.querySelectorAll('[id^="notif-card-"]').forEach(card => {
+                            card.classList.remove('border-l-4', 'border-l-pink-500', 'dark:border-l-cyber-neon', 'border-purple-200', 'dark:border-pink-500/30', 'bg-purple-50/20', 'dark:bg-slate-900/90');
+                            card.classList.add('border-slate-200/80', 'dark:border-white/10', 'opacity-90');
+                        });
+                        document.querySelectorAll('[id^="badge-unread-"]').forEach(el => el.remove());
+                        document.querySelectorAll('[id^="btn-mark-"]').forEach(btn => {
+                            btn.outerHTML = `
+                                <span class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                    <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                                    <span class="hidden sm:inline">Lida</span>
+                                </span>
+                            `;
+                        });
+
+                        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                            window.lucide.createIcons();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao marcar todas notificações como lidas:', error);
+                } finally {
+                    this.isMarkingAll = false;
+                }
+            }
+        };
+    }
+</script>

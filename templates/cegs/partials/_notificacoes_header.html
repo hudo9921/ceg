@@ -1,0 +1,56 @@
+<!-- Cabeçalho Principal da Central de Notificações GOM -->
+<div class="bg-white dark:bg-slate-900 rounded-3xl border border-purple-100/80 dark:border-white/10 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+    <div class="space-y-2">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-pink-600 dark:text-cyber-neon uppercase tracking-wide">Painel Operacional GOM</span>
+            <span class="px-2 py-0.5 bg-pink-100/80 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 font-black text-[10px] rounded-full uppercase tracking-wider">
+                Em Tempo Real
+            </span>
+            <template x-if="unreadCount > 0">
+                <span class="flex items-center gap-1 px-2.5 py-0.5 bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-black text-[11px] rounded-full shadow-2xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                    <span x-text="unreadCount + ' pendente(s)'"></span>
+                </span>
+            </template>
+            <template x-if="unreadCount === 0">
+                <span class="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] rounded-full">
+                    Tudo em dia
+                </span>
+            </template>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-xs">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+            </div>
+            <span>Central de Notificações</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+            Monitore instantaneamente claims garantidos, pedidos de envio na caixinha, comprovantes de pagamento e engajamento em demandas.
+        </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Botão Marcar Todas Como Lidas -->
+        <button type="button"
+                @click="markAllAsRead()"
+                :disabled="unreadCount === 0 || isMarkingAll"
+                class="px-4 py-2 bg-purple-100 hover:bg-purple-200 dark:bg-cyber-elevated dark:hover:bg-slate-800 text-purple-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+            <i data-lucide="check-check" class="w-4 h-4 text-pink-600 dark:text-cyber-neon"></i>
+            <span x-text="isMarkingAll ? 'Atualizando...' : 'Marcar todas como lidas'"></span>
+        </button>
+
+        <!-- Atalho Envios Nacionais -->
+        <a href="{% url 'envios_nacionais' %}"
+           class="px-3.5 py-2 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+            <i data-lucide="truck" class="w-4 h-4 text-emerald-500"></i>
+            <span>Envios Nacionais</span>
+        </a>
+
+        <!-- Atalho Auditoria Completa -->
+        <a href="{% url 'auditoria_logs' %}"
+           class="px-3.5 py-2 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+            <i data-lucide="shield" class="w-4 h-4 text-indigo-500"></i>
+            <span>Auditoria & Logs</span>
+        </a>
+    </div>
+</div>
