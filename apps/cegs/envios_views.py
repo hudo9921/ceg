@@ -407,9 +407,9 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         search_query = request.GET.get('q', '').strip()
 
         qs = PacoteNacional.objects.select_related('participant').prefetch_related(
-            'slots__item_definition',
-            'slots__set__ceg',
-            'itens_individuais'
+            'slots__item_definition__tipo_item',
+            'slots__set__ceg__era__group',
+            'itens_individuais__tipo_item'
         )
 
         # Filtros

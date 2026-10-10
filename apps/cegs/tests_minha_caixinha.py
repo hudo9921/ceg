@@ -8,7 +8,7 @@ from apps.cegs.models import (
     PacoteNacional, ConfiguracaoEnvio, AuditLog
 )
 from apps.groups.models import KpopGroup, Era
-from apps.participants.models import Participant
+from apps.participants.models import Participant, Claim
 
 
 class MinhaCaixinhaTests(TestCase):
@@ -220,3 +220,30 @@ class MinhaCaixinhaTests(TestCase):
 
         # No package should be created
         self.assertFalse(PacoteNacional.objects.filter(participant=self.participant).exists())
+
+    def test_minha_caixinha_displays_photocard_image_pronto_para_envio(self):
+        """Valida que na aba minha caixinha os photocards prontos exibem as imagens cadastradas."""
+        self.slot_nat.is_item_paid = True
+        self.slot_nat.save()
+
+        Claim.objects.create(
+            slot=self.slot_nat,
+            participant=self.participant,
+            status='PAID',
+            total_price=Decimal('50.00')
+        )
+
+        self.item_def_nat.image_url = 'https://example.com/photocard-ready.jpg'
+        self.item_def_nat.save()
+
+        session = self.client.session
+        session['participant_id'] = self.participant.id
+        session.save()
+
+        response = self.client.get(reverse('my_claims') + '?tab=caixinha')
+        self.assertEqual(response.status_code, 200)
+
+        # O photocard pronto deve constar em itens_caixinha_prontos com a URL da imagem
+        prontos = response.context['itens_caixinha_prontos']
+        self.assertTrue(any(i['imagem'] == 'https://example.com/photocard-ready.jpg' for i in prontos))
+        self.assertContains(response, 'https://example.com/photocard-ready.jpg')

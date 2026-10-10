@@ -1,0 +1,41 @@
+<!-- MODAL LIGHTBOX DE ZOOM DE IMAGEM DO PHOTOCARD (GESTOR GOM) -->
+<div x-show="zoomModalOpen" x-cloak
+     class="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+     @keydown.escape.window="closeZoom()"
+     role="dialog" aria-modal="true">
+    
+    <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl space-y-0"
+         @click.outside="closeZoom()">
+        
+        <!-- Header do Modal de Zoom -->
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-850">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-pink-100 dark:bg-pink-950 text-pink-600 dark:text-pink-400 flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" class="w-4 h-4" stroke-width="1.75"></i>
+                </div>
+                <h4 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate" x-text="zoomImageTitle || 'Visualização do Photocard'"></h4>
+            </div>
+            <button type="button" @click="closeZoom()"
+                    class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
+            </button>
+        </div>
+
+        <!-- Conteúdo com a Foto Ampliada -->
+        <div class="p-4 sm:p-6 bg-slate-100/50 dark:bg-black/40 flex items-center justify-center">
+            <template x-if="zoomImageUrl">
+                <img :src="zoomImageUrl" :alt="zoomImageTitle"
+                     class="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 object-contain">
+            </template>
+        </div>
+
+        <!-- Rodapé do Modal com Botão de Fechar -->
+        <div class="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-850">
+            <span class="text-[11px]">Conferência visual de envio pela GOM</span>
+            <button type="button" @click="closeZoom()"
+                    class="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition cursor-pointer">
+                Fechar
+            </button>
+        </div>
+    </div>
+</div>

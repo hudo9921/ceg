@@ -603,4 +603,33 @@ class EnviosNacionaisTests(TestCase):
         self.assertContains(resp, 'R$ 65,00')
         self.assertContains(resp, 'R$ 174,50')
 
+    def test_envios_nacionais_displays_photocard_image_and_ceg(self):
+        """Valida que na solicitação de envio aparecem a imagem do photocard, integrante e CEG para a GOM."""
+        self.client.force_login(self.staff_user)
+
+        self.item_def1.image_url = 'https://example.com/photocard-jihyo.jpg'
+        self.item_def1.save()
+
+        pacote = PacoteNacional.objects.create(
+            participant=self.participant,
+            status=PacoteNacional.Status.SOLICITADO,
+            transportadora='Correios Mini Envios'
+        )
+        self.slot1.pacote_nacional = pacote
+        self.slot1.save()
+
+        self.item_mercari.pacote_nacional = pacote
+        self.item_mercari.foto_url = 'https://example.com/mercari-item.jpg'
+        self.item_mercari.save()
+
+        resp = self.client.get(reverse('envios_nacionais'))
+        self.assertEqual(resp.status_code, 200)
+
+        # Verifica presença da imagem do photocard, nome do photocard e da CEG
+        self.assertContains(resp, 'https://example.com/photocard-jihyo.jpg')
+        self.assertContains(resp, self.item_def1.name)
+        self.assertContains(resp, self.ceg.title)
+        self.assertContains(resp, self.item_mercari.nome)
+        self.assertContains(resp, 'https://example.com/mercari-item.jpg')
+
 

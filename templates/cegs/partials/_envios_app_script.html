@@ -17,8 +17,24 @@
             editPacoteIsFretePago: false,
             editPacoteStatus: '',
             editPacoteObservacoes: '',
-
             configModalOpen: false,
+
+            zoomModalOpen: false,
+            zoomImageUrl: '',
+            zoomImageTitle: '',
+
+            openZoom(url, title) {
+                if (!url) return;
+                this.zoomImageUrl = url;
+                this.zoomImageTitle = title || '';
+                this.zoomModalOpen = true;
+            },
+
+            closeZoom() {
+                this.zoomModalOpen = false;
+                this.zoomImageUrl = '';
+                this.zoomImageTitle = '';
+            },
 
             openDispatchModal(id, identificador, transportadora, codigo) {
                 this.dispatchPacoteId = id;

@@ -1,0 +1,97 @@
+<!-- LISTAGEM DETALHADA DE ITENS E PHOTOCARDS NO PACOTE (COM FOTO, INTEGRANTE E CEG) -->
+<div class="space-y-2">
+    <div class="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide flex items-center justify-between">
+        <span class="flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3 h-3 text-pink-500" stroke-width="1.75"></i>
+            <span>Photocards & Itens no Pacote:</span>
+        </span>
+        <span class="text-slate-700 dark:text-slate-200 font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px]">
+            {{ pacote.total_itens }} item(ns)
+        </span>
+    </div>
+
+    <div class="max-h-56 overflow-y-auto space-y-2 pr-1 text-xs">
+        {% for slot in pacote.slots.all %}
+            {% with item_img=slot.item_definition.image_url|default:slot.set.ceg.banner_url %}
+            <div class="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-pink-300 dark:hover:border-pink-500/50 transition">
+                <!-- Miniatura do Photocard com Botão de Zoom -->
+                <div class="w-11 h-15 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0 relative group/img cursor-pointer"
+                     {% if item_img %}@click="openZoom('{{ item_img }}', '{{ slot.item_definition.name|escapejs }}{% if slot.item_definition.member_name %} ({{ slot.item_definition.member_name|escapejs }}){% endif %} • {{ slot.set.ceg.title|escapejs }}')"{% endif %}
+                     title="{% if item_img %}Clique para ampliar foto do photocard{% else %}Sem foto cadastrada{% endif %}">
+                    {% if item_img %}
+                        <img src="{{ item_img }}" alt="{{ slot.item_definition.name }}" loading="lazy" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <i data-lucide="zoom-in" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                        </div>
+                    {% else %}
+                        <div class="w-full h-full flex flex-col items-center justify-center text-pink-400 bg-pink-50/50 dark:bg-pink-950/30">
+                            <i data-lucide="sparkles" class="w-4 h-4 opacity-70" stroke-width="1.75"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Detalhes do Photocard e CEG de Origem -->
+                <div class="flex-1 min-w-0 space-y-0.5">
+                    <div class="flex items-center justify-between gap-1">
+                        <h5 class="text-xs font-black text-slate-900 dark:text-white truncate" title="{{ slot.item_definition.name }}">
+                            {{ slot.item_definition.name }}
+                        </h5>
+                        <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-pink-100 text-pink-700 dark:bg-pink-950/80 dark:text-pink-300 border border-pink-200/80 dark:border-pink-800/60 shrink-0">
+                            {% if slot.is_avulso %}Avulso{% else %}Set #{{ slot.set.set_number }}{% endif %}
+                        </span>
+                    </div>
+
+                    {% if slot.item_definition.member_name %}
+                    <div class="text-[10px] font-bold text-pink-600 dark:text-pink-400 truncate flex items-center gap-1">
+                        <i data-lucide="user" class="w-2.5 h-2.5 shrink-0" stroke-width="1.75"></i>
+                        <span>{{ slot.item_definition.member_name }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1" title="{{ slot.set.ceg.title }}">
+                        <i data-lucide="disc-3" class="w-3 h-3 text-slate-400 shrink-0" stroke-width="1.75"></i>
+                        <span class="truncate font-medium">{{ slot.set.ceg.title }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+
+        {% for item in pacote.itens_individuais.all %}
+            <div class="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 hover:border-pink-300 dark:hover:border-pink-500/50 transition">
+                <!-- Miniatura do Item Mercari com Botão de Zoom -->
+                <div class="w-11 h-15 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0 relative group/img cursor-pointer"
+                     {% if item.image_display_url %}@click="openZoom('{{ item.image_display_url }}', '{{ item.nome|escapejs }} • Mercari')"{% endif %}
+                     title="{% if item.image_display_url %}Clique para ampliar foto do item{% else %}Sem foto cadastrada{% endif %}">
+                    {% if item.image_display_url %}
+                        <img src="{{ item.image_display_url }}" alt="{{ item.nome }}" loading="lazy" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <i data-lucide="zoom-in" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                        </div>
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-pink-400 bg-pink-50/50 dark:bg-pink-950/30">
+                            <i data-lucide="shopping-bag" class="w-4 h-4 opacity-70" stroke-width="1.75"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Detalhes do Item Mercari -->
+                <div class="flex-1 min-w-0 space-y-0.5">
+                    <div class="flex items-center justify-between gap-1">
+                        <h5 class="text-xs font-black text-slate-900 dark:text-white truncate" title="{{ item.nome }}">
+                            {{ item.nome }}
+                        </h5>
+                        <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                            Mercari
+                        </span>
+                    </div>
+
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+                        <i data-lucide="tag" class="w-3 h-3 text-slate-400 shrink-0" stroke-width="1.75"></i>
+                        <span class="truncate font-medium">{{ item.tipo_item_nome }}</span>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>

@@ -1,0 +1,50 @@
+<!-- 2. DOCK BAR FLUTUANTE INSPIRADO EM GODLY.WEBSITE (MOBILE & TABLET) -->
+<div class="lg:hidden fixed bottom-3 inset-x-3 z-40 pointer-events-none">
+    <nav class="max-w-md mx-auto pointer-events-auto bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-2xl border border-purple-100/80 dark:border-white/10 rounded-3xl p-1.5 shadow-glass flex items-center justify-around">
+        
+        <!-- CEGs (Compass) -->
+        <a href="{% url 'home' %}"
+           class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if request.resolver_match.url_name == 'home' or request.path == '/' %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
+            <i data-lucide="compass" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black mt-0.5">CEGs</span>
+        </a>
+
+        <!-- Vitrine (Sparkles) -->
+        <a href="{% url 'vitrine_list' %}"
+           class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if 'vitrine' in request.path %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black mt-0.5">Vitrine</span>
+        </a>
+
+        <!-- Minhas Reservas (ShoppingBag) -->
+        <a href="{% url 'my_claims' %}"
+           class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if 'me' in request.path and not 'caixinha' in request.GET.tab %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black mt-0.5">Compras</span>
+        </a>
+
+        <!-- Caixinha (Boxes) -->
+        <a href="{% url 'my_claims' %}?tab=caixinha"
+           class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition {% if request.GET.tab == 'caixinha' %}text-pink-600 dark:text-cyber-neon bg-purple-50 dark:bg-cyber-elevated{% else %}text-slate-500 dark:text-slate-400{% endif %}">
+            <i data-lucide="boxes" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black mt-0.5">Caixinha</span>
+        </a>
+
+        <!-- Perfil / Login (User) -->
+        {% if logged_participant %}
+            <a href="{% url 'my_claims' %}"
+               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-pink-600 dark:text-cyber-neon transition">
+                <div class="w-5 h-5 rounded-full bg-pink-500 text-white flex items-center justify-center text-[10px] font-black">
+                    {{ logged_participant.display_name|slice:":1"|upper }}
+                </div>
+                <span class="text-[9px] font-black mt-0.5">Perfil</span>
+            </a>
+        {% else %}
+            <a href="{% url 'login_otp' %}"
+               class="flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 dark:text-slate-400 transition hover:text-pink-600">
+                <i data-lucide="user" class="w-5 h-5"></i>
+                <span class="text-[9px] font-black mt-0.5">Entrar</span>
+            </a>
+        {% endif %}
+    </nav>
+</div>

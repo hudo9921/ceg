@@ -103,31 +103,8 @@
             {% endif %}
         </div>
 
-        <!-- Itens Dentro do Pacote -->
-        <div class="space-y-1.5">
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center justify-between">
-                <span>Itens no Pacote:</span>
-                <span class="text-slate-700 dark:text-slate-200 font-black">{{ pacote.total_itens }} item(ns)</span>
-            </div>
-            <div class="max-h-24 overflow-y-auto space-y-1 pr-1 text-xs">
-                {% for slot in pacote.slots.all %}
-                    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700/60 text-[11px]">
-                        <span class="truncate max-w-[200px] text-slate-800 dark:text-slate-200" title="{{ slot.item_definition.name }}">
-                            {{ slot.item_definition.name }} ({{ slot.set.ceg.title|truncatechars:16 }})
-                        </span>
-                        <span class="text-slate-400 font-mono text-[10px]">CEG</span>
-                    </div>
-                {% endfor %}
-                {% for item in pacote.itens_individuais.all %}
-                    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700/60 text-[11px]">
-                        <span class="truncate max-w-[200px] text-slate-800 dark:text-slate-200" title="{{ item.nome }}">
-                            {{ item.nome }}
-                        </span>
-                        <span class="text-slate-400 font-mono text-[10px]">Mercari</span>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+        <!-- ITENS & PHOTOCARDS DENTRO DO PACOTE -->
+        {% include 'cegs/partials/_envios_package_items_list.html' %}
 
         <!-- AVALIAÇÃO & FEEDBACK DO CLIENTE -->
         {% if pacote.feedback_rating %}

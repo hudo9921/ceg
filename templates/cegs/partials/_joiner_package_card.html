@@ -61,13 +61,23 @@
                 <span>Itens no Pacote:</span>
                 <span class="text-slate-700 dark:text-slate-300 font-black">{{ pacote.total_itens }} item(ns)</span>
             </div>
-            <div class="max-h-28 overflow-y-auto space-y-1 pr-1 text-xs">
+            <div class="max-h-36 overflow-y-auto space-y-1.5 pr-1 text-xs">
                 {% for slot in pacote.slots.all %}
-                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-100 dark:border-white/5 text-[11px]">
-                        <span class="truncate max-w-[170px] inline-flex items-center gap-1" title="{{ slot.item_definition.name }}">
-                            <i data-lucide="layers" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                            <span class="truncate">{{ slot.item_definition.name }} ({{ slot.set.ceg.title|truncatechars:18 }})</span>
-                        </span>
+                    {% with item_img=slot.item_definition.image_url|default:slot.set.ceg.banner_url %}
+                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 p-1.5 rounded-lg border border-slate-100 dark:border-white/5 text-[11px] gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <div class="w-7 h-10 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 shrink-0">
+                                {% if item_img %}
+                                    <img src="{{ item_img }}" alt="" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-pink-400"><i data-lucide="sparkles" class="w-3 h-3" stroke-width="1.75"></i></div>
+                                {% endif %}
+                            </div>
+                            <div class="truncate min-w-0">
+                                <span class="truncate block font-bold text-slate-800 dark:text-slate-200" title="{{ slot.item_definition.name }}">{{ slot.item_definition.name }}</span>
+                                <span class="truncate block text-[10px] text-slate-400" title="{{ slot.set.ceg.title }}">{{ slot.set.ceg.title }}</span>
+                            </div>
+                        </div>
                         {% if pacote.status == 'EM_PREPARACAO' %}
                             <form method="post" action="{% url 'desempacotar_item' %}" onsubmit="return confirm('Remover este item do pacote?')">
                                 {% csrf_token %}
@@ -76,16 +86,26 @@
                                 <button type="submit" class="text-slate-300 hover:text-red-500 text-xs px-1" title="Remover do pacote">✕</button>
                             </form>
                         {% else %}
-                            <span class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold" title="Item já enviado">✓ Enviado</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0" title="Item já enviado">✓ Enviado</span>
                         {% endif %}
                     </div>
+                    {% endwith %}
                 {% endfor %}
                 {% for item in pacote.itens_individuais.all %}
-                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-100 dark:border-white/5 text-[11px]">
-                        <span class="truncate max-w-[170px] inline-flex items-center gap-1" title="{{ item.nome }}">
-                            <i data-lucide="shopping-bag" class="w-3 h-3 text-pink-500 shrink-0"></i>
-                            <span class="truncate">{{ item.nome }}</span>
-                        </span>
+                    <div class="flex items-center justify-between bg-white dark:bg-slate-800/80 p-1.5 rounded-lg border border-slate-100 dark:border-white/5 text-[11px] gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <div class="w-7 h-10 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 shrink-0">
+                                {% if item.image_display_url %}
+                                    <img src="{{ item.image_display_url }}" alt="" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-pink-400"><i data-lucide="shopping-bag" class="w-3 h-3" stroke-width="1.75"></i></div>
+                                {% endif %}
+                            </div>
+                            <div class="truncate min-w-0">
+                                <span class="truncate block font-bold text-slate-800 dark:text-slate-200" title="{{ item.nome }}">{{ item.nome }}</span>
+                                <span class="truncate block text-[10px] text-slate-400">Mercari / JP</span>
+                            </div>
+                        </div>
                         {% if pacote.status == 'EM_PREPARACAO' %}
                             <form method="post" action="{% url 'desempacotar_item' %}" onsubmit="return confirm('Remover este item do pacote?')">
                                 {% csrf_token %}
@@ -94,7 +114,7 @@
                                 <button type="submit" class="text-slate-300 hover:text-red-500 text-xs px-1" title="Remover do pacote">✕</button>
                             </form>
                         {% else %}
-                            <span class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold" title="Item já enviado">✓ Enviado</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0" title="Item já enviado">✓ Enviado</span>
                         {% endif %}
                     </div>
                 {% endfor %}

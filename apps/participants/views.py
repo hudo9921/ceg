@@ -270,9 +270,9 @@ class MyClaimsView(View):
 
         # Pacotes Nacionais de envio do participante
         pacotes_nacionais = list(participant.pacotes_nacionais.prefetch_related(
-            'slots__item_definition',
-            'slots__set__ceg',
-            'itens_individuais'
+            'slots__item_definition__tipo_item',
+            'slots__set__ceg__era__group',
+            'itens_individuais__tipo_item'
         ).order_by('-created_at'))
         itens_frete_unpaid_count = sum(1 for it in itens_individuais_list if it.frete_inter and it.frete_inter > 0 and not it.frete_inter_pago)
         itens_taxa_unpaid_count = sum(1 for it in itens_individuais_list if it.taxa_aduaneira and it.taxa_aduaneira > 0 and not it.taxa_aduaneira_paga)
@@ -902,6 +902,15 @@ class MyClaimsView(View):
             slot = claim.slot
             pode, motivo = slot.check_packaging_eligibility()
             ceg = slot.set.ceg
+            era = getattr(ceg, 'era', None)
+            group = getattr(era, 'group', None) if era else None
+            img_url = (
+                slot.item_definition.image_url
+                or (ceg.banner_url if ceg else '')
+                or (era.banner_url if era else '')
+                or (group.image_url if group else '')
+                or ''
+            )
             item_data = {
                 'uid': f"slot_{slot.id}",
                 'type': 'slot',
@@ -909,8 +918,9 @@ class MyClaimsView(View):
                 'titulo': slot.item_definition.name,
                 'integrante': slot.item_definition.member_name or '',
                 'origem': ceg.title,
+                'set_number': slot.set.set_number,
                 'tipo_item': slot.item_definition.tipo_item_nome,
-                'imagem': slot.item_definition.image_url or ceg.banner_url or '',
+                'imagem': img_url,
                 'preco': slot.price,
                 'motivo_bloqueio': motivo,
                 'pode_empacotar': pode,
