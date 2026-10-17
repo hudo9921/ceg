@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 echo "🗄️ Aplicando migrações do banco de dados..."
 python manage.py migrate --noinput
 
