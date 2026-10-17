@@ -14,7 +14,7 @@ staticfiles/
 .env.*
 .env.oracle
 .DS_Store
-backups/
+backups/*
 mysterious-fermi/
 
 # Root scratch duplicates

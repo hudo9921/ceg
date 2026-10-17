@@ -19,5 +19,16 @@ jobs:
             cd /home/ubuntu/ceg
             git reset --hard
             git pull origin main
-            docker compose up -d --build
+            chmod +x scripts/*.sh docker/*.sh || true
+
+            # Se ainda não migrou do Neon, executa a migração automática
+            if [ ! -f .neon_migrated ]; then
+              echo "⚡ [Deploy] Primeira execução: migrando bancos do Neon para o PostgreSQL local..."
+              ./scripts/migrate_from_neon.sh
+            else
+              echo "🚀 [Deploy] Atualizando containers com banco de dados local..."
+              docker compose up -d --build
+            fi
+
             docker image prune -f
+

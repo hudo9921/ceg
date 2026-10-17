@@ -1,4 +1,23 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: valcegs-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-valcegs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-valcegs_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-valcegs_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-valcegs} -d ${POSTGRES_DB:-valcegs_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:alpine
     container_name: valcegs-redis
@@ -17,7 +36,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.0
@@ -30,7 +52,10 @@ services:
       - evolution_instances:/evolution/instances
       - evolution_store:/evolution/store
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   caddy:
     image: caddy:alpine
@@ -48,9 +73,11 @@ services:
       - evolution-api
 
 volumes:
+  postgres_data:
   redis_data:
   evolution_instances:
   evolution_store:
   caddy_data:
   caddy_config:
+
 

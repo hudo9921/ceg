@@ -84,7 +84,25 @@ python manage.py test apps.cegs.tests_caixas
 
 ---
 
-## 📚 5. Índice da Documentação Modular
+## 5. Infraestrutura & Produção (Oracle Cloud + Docker)
+
+O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Ampere A1 — 24GB RAM):
+- **`valcegs-db`:** PostgreSQL 16 Alpine local (zero limite de computing time, latência interna < 1ms). Gerencia tanto o banco Django (`valcegs_db`) quanto o da Evolution API (`evolution`).
+- **`valcegs-redis`:** Cache em memória para sessões e filas da Evolution API.
+- **`valcegs-web`:** Aplicação Django com Gunicorn (4 workers, 4 threads).
+- **`valcegs-evolution`:** Evolution API v2.3.0 para envio e recebimento de OTP e notificações via WhatsApp.
+- **`valcegs-caddy`:** Proxy reverso com SSL automático (Let's Encrypt / DuckDNS / sslip.io).
+
+### Migração Neon -> Oracle Local
+Para migrar bancos de dados do Neon para a Oracle com 1 comando:
+```bash
+chmod +x scripts/migrate_from_neon.sh
+./scripts/migrate_from_neon.sh
+```
+
+---
+
+## 📚 6. Índice da Documentação Modular
 
 Para evitar sobrecarga de contexto e arquivos excessivamente longos, a documentação é dividida em módulos temáticos especializados:
 

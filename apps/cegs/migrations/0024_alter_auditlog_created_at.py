@@ -5,12 +5,8 @@ from django.db import migrations, models
 
 
 def run_backfill(apps, schema_editor):
-    try:
-        from apps.cegs.audit_service import AuditService
-        AuditService.backfill_historical_logs()
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Erro ao executar backfill de logs na migração: {e}")
+    # Backfill histórico já consolidado; mantido como noop para preservar compatibilidade de migrações limpas
+    pass
 
 
 class Migration(migrations.Migration):
