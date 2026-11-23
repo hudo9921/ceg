@@ -77,6 +77,7 @@ Para detalhes aprofundados sem poluir o contexto de desenvolvimento, consulte os
 2. **[docs/TEMPLATES.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/TEMPLATES.md):** Catálogo detalhado das 21 telas da aplicação, inventário de cada partial, regras visuais e limites de linhas.
 3. **[docs/BUSINESS_RULES.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/BUSINESS_RULES.md):** Regras completas de resolução hierárquica de chaves Pix, concorrência no Segundo Zero com `select_for_update`, ciclo de vida do item (`claim.lifecycle`), cascata de caixas, retenção de caixinha e estúdio de recorte com fallback Pillow CORS.
 4. **[docs/PROJECT_OVERVIEW.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/PROJECT_OVERVIEW.md):** Visão geral da plataforma, arquitetura dos apps Django, setup e comandos gerais.
+6. **[docs/MULTI_GOM_DESIGN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/MULTI_GOM_DESIGN.md):** Desenho da plataforma com vários GOMs (dono, admins, isolamento de dados, entregas M1–M4).
 5. **[docs/IDEAS_BACKLOG.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/IDEAS_BACKLOG.md):** Roadmap de melhorias e ideias de inovação em espera.
 
 ---
