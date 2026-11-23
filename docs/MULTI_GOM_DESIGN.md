@@ -1,6 +1,6 @@
 # MULTI_GOM_DESIGN.md — Plataforma com Vários GOMs
 
-> Status: **proposta para aprovação** (23/11/2026). Pré-requisito das Fases 5 (endereços salvos) e 6 (Pix).
+> Status: **aprovado** (23/11/2026). Pré-requisito das Fases 5 (endereços salvos) e 6 (Pix).
 
 ## 1. Decisões já tomadas
 
