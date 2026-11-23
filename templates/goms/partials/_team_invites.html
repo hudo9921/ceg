@@ -1,0 +1,41 @@
+{% comment %}Convidar admin/dono e cancelar convites pendentes (só o GOM principal).{% endcomment %}
+<section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+    <h2 class="text-sm font-black text-slate-900 dark:text-white">Convidar para a equipe</h2>
+    <form method="post" class="grid sm:grid-cols-[1fr_auto_auto] gap-2 items-end">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="invite">
+        <div class="space-y-1">
+            <label for="{{ form.name.id_for_label }}" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ form.name.label }}</label>
+            {{ form.name }}
+        </div>
+        <div class="space-y-1">
+            <label for="{{ form.role.id_for_label }}" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ form.role.label }}</label>
+            {{ form.role }}
+        </div>
+        <button type="submit"
+                class="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="user-plus" class="w-4 h-4" stroke-width="1.75"></i>Gerar link
+        </button>
+    </form>
+
+    {% if invites %}
+        <div class="space-y-2">
+            <h3 class="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Convites pendentes</h3>
+            <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for inv in invites %}
+                    <li class="py-2.5 flex items-center justify-between gap-3 text-xs">
+                        <span class="text-slate-700 dark:text-slate-200">
+                            <strong>{{ inv.name|default:"Sem nome" }}</strong> · {{ inv.get_role_display }} · expira {{ inv.expires_at|date:"d/m H:i" }}
+                        </span>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="revoke">
+                            <input type="hidden" name="invite_id" value="{{ inv.id }}">
+                            <button type="submit" class="font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer">Cancelar</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</section>

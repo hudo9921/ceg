@@ -14,6 +14,7 @@
 
         {% block body %}{% endblock %}
 
+        {% if request.user.is_authenticated %}
         <div class="border-t border-slate-100 dark:border-slate-800 pt-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
             <form method="post" action="{% url 'admin:logout' %}" class="inline">
                 {% csrf_token %}
@@ -23,6 +24,7 @@
                 </button>
             </form>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

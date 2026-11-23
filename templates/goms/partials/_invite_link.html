@@ -1,0 +1,20 @@
+{% comment %}Link de convite recém-criado: exibido uma única vez (só o hash fica no banco).{% endcomment %}
+{% if new_link %}
+<div x-data="{ copied: false }"
+     class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+    <p class="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+        <i data-lucide="link" class="w-4 h-4" stroke-width="1.75"></i>
+        Convite criado — envie este link (vale 7 dias, uso único)
+    </p>
+    <div class="flex gap-2">
+        <input type="text" readonly value="{{ new_link }}" x-ref="link"
+               class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/60 text-xs font-mono text-slate-800 dark:text-slate-100">
+        <button type="button" @click="navigator.clipboard.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 2000)"
+                class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+            <span x-text="copied ? 'Copiado!' : 'Copiar'"></span>
+        </button>
+    </div>
+    <p class="text-[11px] text-emerald-800 dark:text-emerald-300">O link não aparece de novo. Se perder, cancele e gere outro.</p>
+</div>
+{% endif %}

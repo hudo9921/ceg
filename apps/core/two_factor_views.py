@@ -26,7 +26,7 @@ from .two_factor import (
 )
 
 security_logger = logging.getLogger('security')
-DEFAULT_NEXT = '/admin/'
+DEFAULT_NEXT = '/painel/'
 
 
 def backoffice_user_required(view):

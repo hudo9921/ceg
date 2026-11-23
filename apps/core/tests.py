@@ -29,6 +29,7 @@ from apps.participants.models import Participant, ParticipantNotification
 PUBLIC_ROUTES = {
     'health_check', 'home', 'ceg_detail', 'ceg_polling_summary_api', 'caixa_detail',
     'vitrine_list', 'login_otp', 'logout_participant', 'privacy_policy',
+    'backoffice_login', 'gom_invite_accept',
 }
 # Rotas do joiner: anônimo precisa ser mandado para o login OTP; joiner logado pode usar.
 PARTICIPANT_ROUTES = {
@@ -36,8 +37,8 @@ PARTICIPANT_ROUTES = {
     'confirmar_entrega_pacote', 'cancelar_solicitacao_envio', 'solicitar_envio_nacional',
     'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion',
 }
-LOGIN_PREFIXES_ANON = ('/admin/login/', '/me/login/')
-LOGIN_PREFIXES_STAFF = ('/admin/login/',)
+LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
+LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')
 
 PARAM_RE = re.compile(r'<(?:(?P<conv>\w+):)?(?P<name>\w+)>')
 
@@ -109,7 +110,7 @@ class RoutePermissionMatrixTests(TestCase):
         return {
             'slot_id': self.slot.id, 'set_id': self.cset.id, 'item_def_id': self.item_def.id,
             'item_id': self.item_individual.id, 'ceg_id': self.ceg.id,
-            'pacote_id': self.pacote.id, 'pk': self.tipo.id,
+            'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido',
         }[name]
 
     def _build(self, route):

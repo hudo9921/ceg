@@ -1,0 +1,40 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Convite para a equipe — ValCegs{% endblock %}
+{% block icon %}{% if invalid %}link-2-off{% else %}user-plus{% endif %}{% endblock %}
+{% block heading %}{% if invalid %}Convite inválido{% else %}Entrar na equipe {{ invite.gom.name }}{% endif %}{% endblock %}
+{% block lead %}{% if invalid %}Este link expirou, já foi usado ou foi cancelado. Peça um novo ao GOM principal.{% else %}Você foi convidado(a) como <strong>{{ invite.get_role_display }}</strong>.{% endif %}{% endblock %}
+
+{% block body %}
+{% if not invalid %}
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% if form %}
+        {% for field in form %}
+            <div class="space-y-1.5">
+                <label for="{{ field.id_for_label }}" class="block text-xs font-bold text-slate-700 dark:text-slate-300">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-[11px] text-rose-600 dark:text-rose-400">{{ field.errors|join:" " }}</p>
+                {% elif field.help_text %}
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500">{{ field.help_text|striptags }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0 text-emerald-500" stroke-width="1.75"></i>
+            Em seguida você ativa a verificação em duas etapas com um aplicativo autenticador.
+        </p>
+    {% else %}
+        <p class="text-xs text-center text-slate-600 dark:text-slate-300">
+            Você está conectado(a) como <strong>{{ request.user.get_username }}</strong>. O convite será vinculado a esta conta.
+        </p>
+    {% endif %}
+    <button type="submit"
+            class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+        <i data-lucide="user-check" class="w-4 h-4" stroke-width="1.75"></i>
+        <span>{% if form %}Criar conta e entrar{% else %}Aceitar convite{% endif %}</span>
+    </button>
+</form>
+{% endif %}
+{% endblock %}

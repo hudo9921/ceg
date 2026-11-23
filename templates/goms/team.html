@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Equipe — {{ gom.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6 space-y-5">
+    <header class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider">{{ gom.name }}</span>
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="users" class="w-6 h-6 text-pink-500" stroke-width="1.75"></i>Equipe
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                {% if is_owner %}Convide admins e gerencie papéis. Admins fazem tudo, exceto gerenciar a equipe.{% else %}Só o GOM principal pode alterar a equipe.{% endif %}
+            </p>
+        </div>
+        {% include 'goms/partials/_gom_switcher.html' %}
+    </header>
+
+    {% include 'goms/partials/_invite_link.html' %}
+    {% include 'goms/partials/_team_members.html' %}
+    {% if is_owner %}
+        {% include 'goms/partials/_team_invites.html' %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -52,6 +52,9 @@ ceg/
 ### 2.4. `apps.auth_otp`
 - Autenticação sem senha via WhatsApp com Evolution API v2.3.0, geração de tokens seguros de 6 dígitos e expiração em 10 minutos.
 
+### 2.5. `apps.goms`
+- GOMs (organizadores), equipe (dono e admins) e convites por link. Papéis e GOM ativo ficam em `apps/goms/access.py`; o desenho e as entregas M1–M4 estão em [MULTI_GOM_DESIGN.md](MULTI_GOM_DESIGN.md).
+
 ---
 
 ## 3. Design System & Frontend

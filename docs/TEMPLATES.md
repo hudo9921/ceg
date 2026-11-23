@@ -216,6 +216,13 @@
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
+- **GOMs e Equipe (`templates/goms/`):**
+  - `login.html`: login do backoffice (`/entrar/`).
+  - `invite_accept.html`: aceitar convite.
+  - `team.html`: equipe do GOM. Partials: `_team_members.html` (papéis e remoção) e `_team_invites.html` (convidar e cancelar).
+  - `platform_goms.html`: GOMs da plataforma.
+  - `partials/_invite_link.html`: link exibido uma única vez. `partials/_gom_switcher.html`: seletor de GOM ativo.
+  - `components/_sidebar_gom_menu.html`: menu de gestão da sidebar (extraído de `sidebar_dock_nav.html`).
 - **Verificação em Duas Etapas do Backoffice (`templates/core/two_factor/`):**
   - `_layout.html`: moldura comum (ícone, título, botão Sair); `_token_field.html`: campo do código + botão.
   - `setup.html` (QR code + chave manual), `verify.html` (código do app ou de recuperação), `backup_codes.html` (exibidos uma única vez), `manage.html` (status e gerar novos códigos).

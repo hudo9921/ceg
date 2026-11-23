@@ -1,8 +1,8 @@
 """
 2FA (TOTP) obrigatório para quem acessa o backoffice.
 
-Ponto único de política: `requires_two_factor(user)`. Hoje cobre todo usuário `is_staff`
-ou `is_superuser`. Quando a plataforma tiver vários GOMs (GOM principal + admins de GOM),
+Ponto único de política: `requires_two_factor(user)`. Cobre staff, superusuários e todo
+membro ativo de um GOM (dono ou admin). Quando a plataforma tiver vários GOMs (GOM principal + admins de GOM),
 os novos papéis devem passar por esta função — nunca espalhe a regra pelas views.
 
 Camadas:
@@ -30,10 +30,15 @@ VERIFY_URL_NAME = 'staff_2fa_verify'
 
 
 def requires_two_factor(user) -> bool:
+    """Todo usuário do backoffice: staff, superusuário (plataforma) ou membro ativo de um GOM."""
     if not getattr(settings, 'STAFF_2FA_REQUIRED', True):
         return False
-    return bool(user and user.is_authenticated and user.is_active
-                and (user.is_staff or user.is_superuser))
+    if not (user and user.is_authenticated and user.is_active):
+        return False
+    if user.is_staff or user.is_superuser:
+        return True
+    from apps.goms.access import is_gom_member
+    return is_gom_member(user)
 
 
 def is_two_factor_verified(user) -> bool:

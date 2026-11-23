@@ -529,7 +529,7 @@ class CreationsHubIntegrationTests(TestCase):
         # Usuário anônimo deve ser redirecionado para o login admin
         resp_anon = self.client.get('/creations/')
         self.assertEqual(resp_anon.status_code, 302)
-        self.assertIn('/admin/login/?next=/creations/', resp_anon.url)
+        self.assertIn('/entrar/?next=/creations/', resp_anon.url)
 
         # Usuário logado comum sem is_staff também é redirecionado
         self.client.force_login(self.regular_user)

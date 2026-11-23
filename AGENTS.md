@@ -42,6 +42,7 @@ python manage.py test apps.participants
 # 6. Regressões de Segurança: OTP, sessão, troca de identidade (< 5s)
 python manage.py test apps.participants.tests_security
 python manage.py test apps.core.tests_two_factor   # 2FA do backoffice
+python manage.py test apps.goms                    # GOMs, equipe e convites (< 8s)
 
 # 7. Matriz de Permissões de todas as rotas (< 2s) — rode ao criar/alterar views
 python manage.py test apps.core

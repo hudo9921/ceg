@@ -659,6 +659,12 @@
                         <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-500"></i>
                         <span>Admin</span>
                     </a>
+                {% elif is_gom_member %}
+                    <a href="{% url 'gom_team' %}"
+                       class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center gap-1">
+                        <i data-lucide="users" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+                        <span>Equipe</span>
+                    </a>
                 {% endif %}
             </div>
         </header>

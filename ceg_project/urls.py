@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('me/', include('apps.participants.urls')),
     path('privacidade/', PrivacyPolicyView.as_view(), name='privacy_policy'),
+    path('', include('apps.goms.urls')),
     path('analytics/', include('apps.analytics.urls')),
     path('', include('apps.cegs.urls')),
 ]

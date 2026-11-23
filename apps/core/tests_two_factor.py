@@ -110,7 +110,7 @@ class StaffTwoFactorTests(TestCase):
     def test_next_cannot_redirect_off_site(self):
         device, _ = self._enroll()
         res = self.client.post(VERIFY + '?next=https://evil.example/', {'token': fmt(current_code(device))})
-        self.assertEqual(res['Location'], '/admin/')
+        self.assertEqual(res['Location'], '/painel/')
 
     # --- gerenciamento ----------------------------------------------------------
     def test_regenerate_codes_invalidates_old_ones(self):
@@ -131,7 +131,7 @@ class StaffTwoFactorTests(TestCase):
 class TwoFactorAccessTests(TestCase):
     def test_anonymous_is_sent_to_login(self):
         res = self.client.get(SETUP)
-        self.assertTrue(res['Location'].startswith('/admin/login/'))
+        self.assertTrue(res['Location'].startswith('/entrar/'))
 
     def test_non_staff_user_gets_403(self):
         user = get_user_model().objects.create_user('comum', password='x')

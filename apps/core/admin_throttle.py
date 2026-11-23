@@ -1,5 +1,5 @@
 """
-Proteção contra força bruta no login do admin (/admin/login/).
+Proteção contra força bruta nos logins com senha (/admin/login/ e /entrar/).
 
 Contadores de falha por IP e por username ficam no cache compartilhado (Redis em
 produção), valendo entre todos os workers do Gunicorn. Após MAX_FAILURES falhas em
@@ -18,7 +18,7 @@ logger = logging.getLogger('security')
 
 MAX_FAILURES = 10
 WINDOW_SECONDS = 15 * 60
-ADMIN_LOGIN_PATH = '/admin/login/'
+LOGIN_PATHS = ('/admin/login/', '/entrar/')
 
 
 def _keys(ip, username):
@@ -67,7 +67,7 @@ class AdminLoginThrottleMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.method == 'POST' and request.path == ADMIN_LOGIN_PATH:
+        if request.method == 'POST' and request.path in LOGIN_PATHS:
             ip = get_client_ip(request)
             username = request.POST.get('username', '')
             if is_locked(ip, username):

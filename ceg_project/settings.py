@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'apps.auth_otp',
     'apps.analytics',
     'apps.core',
+    'apps.goms',
 ]
 
 MIDDLEWARE = [
@@ -124,7 +125,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ceg_project.urls'
 
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/entrar/'  # login do backoffice (staff e membros de GOM)
 
 # 2FA (TOTP) obrigatório para o backoffice — política em apps/core/two_factor.py.
 # Não há variável de ambiente para desligar: perda do celular -> `manage.py reset_2fa <usuario>`.
@@ -146,6 +147,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.participants.context_processors.current_participant',
                 'apps.core.context_processors.frontend',
+                'apps.goms.context_processors.gom_context',
             ],
             'builtins': ['apps.core.templatetags.json_embed', 'apps.core.templatetags.images', 'django.templatetags.static'],
         },

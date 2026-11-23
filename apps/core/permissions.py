@@ -15,7 +15,7 @@ from django.http import JsonResponse
 
 security_logger = logging.getLogger('security')
 
-STAFF_LOGIN_URL = '/admin/login/'
+STAFF_LOGIN_URL = '/entrar/'
 DENIED_MESSAGE = 'Acesso restrito ao organizador.'
 
 

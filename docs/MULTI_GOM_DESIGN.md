@@ -50,13 +50,13 @@ A hierarquia atual não muda (item → `ceg.pix_key`; frete/taxa → caixa → C
 
 ## 3. Autorização
 
-- **`request.gom`** (middleware): é o GOM em que o usuário está atuando. Se ele pertence a mais de um, aparece um seletor de GOM (guardado na sessão). O superusuário pode atuar em qualquer GOM.
+- **`get_active_gom(request)`** (`apps/goms/access.py`): é o GOM em que o usuário está atuando, calculado uma vez por requisição. Se ele pertence a mais de um, aparece um seletor de GOM (guardado na sessão). O superusuário pode atuar em qualquer GOM.
 - **Funções centrais** (`apps/core/permissions.py`), substituindo os ~40 `is_staff` em Python e os 46 templates:
   - `gom_role(user, gom)` → `OWNER` | `ADMIN` | `None` (superusuário conta como `OWNER`).
   - `GomMemberRequiredMixin`: substitui o `StaffRequiredMixin`, que vira um alias durante a migração.
   - `GomOwnerRequiredMixin`: telas de equipe.
   - Contexto de template: `gom_role`, `is_gom_member`, `is_gom_owner` (no lugar de `request.user.is_staff`).
-- **Escopo das consultas:** toda view de backoffice usa `Modelo.objects.for_gom(request.gom)`. Um objeto de outro GOM responde **404** (não 403, para não revelar que existe).
+- **Escopo das consultas:** toda view de backoffice usa `Modelo.objects.for_gom(get_active_gom(request))`. Um objeto de outro GOM responde **404** (não 403, para não revelar que existe).
 - **`/admin/` do Django:** só superusuário. Membros de GOM não recebem `is_staff`.
 - **2FA:** `requires_two_factor` passa a valer para superusuários e para qualquer membro ativo de GOM.
 
@@ -92,12 +92,22 @@ Resultado: no dia seguinte à migração, tudo funciona como hoje para o ValCegs
 
 | # | Entrega | O que muda para o usuário |
 | :--- | :--- | :--- |
-| **M1** | Fundação: app `goms`, membros, convites, `request.gom`, papéis, 2FA para membros, tela de GOMs da plataforma, tela de equipe | Nada para joiners; você já consegue criar GOMs e convidar donos |
+| **M1** ✅ | Fundação: app `goms`, membros, convites, GOM ativo, papéis, 2FA para membros, tela de GOMs da plataforma, tela de equipe | Nada para joiners; você já consegue criar GOMs e convidar donos |
 | **M2** | Dono dos dados: FKs, migração, `for_gom` em todas as views de backoffice, `/admin/` só da plataforma, testes de isolamento | GOMs operam isolados |
 | **M3** | Joiner: selo e filtro na home, `/gom/<slug>/`, `/me/` e Caixinha por GOM | Joiners compram de vários GOMs |
 | **M4** | Configurações por GOM: perfil, Pix padrão, envio, analytics por GOM, visão da plataforma | Cada GOM se configura sozinho |
 
 Depois: **Fase 5** (endereço salvo no perfil do joiner; cada GOM vê o endereço só nos pacotes dele, com registro de acesso) e **Fase 6** (Pix).
+
+### Estado da M1 (entregue)
+- **Login do backoffice:** `/entrar/`, para staff e membros, com o mesmo bloqueio por tentativas do `/admin/login/`. Em seguida, o 2FA é obrigatório para membros.
+- **Telas:**
+  - `/plataforma/goms/` (superusuário): criar GOM, gerar convite do dono, ativar e desativar.
+  - `/gom/equipe/` (membros): ver a equipe. O dono convida, troca papéis e remove, sem nunca remover o último dono.
+  - `/convite/<token>/`: cria a conta (senha validada) ou vincula a conta já logada. O link tem uso único, vale 7 dias e só o hash fica no banco.
+  - `/painel/`: leva cada pessoa à tela inicial do seu papel.
+- **Proteção até a M2:** membros **não** recebem `is_staff` e levam 403 nas telas operacionais (CEGs, caixas etc.), que continuam só para staff até os dados terem dono.
+- **Migração:** `goms.0002` cria o ValCegs. Superusuários viram donos e os demais `is_staff` viram admins.
 
 ## 7. Riscos e cuidados
 - **Vazamento entre GOMs** é o risco nº 1. Mitigação: `for_gom` obrigatório, 404 para objetos de outro GOM e a matriz entre GOMs no CI.
