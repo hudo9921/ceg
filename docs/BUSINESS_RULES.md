@@ -94,3 +94,18 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 4. **Fallback Automático para CORS (Tainted Canvas):**
    - Imagens hospedadas em CDNs externas (S3, Cloudflare R2) podem ter o Canvas bloqueado por políticas CORS do navegador.
    - O sistema detecta o erro e aciona automaticamente o fallback para o backend via Pillow (`apps/cegs/image_utils.py:crop_image_from_coordinates`), realizando o recorte exato por coordenadas no servidor sem interromper a esteira da GOM.
+
+---
+
+## 🔐 7. Identidade do Joiner & Login por OTP
+
+1. **Fonte única de identidade:**
+   - O `participant_id` da sessão só é gravado por `apps/participants/session_auth.py:login_participant()`, chamado após verificar o OTP. A chave da sessão é rotacionada (`cycle_key`) nesse momento.
+   - Claims (`ClaimSlotView`, `BulkClaimView`) e votos de enquete (`CEGVoteView`) de joiners usam **sempre** o WhatsApp da sessão. O campo `whatsapp` do request é ignorado; só o staff pode reservar ou votar em nome de outro número.
+   - Votar em enquete exige login por OTP (resposta `401` + `requires_auth` para anônimos).
+2. **OTP:**
+   - Código gerado com `secrets`. Um novo código invalida os anteriores ainda ativos.
+   - Limites de envio: 3 por telefone a cada 15 min, 10 por telefone a cada 24h, 20 por IP por hora.
+   - Bloqueio: 10 tentativas incorretas somadas em 24h travam o envio e a verificação daquele telefone.
+   - O código **nunca** aparece em respostas HTTP, exceto com `DEBUG=True` + `WHATSAPP_PROVIDER=console` (desenvolvimento local).
+3. **Redirecionamento pós-login:** o `next` passa por `safe_next_url()`, que aceita apenas URLs do próprio site.

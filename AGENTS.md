@@ -35,6 +35,9 @@ python manage.py test apps.analytics.tests
 # 5. Suite Completa de Participantes (< 4s)
 python manage.py test apps.participants
 
+# 6. Regressões de Segurança: OTP, sessão, troca de identidade (< 5s)
+python manage.py test apps.participants.tests_security
+
 # ⚠️ Suite Completa de CEGs (RODAR APENAS NA ENTREGA FINAL) (~50s)
 python manage.py test apps.cegs
 ```

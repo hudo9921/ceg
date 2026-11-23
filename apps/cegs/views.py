@@ -521,7 +521,9 @@ class ClaimSlotView(View):
             from apps.participants.models import Participant
             try:
                 p = Participant.objects.get(id=logged_id)
-                if not whatsapp:
+                # Joiner comum: a identidade (WhatsApp) vem SEMPRE da sessão autenticada por OTP.
+                # Somente o staff pode reservar em nome de outro número.
+                if not is_staff or not whatsapp:
                     whatsapp = p.whatsapp
                 if not name:
                     name = p.name
@@ -551,10 +553,6 @@ class ClaimSlotView(View):
                 username=username,
                 bypass_status_check=is_staff,  # Admin pode reservar em qualquer status de CEG
             )
-            # Salva o participante na sessão se não for o admin realizando a reserva em nome de terceiro
-            if not is_staff:
-                request.session['participant_id'] = claim.participant.id
-
             if hasattr(claim, 'auto_fallback_from_set') and claim.auto_fallback_from_set:
                 success_msg = (
                     f"🎉 Reserva realizada com sucesso via Auto-Fallback! "
@@ -651,7 +649,9 @@ class BulkClaimView(View):
             from apps.participants.models import Participant
             try:
                 p = Participant.objects.get(id=logged_id)
-                if not whatsapp:
+                # Joiner comum: a identidade (WhatsApp) vem SEMPRE da sessão autenticada por OTP.
+                # Somente o staff pode reservar em nome de outro número.
+                if not is_staff or not whatsapp:
                     whatsapp = p.whatsapp
                 if not name:
                     name = p.name
@@ -694,7 +694,6 @@ class BulkClaimView(View):
                 social_handle = social_handle or staff_part.social_handle
 
         results = []
-        participant_saved = False
 
         # 1. Processa slots regulares por ID específico
         for slot_id in slot_ids:
@@ -727,10 +726,6 @@ class BulkClaimView(View):
                     username=username,
                     bypass_status_check=is_staff,
                 )
-                if not is_staff and not participant_saved:
-                    request.session['participant_id'] = claim.participant.id
-                    participant_saved = True
-
                 results.append({
                     'slot_id': slot_id,
                     'item_name': item_name,
@@ -811,10 +806,6 @@ class BulkClaimView(View):
                     username=username,
                     bypass_status_check=is_staff,
                 )
-                if not is_staff and not participant_saved and claims:
-                    request.session['participant_id'] = claims[0].participant.id
-                    participant_saved = True
-
                 for c in claims:
                     results.append({
                         'slot_id': c.slot.id,

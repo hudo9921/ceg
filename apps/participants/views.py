@@ -11,6 +11,9 @@ from .models import Participant, Claim, ParticipantNotification, clean_phone_num
 from .services import BulkParticipantService
 from apps.auth_otp.models import WhatsAppOTP
 from apps.auth_otp.services import OTPService
+from .session_auth import (
+    login_participant, logout_participant, safe_next_url, get_client_ip, can_expose_dev_otp,
+)
 
 
 class StaffRequiredMixin(AccessMixin):
@@ -127,11 +130,9 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
 
 class LoginOtpView(View):
     def get(self, request):
-        next_url = request.GET.get('next', '').strip()
+        next_url = safe_next_url(request, request.GET.get('next', ''), default='')
         if request.session.get('participant_id'):
-            if next_url and next_url.startswith('/'):
-                return redirect(next_url)
-            return redirect('my_claims')
+            return redirect(next_url or 'my_claims')
         phone = request.GET.get('phone', '').strip()
         step = request.GET.get('step', 'phone')
 
@@ -142,7 +143,7 @@ class LoginOtpView(View):
             formatted_phone_display = dummy.formatted_phone
 
         dev_code = None
-        if settings.DEBUG and step == 'verify' and phone:
+        if can_expose_dev_otp() and step == 'verify' and phone:
             cleaned = clean_phone_number(phone)
             latest = WhatsAppOTP.objects.filter(phone=cleaned, is_used=False).first()
             if latest and latest.is_valid():
@@ -159,13 +160,18 @@ class LoginOtpView(View):
     def post(self, request):
         action = request.POST.get('action')
         phone = request.POST.get('phone', '').strip()
-        next_url = request.POST.get('next', '').strip() or request.GET.get('next', '').strip()
+        next_url = safe_next_url(
+            request, request.POST.get('next', '') or request.GET.get('next', ''), default=''
+        )
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if action == 'send_otp':
-            success, msg, dev_code = OTPService.send_otp(phone)
+            success, msg, dev_code = OTPService.send_otp(phone, ip_address=get_client_ip(request))
             if is_ajax:
-                return JsonResponse({'success': success, 'message': msg, 'dev_code': dev_code})
+                payload = {'success': success, 'message': msg}
+                if can_expose_dev_otp():
+                    payload['dev_code'] = dev_code
+                return JsonResponse(payload)
             if success:
                 messages.success(request, msg)
                 query = f"step=verify&phone={clean_phone_number(phone)}"
@@ -181,20 +187,18 @@ class LoginOtpView(View):
             code = request.POST.get('code', '').strip()
             success, msg, participant = OTPService.verify_otp(phone, code)
 
-            target_redirect = next_url if (next_url and next_url.startswith('/')) else '/me/'
+            target_redirect = next_url or '/me/'
 
             if is_ajax:
                 if success and participant:
-                    request.session['participant_id'] = participant.id
+                    login_participant(request, participant)
                     return JsonResponse({'success': True, 'message': msg, 'redirect_url': target_redirect})
                 return JsonResponse({'success': False, 'message': msg})
 
             if success and participant:
-                request.session['participant_id'] = participant.id
+                login_participant(request, participant)
                 messages.success(request, f"Bem-vindo(a), {participant.display_name}!")
-                if next_url and next_url.startswith('/'):
-                    return redirect(next_url)
-                return redirect('my_claims')
+                return redirect(target_redirect)
             else:
                 messages.error(request, msg)
                 return render(request, 'participants/login_otp.html', {
@@ -1085,7 +1089,7 @@ class MarkAllNotificationsReadView(View):
 
 class LogoutView(View):
     def get(self, request):
-        request.session.pop('participant_id', None)
+        logout_participant(request)
         messages.info(request, "Você encerrou sua sessão com sucesso.")
         return redirect('home')
 

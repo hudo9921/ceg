@@ -9,6 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from apps.cegs.models import CEG
 from apps.cegs.polling_service import PollingDemandService, PollingError
 from apps.participants.models import Participant
+from apps.participants.session_auth import get_session_participant
 
 logger = logging.getLogger(__name__)
 
@@ -43,21 +44,25 @@ class CEGVoteView(View):
         social_handle = body.get('social_handle', '').strip()
         notes = body.get('notes', '').strip()
 
-        # Se houver participante autenticado na sessão, preenche dados ausentes
-        logged_id = request.session.get('participant_id')
-        if logged_id:
-            try:
-                p = Participant.objects.get(id=logged_id)
-                if not whatsapp:
-                    whatsapp = p.whatsapp
-                if not name:
-                    name = p.name
-                if not username:
-                    username = p.username
-                if not social_handle:
-                    social_handle = p.social_handle
-            except Participant.DoesNotExist:
-                request.session.pop('participant_id', None)
+        is_staff = request.user.is_authenticated and request.user.is_staff
+        p = get_session_participant(request)
+
+        # Joiners precisam estar autenticados via OTP; a identidade vem SOMENTE da sessão.
+        # Apenas o staff pode registrar votos em nome de outro número.
+        if not p and not is_staff:
+            return JsonResponse({
+                'success': False,
+                'requires_auth': True,
+                'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
+                'message': 'Por favor, autentique com seu WhatsApp para votar.'
+            }, status=401)
+
+        if p:
+            if not is_staff or not whatsapp:
+                whatsapp = p.whatsapp
+            name = name or p.name
+            username = username or p.username
+            social_handle = social_handle or p.social_handle
 
         if not whatsapp:
             return JsonResponse({
@@ -83,10 +88,6 @@ class CEGVoteView(View):
                 actor=request.user if request.user.is_authenticated else None,
             )
 
-            # Salva na sessão o participante
-            if not request.user.is_staff:
-                request.session['participant_id'] = result['participant'].id
-
             summary = PollingDemandService.get_polling_summary(ceg)
 
             return JsonResponse({
@@ -102,7 +103,7 @@ class CEGVoteView(View):
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
         except Exception as e:
             logger.error(f"Erro ao processar votos na CEG {ceg.slug}: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'message': f"Erro interno: {e}"}, status=500)
+            return JsonResponse({'success': False, 'message': "Erro interno ao registrar votos."}, status=500)
 
 
 class ConsolidatePollingView(LoginRequiredMixin, View):

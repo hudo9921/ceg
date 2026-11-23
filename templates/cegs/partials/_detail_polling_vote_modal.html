@@ -89,7 +89,7 @@
                 <div class="font-bold text-slate-900 dark:text-white">{{ logged_participant.name }}</div>
                 <div class="text-[11px] text-slate-600 dark:text-slate-300 font-mono">{{ logged_participant.whatsapp }}</div>
             </div>
-            {% else %}
+            {% elif user.is_staff %}
             <div class="space-y-2.5 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Seu Nome Completo *</label>
@@ -107,6 +107,15 @@
                         class="w-full px-3 py-2 bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
                 </div>
             </div>
+            {% else %}
+            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                class="flex items-center gap-3 p-3 bg-purple-50 dark:bg-white/[0.03] rounded-2xl border border-purple-200 dark:border-white/10 text-xs hover:border-purple-400 dark:hover:border-cyber-neon transition">
+                <i data-lucide="smartphone" class="w-5 h-5 text-purple-600 dark:text-cyber-neon shrink-0" stroke-width="1.75"></i>
+                <span class="text-slate-700 dark:text-slate-300">
+                    <span class="block font-black text-slate-900 dark:text-white">Entre com seu WhatsApp para votar</span>
+                    Enviamos um código de 6 dígitos para confirmar que o número é seu.
+                </span>
+            </a>
             {% endif %}
 
             <!-- Regra de Notificação & Timestamp -->

@@ -2,11 +2,17 @@
 # ==============================================================================
 # Script de Backup Automático Diário do PostgreSQL (Oracle Cloud VM)
 # ==============================================================================
-set -e
+set -eo pipefail
 
-BACKUP_DIR="/app/backups"
+BACKUP_DIR="${BACKUP_DIR:-/app/backups}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 mkdir -p "$BACKUP_DIR"
+
+# Primeiro deploy (banco ainda não existe): nada a salvar, não bloqueia o deploy.
+if ! docker ps --format '{{.Names}}' | grep -qx valcegs-db; then
+    echo "⚠️ [Backup] Container valcegs-db não está rodando — backup ignorado."
+    exit 0
+fi
 
 echo "📦 [Backup] Iniciando backup diário do PostgreSQL..."
 
