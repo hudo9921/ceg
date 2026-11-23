@@ -216,6 +216,11 @@
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
+- **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
+  - `_filtro_goms.html`: visão por GOM, acima do filtro de caixas.
+  - `_quick_pix_mercari_goms.html`: uma chave Pix por GOM.
+  - `_caixinha_envio_gom.html`: formulário de envio de cada GOM.
+- **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).
   - `invite_accept.html`: aceitar convite.

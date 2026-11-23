@@ -29,49 +29,10 @@
         </div>
     </div>
 
-    <!-- CARD DO FORMULÁRIO GOOGLE DA GOM (ENDEREÇO EXTERNO) -->
-    <div class="bg-gradient-to-r from-pink-50/90 via-rose-50/60 to-purple-50/90 dark:from-cyber-surface dark:via-cyber-surface dark:to-cyber-surface rounded-2xl border-2 border-pink-300/80 dark:border-pink-500/40 p-5 sm:p-6 shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-start gap-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
-                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
-                </div>
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-base font-black text-slate-900 dark:text-white">Formulário de Envio Nacional</h3>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
-                            Etapa Obrigatória
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-600 dark:text-cyber-silver max-w-xl leading-relaxed">
-                        Não coletamos dados de endereço nesta plataforma. Para que o organizador possa cotar seu frete e enviar sua encomenda com segurança, acesse o formulário oficial da GOM:
-                    </p>
-                    {% if configuracao_envio.instrucoes_envio %}
-                    <p class="text-[11px] text-slate-500 dark:text-cyber-silver bg-white/70 dark:bg-white/[0.04] p-2.5 rounded-xl border border-pink-200/50 dark:border-white/10 font-medium leading-relaxed flex items-start gap-1.5">
-                        <i data-lucide="info" class="w-3.5 h-3.5 text-pink-500 flex-shrink-0 mt-0.5"></i>
-                        <span><strong>Instruções do Organizador:</strong> {{ configuracao_envio.instrucoes_envio }}</span>
-                    </p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="w-full sm:w-auto flex-shrink-0">
-                {% if configuracao_envio.link_formulario_google %}
-                <a href="{{ configuracao_envio.link_formulario_google }}" target="_blank" rel="noopener noreferrer"
-                   class="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs hover:shadow-md transition flex items-center justify-center gap-2 group cursor-pointer select-none">
-                    <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                    <span>Preencher Formulário de Envio (Google Forms)</span>
-                    <i data-lucide="external-link" class="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
-                </a>
-                {% else %}
-                <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 text-center flex items-center gap-1.5">
-                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-500"></i>
-                    <span>Link do formulário ainda não cadastrado pelo organizador.</span>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    <!-- FORMULÁRIO DE ENVIO: um por GOM com itens prontos (cada GOM envia o próprio pacote) -->
+    {% for ev in envio_por_gom %}
+        {% include 'participants/partials/_caixinha_envio_gom.html' %}
+    {% endfor %}
 
     <!-- ITENS PRONTOS PARA SOLICITAÇÃO -->
     <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 sm:p-6 shadow-xs space-y-4">

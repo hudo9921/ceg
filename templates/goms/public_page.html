@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ gom.name }} — CEGs e pronta entrega | ValCegs{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-6 space-y-6">
+    <!-- Perfil do GOM -->
+    <section class="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        {% if gom.banner_url %}
+            <img src="{{ gom.banner_url }}" alt="" class="w-full h-32 sm:h-44 object-cover">
+        {% else %}
+            <div class="w-full h-24 sm:h-32 bg-gradient-to-r from-pink-200 via-rose-100 to-purple-200 dark:from-pink-950/60 dark:via-slate-900 dark:to-purple-950/60"></div>
+        {% endif %}
+        <div class="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14">
+            {% if gom.logo_url %}
+                <img src="{{ gom.logo_url|thumb }}" data-full="{{ gom.logo_url }}" alt="Logo de {{ gom.name }}"
+                     class="w-20 h-20 rounded-2xl object-cover border-4 border-white dark:border-slate-900 shadow-md bg-white">
+            {% else %}
+                <span class="w-20 h-20 rounded-2xl border-4 border-white dark:border-slate-900 shadow-md bg-pink-500 text-white text-3xl font-black flex items-center justify-center">{{ gom.name|slice:":1"|upper }}</span>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <h1 class="text-2xl font-black text-slate-900 dark:text-white">{{ gom.name }}</h1>
+                {% if gom.bio %}<p class="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-line">{{ gom.bio }}</p>{% endif %}
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% if gom.instagram %}
+                    <span class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                        <i data-lucide="at-sign" class="w-3.5 h-3.5" stroke-width="1.75"></i>{{ gom.instagram }}
+                    </span>
+                {% endif %}
+                {% if logged_participant %}
+                    <a href="{% url 'my_claims' %}?gom={{ gom.id }}" class="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold flex items-center gap-1.5">
+                        <i data-lucide="shopping-bag" class="w-3.5 h-3.5" stroke-width="1.75"></i>Meus itens neste GOM
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {% include 'goms/partials/_public_cegs.html' with titulo="CEGs abertas" cegs=abertas vazio="Nenhuma CEG aberta agora." %}
+    {% if agendadas %}
+        {% include 'goms/partials/_public_cegs.html' with titulo="Em breve" cegs=agendadas vazio="" %}
+    {% endif %}
+
+    {% if vitrine %}
+    <section class="space-y-3">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="store" class="w-5 h-5 text-pink-500" stroke-width="1.75"></i>Pronta entrega
+            </h2>
+            <a href="{% url 'vitrine_list' %}" class="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline">Ver vitrine completa</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {% for item in vitrine %}
+                <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+                    {% if item.display_image_url %}
+                        <img src="{{ item.display_image_url|thumb }}" data-full="{{ item.display_image_url }}" alt="{{ item.titulo }}"
+                             loading="lazy" decoding="async" class="w-full aspect-[3/4] object-cover">
+                    {% endif %}
+                    <div class="p-2.5">
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-2">{{ item.titulo }}</p>
+                        <p class="text-xs font-black text-pink-600 dark:text-pink-400 mt-1">R$ {{ item.preco|floatformat:2 }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

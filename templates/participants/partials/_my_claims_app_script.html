@@ -111,10 +111,22 @@
             selectedGroup: '',
             selectedCeg: '',
             selectedCaixa: 'ALL',
+            // Multi-GOM: visão por GOM (aceita ?gom=<id> na URL)
+            selectedGom: urlParams.get('gom') || 'ALL',
+            matchesGom(gomId) {
+                return this.selectedGom === 'ALL' || String(gomId) === String(this.selectedGom);
+            },
+            selectGom(gomId) {
+                this.selectedGom = String(gomId);
+                this.selectedGroup = '';
+                this.selectedCeg = '';
+                this.selectedCaixa = 'ALL';
+            },
             categoryFilter: 'ALL',
             statusFilter: 'ALL',
             allMercari: allMercari.map(it => ({
                 id: String(it.id),
+                gomId: String(it.gom_id || ''),
                 caixaId: String(it.caixa_id || ''),
                 status: it.status,
                 freteInter: it.frete_inter || 0,
@@ -125,6 +137,7 @@
             })),
             allCegs: allCegs.map(c => ({
                 id: String(c.id),
+                gomId: String(c.gom_id || ''),
                 title: c.title,
                 groupId: String(c.group_id),
                 groupName: c.group_name || '',
@@ -223,7 +236,7 @@
                                     this.expandedCegs = map;
                                 },
         get filteredGroupsOptions() {
-            let cegs = this.allCegs;
+            let cegs = this.allCegs.filter(c => this.matchesGom(c.gomId));
             if (this.selectedCaixa !== 'ALL') {
                 if (this.selectedCaixa === 'NONE') {
                     cegs = cegs.filter(c => !c.caixaId);
@@ -241,7 +254,7 @@
             return Object.values(groupMap).sort((a, b) => a.name.localeCompare(b.name));
         },
         get filteredCegsOptions() {
-            let list = this.allCegs;
+            let list = this.allCegs.filter(c => this.matchesGom(c.gomId));
             if (this.selectedCaixa !== 'ALL') {
                 if (this.selectedCaixa === 'NONE') {
                     list = list.filter(c => !c.caixaId);
@@ -255,7 +268,7 @@
             return list;
         },
         get filteredCounts() {
-            let cegs = this.allCegs;
+            let cegs = this.allCegs.filter(c => this.matchesGom(c.gomId));
             if (this.selectedCaixa !== 'ALL') {
                 if (this.selectedCaixa === 'NONE') {
                     cegs = cegs.filter(c => !c.caixaId);
@@ -279,13 +292,13 @@
             };
         },
         get visibleCegsCount() {
-            return this.allCegs.filter(c => this.matchesCeg(
+            return this.allCegs.filter(c => this.matchesGom(c.gomId) && this.matchesCeg(
                 c.groupId, c.id, c.caixaId,
                 c.countPending, c.countPaid, c.countInterUnpaid, c.countTaxaUnpaid, c.countAnyUnpaid
             )).length;
         },
         get visibleMercariCount() {
-            return this.allMercari.filter(it => this.matchesMercariItem(
+            return this.allMercari.filter(it => this.matchesGom(it.gomId) && this.matchesMercariItem(
                 it.caixaId, it.status, it.freteInterPago, it.taxaAduaneiraPaga,
                 it.freteInter, it.taxaAduaneira, it.searchText
             )).length;
@@ -386,6 +399,10 @@
         },
         matchesCeg(groupId, cegId, caixaId = '', countPending, countPaid, countInterUnpaid = 0, countTaxaUnpaid = 0, countAnyUnpaid = undefined) {
             if (this.categoryFilter === 'MERCARI') return false;
+            if (this.selectedGom !== 'ALL') {
+                const cegInfo = this.cegsMap[String(cegId)];
+                if (cegInfo && !this.matchesGom(cegInfo.gomId)) return false;
+            }
             if (this.selectedCaixa !== 'ALL') {
                 if (this.selectedCaixa === 'NONE') {
                     if (caixaId) return false;

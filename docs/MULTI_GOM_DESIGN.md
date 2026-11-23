@@ -94,7 +94,7 @@ Resultado: no dia seguinte à migração, tudo funciona como hoje para o ValCegs
 | :--- | :--- | :--- |
 | **M1** ✅ | Fundação: app `goms`, membros, convites, GOM ativo, papéis, 2FA para membros, tela de GOMs da plataforma, tela de equipe | Nada para joiners; você já consegue criar GOMs e convidar donos |
 | **M2** ✅ | Dono dos dados: FKs, migração, `for_gom` em todas as views de backoffice, `/admin/` só da plataforma, testes de isolamento | GOMs operam isolados |
-| **M3** | Joiner: selo e filtro na home, `/gom/<slug>/`, `/me/` e Caixinha por GOM | Joiners compram de vários GOMs |
+| **M3** ✅ | Joiner: selo e filtro na home, `/gom/<slug>/`, `/me/` e Caixinha por GOM | Joiners compram de vários GOMs |
 | **M4** | Configurações por GOM: perfil, Pix padrão, envio, analytics por GOM, visão da plataforma | Cada GOM se configura sozinho |
 
 Depois: **Fase 5** (endereço salvo no perfil do joiner; cada GOM vê o endereço só nos pacotes dele, com registro de acesso) e **Fase 6** (Pix).
@@ -124,6 +124,19 @@ Depois: **Fase 5** (endereço salvo no perfil do joiner; cada GOM vê o endereç
 - **LGPD:** o pedido de exclusão notifica cada GOM que conhece o joiner.
 - **Vazamento corrigido:** a página pública da CEG enviava o WhatsApp de quem pegou itens avulsos para qualquer visitante.
 - **Teste de isolamento** (`apps/goms/tests_isolation.py`): um membro do GOM B varre todas as rotas com objetos do GOM A. O teste falha se alguma tela mostrar dados do A ou se algum dado do A mudar.
+
+### Estado da M3 (entregue)
+- **`/me/`:**
+  - Card "Seus GOMs" (`_filtro_goms.html`) com itens, valor pendente e link da página de cada GOM.
+  - Escolher um GOM filtra caixas, CEGs e Mercari; o filtro fica empilhado: **GOM → Caixa → CEG**. Também funciona por link, com `?gom=<id>`.
+- **Pix:**
+  - A chave padrão vem sempre do **mesmo GOM** (`gom_panel.gom_pix_defaults`). Antes, itens sem chave usavam a chave da primeira CEG, que podia ser de outro GOM.
+  - Mercari de vários GOMs mostra uma chave por GOM.
+  - O grupo "sem caixa" com itens de vários GOMs não mostra chave única e manda pagar pela aba de CEGs.
+- **Minha Caixinha:** um formulário/instrução de envio por GOM (`_caixinha_envio_gom.html`), selo do GOM em cada item e um pacote por GOM ao pedir envio.
+- **Home:** filtro e selo de GOM, só quando há CEGs de mais de um GOM.
+- **`/gom/<slug>/`:** página pública com perfil, CEGs abertas/agendadas e pronta entrega do GOM.
+- **Testes:** `apps/participants/tests_multi_gom.py`.
 
 ## 7. Riscos e cuidados
 - **Vazamento entre GOMs** é o risco nº 1. Mitigação: `for_gom` obrigatório, 404 para objetos de outro GOM e a matriz entre GOMs no CI.

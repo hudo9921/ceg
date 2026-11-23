@@ -1,0 +1,23 @@
+{% comment %}Itens Mercari de GOMs diferentes: uma chave Pix por GOM (nunca a chave de um GOM para outro).{% endcomment %}
+<div class="flex-1 space-y-2">
+    <p class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+        <i data-lucide="store" class="w-3.5 h-3.5 text-pink-500" stroke-width="1.75"></i>
+        Seus itens são de GOMs diferentes — pague cada valor na chave do próprio GOM:
+    </p>
+    {% for g in mercari_pendencias.por_gom %}
+        <div class="flex flex-wrap items-center gap-2 p-2 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+            <span class="text-[11px] font-black text-slate-800 dark:text-white">{{ g.gom.name }}</span>
+            <span class="text-[11px] font-mono font-bold text-amber-700 dark:text-amber-300">R$ {{ g.total|floatformat:2 }}</span>
+            {% if g.pix_key %}
+                <span class="text-[11px] font-mono text-slate-700 dark:text-slate-300 select-all truncate flex-1 min-w-[8rem]">{{ g.pix_key }}</span>
+                <button type="button" @click="copyPix('{{ g.pix_key|escapejs }}', 'mercari-{{ g.gom.id }}')"
+                        class="px-2.5 py-1 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer shrink-0">
+                    <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75"></i>
+                    <span class="text-[11px]" x-text="copiedPixCegId === 'mercari-{{ g.gom.id }}' ? 'Copiada!' : 'Pix'"></span>
+                </button>
+            {% else %}
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 flex-1">Chave Pix não cadastrada — fale com o GOM.</span>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>

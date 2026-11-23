@@ -60,7 +60,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-white/5">
                         {% for item in itens_individuais %}
-                        <tr x-show="matchesMercariItem('{{ item.caixa_id|default:'' }}', '{{ item.status }}', {{ item.frete_inter_pago|yesno:'true,false' }}, {{ item.taxa_aduaneira_paga|yesno:'true,false' }}, {{ item.frete_inter|default:0 }}, {{ item.taxa_aduaneira|default:0 }}, '{{ item.nome|escapejs }} {{ item.caixa.nome|default:''|escapejs }}')"
+                        <tr x-show="matchesGom('{{ item.gom_id }}') && matchesMercariItem('{{ item.caixa_id|default:'' }}', '{{ item.status }}', {{ item.frete_inter_pago|yesno:'true,false' }}, {{ item.taxa_aduaneira_paga|yesno:'true,false' }}, {{ item.frete_inter|default:0 }}, {{ item.taxa_aduaneira|default:0 }}, '{{ item.nome|escapejs }} {{ item.caixa.nome|default:''|escapejs }}')"
                             class="hover:bg-slate-50/60 dark:hover:bg-white/[0.03] transition">
                             <td class="py-3.5 px-3">
                                 <div class="flex items-center gap-3">
@@ -205,7 +205,7 @@
                         {% endfor %}
 
                         <!-- Mensagem quando filtros não encontram correspondência na tabela Mercari -->
-                        <tr x-show="allMercari.length > 0 && !allMercari.some(it => matchesMercariItem(it.caixa_id, it.status, it.frete_inter_pago, it.taxa_aduaneira_paga, it.frete_inter, it.taxa_aduaneira, it.search_text || it.nome))">
+                        <tr x-show="allMercari.length > 0 && !allMercari.some(it => matchesGom(it.gomId) && matchesMercariItem(it.caixa_id, it.status, it.frete_inter_pago, it.taxa_aduaneira_paga, it.frete_inter, it.taxa_aduaneira, it.search_text || it.nome))">
                             <td colspan="7" class="py-10 text-center text-slate-400 dark:text-cyber-silver">
                                 <i data-lucide="search" class="w-8 h-8 mx-auto text-slate-300 dark:text-white/20 mb-2"></i>
                                 <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Nenhum item Mercari encontrado para os filtros selecionados.</div>

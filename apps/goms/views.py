@@ -172,3 +172,25 @@ def platform_goms(request):
     goms = Gom.objects.prefetch_related('memberships__user').order_by('name')
     return render(request, 'goms/platform_goms.html', {'goms': goms, 'form': form, 'new_link': new_link,
                                                        'is_platform_admin': is_platform_admin(request.user)})
+
+
+def gom_public_page(request, slug):
+    """Página pública do GOM (/gom/<slug>/): perfil, CEGs abertas/agendadas e pronta entrega."""
+    from django.db.models import Q
+    from django.utils import timezone
+
+    from apps.cegs.models import CEG, ItemVitrine
+    from apps.cegs.services import enrich_cegs_with_availability
+
+    gom = get_object_or_404(Gom, slug=slug, is_active=True)
+    now = timezone.now()
+    base = CEG.objects.for_gom(gom).select_related('era__group')
+    abertas = list(base.filter(Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now))
+                   .order_by('-created_at'))
+    agendadas = list(base.filter(status=CEG.Status.SCHEDULED, opens_at__gt=now).order_by('opens_at'))
+    enrich_cegs_with_availability(abertas + agendadas)
+    vitrine = list(ItemVitrine.objects.for_gom(gom).filter(status=ItemVitrine.Status.DISPONIVEL)
+                   .order_by('-destaque', '-created_at')[:12])
+    return render(request, 'goms/public_page.html', {
+        'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine,
+    })

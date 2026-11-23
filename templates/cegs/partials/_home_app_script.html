@@ -3,6 +3,7 @@ function homeApp() {
     return {
         searchQuery: '',
         selectedGroup: '',
+        selectedGom: new URLSearchParams(window.location.search).get('gom') || '',
         selectedEra: '',
         selectedMember: '',
         selectedTipo: '',
@@ -25,6 +26,7 @@ function homeApp() {
                 members: [{% for item in ceg.grouped_available_items %}"{{ item.member_name|default:item.item_name|escapejs }}",{% endfor %}],
                 items: [{% for item in ceg.grouped_available_items %}{ name: "{{ item.member_name|default:item.item_name|escapejs }}", item_name: "{{ item.item_name|escapejs }}", price: "{{ item.price|floatformat:2 }}", sets: "{{ item.sets_text|escapejs }}" }{% if not forloop.last %},{% endif %}{% endfor %}],
                 groupId: "{{ ceg.era.group.id }}",
+                gomId: "{{ ceg.gom_id }}",
                 eraId: "{{ ceg.era.id }}",
                 searchCorpus: "{{ ceg.title|escapejs }} {{ ceg.era.group.name|escapejs }} {{ ceg.era.name|escapejs }} {{ ceg.available_members_str|escapejs }}",
                 membersStr: "{{ ceg.available_members_str|escapejs }}",
@@ -49,7 +51,7 @@ function homeApp() {
         },
 
         hasActiveFilters() {
-            return Boolean((this.searchQuery && this.searchQuery.trim()) || this.selectedGroup || this.selectedEra || this.selectedMember || this.selectedTipo || this.sortBy !== 'recentes');
+            return Boolean((this.searchQuery && this.searchQuery.trim()) || this.selectedGom || this.selectedGroup || this.selectedEra || this.selectedMember || this.selectedTipo || this.sortBy !== 'recentes');
         },
         isCegVisible(id) {
             const ceg = this.cegsMetaMap[id];
@@ -58,6 +60,7 @@ function homeApp() {
                 const q = this.searchQuery.toLowerCase().trim();
                 if (!ceg.searchCorpus.toLowerCase().includes(q)) return false;
             }
+            if (this.selectedGom && String(this.selectedGom) !== String(ceg.gomId)) return false;
             if (this.selectedGroup && String(this.selectedGroup) !== String(ceg.groupId)) return false;
             if (this.selectedEra && String(this.selectedEra) !== String(ceg.eraId)) return false;
             if (this.selectedMember) {
@@ -108,6 +111,7 @@ function homeApp() {
         },
         clearFilters() {
             this.searchQuery = '';
+            this.selectedGom = '';
             this.selectedGroup = '';
             this.selectedEra = '';
             this.selectedMember = '';

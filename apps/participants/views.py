@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
+from .gom_panel import gom_pix_defaults, goms_summary, mercari_pix_by_gom, shipping_configs_by_gom
 from .services import BulkParticipantService
 from apps.auth_otp.models import WhatsAppOTP
 from apps.auth_otp.services import OTPService
@@ -249,6 +250,7 @@ class MyClaimsView(View):
         claims = participant.claims.select_related(
             'slot__set__ceg__era__group',
             'slot__set__ceg__caixa',
+            'slot__set__ceg__gom',
             'slot__item_definition__tipo_item',
             'slot__pacote_nacional'
         ).order_by('-claimed_at')
@@ -259,12 +261,12 @@ class MyClaimsView(View):
         paid_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PAID)
 
         # Itens Individuais (Mercari) vinculados ao participante
-        itens_individuais = participant.itens_individuais.select_related('caixa', 'pacote_nacional').order_by('-created_at')
+        itens_individuais = participant.itens_individuais.select_related('caixa', 'pacote_nacional', 'gom').order_by('-created_at')
         itens_individuais_list = list(itens_individuais)
         itens_individuais_count = len(itens_individuais_list)
 
         # Pacotes Nacionais de envio do participante
-        pacotes_nacionais = list(participant.pacotes_nacionais.prefetch_related(
+        pacotes_nacionais = list(participant.pacotes_nacionais.select_related('gom').prefetch_related(
             'slots__item_definition__tipo_item',
             'slots__set__ceg__era__group',
             'itens_individuais__tipo_item'
@@ -310,6 +312,7 @@ class MyClaimsView(View):
             'total_geral_pendente': Decimal('0.00'),
             'pix_key': '',
             'pix_instructions': '',
+            'gom_ids': set(),  # se tiver itens de mais de um GOM, não há chave Pix única
         }
 
         for claim in claims_list:
@@ -322,6 +325,8 @@ class MyClaimsView(View):
                     caixas_dict[c.id] = {
                         'id': str(c.id),
                         'caixa_obj': c,
+                        'gom_id': str(c.gom_id),
+                        'gom_name': c.gom.name,
                         'nome': c.nome,
                         'slug': c.slug,
                         'origem': c.origem,
@@ -353,6 +358,7 @@ class MyClaimsView(View):
             else:
                 itens_sem_caixa_count += 1
                 sem_caixa_dict['items_count'] += 1
+                sem_caixa_dict['gom_ids'].add(ceg.gom_id)
                 sem_caixa_dict['cegs_ids'].add(ceg.id)
                 sem_caixa_dict['cegs_names'].add(ceg.title)
                 if not sem_caixa_dict['pix_key'] and ceg.pix_key:
@@ -372,6 +378,8 @@ class MyClaimsView(View):
                 cegs_dict[ceg.id] = {
                     'ceg': ceg,
                     'group': group,
+                    'gom': ceg.gom,
+                    'gom_id': str(ceg.gom_id),
                     'caixa': ceg.caixa,
                     'caixa_id': str(ceg.caixa_id) if ceg.caixa_id else '',
                     'claims': [],
@@ -514,13 +522,8 @@ class MyClaimsView(View):
                 active_ceg_keys.append(c_data['pix_key_taxa'])
             c_data['has_distinct_pix_keys'] = len(set(active_ceg_keys)) > 1
 
-        default_pix_key = ''
-        default_pix_instructions = ''
-        for c_data in cegs_dict.values():
-            if c_data['ceg'].pix_key:
-                default_pix_key = c_data['ceg'].pix_key
-                default_pix_instructions = c_data['ceg'].pix_instructions or ''
-                break
+        # Chave Pix padrão de CADA GOM (nunca a de outro GOM): apps/participants/gom_panel.py
+        gom_pix = gom_pix_defaults(list(cegs_dict.values()), itens_individuais_list)
 
         for item in itens_individuais_list:
             qtd = item.quantidade or 1
@@ -530,6 +533,8 @@ class MyClaimsView(View):
                     caixas_dict[c.id] = {
                         'id': str(c.id),
                         'caixa_obj': c,
+                        'gom_id': str(c.gom_id),
+                        'gom_name': c.gom.name,
                         'nome': c.nome,
                         'slug': c.slug,
                         'origem': c.origem,
@@ -557,6 +562,7 @@ class MyClaimsView(View):
             else:
                 itens_sem_caixa_count += qtd
                 sem_caixa_dict['items_count'] += qtd
+                sem_caixa_dict['gom_ids'].add(item.gom_id)
                 sem_caixa_dict['mercari_count'] += qtd
                 target_caixa = sem_caixa_dict
 
@@ -573,8 +579,7 @@ class MyClaimsView(View):
             c_data['cegs_count'] = len(c_data['cegs_ids'])
             c_data['cegs_names_list'] = sorted(list(c_data['cegs_names']))
             if not c_data['pix_key']:
-                c_data['pix_key'] = default_pix_key
-                c_data['pix_instructions'] = default_pix_instructions
+                c_data['pix_key'], c_data['pix_instructions'] = gom_pix.get(c_data['caixa_obj'].gom_id, ('', ''))
             c_data['total_geral_pendente'] = (
                 c_data['total_items_pending'] +
                 c_data['total_frete_pending'] +
@@ -611,9 +616,13 @@ class MyClaimsView(View):
 
         sem_caixa_dict['cegs_count'] = len(sem_caixa_dict['cegs_ids'])
         sem_caixa_dict['cegs_names_list'] = sorted(list(sem_caixa_dict['cegs_names']))
-        if not sem_caixa_dict['pix_key']:
-            sem_caixa_dict['pix_key'] = default_pix_key
-            sem_caixa_dict['pix_instructions'] = default_pix_instructions
+        sem_caixa_dict['mixed_goms'] = len(sem_caixa_dict['gom_ids']) > 1
+        if sem_caixa_dict['mixed_goms']:
+            # Itens de GOMs diferentes: sem chave única; o joiner paga por CEG/GOM.
+            sem_caixa_dict['pix_key'] = sem_caixa_dict['pix_instructions'] = ''
+        elif not sem_caixa_dict['pix_key'] and sem_caixa_dict['gom_ids']:
+            only_gom = next(iter(sem_caixa_dict['gom_ids']))
+            sem_caixa_dict['pix_key'], sem_caixa_dict['pix_instructions'] = gom_pix.get(only_gom, ('', ''))
         sem_caixa_dict['total_geral_pendente'] = (
             sem_caixa_dict['total_items_pending'] +
             sem_caixa_dict['total_frete_pending'] +
@@ -673,9 +682,13 @@ class MyClaimsView(View):
             'total_frete_pendente': mercari_total_frete_pendente,
             'total_taxa_pendente': mercari_total_taxa_pendente,
             'total_geral_pendente': mercari_total_geral_pendente,
-            'pix_key': default_pix_key,
-            'pix_instructions': default_pix_instructions,
+            # Cada GOM com a própria chave; com um GOM só, a chave fica no topo como antes.
+            'por_gom': mercari_pix_by_gom(mercari_items_pending, gom_pix),
         }
+        mercari_pendencias['pix_key'] = (mercari_pendencias['por_gom'][0]['pix_key']
+                                         if len(mercari_pendencias['por_gom']) == 1 else '')
+        mercari_pendencias['pix_instructions'] = (mercari_pendencias['por_gom'][0]['pix_instructions']
+                                                  if len(mercari_pendencias['por_gom']) == 1 else '')
         total_geral_pendente_mercari = mercari_total_geral_pendente
 
         total_pending_all = sum(c['total_pending'] for c in cegs_dict.values())
@@ -687,6 +700,8 @@ class MyClaimsView(View):
                 'title': c_data['ceg'].title,
                 'group_id': c_data['group'].id,
                 'group_name': c_data['group'].name,
+                'gom_id': c_data['gom_id'],
+                'gom_name': c_data['gom'].name,
                 'caixa_id': c_data['caixa_id'],
                 'items_count': len(c_data['claims']),
                 'count_pending': c_data['count_pending'],
@@ -712,6 +727,7 @@ class MyClaimsView(View):
         mercari_filter_list = [
             {
                 'id': it.id,
+                'gom_id': str(it.gom_id),
                 'caixa_id': str(it.caixa_id) if it.caixa_id else '',
                 'status': it.status,
                 'frete_inter': float(it.frete_inter or 0),
@@ -848,7 +864,7 @@ class MyClaimsView(View):
                         'valor': item.frete_inter,
                         'itens_count': 1,
                         'prazo': p_frete,
-                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else default_pix_key),
+                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else gom_pix.get(item.gom_id, ('', ''))[0]),
                         'pix_instructions': (item.caixa.get_pix_instructions_frete() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
@@ -871,7 +887,7 @@ class MyClaimsView(View):
                         'valor': item.taxa_aduaneira,
                         'itens_count': 1,
                         'prazo': p_taxa,
-                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else default_pix_key),
+                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else gom_pix.get(item.gom_id, ('', ''))[0]),
                         'pix_instructions': (item.caixa.get_pix_instructions_taxa() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
@@ -919,6 +935,8 @@ class MyClaimsView(View):
                 'preco': slot.price,
                 'motivo_bloqueio': motivo,
                 'pode_empacotar': pode,
+                'gom_id': ceg.gom_id,
+                'gom_name': ceg.gom.name,
             }
             if pode:
                 itens_caixinha_prontos.append(item_data)
@@ -940,12 +958,19 @@ class MyClaimsView(View):
                 'preco': item.preco_produto or 0,
                 'motivo_bloqueio': motivo,
                 'pode_empacotar': pode,
+                'gom_id': item.gom_id,
+                'gom_name': item.gom.name,
             }
             if pode:
                 itens_caixinha_prontos.append(item_data)
             else:
                 if not item.pacote_nacional or item.pacote_nacional.status not in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                     itens_caixinha_bloqueados.append(item_data)
+
+        goms_list = goms_summary(list(cegs_dict.values()), itens_individuais_list, pacotes_nacionais,
+                                 mercari_items_pending)
+        goms_by_id = {c['ceg'].gom_id: c['ceg'].gom for c in cegs_dict.values()}
+        goms_by_id.update({it.gom_id: it.gom for it in itens_individuais_list})
 
         pacotes_em_andamento = [p for p in pacotes_nacionais if p.status != PacoteNacional.Status.ENTREGUE]
         pacotes_recebidos = [p for p in pacotes_nacionais if p.status == PacoteNacional.Status.ENTREGUE]
@@ -1014,7 +1039,9 @@ class MyClaimsView(View):
             'itens_caixinha_prontos': itens_caixinha_prontos,
             'itens_caixinha_bloqueados': itens_caixinha_bloqueados,
             'total_caixinha_disponivel': len(itens_caixinha_prontos),
-            'configuracao_envio': ConfiguracaoEnvio.get_solo(),
+            # Multi-GOM: resumo por GOM (filtro/visão por GOM) e envio de cada GOM na Caixinha
+            'goms_list': goms_list,
+            'envio_por_gom': shipping_configs_by_gom(itens_caixinha_prontos, goms_by_id),
             'prazos_proximos': prazos_proximos,
             'prazos_urgentes_count': prazos_urgentes_count,
             'total_any_unpaid_count': total_any_unpaid_count,

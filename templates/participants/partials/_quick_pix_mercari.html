@@ -87,6 +87,8 @@
                     <span class="text-[11px]" x-text="copiedPixCegId === 'mercari' ? 'Copiada!' : 'Pix'"></span>
                 </button>
             </div>
+            {% elif mercari_pendencias.por_gom|length > 1 %}
+            {% include 'participants/partials/_quick_pix_mercari_goms.html' %}
             {% endif %}
 
             <button type="button"

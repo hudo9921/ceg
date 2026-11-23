@@ -25,6 +25,10 @@ O sistema suporta três tipos de cobrança financeira por item:
   3. `ceg.pix_key`
   *(Método: `ceg.get_pix_key_taxa()`)*
 
+### 1.1.1. Multi-GOM: a chave é sempre do GOM credor
+- Item sem chave própria (Mercari, caixa sem chave, prazos) usa a chave padrão **do GOM dono do item**: `Gom.default_pix_key` ou, na falta, a primeira CEG daquele GOM (`apps/participants/gom_panel.py`).
+- **Nunca** mostrar a chave de um GOM para dívida de outro. Agrupamentos com itens de vários GOMs (ex.: "sem caixa") não exibem chave única.
+
 ### 1.2. Renderização na UI do Participante (`/me/`):
 - **Chaves Idênticas (`has_distinct_pix_keys = False`):** A UI renderiza uma caixa Pix consolidada única e limpa com o totalizador somado.
 - **Chaves Distintas (`has_distinct_pix_keys = True`):** A UI exibe botões e blocos separados para cada categoria que possua pendência (`📦 Pix Itens`, `✈️ Pix Frete`, `🏛️ Pix Taxa`), permitindo copiar a chave correta com 1 clique e prevenindo depósitos na conta errada.

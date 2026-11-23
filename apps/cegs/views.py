@@ -61,7 +61,7 @@ class HomeView(View):
         raw_open_cegs = list(
             CEG.objects.filter(
                 Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now)
-            ).select_related('era__group').order_by('-created_at')
+            ).select_related('era__group', 'gom').order_by('-created_at')
         )
         enrich_cegs_with_availability(raw_open_cegs)
 
@@ -74,7 +74,7 @@ class HomeView(View):
             CEG.objects.filter(
                 status=CEG.Status.SCHEDULED,
                 opens_at__gt=now
-            ).select_related('era__group').order_by('opens_at')
+            ).select_related('era__group', 'gom').order_by('opens_at')
         )
         enrich_cegs_with_availability(scheduled_cegs)
 
@@ -124,6 +124,13 @@ class HomeView(View):
             ceg.available_members_str = ' '.join(ceg_members)
 
         open_groups = sorted(open_groups_dict.values(), key=lambda g: g['name'])
+        # Multi-GOM: filtro e selo por GOM só aparecem quando há CEGs de mais de um GOM.
+        open_goms_dict = {}
+        for ceg in list(active_cegs) + list(full_cegs):
+            entry = open_goms_dict.setdefault(ceg.gom_id, {'id': ceg.gom_id, 'name': ceg.gom.name,
+                                                           'slug': ceg.gom.slug, 'cegs_count': 0})
+            entry['cegs_count'] += 1
+        open_goms = sorted(open_goms_dict.values(), key=lambda g: g['name'])
         open_eras = sorted(open_eras_dict.values(), key=lambda e: (e['group_name'], e['name']))
         open_members = sorted(open_members_set, key=lambda m: m.lower())
 
@@ -148,6 +155,8 @@ class HomeView(View):
             'active_cegs': active_cegs,
             'full_cegs': full_cegs,
             'open_groups': open_groups,
+            'open_goms': open_goms,
+            'multi_gom': len(open_goms) > 1,
             'open_eras': open_eras,
             'open_members': open_members,
             'pool_tipos_item': pool_tipos_item,
