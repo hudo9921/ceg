@@ -70,6 +70,7 @@ if csrf_origins_env:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_env.split(',') if o.strip()]
 else:
     CSRF_TRUSTED_ORIGINS = [
+        'https://valcegs.duckdns.org',
         'https://*.onrender.com',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
