@@ -36,7 +36,7 @@
                             <tr class="hover:bg-slate-50/80 dark:hover:bg-white/5 transition">
                                 <td class="py-3 px-3 w-14">
                                     <div class="w-12 h-12 relative group">
-                                        <img loading="lazy" decoding="async" src="{{ item.image_display_url }}" alt="{{ item.nome }}"
+                                        <img loading="lazy" decoding="async" src="{{ item.image_display_url|thumb }}" data-full="{{ item.image_display_url }}" alt="{{ item.nome }}"
                                              @click="openZoom('{{ item.image_display_url }}')"
                                              class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:opacity-80 transition">
                                     </div>

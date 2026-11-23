@@ -12,7 +12,9 @@
   - **Modo Claro (Soft Y2K):** Fundo `#F8F7FA`, superfícies brancas `#FFFFFF`, lavanda `#E9D5FF`, blush `#FCE7F3`, menta `#CCFBF1`, manteiga `#FEF9C3` e textos escuros `#1E1B26`.
   - **Modo Escuro (Cyber-Luxury):** Fundo obsidiana `#0B0A0F`, superfícies acrílicas `#14121B` / `#1A1724`, textos prateados `#E2E8F0`, neon pink `#F472B6`, roxo elétrico `#C084FC` e azul gelo `#38BDF8`.
 - **Ícones Lucide:** Traço padrão `stroke-width="1.75"`, script local (`static/vendor/lucide-1.78.0.min.js`) com suporte a `alpine:initialized` e evento `icons-refresh`.
-- **Imagens em listas e grades:** use `loading="lazy" decoding="async"`; só banners do topo da página (o que aparece primeiro) ficam sem lazy.
+- **Imagens em listas e grades:** use a miniatura com fallback e carregamento preguiçoso:
+  `<img src="{{ url|thumb }}" data-full="{{ url }}" loading="lazy" decoding="async" ...>`.
+  `|thumb` aponta para a versão WebP de 640 px (só para imagens hospedadas por nós; URLs externas passam intactas) e `data-full` é o fallback automático se a miniatura faltar. Banners do topo da página e telas de recorte usam a imagem original, sem lazy.
 - **Sem CDN de terceiros:** novas bibliotecas vão para `static/vendor/` (com versão no nome) e são referenciadas com `{% static %}`; o teste `apps.core.tests_security_headers` falha se um template carregar script externo.
 - **Zero Emojis Brutos:** Substituir ícones de texto/emojis por componentes Lucide equivalentes.
 - **Micro-interações:** Sombras sutis (`shadow-xs`, `shadow-sm`), botões elásticos com `active:scale-[0.98]` e gradientes em pílula.

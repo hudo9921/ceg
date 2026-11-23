@@ -20,7 +20,7 @@
                     <td class="py-3 px-3">
                         <div class="flex items-center gap-3">
                             {% if it.image_url %}
-                                <img loading="lazy" decoding="async" src="{{ it.image_url }}" alt="{{ it.nome }}"
+                                <img loading="lazy" decoding="async" src="{{ it.image_url|thumb }}" data-full="{{ it.image_url }}" alt="{{ it.nome }}"
                                      @click="zoomPhoto = '{{ it.image_url }}'"
                                      class="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0" />
                             {% else %}

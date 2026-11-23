@@ -9,7 +9,7 @@
         <!-- 1. TOPO / FOTO DO PHOTOCARD (Limpa, sem degradê cobrindo a imagem) -->
         <div class="relative flex-1 min-h-0 w-full overflow-hidden bg-slate-100 dark:bg-black/40">
             {% if claim.slot.item_definition.image_url %}
-            <img src="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
+            <img src="{{ claim.slot.item_definition.image_url|thumb }}" data-full="{{ claim.slot.item_definition.image_url }}" alt="{{ claim.slot.item_definition.name }}"
                  loading="lazy" decoding="async"
                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
             {% else %}

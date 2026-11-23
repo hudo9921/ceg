@@ -65,7 +65,7 @@
                             <td class="py-3.5 px-3">
                                 <div class="flex items-center gap-3">
                                     {% if item.image_display_url %}
-                                    <img loading="lazy" decoding="async" src="{{ item.image_display_url }}" alt="{{ item.nome }}"
+                                    <img loading="lazy" decoding="async" src="{{ item.image_display_url|thumb }}" data-full="{{ item.image_display_url }}" alt="{{ item.nome }}"
                                         class="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-white/10 shadow-xs flex-shrink-0 cursor-pointer hover:opacity-85 transition"
                                         @click="openPreview({
                                             title: '{{ item.nome|escapejs }}',

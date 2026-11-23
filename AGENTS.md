@@ -85,6 +85,7 @@ Para detalhes aprofundados sem poluir o contexto de desenvolvimento, consulte os
 
 - [ ] Código modularizado: nenhum template ou parcial novo/alterado ultrapassa **200 linhas**.
 - [ ] 100% **Lucide Icons** utilizados com traço uniforme (`stroke-width="1.75"`), sem emojis soltos no HTML.
+- [ ] Imagens em listas/grades usam `src="{{ url|thumb }}" data-full="{{ url }}" loading="lazy" decoding="async"`.
 - [ ] Suporte a **Dark Mode** implementado (`dark:bg-slate-900`, `dark:border-slate-800`, `dark:text-white`).
 - [ ] Testes pontuais ultrarrápidos executados e passando com louvor (`OK`).
 - [ ] Se houve novas telas ou partials criados: atualizados [docs/TEMPLATES.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/TEMPLATES.md) e [docs/PROJECT_OVERVIEW.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/PROJECT_OVERVIEW.md).

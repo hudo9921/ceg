@@ -19,7 +19,7 @@
                     <!-- Foto / Proof -->
                     <td class="py-3 px-3">
                         <div class="relative group w-12 h-12">
-                            <img loading="lazy" decoding="async" src="{{ item.image_display_url }}"
+                            <img loading="lazy" decoding="async" src="{{ item.image_display_url|thumb }}" data-full="{{ item.image_display_url }}"
                                  alt="{{ item.nome }}"
                                  @click="openZoom('{{ item.image_display_url }}')"
                                  class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer group-hover:opacity-80 transition">

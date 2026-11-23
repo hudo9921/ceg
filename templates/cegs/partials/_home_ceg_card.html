@@ -21,37 +21,37 @@
         
         <!-- Ambient Blur de Fundo + Foto Nítida com Fallback Inteligente -->
         {% if ceg.banner_url %}
-            <img src="{{ ceg.banner_url }}"
+            <img src="{{ ceg.banner_url|thumb }}" data-full="{{ ceg.banner_url }}"
                  alt=""
                  aria-hidden="true"
                  loading="lazy"
                  decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 dark:opacity-40">
-            <img src="{{ ceg.banner_url }}"
+            <img src="{{ ceg.banner_url|thumb }}" data-full="{{ ceg.banner_url }}"
                  alt="{{ ceg.title }}"
                  loading="lazy"
                  decoding="async"
                  class="relative z-10 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
         {% elif ceg.era.banner_url %}
-            <img src="{{ ceg.era.banner_url }}"
+            <img src="{{ ceg.era.banner_url|thumb }}" data-full="{{ ceg.era.banner_url }}"
                  alt=""
                  aria-hidden="true"
                  loading="lazy"
                  decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 dark:opacity-40">
-            <img src="{{ ceg.era.banner_url }}"
+            <img src="{{ ceg.era.banner_url|thumb }}" data-full="{{ ceg.era.banner_url }}"
                  alt="{{ ceg.title }}"
                  loading="lazy"
                  decoding="async"
                  class="relative z-10 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
         {% elif ceg.era.group.image_url %}
-            <img src="{{ ceg.era.group.image_url }}"
+            <img src="{{ ceg.era.group.image_url|thumb }}" data-full="{{ ceg.era.group.image_url }}"
                  alt=""
                  aria-hidden="true"
                  loading="lazy"
                  decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60 dark:opacity-40">
-            <img src="{{ ceg.era.group.image_url }}"
+            <img src="{{ ceg.era.group.image_url|thumb }}" data-full="{{ ceg.era.group.image_url }}"
                  alt="{{ ceg.title }}"
                  loading="lazy"
                  decoding="async"

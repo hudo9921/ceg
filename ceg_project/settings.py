@@ -147,7 +147,7 @@ TEMPLATES = [
                 'apps.participants.context_processors.current_participant',
                 'apps.core.context_processors.frontend',
             ],
-            'builtins': ['apps.core.templatetags.json_embed', 'django.templatetags.static'],
+            'builtins': ['apps.core.templatetags.json_embed', 'apps.core.templatetags.images', 'django.templatetags.static'],
         },
     },
 ]

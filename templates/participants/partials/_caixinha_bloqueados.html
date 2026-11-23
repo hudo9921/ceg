@@ -32,7 +32,7 @@
                 <div class="border border-slate-200/80 dark:border-white/10 rounded-xl p-3 bg-slate-50/50 dark:bg-white/[0.02] flex items-start gap-3">
                     <div class="w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5">
                         {% if item.imagem %}
-                        <img loading="lazy" decoding="async" src="{{ item.imagem }}" alt="{{ item.titulo }}" class="w-full h-full object-cover">
+                        <img loading="lazy" decoding="async" src="{{ item.imagem|thumb }}" data-full="{{ item.imagem }}" alt="{{ item.titulo }}" class="w-full h-full object-cover">
                         {% else %}
                         <i data-lucide="package" class="w-5 h-5 text-slate-400 dark:text-cyber-silver"></i>
                         {% endif %}

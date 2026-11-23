@@ -45,7 +45,7 @@
          @click="openModal('{{ item.titulo|escapejs }}', '{{ item.display_image_url|escapejs }}', '{{ item.group.name|default:""|escapejs }}', '{{ item.era.name|default:""|escapejs }}', '{{ item.integrante|default:""|escapejs }}', '{{ item.sub_category|default:""|escapejs }}', '{{ item.preco|floatformat:2 }}', '{{ item.status }}', '{{ item.descricao|escapejs }}')">
 
         {% if item.display_image_url %}
-            <img src="{{ item.display_image_url }}"
+            <img src="{{ item.display_image_url|thumb }}" data-full="{{ item.display_image_url }}"
                  alt="{{ item.titulo }}"
                  loading="lazy"
                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">

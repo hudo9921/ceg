@@ -32,6 +32,15 @@ class InvalidImageError(ImageSizeError):
 INVALID_IMAGE_MESSAGE = "O arquivo enviado não é uma imagem válida (use JPG, PNG, WebP ou GIF)."
 
 
+def _saved_with_thumbnail(saved_path: str, image_bytes: bytes) -> str:
+    """URL pública do arquivo salvo, já com a miniatura de listas gerada (apps.core.thumbnails)."""
+    from apps.core.thumbnails import ensure_thumbnail
+
+    url = default_storage.url(saved_path)
+    ensure_thumbnail(url, raw=image_bytes)
+    return url
+
+
 def _optimize_image_bytes(raw_bytes: bytes, max_dimension: int = 1920, quality: int = 85) -> tuple[bytes, str]:
     """
     Otimiza e redimensiona imagem usando Pillow.
@@ -111,7 +120,7 @@ def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallb
             optimized_bytes, ext = _optimize_image_bytes(raw_bytes)
             safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
             saved_path = default_storage.save(safe_filename, ContentFile(optimized_bytes))
-            return default_storage.url(saved_path)
+            return _saved_with_thumbnail(saved_path, optimized_bytes)
         except ImageSizeError:
             raise
         except Exception as e:
@@ -139,7 +148,7 @@ def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallb
                 optimized_bytes, ext = _optimize_image_bytes(decoded_bytes)
                 safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
                 saved_path = default_storage.save(safe_filename, ContentFile(optimized_bytes))
-                return default_storage.url(saved_path)
+                return _saved_with_thumbnail(saved_path, optimized_bytes)
         except ImageSizeError:
             raise
         except Exception as e:
@@ -242,7 +251,7 @@ def crop_image_from_coordinates(
             prefix = 'item_'
             safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
             saved_path = default_storage.save(safe_filename, ContentFile(out_io.getvalue()))
-            return default_storage.url(saved_path)
+            return _saved_with_thumbnail(saved_path, out_io.getvalue())
     except Exception as e:
         logger.error(f"Erro ao recortar imagem com Pillow: {e}")
         return ''

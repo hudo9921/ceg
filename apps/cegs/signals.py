@@ -52,3 +52,34 @@ def log_claim_creation(sender, instance, created, **kwargs):
                 AuditService.log_claim_success_from_claim(instance)
         except Exception as e:
             logger.error(f"Erro no signal de Claim para AuditLog: {e}")
+
+
+# --- Miniaturas de fotos enviadas como arquivo (ItemIndividual / ItemVitrine) ---------
+# Só gera quando o arquivo mudou: esses modelos são salvos com frequência (ex.: pagamento).
+from django.db.models.signals import pre_save  # noqa: E402
+
+_PHOTO_MODELS = ('cegs.ItemIndividual', 'cegs.ItemVitrine')
+
+
+def _mark_new_photo(sender, instance, **kwargs):
+    new_name = instance.foto_arquivo.name if instance.foto_arquivo else ''
+    old_name = ''
+    if instance.pk:
+        old_name = sender.objects.filter(pk=instance.pk).values_list('foto_arquivo', flat=True).first() or ''
+    instance._photo_changed = bool(new_name) and new_name != old_name
+
+
+def _thumbnail_new_photo(sender, instance, **kwargs):
+    if not getattr(instance, '_photo_changed', False):
+        return
+    instance._photo_changed = False
+    from apps.core.thumbnails import ensure_thumbnail
+    try:
+        ensure_thumbnail(instance.foto_arquivo.url)
+    except Exception as e:
+        logger.warning(f"Miniatura da foto não gerada ({sender.__name__} #{instance.pk}): {e}")
+
+
+for _model in _PHOTO_MODELS:
+    pre_save.connect(_mark_new_photo, sender=_model, dispatch_uid=f'photo-mark-{_model}')
+    post_save.connect(_thumbnail_new_photo, sender=_model, dispatch_uid=f'photo-thumb-{_model}')

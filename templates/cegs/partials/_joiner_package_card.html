@@ -68,7 +68,7 @@
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <div class="w-7 h-10 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 shrink-0">
                                 {% if item_img %}
-                                    <img loading="lazy" decoding="async" src="{{ item_img }}" alt="" class="w-full h-full object-cover">
+                                    <img loading="lazy" decoding="async" src="{{ item_img|thumb }}" data-full="{{ item_img }}" alt="" class="w-full h-full object-cover">
                                 {% else %}
                                     <div class="w-full h-full flex items-center justify-center text-pink-400"><i data-lucide="sparkles" class="w-3 h-3" stroke-width="1.75"></i></div>
                                 {% endif %}
@@ -96,7 +96,7 @@
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <div class="w-7 h-10 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 shrink-0">
                                 {% if item.image_display_url %}
-                                    <img loading="lazy" decoding="async" src="{{ item.image_display_url }}" alt="" class="w-full h-full object-cover">
+                                    <img loading="lazy" decoding="async" src="{{ item.image_display_url|thumb }}" data-full="{{ item.image_display_url }}" alt="" class="w-full h-full object-cover">
                                 {% else %}
                                     <div class="w-full h-full flex items-center justify-center text-pink-400"><i data-lucide="shopping-bag" class="w-3 h-3" stroke-width="1.75"></i></div>
                                 {% endif %}

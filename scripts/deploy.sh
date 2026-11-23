@@ -78,11 +78,15 @@ fi
 echo "✅ Aplicação saudável"
 docker image prune -f >/dev/null
 
+# Miniaturas das imagens existentes (idempotente; em segundo plano para não atrasar o deploy).
+docker exec -d valcegs-web sh -c 'python manage.py generate_thumbnails >> /tmp/thumbnails.log 2>&1' || true
+
 # --- 6. Rotinas diárias (idempotente: substitui só as linhas marcadas) -------------
 CRON_TAG="# ceg-managed"
 {
     crontab -l 2>/dev/null | grep -v "$CRON_TAG" || true
     echo "0 3 * * * cd $APP_DIR && BACKUP_DIR=$BACKUP_DIR bash scripts/backup_database.sh >> $HOME/backup.log 2>&1 $CRON_TAG"
     echo "30 3 * * * docker exec valcegs-web python manage.py purge_personal_data >> $HOME/purge.log 2>&1 $CRON_TAG"
+    echo "15 4 * * * docker exec valcegs-web python manage.py generate_thumbnails >> $HOME/thumbnails.log 2>&1 $CRON_TAG"
 } | crontab -
-echo "✅ Cron de backup e retenção de dados instalado"
+echo "✅ Cron de backup, retenção de dados e miniaturas instalado"

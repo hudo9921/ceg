@@ -10,7 +10,7 @@
                 <div class="flex-shrink-0">
                     {% if notif.photocard_image_url %}
                         <div class="relative w-12 h-16 sm:w-14 sm:h-20 rounded-xl overflow-hidden shadow-xs border border-purple-200/80 dark:border-white/15 bg-slate-100 dark:bg-slate-800">
-                            <img src="{{ notif.photocard_image_url }}"
+                            <img src="{{ notif.photocard_image_url|thumb }}" data-full="{{ notif.photocard_image_url }}"
                                  alt="{{ notif.title }}"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                                  loading="lazy"

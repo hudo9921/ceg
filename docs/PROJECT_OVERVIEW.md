@@ -108,6 +108,7 @@ O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Amp
 - `.env` do servidor precisa de `SECRET_KEY`, `POSTGRES_PASSWORD` e `DEBUG=False`. Desenvolvimento local usa `DEBUG=True` (ver `.env.example`).
 - `FIELD_ENCRYPTION_KEY` (criptografia de endereços) também é obrigatória — **guarde uma cópia fora do servidor**. `BACKUP_PASSPHRASE` ativa a criptografia dos backups.
 - O deploy (`scripts/deploy.sh`, chamado pelo GitHub Actions) faz: completa o `.env` → backup → build → troca única da senha padrão do Postgres → sobe → confere `/health/` (que também testa o banco) → instala o cron diário de backup (03:00) e de `purge_personal_data` (03:30). Se `/health/` falhar, o job falha e mostra os logs.
+- Miniaturas: imagens hospedadas têm versão de 640 px usada em listas (`|thumb`); `generate_thumbnails` roda após o deploy e no cron diário (04:15).
 - Desempenho: Caddy comprime as respostas (zstd/gzip); WhiteNoise serve estáticos pré-comprimidos (Brotli) com cache longo; sessões ficam no Redis (`cached_db`); o Postgres tem `shared_buffers`/`work_mem` ajustados no `docker-compose.yml`.
 - Headers de segurança (CSP, Permissions-Policy) saem do Django (`apps/core/security_headers.py`); `CSP_REPORT_ONLY=True` no `.env` é a chave de emergência.
 - Detalhes e pendências: [docs/SECURITY_PLAN.md](SECURITY_PLAN.md).

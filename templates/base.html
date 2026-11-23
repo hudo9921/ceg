@@ -39,6 +39,16 @@
             setTimeout(initLucideIcons, 40);
         });
         window.addEventListener('icons-refresh', initLucideIcons);
+
+        // Miniatura ausente (|thumb): volta para a imagem original (data-full) antes de
+        // qualquer handler de erro da página. Se a original também falhar, o handler roda.
+        document.addEventListener('error', function (e) {
+            var img = e.target;
+            if (img && img.tagName === 'IMG' && img.dataset.full && img.getAttribute('src') !== img.dataset.full) {
+                e.stopImmediatePropagation();
+                img.src = img.dataset.full;
+            }
+        }, true);
     </script>
     <script>
         document.addEventListener('alpine:init', () => {

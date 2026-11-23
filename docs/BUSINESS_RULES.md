@@ -97,6 +97,12 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 
 ---
 
+## 🖼️ 6.1. Miniaturas de Imagens (`apps/core/thumbnails.py`)
+- Toda imagem salva no nosso storage (upload, colar, recorte, `foto_arquivo`) ganha uma miniatura WebP de até 640 px em `thumbs/640/<caminho original>.webp`.
+- O caminho é derivado da URL original, então o template não consulta banco nem storage (`{{ url|thumb }}`); se a miniatura faltar, `data-full` + o listener de `base.html` voltam para a original.
+- Imagens antigas: `python manage.py generate_thumbnails` (idempotente; roda após cada deploy e diariamente às 04:15). `--force` recria todas.
+- URLs externas (Mercari, redes sociais) não são baixadas nem reduzidas.
+
 ## 🔐 7. Identidade do Joiner & Login por OTP
 
 1. **Fonte única de identidade:**
