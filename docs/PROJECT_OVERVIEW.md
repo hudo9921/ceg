@@ -98,6 +98,12 @@ O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Amp
 - Apenas o Caddy (80/443) é público; Django (8000), Evolution (8080) e Postgres (5432) escutam só em `127.0.0.1`.
 - Manager da Evolution API: `ssh -L 8080:localhost:8080 ubuntu@<servidor>` e abrir `http://localhost:8080`.
 - `.env` do servidor precisa de `SECRET_KEY`, `POSTGRES_PASSWORD` e `DEBUG=False`. Desenvolvimento local usa `DEBUG=True` (ver `.env.example`).
+- `FIELD_ENCRYPTION_KEY` (criptografia de endereços) também é obrigatória — **guarde uma cópia fora do servidor**. `BACKUP_PASSPHRASE` ativa a criptografia dos backups.
+- Cron diário sugerido no servidor (`crontab -e`):
+  ```
+  0 3 * * * cd /home/ubuntu/ceg && BACKUP_DIR=/home/ubuntu/ceg-backups bash scripts/backup_database.sh >> /home/ubuntu/backup.log 2>&1
+  30 3 * * * docker exec valcegs-web python manage.py purge_personal_data >> /home/ubuntu/purge.log 2>&1
+  ```
 - Detalhes e pendências: [docs/SECURITY_PLAN.md](SECURITY_PLAN.md).
 
 ### Migração Neon -> Oracle Local

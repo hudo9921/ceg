@@ -37,6 +37,7 @@ jobs:
           DEBUG: "False"
           SECRET_KEY: "ci-deploy-check-${{ github.run_id }}-not-a-real-secret-value-0123456789"
           ALLOWED_HOSTS: "valcegs.duckdns.org"
+          FIELD_ENCRYPTION_KEY: "PvBl4dRZHZK0Xs-UbheEbyh495jHI5KleOOxXwgYGMs="  # chave descartável, só para o CI
         run: python manage.py check --deploy --fail-level WARNING
 
   deploy:
@@ -53,6 +54,11 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/ceg
+            # Variáveis obrigatórias: sem elas o container não sobe. Aborta antes do build
+            # para que a versão atual continue no ar.
+            for var in SECRET_KEY POSTGRES_PASSWORD FIELD_ENCRYPTION_KEY; do
+              grep -q "^${var}=." .env || { echo "ERRO: defina ${var} no .env do servidor"; exit 1; }
+            done
             BACKUP_DIR=/home/ubuntu/ceg-backups bash scripts/backup_database.sh
             git reset --hard
             git pull origin main

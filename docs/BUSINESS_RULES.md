@@ -109,3 +109,13 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
    - Bloqueio: 10 tentativas incorretas somadas em 24h travam o envio e a verificação daquele telefone.
    - O código **nunca** aparece em respostas HTTP, exceto com `DEBUG=True` + `WHATSAPP_PROVIDER=console` (desenvolvimento local).
 3. **Redirecionamento pós-login:** o `next` passa por `safe_next_url()`, que aceita apenas URLs do próprio site.
+
+---
+
+## 🛡️ 8. Proteção de Dados Pessoais (LGPD)
+
+1. **Criptografia em repouso:** campos `EncryptedTextField` (hoje: `PacoteNacional.endereco_destinatario` e `cep_destinatario`) são gravados como `enc:v1:<token Fernet>`. Não é possível filtrar/buscar pelo conteúdo desses campos. A chave fica em `FIELD_ENCRYPTION_KEY` (separada da `SECRET_KEY`); perder a chave = perder os endereços.
+2. **Auditoria:** toda tela de staff que mostra endereço registra `AuditLog` do tipo `PII_ACCESS` (`log_pii_access`). Exportações (`DATA_EXPORT`), pedidos de exclusão (`DATA_DELETION_REQUEST`) e anonimizações (`DATA_ANONYMIZED`) também são registrados.
+3. **Retenção:** `python manage.py purge_personal_data` apaga endereço/CEP/observações de pacotes entregues há mais de `PII_RETENTION_DAYS` (180) e OTPs com mais de `OTP_RETENTION_DAYS` (30).
+4. **Direitos do titular:** no `/me/` (Perfil → Privacidade) o joiner baixa seus dados em JSON e pede a exclusão (digitando `EXCLUIR`). A GOM recebe uma notificação e usa a ação **Anonimizar (LGPD)** no admin de Participantes.
+5. **Anonimização (`apps.core.privacy.anonymize_participant`):** recusada enquanto houver reservas não entregues, compras avulsas em andamento ou pacotes não entregues. Apaga nome, apelido, @, notas, WhatsApp (vira `removido-<id>`), endereços, notificações e OTPs; mantém claims e valores sem identificação. Se o mesmo número fizer login depois, nasce uma conta nova e vazia.

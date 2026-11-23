@@ -1,5 +1,6 @@
 import math
 import re
+from apps.core.fields import EncryptedTextField
 from django.db import models
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -1182,8 +1183,9 @@ class PacoteNacional(models.Model):
         default=Status.EM_PREPARACAO,
         db_index=True
     )
-    endereco_destinatario = models.TextField('Endereço de Destino Informado', blank=True)
-    cep_destinatario = models.CharField('CEP de Destino', max_length=15, blank=True)
+    # Dados pessoais criptografados em repouso (LGPD) — ver apps/core/crypto.py
+    endereco_destinatario = EncryptedTextField('Endereço de Destino Informado', blank=True)
+    cep_destinatario = EncryptedTextField('CEP de Destino', blank=True)
     observacoes_joiner = models.TextField('Observações / Preferências do Joiner', blank=True)
     solicitado_em = models.DateTimeField('Data da Solicitação pelo Joiner', null=True, blank=True)
     codigo_rastreio = models.CharField(
@@ -1997,6 +1999,10 @@ class AuditLog(models.Model):
         SLOT_RELEASED = 'SLOT_RELEASED', 'Slot Desvinculado Manualmente'
         POLLING_VOTE = 'POLLING_VOTE', 'Voto em Enquete de Demanda'
         POLLING_CONVERTED = 'POLLING_CONVERTED', 'Conversão de Enquete em Set'
+        PII_ACCESS = 'PII_ACCESS', 'Acesso a Dados Pessoais (LGPD)'
+        DATA_EXPORT = 'DATA_EXPORT', 'Exportação de Dados pelo Titular (LGPD)'
+        DATA_DELETION_REQUEST = 'DATA_DELETION_REQUEST', 'Pedido de Exclusão de Dados (LGPD)'
+        DATA_ANONYMIZED = 'DATA_ANONYMIZED', 'Conta Anonimizada (LGPD)'
         OTHER = 'OTHER', 'Outra Operação'
 
     event_type = models.CharField('Tipo de Evento', max_length=40, choices=EventType.choices, db_index=True)

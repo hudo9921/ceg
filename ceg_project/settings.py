@@ -30,6 +30,23 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("SECRET_KEY é obrigatória quando DEBUG=False.")
     SECRET_KEY = 'django-insecure-dev-only-key-nao-use-em-producao'
 
+# Criptografia de dados pessoais (apps/core/crypto.py). Chave SEPARADA da SECRET_KEY.
+# Aceita várias chaves separadas por vírgula (a primeira criptografa) para rotação.
+# Gerar: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# PERDER ESTA CHAVE = PERDER OS ENDEREÇOS. Guarde uma cópia fora do servidor.
+FIELD_ENCRYPTION_KEYS = [k.strip() for k in os.getenv('FIELD_ENCRYPTION_KEY', '').split(',') if k.strip()]
+if not FIELD_ENCRYPTION_KEYS:
+    if not DEBUG:
+        raise ImproperlyConfigured("FIELD_ENCRYPTION_KEY é obrigatória quando DEBUG=False.")
+    import base64 as _b64, hashlib as _hashlib
+    # Apenas desenvolvimento/testes: chave derivada da SECRET_KEY local.
+    FIELD_ENCRYPTION_KEYS = [_b64.urlsafe_b64encode(_hashlib.sha256(
+        ('field-encryption-dev:' + SECRET_KEY).encode()).digest()).decode()]
+
+# Retenção de dados pessoais (comando purge_personal_data)
+PII_RETENTION_DAYS = int(os.getenv('PII_RETENTION_DAYS', 180))  # endereço após a entrega
+OTP_RETENTION_DAYS = int(os.getenv('OTP_RETENTION_DAYS', 30))
+
 # Domínios Permitidos
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '*')
 if allowed_hosts_env and allowed_hosts_env.strip() != '*':

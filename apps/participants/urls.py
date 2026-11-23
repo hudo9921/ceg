@@ -1,4 +1,5 @@
 from django.urls import path
+from .privacy_views import ExportMyDataView, RequestDataDeletionView
 from .views import (
     LoginOtpView, MyClaimsView, LogoutView, ProfileUpdateView,
     MarkNotificationReadView, MarkAllNotificationsReadView,
@@ -16,6 +17,8 @@ urlpatterns = [
     path('pacotes/<int:pacote_id>/confirmar-entrega/', ConfirmarEntregaPacoteView.as_view(), name='confirmar_entrega_pacote'),
     path('pacotes/<int:pacote_id>/cancelar-solicitacao/', CancelarSolicitacaoEnvioView.as_view(), name='cancelar_solicitacao_envio'),
     path('envios/solicitar/', SolicitarEnvioNacionalView.as_view(), name='solicitar_envio_nacional'),
+    path('meus-dados/exportar/', ExportMyDataView.as_view(), name='export_my_data'),
+    path('meus-dados/excluir/', RequestDataDeletionView.as_view(), name='request_data_deletion'),
     path('', MyClaimsView.as_view(), name='my_claims'),
     path('logout/', LogoutView.as_view(), name='logout_participant'),
 ]

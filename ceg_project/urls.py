@@ -9,6 +9,7 @@ admin.site.site_title = "Painel do Organizador de CEGs"
 admin.site.index_title = "Gestão de Compras em Grupo (K-pop)"
 
 from django.http import HttpResponse
+from apps.participants.privacy_views import PrivacyPolicyView
 
 def health_check(request):
     return HttpResponse("OK", content_type="text/plain")
@@ -18,6 +19,7 @@ urlpatterns = [
     path('admin/whatsapp/', include('apps.auth_otp.urls')),
     path('admin/', admin.site.urls),
     path('me/', include('apps.participants.urls')),
+    path('privacidade/', PrivacyPolicyView.as_view(), name='privacy_policy'),
     path('analytics/', include('apps.analytics.urls')),
     path('', include('apps.cegs.urls')),
 ]

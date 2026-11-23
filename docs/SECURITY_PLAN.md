@@ -41,11 +41,13 @@
 - [ ] **Pendente (performance + CSP):** build local do Tailwind para remover o Play CDN e permitir uma Content-Security-Policy.
 
 ## Fase 4 — Fundações de Proteção de Dados (LGPD)
-- [ ] Campos criptografados para endereço/CEP/CPF (chave própria em env var).
-- [ ] Auditoria de acesso a PII pelo staff (`AuditLog`).
-- [ ] Política de retenção (ex.: limpar endereço do `PacoteNacional` após X meses da entrega).
-- [ ] Exportar meus dados / excluir conta no `/me/` + aviso de privacidade e consentimento.
-- [ ] Backups criptografados; remover dumps de produção de máquinas locais.
+- [x] `EncryptedTextField` (Fernet, `apps/core/fields.py`) com chave própria `FIELD_ENCRYPTION_KEY` (rotação via `rotate_encryption_keys`). Endereço/CEP do `PacoteNacional` já criptografados (migração `cegs.0032` criptografa dados legados).
+- [x] Auditoria de acesso a PII: evento `PII_ACCESS` via `apps.core.privacy.log_pii_access` (já aplicado na edição de pacote no admin).
+- [x] Retenção: `purge_personal_data` (endereço 180 dias após a entrega, OTP 30 dias) — agendar no cron do servidor.
+- [x] Titular: baixar meus dados (JSON) e pedir exclusão no perfil do `/me/`; ação "Anonimizar (LGPD)" no admin (bloqueada com pendências); página pública `/privacidade/`.
+- [x] Backups criptografados com AES-256 quando `BACKUP_PASSPHRASE` está definida.
+- [ ] **Com você:** revisar o texto de `/privacidade/` (rascunho técnico, não é parecer jurídico) e apagar os dumps de produção da pasta local `backups/`.
+- [ ] **Antes de coletar endereços (Fase 5):** 2FA para staff (adiado da Fase 3).
 
 ## Depois deste plano
 - **Fase 5:** endereço/CEP no perfil, pré-preenchendo a solicitação da Caixinha.

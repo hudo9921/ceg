@@ -86,6 +86,8 @@
     - `_caixinha_pacotes_andamento.html`: Envios em andamento com status, rastreio e fotos dos photocards.
     - `_caixinha_pacotes_recebidos.html`: Histórico de pacotes entregues e avaliações.
 - `_modais.html`: Orquestrador de modais (Perfil, Zoom de photocard, Confirmação e Cancelamento de pacotes).
+  - `_modal_perfil_privacidade.html`: Seção LGPD do perfil (baixar meus dados em JSON, pedir exclusão com confirmação `EXCLUIR`, link da política).
+- **Página pública `privacidade.html`** (`/privacidade/`): Política de privacidade (dados coletados, finalidade, compartilhamento, retenção e direitos).
 - `_my_claims_app_script.html`: Motor Alpine.js (`myClaimsApp`) desacoplado com filtros, cópia Pix e caixinha.
 
 ### 2.4. Hub de Criações & Operações GOM (`creations.html` — 31 linhas)

@@ -516,6 +516,15 @@ class PacoteNacionalAdmin(admin.ModelAdmin):
     search_fields = ('identificador', 'codigo_rastreio', 'participant__name', 'participant__whatsapp', 'participant__social_handle', 'observacoes')
     inlines = [ItemSlotPacoteInline, ItemIndividualPacoteInline]
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        # LGPD: a página de edição exibe o endereço de entrega — registra o acesso.
+        if request.method == 'GET':
+            pacote = PacoteNacional.objects.filter(pk=object_id).select_related('participant').first()
+            if pacote and (pacote.endereco_destinatario or pacote.cep_destinatario):
+                from apps.core.privacy import log_pii_access
+                log_pii_access(request, pacote.participant, 'endereço do pacote no admin', pacote=pacote)
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def status_badge(self, obj):
         colors = {
             PacoteNacional.Status.EM_PREPARACAO: '#ffc107',

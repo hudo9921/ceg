@@ -6,7 +6,8 @@
 > **3. PALETA BIPOLAR OBRIGATÓRIA:** Todo componente deve suportar Soft Y2K (Modo Claro) e Cyber-Luxury (Modo Escuro com `dark:`).
 > **4. PERMISSÕES CENTRALIZADAS:** Views da GOM herdam `apps.core.permissions.StaffRequiredMixin` (nunca crie outra cópia). Rotas públicas ou do joiner precisam ser registradas em `apps/core/tests.py`, senão a matriz de permissões falha.
 > **5. NUNCA USE `|safe` PARA DADOS:** JSON em templates usa `{{ x|json_embed }}` (em `<script>`) ou `{{ x|json_attr }}` (em atributos). Download de URL informada por usuário usa `apps.core.net.fetch_public_url` (anti-SSRF).
-> **6. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.
+> **6. DADOS PESSOAIS (LGPD):** endereço, CEP, CPF e afins usam `apps.core.fields.EncryptedTextField`; telas de staff que exibem esses dados chamam `apps.core.privacy.log_pii_access`.
+> **7. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.
 
 ---
 
