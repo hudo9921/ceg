@@ -212,5 +212,9 @@
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
+- **Verificação em Duas Etapas do Backoffice (`templates/core/two_factor/`):**
+  - `_layout.html`: moldura comum (ícone, título, botão Sair); `_token_field.html`: campo do código + botão.
+  - `setup.html` (QR code + chave manual), `verify.html` (código do app ou de recuperação), `backup_codes.html` (exibidos uma única vez), `manage.html` (status e gerar novos códigos).
+  - `templates/admin/base_site.html`: adiciona o link "Segurança (2FA)" na barra do Django Admin.
 - **Identificação por WhatsApp (`login_otp.html` — 145 linhas):**
   - Tela compacta de autenticação OTP com detecção de DDI internacional e 100% Lucide Icons.

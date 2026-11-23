@@ -112,6 +112,13 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 
 ---
 
+## 🔑 7.1. Verificação em Duas Etapas do Backoffice (2FA)
+- **Quem precisa:** quem `apps.core.two_factor.requires_two_factor(user)` disser — hoje todo `is_staff`/`is_superuser`. Quando houver vários GOMs (GOM principal + admins de GOM), os novos papéis entram **nessa função**; nenhuma view decide isso sozinha.
+- **Fluxo:** senha em `/admin/login/` → primeiro acesso cadastra o aplicativo autenticador (QR code) e recebe 10 códigos de recuperação → nos próximos logins, código de 6 dígitos (ou de recuperação).
+- **Bloqueio:** `StaffTwoFactorMiddleware` redireciona qualquer rota para o 2FA até a sessão ser verificada (AJAX recebe 403 com `requires_2fa`). Sessão de staff dura 12h.
+- **Perda do celular:** `docker exec -it valcegs-web python manage.py reset_2fa <usuario>` (ou excluir o dispositivo TOTP no admin). Gerenciar códigos: `/admin/seguranca/2fa/`.
+- **Testes:** o runner do projeto (`apps.core.test_runner`) desliga o 2FA por padrão; testes de 2FA usam `@override_settings(STAFF_2FA_REQUIRED=True)`.
+
 ## 🛡️ 8. Proteção de Dados Pessoais (LGPD)
 
 1. **Criptografia em repouso:** campos `EncryptedTextField` (hoje: `PacoteNacional.endereco_destinatario` e `cep_destinatario`) são gravados como `enc:v1:<token Fernet>`. Não é possível filtrar/buscar pelo conteúdo desses campos. A chave fica em `FIELD_ENCRYPTION_KEY` (separada da `SECRET_KEY`); perder a chave = perder os endereços.

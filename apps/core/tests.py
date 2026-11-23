@@ -13,7 +13,7 @@ import re
 from datetime import timedelta
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import get_resolver, URLPattern, URLResolver
 from django.utils import timezone
 
@@ -148,6 +148,26 @@ class RoutePermissionMatrixTests(TestCase):
         from django.contrib.auth.models import User
         self.client.force_login(User.objects.create_user('comum', password='x'))
         self._assert_denied(allowed_login_prefixes=())
+
+    @override_settings(STAFF_2FA_REQUIRED=True)
+    def test_staff_without_2fa_cannot_use_any_route(self):
+        """Staff que só passou pela senha não usa nenhuma rota além das telas de 2FA."""
+        from django.contrib.auth.models import User
+        self.client.force_login(User.objects.create_user('gom', password='x', is_staff=True))
+        exempt = {'staff_2fa_setup', 'staff_2fa_verify', 'health_check'}
+        problems = []
+        for route, name in iter_routes():
+            if name in exempt:
+                continue
+            url = self._build(route)
+            for method in ('get', 'post'):
+                res = getattr(self.client, method)(url)
+                if res.status_code in (401, 403, 405):
+                    continue
+                if res.status_code == 302 and res['Location'].startswith('/admin/seguranca/2fa/'):
+                    continue
+                problems.append(f"{method.upper()} {url} ({name}) -> {res.status_code}")
+        self.assertEqual(problems, [], "Rotas acessíveis sem 2FA:\n" + "\n".join(problems))
 
     def test_every_public_and_participant_route_exists(self):
         names = {n for _, n in iter_routes()}

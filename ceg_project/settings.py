@@ -47,9 +47,11 @@ if not FIELD_ENCRYPTION_KEYS:
 PII_RETENTION_DAYS = int(os.getenv('PII_RETENTION_DAYS', 180))  # endereço após a entrega
 OTP_RETENTION_DAYS = int(os.getenv('OTP_RETENTION_DAYS', 30))
 
-# Domínios Permitidos
-allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '*')
-if allowed_hosts_env and allowed_hosts_env.strip() != '*':
+# Domínios Permitidos (Host header). Em produção nunca aceita '*': sem ALLOWED_HOSTS no
+# .env, vale a lista dos domínios servidos pelo Caddy.
+PRODUCTION_HOSTS = ['valcegs.duckdns.org', '150.136.166.17.sslip.io']
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '').strip()
+if allowed_hosts_env and allowed_hosts_env != '*':
     parsed_hosts = []
     for h in allowed_hosts_env.split(','):
         h = h.strip()
@@ -57,12 +59,12 @@ if allowed_hosts_env and allowed_hosts_env.strip() != '*':
             continue
         parsed_hosts.append(h)
         if h.startswith('*.'):
-            parsed_hosts.append(h[1:])  # '.onrender.com'
-            parsed_hosts.append(h[2:])  # 'onrender.com'
-    parsed_hosts.extend(['.onrender.com', 'localhost', '127.0.0.1'])
-    ALLOWED_HOSTS = list(set(parsed_hosts))
-else:
+            parsed_hosts.append(h[1:])  # '.exemplo.com' cobre subdomínios
+    ALLOWED_HOSTS = sorted(set(parsed_hosts + ['localhost', '127.0.0.1']))
+elif DEBUG:
     ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = PRODUCTION_HOSTS + ['localhost', '127.0.0.1']
 
 # Proteção CSRF para conexões seguras (HTTPS em produção)
 csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
@@ -91,6 +93,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party apps
     'rest_framework',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
     'storages',
     # Local apps
     'apps.groups',
@@ -109,8 +114,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'apps.core.admin_throttle.AdminLoginThrottleMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'apps.core.two_factor.StaffTwoFactorMiddleware',
     'apps.cegs.middleware.UploadSizeExceptionMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -118,6 +125,14 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'ceg_project.urls'
 
 LOGIN_URL = '/admin/login/'
+
+# 2FA (TOTP) obrigatório para o backoffice — política em apps/core/two_factor.py.
+# Não há variável de ambiente para desligar: perda do celular -> `manage.py reset_2fa <usuario>`.
+STAFF_2FA_REQUIRED = True
+OTP_TOTP_ISSUER = 'ValCegs'
+# Sessão de staff verificada expira em 12h (joiners seguem SESSION_COOKIE_AGE).
+STAFF_SESSION_AGE = int(os.getenv('STAFF_SESSION_AGE', 60 * 60 * 12))
+TEST_RUNNER = 'apps.core.test_runner.ProjectTestRunner'
 
 TEMPLATES = [
     {

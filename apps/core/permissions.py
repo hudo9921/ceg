@@ -28,7 +28,12 @@ def _wants_json(request) -> bool:
 
 
 def is_staff_user(user) -> bool:
-    return bool(user and user.is_authenticated and user.is_staff)
+    """Staff com a sessão já verificada pelo 2FA (ver `apps.core.two_factor`)."""
+    from apps.core.two_factor import is_two_factor_verified, requires_two_factor
+
+    if not (user and user.is_authenticated and user.is_staff):
+        return False
+    return not requires_two_factor(user) or is_two_factor_verified(user)
 
 
 def deny_staff_access(request):

@@ -36,7 +36,7 @@
 - [x] SSRF: `apps/core/net.py:fetch_public_url` (só http/https, bloqueia IPs internos inclusive em redirects, limite de tamanho) no crop e no `color_utils`; path traversal bloqueado no `color_utils`.
 - [x] Admin: rate limit de login (10 falhas / 15 min por IP e por usuário, HTTP 429) em `apps/core/admin_throttle.py`.
 - [x] Logging de segurança (logger `security`: logins staff, bloqueios, acessos negados; OTP sem código e com telefone mascarado).
-- [ ] **Adiado:** 2FA para staff (`django-otp` + cadastro de TOTP) — exige fluxo de cadastro do dispositivo; fazer antes de liberar endereços (Fase 5).
+- [x] 2FA para staff entregue na Fase 4.6 (ver abaixo).
 - [ ] **Não feito por decisão:** mudar o caminho `/admin/` — segurança por obscuridade com baixo ganho após o rate limit, e `/admin/login/` está fixo em dezenas de pontos.
 - [ ] **Pendente (performance + CSP):** build local do Tailwind para remover o Play CDN e permitir uma Content-Security-Policy.
 
@@ -47,7 +47,7 @@
 - [x] Titular: baixar meus dados (JSON) e pedir exclusão no perfil do `/me/`; ação "Anonimizar (LGPD)" no admin (bloqueada com pendências); página pública `/privacidade/`.
 - [x] Backups criptografados com AES-256 quando `BACKUP_PASSPHRASE` está definida.
 - [ ] **Com você:** revisar o texto de `/privacidade/` (rascunho técnico, não é parecer jurídico) e apagar os dumps de produção da pasta local `backups/`.
-- [ ] **Antes de coletar endereços (Fase 5):** 2FA para staff (adiado da Fase 3).
+- [x] **Antes de coletar endereços (Fase 5):** 2FA para staff — feito na Fase 4.6.
 
 ## Fase 4.5 — Revisão geral pós-plano
 - [x] `initadmin` deixava a senha do admin voltar para `ADMIN_PASSWORD` a cada restart (e o `.env.example` sugeria `admin123`): agora só cria, recusa senha fraca e só redefine com `ADMIN_PASSWORD_RESET=True`.
@@ -58,6 +58,13 @@
 - [x] `pip-audit`: nenhuma vulnerabilidade conhecida nas dependências (23/11/2026).
 - [ ] **Com você:** trocar a senha do admin em `/admin/password_change/` caso ainda seja a do `.env` (ex.: `admin123`).
 - [ ] **Pendente:** CSP completa exige build local do Tailwind (o Play CDN precisa de scripts inline/eval).
+
+## Fase 4.6 — 2FA obrigatório no backoffice
+- [x] TOTP (`django-otp`) + 10 códigos de recuperação de uso único; QR code gerado no servidor.
+- [x] `StaffTwoFactorMiddleware`: staff que só passou pela senha não abre nenhuma rota além de `/admin/seguranca/2fa/configurar|verificar/` e logout (matriz de rotas testa isso).
+- [x] `is_staff_user` também exige sessão verificada (defesa em profundidade).
+- [x] Tentativas erradas com espera crescente (throttling do django-otp); sessão de staff expira em 12h (`STAFF_SESSION_AGE`).
+- [x] Recuperação: `python manage.py reset_2fa <usuario>` ou excluir o dispositivo no admin (seção OTP).
 
 ## Depois deste plano
 - **Fase 5:** endereço/CEP no perfil, pré-preenchendo a solicitação da Caixinha.
