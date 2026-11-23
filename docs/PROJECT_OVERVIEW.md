@@ -104,6 +104,10 @@ O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Amp
   0 3 * * * cd /home/ubuntu/ceg && BACKUP_DIR=/home/ubuntu/ceg-backups bash scripts/backup_database.sh >> /home/ubuntu/backup.log 2>&1
   30 3 * * * docker exec valcegs-web python manage.py purge_personal_data >> /home/ubuntu/purge.log 2>&1
   ```
+- O deploy completa o `.env` do servidor sozinho (nunca sobrescreve valores): `POSTGRES_PASSWORD`, `SECRET_KEY` aleatória, `FIELD_ENCRYPTION_KEY`/`BACKUP_PASSPHRASE` vindos dos *secrets* do GitHub, `DEBUG=False` e `EVOLUTION_API_URL` interna.
+- A imagem Docker roda como usuário sem root e **não** contém `.env`, `.git` nem `backups/` (`.dockerignore`). O CI constrói a imagem a cada push em `develop`/`main`.
+- `initadmin` só cria o superusuário; nunca redefine a senha de um usuário existente (exceto com `ADMIN_PASSWORD_RESET=True`) e recusa senhas fracas.
+- O Caddy envia CSP mínima (`base-uri`, `object-src`, `frame-ancestors`, `form-action`) e `Permissions-Policy`.
 - Detalhes e pendências: [docs/SECURITY_PLAN.md](SECURITY_PLAN.md).
 
 ### Migração Neon -> Oracle Local

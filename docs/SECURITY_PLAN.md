@@ -49,6 +49,16 @@
 - [ ] **Com você:** revisar o texto de `/privacidade/` (rascunho técnico, não é parecer jurídico) e apagar os dumps de produção da pasta local `backups/`.
 - [ ] **Antes de coletar endereços (Fase 5):** 2FA para staff (adiado da Fase 3).
 
+## Fase 4.5 — Revisão geral pós-plano
+- [x] `initadmin` deixava a senha do admin voltar para `ADMIN_PASSWORD` a cada restart (e o `.env.example` sugeria `admin123`): agora só cria, recusa senha fraca e só redefine com `ADMIN_PASSWORD_RESET=True`.
+- [x] `.dockerignore`: `.env`, `.git` e `backups/` não entram mais na imagem; `collectstatic` roda com valores descartáveis e falha alto.
+- [x] Container web sem root; CI constrói a imagem e confere usuário/estáticos.
+- [x] DRF nasce fechado (`IsAdminUser`) — nenhuma view usa DRF hoje.
+- [x] Cabeçalhos no Caddy: CSP mínima, `Permissions-Policy`, sem `Server`.
+- [x] `pip-audit`: nenhuma vulnerabilidade conhecida nas dependências (23/11/2026).
+- [ ] **Com você:** trocar a senha do admin em `/admin/password_change/` caso ainda seja a do `.env` (ex.: `admin123`).
+- [ ] **Pendente:** CSP completa exige build local do Tailwind (o Play CDN precisa de scripts inline/eval).
+
 ## Depois deste plano
 - **Fase 5:** endereço/CEP no perfil, pré-preenchendo a solicitação da Caixinha.
 - **Fase 6:** Pix — decidir entre (a) BR Code estático com valor exato + fila de comprovantes, ou (b) Pix dinâmico via PSP com webhooks assinados.

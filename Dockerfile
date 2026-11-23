@@ -25,7 +25,12 @@ COPY . /app/
 RUN chmod +x /app/entrypoint.sh
 
 # Coleta arquivos estáticos
-RUN python manage.py collectstatic --no-input || true
+# Valores descartáveis só para o build: o .env real não entra na imagem (.dockerignore).
+RUN DEBUG=True SECRET_KEY=build-only-collectstatic python manage.py collectstatic --no-input
+
+# Roda sem root: uma falha na aplicação não vira controle total do container.
+RUN useradd --create-home --uid 1000 app && chown -R app:app /app
+USER app
 
 EXPOSE 8000
 

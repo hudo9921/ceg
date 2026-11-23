@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop   # só testa; o job de deploy roda apenas na main
   pull_request:
     branches:
       - main
@@ -39,6 +40,14 @@ jobs:
           ALLOWED_HOSTS: "valcegs.duckdns.org"
           FIELD_ENCRYPTION_KEY: "PvBl4dRZHZK0Xs-UbheEbyh495jHI5KleOOxXwgYGMs="  # chave descartável, só para o CI
         run: python manage.py check --deploy --fail-level WARNING
+
+      - name: Docker image builds (collectstatic, non-root user)
+        run: |
+          docker build -t ceg-ci .
+          docker run --rm --entrypoint sh ceg-ci -c '
+            test "$(whoami)" = app &&
+            test -f /app/staticfiles/staticfiles.json &&
+            test ! -e /app/.env && test ! -e /app/backups'
 
   deploy:
     needs: test

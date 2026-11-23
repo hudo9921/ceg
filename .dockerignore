@@ -1,0 +1,22 @@
+# Segredos e dados pessoais nunca entram na imagem (o .env chega via env_file no compose).
+.env
+.env.*
+!.env.example
+backups/
+media/
+*.sql
+*.sql.gz
+*.sql.gz.enc
+*.sqlite3
+
+# Lixo de desenvolvimento
+.git/
+.github/
+.vscode/
+.idea/
+.claude/
+mysterious-fermi/
+**/__pycache__/
+*.pyc
+staticfiles/
+node_modules/
