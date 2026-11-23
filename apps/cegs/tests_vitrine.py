@@ -72,7 +72,7 @@ class VitrineTests(TestCase):
 
         self.client.login(username='joiner_normal', password='password123')
         resp = self.client.get(reverse('vitrine_create'))
-        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.status_code, 403)
 
     def test_vitrine_create_by_staff(self):
         self.client.login(username='admin_gom', password='password123')

@@ -9,11 +9,7 @@ from apps.cegs.models import CEG
 from apps.groups.models import KpopGroup, Era
 from apps.participants.models import Participant
 from .services_allocator import BulkJoinerAllocatorService
-
-
-class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_staff
+from apps.core.permissions import StaffRequiredMixin
 
 
 class CEGBulkAllocatorView(StaffRequiredMixin, View):

@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.views import View
 from django.http import JsonResponse
 from apps.cegs.models import CEG, TipoItem, Caixa, ItemIndividual
-from apps.cegs.creations_views import StaffRequiredMixin
+from apps.core.permissions import StaffRequiredMixin
 from .services import AnalyticsService
 
 
@@ -160,7 +160,7 @@ class SalesReportView(StaffRequiredMixin, View):
         })
 
 
-class CEGStatusApiView(View):
+class CEGStatusApiView(StaffRequiredMixin, View):
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -169,7 +169,7 @@ class CEGStatusApiView(View):
         return JsonResponse(data)
 
 
-class SalesReportApiView(View):
+class SalesReportApiView(StaffRequiredMixin, View):
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -183,7 +183,7 @@ class SalesReportApiView(View):
 
 
 # Mantém compatibilidade com AnalyticsDashboardView e AnalyticsApiView antigos
-class AnalyticsDashboardView(View):
+class AnalyticsDashboardView(StaffRequiredMixin, View):
     def get(self, request):
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
@@ -236,7 +236,7 @@ class AnalyticsDashboardView(View):
         })
 
 
-class AnalyticsApiView(View):
+class AnalyticsApiView(StaffRequiredMixin, View):
     def get(self, request):
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None

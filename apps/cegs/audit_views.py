@@ -12,12 +12,7 @@ from django.views import View
 from apps.cegs.models import AuditLog, CEG, Caixa
 from apps.groups.models import KpopGroup, Era
 from apps.participants.models import Participant
-
-
-class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    login_url = '/admin/login/'
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_staff
+from apps.core.permissions import StaffRequiredMixin
 
 
 class AuditDashboardView(StaffRequiredMixin, View):

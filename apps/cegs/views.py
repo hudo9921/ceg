@@ -11,14 +11,13 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Q, Count, Prefetch
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.cache import cache
 from apps.groups.models import Era
 from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem, HomeBannerConfig
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
-from .creations_views import StaffRequiredMixin
+from apps.core.permissions import StaffRequiredMixin
 from .image_utils import process_image_upload, crop_image_from_coordinates
 
 logger = logging.getLogger(__name__)
@@ -870,7 +869,6 @@ class BulkClaimView(View):
 
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ToggleSlotPaymentView(View):
     """
     Endpoint para o Organizador (Staff) alternar check marks de pagamento por item:
@@ -938,7 +936,7 @@ class ToggleSlotPaymentView(View):
             return JsonResponse({'success': False, 'message': f'Erro ao atualizar status: {e}'}, status=500)
 
 
-class UpdateCEGFeesView(View):
+class UpdateCEGFeesView(StaffRequiredMixin, View):
     """
     Permite ao organizador atualizar valores e prazos da CEG:
     - Prazo Pagamento Item
@@ -948,10 +946,6 @@ class UpdateCEGFeesView(View):
     - Prazo Pagamento Taxa Aduaneira
     """
     def post(self, request, slug):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            messages.error(request, "Acesso restrito ao organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-
         ceg = get_object_or_404(CEG, slug=slug)
 
         def parse_dt(dt_str):
@@ -1583,19 +1577,13 @@ class BulkManageCEGItemsView(View):
                 return JsonResponse({'success': False, 'message': 'Ação em massa não reconhecida.'}, status=400)
 
 
-class DeleteSetView(View):
+class DeleteSetView(StaffRequiredMixin, View):
     """
     Permite ao organizador (staff) excluir um Set da CEG (por exemplo, quando o Set não fechou).
     Ao excluir o Set, todos os seus slots e eventuais reservas são permanentemente removidos.
     Além disso, notifica os participantes que estavam no set via WhatsApp Gateway.
     """
     def post(self, request, set_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-            messages.error(request, "Acesso restrito ao organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-
         ceg_set = get_object_or_404(CEGSet.objects.select_related('ceg'), id=set_id)
         ceg = ceg_set.ceg
         set_number = ceg_set.set_number

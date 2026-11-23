@@ -12,7 +12,7 @@ from django.utils.dateparse import parse_date
 from django.views import View
 
 from .models import Caixa, CEG, ItemIndividual, TipoItem, CaixaItemRate, ItemSlot, CEGItemDefinition
-from .creations_views import StaffRequiredMixin
+from apps.core.permissions import StaffRequiredMixin
 
 logger = logging.getLogger(__name__)
 
@@ -448,29 +448,6 @@ class CaixaDetailView(View):
         }
         return render(request, 'cegs/caixa_detail.html', context)
 
-
-class CaixaCreateView(StaffRequiredMixin, View):
-    """Criação de uma nova Caixa / Remessa internacional."""
-
-    def get(self, request):
-        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
-        return render(request, 'cegs/caixa_form.html', {
-            'action': 'create',
-            'origem_choices': Caixa.Origem.choices,
-            'status_choices': Caixa.Status.choices,
-            'cegs_sem_caixa': cegs_sem_caixa,
-        })
-
-    def post(self, request):
-        nome = request.POST.get('nome', '').strip()
-        origem = request.POST.get('origem', Caixa.Origem.KR).strip()
-        status = request.POST.get('status', Caixa.Status.EM_CONSOLIDACAO).strip()
-        codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
-        transportadora = request.POST.get('transportadora', '').strip()
-        data_envio = parse_date(request.POST.get('data_envio', '') or '')
-        data_previsao = parse_date(request.POST.get('data_previsao', '') or '')
-        data_recebimento = parse_date(request.POST.get('data_recebimento', '') or '')
-        observacoes = request.POST.get('observacoes', '').strip()
 
 def parse_safe_decimal(val, field_label="Valor"):
     """Converte e valida valor decimal garantindo limites seguros para o banco de dados."""

@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.models import Count, Q, Avg
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
-from .creations_views import StaffRequiredMixin
+from apps.core.permissions import StaffRequiredMixin
 from apps.participants.models import Participant, ParticipantNotification
 from .models import PacoteNacional, ItemSlot, ItemIndividual, Caixa, ConfiguracaoEnvio
 from apps.groups.models import KpopGroup, Era

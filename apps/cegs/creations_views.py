@@ -15,18 +15,9 @@ from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, It
 from apps.cegs.services import ClaimService
 from .image_utils import process_image_upload
 from apps.participants.models import Participant, Claim
+from apps.core.permissions import StaffRequiredMixin
 
 logger = logging.getLogger(__name__)
-
-
-class StaffRequiredMixin(AccessMixin):
-    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-        return super().dispatch(request, *args, **kwargs)
 
 
 def parse_local_datetime(val_str: str):

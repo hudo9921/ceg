@@ -125,7 +125,7 @@ class EnviosNacionaisTests(TestCase):
         # Com login de usuário comum
         self.client.login(username='regular_user', password='password123')
         resp = self.client.get(reverse('envios_nacionais'))
-        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.status_code, 403)
 
         # Com login de admin/staff
         self.client.login(username='admin_staff', password='password123')

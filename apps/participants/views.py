@@ -14,18 +14,7 @@ from apps.auth_otp.services import OTPService
 from .session_auth import (
     login_participant, logout_participant, safe_next_url, get_client_ip, can_expose_dev_otp,
 )
-
-
-class StaffRequiredMixin(AccessMixin):
-    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-        return super().dispatch(request, *args, **kwargs)
+from apps.core.permissions import StaffRequiredMixin
 
 
 class BulkParticipantCreateView(StaffRequiredMixin, View):

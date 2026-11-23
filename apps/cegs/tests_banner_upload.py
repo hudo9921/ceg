@@ -197,10 +197,10 @@ class HomeBannerConfigTests(TestCase):
         response = self.client.post(reverse('update_home_banner'), {'banner_light_url': 'https://example.com/l.jpg'})
         self.assertEqual(response.status_code, 302)
 
-        # Regular non-staff user: redirects to login with message
+        # Regular non-staff user: 403 Forbidden
         self.client.login(username='joiner_hb', password='userpass123')
         response = self.client.post(reverse('update_home_banner'), {'banner_light_url': 'https://example.com/l.jpg'})
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     def test_update_home_banner_view_success(self):
         from apps.cegs.models import HomeBannerConfig

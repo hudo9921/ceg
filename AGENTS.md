@@ -4,7 +4,8 @@
 > **1. NUNCA QUEBRE A MODULARIZAÇÃO:** Nenhum arquivo de template ou parcial pode ultrapassar 200 linhas. Mantenha os subcomponentes organizados na pasta `partials/`.
 > **2. NUNCA USE EMOJIS BRUTOS:** Utilize 100% Lucide Icons (`stroke-width="1.75"`).
 > **3. PALETA BIPOLAR OBRIGATÓRIA:** Todo componente deve suportar Soft Y2K (Modo Claro) e Cyber-Luxury (Modo Escuro com `dark:`).
-> **4. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.
+> **4. PERMISSÕES CENTRALIZADAS:** Views da GOM herdam `apps.core.permissions.StaffRequiredMixin` (nunca crie outra cópia). Rotas públicas ou do joiner precisam ser registradas em `apps/core/tests.py`, senão a matriz de permissões falha.
+> **5. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.
 
 ---
 
@@ -37,6 +38,9 @@ python manage.py test apps.participants
 
 # 6. Regressões de Segurança: OTP, sessão, troca de identidade (< 5s)
 python manage.py test apps.participants.tests_security
+
+# 7. Matriz de Permissões de todas as rotas (< 2s) — rode ao criar/alterar views
+python manage.py test apps.core
 
 # ⚠️ Suite Completa de CEGs (RODAR APENAS NA ENTREGA FINAL) (~50s)
 python manage.py test apps.cegs

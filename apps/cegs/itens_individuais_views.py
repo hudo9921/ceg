@@ -9,26 +9,14 @@ from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils.dateparse import parse_datetime
 
 from apps.cegs.models import Caixa, ItemIndividual, TipoItem
 from apps.participants.models import Participant, clean_phone_number
+from apps.core.permissions import StaffRequiredMixin
 
 logger = logging.getLogger(__name__)
-
-
-class StaffRequiredMixin(AccessMixin):
-    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-        return super().dispatch(request, *args, **kwargs)
 
 
 def parse_optional_decimal(v_str):
@@ -376,7 +364,6 @@ class UpdateItemIndividualView(StaffRequiredMixin, View):
         return redirect('/creations/?tab=mercari')
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ToggleItemPaymentView(StaffRequiredMixin, View):
     """Alterna rapidamente o status de pagamento de item (produto), frete internacional ou taxa aduaneira."""
 

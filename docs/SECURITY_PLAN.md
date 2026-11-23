@@ -17,11 +17,13 @@
 - [x] 1.5 Rotação de sessão (`cycle_key`) no login e `flush` no logout.
 
 ## Fase 2 — Modelo Único de Autorização
-- [ ] `apps/core/permissions.py` com `StaffRequiredMixin` / `ParticipantRequiredMixin` únicos (remover as 7 cópias).
-- [ ] Proteger views abertas: APIs/dashboard de analytics, `CaixaDetailView`, `CEGPollingSummaryAPIView`, `ConsolidatePollingView`.
-- [ ] Remover `csrf_exempt` dos toggles de pagamento e notificações GOM.
-- [ ] Remover `CaixaCreateView` duplicada.
-- [ ] Teste de matriz de permissões iterando todas as rotas (anônimo / joiner → 302/403 em rotas não públicas).
+- [x] `apps/core/permissions.py` com `StaffRequiredMixin` / `staff_required` únicos (as 7 cópias foram removidas).
+- [x] Protegidas: APIs e dashboard de analytics e `ConsolidatePollingView`.
+- [x] Revisadas e mantidas públicas: `CaixaDetailView` (o joiner só vê os próprios dados; as abas de gestão são só para staff) e `CEGPollingSummaryAPIView` (o mesmo dado de transparência da página pública: nome + final do WhatsApp).
+- [x] `csrf_exempt` removido dos toggles de pagamento e das notificações GOM (todos os callers JS já enviam `X-CSRFToken`).
+- [x] `CaixaCreateView` duplicada (versão incompleta) removida.
+- [x] Teste de matriz de permissões em `apps/core/tests.py` percorrendo todas as rotas com objetos reais (anônimo, joiner logado e usuário Django sem staff).
+- [x] Convenção única: anônimo → redirect para o login (ou JSON 401); autenticado sem staff → 403 (página ou JSON).
 
 ## Fase 3 — Hardening da Plataforma
 - [ ] Settings: `DEBUG=False` por padrão, `SECRET_KEY` obrigatória, cookies seguros, HSTS, `SECURE_PROXY_SSL_HEADER`.

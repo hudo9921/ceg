@@ -234,6 +234,7 @@ class CEGPollingDemandTests(TestCase):
 
     def test_voting_on_non_polling_ceg_fails(self):
         """Attempting to vote on an OPEN or CLOSED CEG is rejected."""
+        self._login_as(self.p1)
         self.ceg.status = CEG.Status.OPEN
         self.ceg.save()
 

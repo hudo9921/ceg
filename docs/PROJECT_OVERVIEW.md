@@ -23,7 +23,8 @@ ceg/
 │   ├── cegs/             # Modelos e regras de CEG, Caixas, Sets, Slots, Itens Mercari, Vitrine
 │   ├── participants/     # Portal do participante (/me/), reservas, caixinha, pacotes nacionais
 │   ├── analytics/        # Dashboards gerenciais, DRE de vendas, ocupação e velocidade de claims
-│   └── auth_otp/         # Autenticação sem senha via WhatsApp (Evolution API v2.3.0)
+│   ├── auth_otp/         # Autenticação sem senha via WhatsApp (Evolution API v2.3.0)
+│   └── core/             # Controle de acesso único (permissions.py) + matriz de permissões das rotas
 ├── templates/            # Arquitetura modular (< 200 linhas) em subpastas com partials/
 ├── static/               # Imagens e assets estáticos
 └── docs/                 # Documentação modularizada do sistema

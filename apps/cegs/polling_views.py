@@ -1,10 +1,10 @@
 import json
 import logging
 from django.views import View
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from apps.core.permissions import StaffRequiredMixin
 
 from apps.cegs.models import CEG
 from apps.cegs.polling_service import PollingDemandService, PollingError
@@ -18,6 +18,19 @@ class CEGVoteView(View):
     """Endpoint público para envio de votos / pré-claims em uma CEG em status POLLING."""
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
+
+        is_staff = request.user.is_authenticated and request.user.is_staff
+        p = get_session_participant(request)
+
+        # Joiners precisam estar autenticados via OTP; a identidade vem SOMENTE da sessão.
+        # Apenas o staff pode registrar votos em nome de outro número.
+        if not p and not is_staff:
+            return JsonResponse({
+                'success': False,
+                'requires_auth': True,
+                'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
+                'message': 'Por favor, autentique com seu WhatsApp para votar.'
+            }, status=401)
 
         if ceg.status != CEG.Status.POLLING:
             return JsonResponse({
@@ -43,19 +56,6 @@ class CEGVoteView(View):
         username = body.get('username', '').strip()
         social_handle = body.get('social_handle', '').strip()
         notes = body.get('notes', '').strip()
-
-        is_staff = request.user.is_authenticated and request.user.is_staff
-        p = get_session_participant(request)
-
-        # Joiners precisam estar autenticados via OTP; a identidade vem SOMENTE da sessão.
-        # Apenas o staff pode registrar votos em nome de outro número.
-        if not p and not is_staff:
-            return JsonResponse({
-                'success': False,
-                'requires_auth': True,
-                'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
-                'message': 'Por favor, autentique com seu WhatsApp para votar.'
-            }, status=401)
 
         if p:
             if not is_staff or not whatsapp:
@@ -106,12 +106,9 @@ class CEGVoteView(View):
             return JsonResponse({'success': False, 'message': "Erro interno ao registrar votos."}, status=500)
 
 
-class ConsolidatePollingView(LoginRequiredMixin, View):
+class ConsolidatePollingView(StaffRequiredMixin, View):
     """Endpoint administrativo para consolidar a enquete e gerar N sets físicos com alocação."""
     def post(self, request, slug):
-        if not request.user.is_staff:
-            return HttpResponseForbidden("Apenas administradores podem consolidar enquetes.")
-
         ceg = get_object_or_404(CEG, slug=slug)
 
         is_json = request.content_type == 'application/json'

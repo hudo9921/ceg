@@ -524,8 +524,7 @@ class CreationsHubIntegrationTests(TestCase):
         # Usuário logado comum sem is_staff também é redirecionado
         self.client.force_login(self.regular_user)
         resp_reg = self.client.get('/creations/')
-        self.assertEqual(resp_reg.status_code, 302)
-        self.assertIn('/admin/login/?next=/creations/', resp_reg.url)
+        self.assertEqual(resp_reg.status_code, 403)
 
         # Usuário staff acessa perfeitamente
         self.client.force_login(self.admin_user)
@@ -1471,7 +1470,7 @@ class DeleteSetViewTests(TestCase):
         """Usuário comum não tem permissão para excluir sets."""
         self.client.force_login(self.regular_user)
         res = self.client.post(f'/sets/{self.set_2.id}/delete/', data={'password': 'password123'})
-        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.status_code, 403)
         self.assertTrue(CEGSet.objects.filter(id=self.set_2.id).exists())
 
         res_ajax = self.client.post(
@@ -1614,7 +1613,7 @@ class DeleteCEGTests(TestCase):
             data={'password': 'password123'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
-        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.status_code, 403)
         self.assertTrue(CEG.objects.filter(id=self.ceg.id).exists())
 
 

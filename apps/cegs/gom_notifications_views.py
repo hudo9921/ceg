@@ -5,30 +5,11 @@ from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 
 from apps.cegs.models import GOMNotification
 from apps.cegs.audit_service import AuditService
-
-
-class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    login_url = '/admin/login/'
-
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_staff
-
-    def handle_no_permission(self):
-        is_ajax = (
-            self.request.headers.get('x-requested-with') == 'XMLHttpRequest'
-            or 'application/json' in self.request.headers.get('accept', '')
-            or self.request.content_type == 'application/json'
-        )
-        if is_ajax:
-            if not self.request.user.is_authenticated:
-                return JsonResponse({'success': False, 'error': 'Autenticação necessária.'}, status=401)
-            return JsonResponse({'success': False, 'error': 'Acesso restrito à equipe GOM.'}, status=403)
-        return super().handle_no_permission()
+from apps.core.permissions import StaffRequiredMixin
 
 
 class GOMNotificationsView(StaffRequiredMixin, View):
@@ -120,7 +101,6 @@ class GOMNotificationsView(StaffRequiredMixin, View):
         })
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class MarkGOMNotificationReadView(StaffRequiredMixin, View):
     """Marca uma notificação individual como lida via AJAX."""
     def post(self, request, notification_id):
@@ -138,7 +118,6 @@ class MarkGOMNotificationReadView(StaffRequiredMixin, View):
         return self.post(request, notification_id)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class MarkAllGOMNotificationsReadView(StaffRequiredMixin, View):
     """Marca todas as notificações (ou filtradas por tipo) como lidas via AJAX."""
     def post(self, request):
