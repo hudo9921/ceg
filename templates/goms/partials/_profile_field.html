@@ -1,0 +1,6 @@
+{% comment %}Campo do formulário de perfil do GOM (label, input, erro).{% endcomment %}
+<div class="space-y-1">
+    <label for="{{ field.id_for_label }}" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400">{{ field.errors|join:" " }}</p>{% endif %}
+</div>

@@ -138,3 +138,36 @@ class MemberTwoFactorTests(TestCase):
         self.assertTrue(requires_two_factor(user))
         self.client.force_login(user)
         self.assertTrue(self.client.get(TEAM)['Location'].startswith(reverse('staff_2fa_setup')))
+
+
+class GomProfileTests(TestCase):
+    def setUp(self):
+        self.gom = Gom.objects.create(name='Loja P', slug='loja-p')
+        self.admin = User.objects.create_user('adm-p', password='x')
+        GomMembership.objects.create(user=self.admin, gom=self.gom, role='ADMIN')
+        self.client.force_login(self.admin)
+
+    def test_admin_edits_profile_and_default_pix_prefills_new_cegs(self):
+        res = self.client.post(reverse('gom_profile'), {
+            'name': 'Loja P Oficial', 'bio': 'Oi', 'whatsapp_contato': '', 'instagram': '@lojap',
+            'logo_url': '', 'banner_url': '', 'default_pix_key': 'pix@lojap.com', 'default_pix_instructions': 'Itaú',
+        })
+        self.assertRedirects(res, reverse('gom_profile'), fetch_redirect_response=False)
+        self.gom.refresh_from_db()
+        self.assertEqual((self.gom.name, self.gom.default_pix_key), ('Loja P Oficial', 'pix@lojap.com'))
+        self.assertContains(self.client.get(reverse('gom_public', args=['loja-p'])), 'Loja P Oficial')
+
+    def test_profile_cannot_change_slug_or_other_gom(self):
+        other = Gom.objects.create(name='Outra', slug='outra')
+        self.client.post(reverse('gom_profile'), {'name': 'X', 'slug': 'hack', 'default_pix_key': 'k'})
+        self.gom.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(self.gom.slug, 'loja-p')
+        self.assertEqual(other.name, 'Outra')
+
+    def test_platform_overview_counts(self):
+        root = User.objects.create_superuser('root2', 'r@x.com', 'Senha-Forte-123')
+        self.client.force_login(root)
+        res = self.client.get(reverse('platform_goms'))
+        self.assertContains(res, 'Loja P')
+        self.assertContains(res, '1 na equipe')

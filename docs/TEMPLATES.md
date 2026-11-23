@@ -220,6 +220,7 @@
   - `_filtro_goms.html`: visão por GOM, acima do filtro de caixas.
   - `_quick_pix_mercari_goms.html`: uma chave Pix por GOM.
   - `_caixinha_envio_gom.html`: formulário de envio de cada GOM.
+- **Perfil do GOM:** `goms/profile.html` + `goms/partials/_profile_field.html` e `_profile_image.html` (`/gom/perfil/`).
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).

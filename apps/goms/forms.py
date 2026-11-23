@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import GomMembership
+from .models import Gom, GomMembership
 
 INPUT_CLASS = ('w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 '
                'dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white '
@@ -18,6 +18,21 @@ class GomCreateForm(forms.Form):
     name = forms.CharField(label='Nome do GOM', max_length=80)
     slug = forms.SlugField(label='Endereço da página (opcional)', max_length=60, required=False,
                            help_text='Ex.: valcegs → /gom/valcegs/. Em branco, é gerado pelo nome.')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style(self)
+
+
+class GomProfileForm(forms.ModelForm):
+    """Perfil do GOM (página pública e padrões). Endereço (slug) só a plataforma muda."""
+
+    class Meta:
+        model = Gom
+        fields = ['name', 'bio', 'whatsapp_contato', 'instagram', 'logo_url', 'banner_url',
+                  'default_pix_key', 'default_pix_instructions']
+        widgets = {'bio': forms.Textarea(attrs={'rows': 3}),
+                   'default_pix_instructions': forms.Textarea(attrs={'rows': 2})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

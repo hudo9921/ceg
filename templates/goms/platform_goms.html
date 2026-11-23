@@ -37,6 +37,10 @@
                         {{ g.name }}
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if g.is_active %}bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">{% if g.is_active %}Ativo{% else %}Inativo{% endif %}</span>
                     </p>
+                    <p class="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                        {{ g.cegs_total }} CEG{{ g.cegs_total|pluralize }} ({{ g.cegs_abertas }} aberta{{ g.cegs_abertas|pluralize }}) · {{ g.membros }} na equipe ·
+                        <a href="{% url 'gom_public' g.slug %}" target="_blank" rel="noopener" class="text-pink-600 dark:text-pink-400 hover:underline">página pública</a>
+                    </p>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400">
                         /gom/{{ g.slug }}/ ·
                         {% for m in g.memberships.all %}{% if m.is_active %}{{ m.user.get_username }}{% if m.is_owner %} (principal){% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}sem equipe ainda{% endfor %}

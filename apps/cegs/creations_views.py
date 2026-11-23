@@ -513,8 +513,10 @@ class CreateCEGView(StaffRequiredMixin, View):
         taxa_aduaneira_str = request.POST.get('taxa_aduaneira', '').strip()
         prazo_pagamento_frete_inter_str = request.POST.get('prazo_pagamento_frete_inter', '').strip()
         prazo_pagamento_taxa_aduaneira_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
-        pix_key = request.POST.get('pix_key', '').strip()
-        pix_instructions = request.POST.get('pix_instructions', '').strip()
+        # Sem chave informada, usa a chave Pix padrão do GOM ativo (Perfil do GOM).
+        pix_key = request.POST.get('pix_key', '').strip() or request.active_gom.default_pix_key
+        pix_instructions = (request.POST.get('pix_instructions', '').strip()
+                            or request.active_gom.default_pix_instructions)
         banner_file = request.FILES.get('banner_file')
         banner_base64 = request.POST.get('banner_base64', '').strip()
         banner_url_input = request.POST.get('banner_url', '').strip()

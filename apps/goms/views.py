@@ -169,7 +169,12 @@ def platform_goms(request):
                 gom.save(update_fields=['is_active'])
                 messages.success(request, f'{gom.name} {"ativado" if gom.is_active else "desativado"}.')
                 return redirect('platform_goms')
-    goms = Gom.objects.prefetch_related('memberships__user').order_by('name')
+    from django.db.models import Count, Q
+    goms = Gom.objects.prefetch_related('memberships__user').annotate(
+        cegs_total=Count('cegs', distinct=True),
+        cegs_abertas=Count('cegs', filter=Q(cegs__status='OPEN'), distinct=True),
+        membros=Count('memberships', filter=Q(memberships__is_active=True), distinct=True),
+    ).order_by('name')
     return render(request, 'goms/platform_goms.html', {'goms': goms, 'form': form, 'new_link': new_link,
                                                        'is_platform_admin': is_platform_admin(request.user)})
 
@@ -194,3 +199,30 @@ def gom_public_page(request, slug):
     return render(request, 'goms/public_page.html', {
         'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine,
     })
+
+
+@never_cache
+@gom_member_required
+@require_http_methods(['GET', 'POST'])
+def gom_profile(request):
+    """Perfil do GOM ativo: página pública, contatos e chave Pix padrão (dono e admins)."""
+    from apps.cegs.image_utils import ImageSizeError, process_image_upload
+
+    from .forms import GomProfileForm
+
+    gom = request.active_gom
+    form = GomProfileForm(request.POST or None, instance=gom)
+    if request.method == 'POST' and form.is_valid():
+        profile = form.save(commit=False)
+        try:
+            for field, folder in (('logo', 'goms/logos'), ('banner', 'goms/banners')):
+                upload = request.FILES.get(f'{field}_file')
+                if upload:
+                    setattr(profile, f'{field}_url', process_image_upload(file_obj=upload, folder=folder))
+        except ImageSizeError as exc:
+            messages.error(request, str(exc))
+            return render(request, 'goms/profile.html', {'gom': gom, 'form': form})
+        profile.save()
+        messages.success(request, 'Perfil do GOM atualizado.')
+        return redirect('gom_profile')
+    return render(request, 'goms/profile.html', {'gom': gom, 'form': form})

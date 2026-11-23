@@ -95,7 +95,7 @@ Resultado: no dia seguinte à migração, tudo funciona como hoje para o ValCegs
 | **M1** ✅ | Fundação: app `goms`, membros, convites, GOM ativo, papéis, 2FA para membros, tela de GOMs da plataforma, tela de equipe | Nada para joiners; você já consegue criar GOMs e convidar donos |
 | **M2** ✅ | Dono dos dados: FKs, migração, `for_gom` em todas as views de backoffice, `/admin/` só da plataforma, testes de isolamento | GOMs operam isolados |
 | **M3** ✅ | Joiner: selo e filtro na home, `/gom/<slug>/`, `/me/` e Caixinha por GOM | Joiners compram de vários GOMs |
-| **M4** | Configurações por GOM: perfil, Pix padrão, envio, analytics por GOM, visão da plataforma | Cada GOM se configura sozinho |
+| **M4** ✅ | Configurações por GOM: perfil, Pix padrão, envio, analytics por GOM, visão da plataforma | Cada GOM se configura sozinho |
 
 Depois: **Fase 5** (endereço salvo no perfil do joiner; cada GOM vê o endereço só nos pacotes dele, com registro de acesso) e **Fase 6** (Pix).
 
@@ -137,6 +137,13 @@ Depois: **Fase 5** (endereço salvo no perfil do joiner; cada GOM vê o endereç
 - **Home:** filtro e selo de GOM, só quando há CEGs de mais de um GOM.
 - **`/gom/<slug>/`:** página pública com perfil, CEGs abertas/agendadas e pronta entrega do GOM.
 - **Testes:** `apps/participants/tests_multi_gom.py`.
+
+### Estado da M4 (entregue)
+- **`/gom/perfil/`** (dono e admins): nome, bio, contatos, logo/banner (upload ou link) e Pix padrão. O endereço (slug) só a plataforma altera.
+- **CEG nova** sem chave Pix usa o Pix padrão do GOM.
+- **Configuração de envio:** uma por GOM, em Envios Nacionais (desde a M2).
+- **Analytics:** filtrados pelo GOM ativo (desde a M2).
+- **`/plataforma/goms/`:** CEGs (total e abertas), tamanho da equipe e link da página pública de cada GOM.
 
 ## 7. Riscos e cuidados
 - **Vazamento entre GOMs** é o risco nº 1. Mitigação: `for_gom` obrigatório, 404 para objetos de outro GOM e a matriz entre GOMs no CI.

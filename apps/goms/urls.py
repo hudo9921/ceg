@@ -8,6 +8,7 @@ urlpatterns = [
     path('convite/<str:token>/', views.invite_accept, name='gom_invite_accept'),
     path('gom/equipe/', views.team, name='gom_team'),
     path('gom/trocar/', views.switch_gom, name='gom_switch'),
+    path('gom/perfil/', views.gom_profile, name='gom_profile'),
     path('plataforma/goms/', views.platform_goms, name='platform_goms'),
     # Depois das rotas fixas de /gom/ (equipe, trocar): slugs reservados em services.RESERVED_SLUGS.
     path('gom/<slug:slug>/', views.gom_public_page, name='gom_public'),

@@ -88,6 +88,11 @@ equipe para membros; GOMs da plataforma e Django Admin para o superusuário (ver
             <i data-lucide="users" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500" stroke-width="1.75"></i>
             <span class="truncate">Equipe{% if active_gom %} · {{ active_gom.name }}{% endif %}</span>
         </a>
+        <a href="{% url 'gom_profile' %}"
+           class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if request.resolver_match.url_name == 'gom_profile' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
+            <i data-lucide="store" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500" stroke-width="1.75"></i>
+            <span class="truncate">Perfil do GOM</span>
+        </a>
         {% endif %}
         {% if is_platform_admin %}
         <a href="{% url 'platform_goms' %}"

@@ -1,0 +1,12 @@
+{% comment %}Imagem do perfil do GOM: URL ou envio de arquivo (o arquivo tem prioridade).{% endcomment %}
+<div class="space-y-1.5">
+    <span class="block text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ label }}</span>
+    {% if current %}
+        <img src="{{ current|thumb }}" data-full="{{ current }}" alt="{{ label }} atual"
+             class="h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700">
+    {% endif %}
+    <input type="file" name="{{ input_name }}" accept="image/*"
+           class="block w-full text-xs text-slate-600 dark:text-slate-300 file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-pink-50 dark:file:bg-pink-950/50 file:text-pink-700 dark:file:text-pink-300 file:font-bold">
+    {{ field }}
+    <p class="text-[10px] text-slate-400 dark:text-slate-500">Envie um arquivo (até 5 MB) ou cole o link da imagem.</p>
+</div>
