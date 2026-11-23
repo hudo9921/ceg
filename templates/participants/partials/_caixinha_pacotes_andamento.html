@@ -136,6 +136,9 @@
                 <span>Frete: <strong>R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</strong></span>
                 {% endif %}
             </div>
+            {% if pacote.valor_frete_nacional and not pacote.is_frete_pago %}
+                {% include 'participants/partials/_pacote_pix_frete_nacional.html' %}
+            {% endif %}
 
             <!-- Botões de Ação -->
             {% if pacote.status == 'SOLICITADO' %}

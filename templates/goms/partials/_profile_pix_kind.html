@@ -1,0 +1,9 @@
+{% comment %}Um tipo de cobrança no perfil do GOM: chave + instruções.{% endcomment %}
+<div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-slate-700 space-y-2">
+    <p class="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+        <i data-lucide="{{ icon }}" class="w-3.5 h-3.5 text-pink-500" stroke-width="1.75"></i>{{ title }}
+    </p>
+    <p class="text-[10px] text-slate-500 dark:text-slate-400">{{ hint }}</p>
+    {% include 'goms/partials/_profile_field.html' with field=key %}
+    {% include 'goms/partials/_profile_field.html' with field=instructions %}
+</div>

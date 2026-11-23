@@ -386,41 +386,36 @@ class Caixa(models.Model):
             # 3. Recalcula totais gerais da Caixa
             self.recalcular_totais_frete_taxa()
 
+    def _resolve_pix(self, kind: str) -> tuple[str, str]:
+        """
+        Chave/instruções de frete ou taxa (docs/BUSINESS_RULES.md §1): própria da caixa →
+        da CEG para o tipo → padrão do GOM para o tipo → chave geral da CEG → padrão do GOM (itens).
+        """
+        own_key = getattr(self, f'pix_key_{kind}')
+        if own_key:
+            return own_key, getattr(self, f'pix_instructions_{kind}')
+        cegs = list(self.cegs.all())
+        for ceg in cegs:
+            if getattr(ceg, f'pix_key_{kind}'):
+                return getattr(ceg, f'pix_key_{kind}'), getattr(ceg, f'pix_instructions_{kind}')
+        if getattr(self.gom, f'default_pix_key_{kind}'):  # padrão do GOM específico do tipo
+            return getattr(self.gom, f'default_pix_key_{kind}'), getattr(self.gom, f'default_pix_instructions_{kind}')
+        for ceg in cegs:
+            if ceg.pix_key:
+                return ceg.pix_key, ceg.pix_instructions
+        return self.gom.pix_for('item')
+
     def get_pix_key_frete(self) -> str:
-        if self.pix_key_frete:
-            return self.pix_key_frete
-        for ceg in self.cegs.all():
-            k = ceg.pix_key_frete or ceg.pix_key
-            if k:
-                return k
-        return ""
+        return self._resolve_pix('frete')[0] or ''
 
     def get_pix_instructions_frete(self) -> str:
-        if self.pix_instructions_frete:
-            return self.pix_instructions_frete
-        for ceg in self.cegs.all():
-            inst = ceg.pix_instructions_frete or ceg.pix_instructions
-            if inst:
-                return inst
-        return ""
+        return self._resolve_pix('frete')[1] or ''
 
     def get_pix_key_taxa(self) -> str:
-        if self.pix_key_taxa:
-            return self.pix_key_taxa
-        for ceg in self.cegs.all():
-            k = ceg.pix_key_taxa or ceg.pix_key
-            if k:
-                return k
-        return ""
+        return self._resolve_pix('taxa')[0] or ''
 
     def get_pix_instructions_taxa(self) -> str:
-        if self.pix_instructions_taxa:
-            return self.pix_instructions_taxa
-        for ceg in self.cegs.all():
-            inst = ceg.pix_instructions_taxa or ceg.pix_instructions
-            if inst:
-                return inst
-        return ""
+        return self._resolve_pix('taxa')[1] or ''
 
 
 class CaixaItemRate(models.Model):
@@ -631,31 +626,42 @@ class CEG(models.Model):
         """Título amigável para exibição em cards onde a tag do grupo já está presente."""
         return self.clean_title()
 
+    def _resolve_pix(self, kind: str) -> tuple[str, str]:
+        """
+        Hierarquia de chaves (docs/BUSINESS_RULES.md §1). Itens: CEG → padrão do GOM (itens).
+        Frete/taxa: caixa → CEG (do tipo) → padrão do GOM (do tipo) → CEG (geral) → GOM (itens).
+        """
+        if kind == 'item':
+            if self.pix_key:
+                return self.pix_key, self.pix_instructions
+            return self.gom.pix_for('item')
+        if self.caixa and getattr(self.caixa, f'pix_key_{kind}'):
+            return getattr(self.caixa, f'pix_key_{kind}'), getattr(self.caixa, f'pix_instructions_{kind}')
+        if getattr(self, f'pix_key_{kind}'):
+            return getattr(self, f'pix_key_{kind}'), getattr(self, f'pix_instructions_{kind}')
+        if getattr(self.gom, f'default_pix_key_{kind}'):  # padrão do GOM específico do tipo
+            return getattr(self.gom, f'default_pix_key_{kind}'), getattr(self.gom, f'default_pix_instructions_{kind}')
+        if self.pix_key:
+            return self.pix_key, self.pix_instructions
+        return self.gom.pix_for('item')
+
     def get_pix_key_item(self) -> str:
-        return self.pix_key or ''
+        return self._resolve_pix('item')[0] or ''
 
     def get_pix_instructions_item(self) -> str:
-        return self.pix_instructions or ''
+        return self._resolve_pix('item')[1] or ''
 
     def get_pix_key_frete(self) -> str:
-        if self.caixa and self.caixa.pix_key_frete:
-            return self.caixa.pix_key_frete
-        return self.pix_key_frete or self.pix_key or ''
+        return self._resolve_pix('frete')[0] or ''
 
     def get_pix_instructions_frete(self) -> str:
-        if self.caixa and self.caixa.pix_instructions_frete:
-            return self.caixa.pix_instructions_frete
-        return self.pix_instructions_frete or self.pix_instructions or ''
+        return self._resolve_pix('frete')[1] or ''
 
     def get_pix_key_taxa(self) -> str:
-        if self.caixa and self.caixa.pix_key_taxa:
-            return self.caixa.pix_key_taxa
-        return self.pix_key_taxa or self.pix_key or ''
+        return self._resolve_pix('taxa')[0] or ''
 
     def get_pix_instructions_taxa(self) -> str:
-        if self.caixa and self.caixa.pix_instructions_taxa:
-            return self.caixa.pix_instructions_taxa
-        return self.pix_instructions_taxa or self.pix_instructions or ''
+        return self._resolve_pix('taxa')[1] or ''
 
     @property
     def display_image_url(self) -> str:
@@ -1269,6 +1275,18 @@ class PacoteNacional(models.Model):
         verbose_name = 'Pacote de Envio Nacional'
         verbose_name_plural = 'Pacotes de Envios Nacionais'
         ordering = ['-created_at']
+
+    def get_pix_frete_nacional(self) -> tuple[str, str]:
+        """Chave/instruções para pagar o frete nacional: padrão do GOM (frete nacional → itens)."""
+        return self.gom.pix_for('frete_nacional')
+
+    @property
+    def pix_key_frete_nacional(self) -> str:
+        return self.get_pix_frete_nacional()[0] or ''
+
+    @property
+    def pix_instructions_frete_nacional(self) -> str:
+        return self.get_pix_frete_nacional()[1] or ''
 
     def __str__(self):
         return f"{self.identificador or f'Pacote #{self.id}'} - {self.participant.display_name} [{self.get_status_display()}]"

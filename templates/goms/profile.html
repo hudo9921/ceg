@@ -34,16 +34,7 @@
             {% include 'goms/partials/_profile_image.html' with field=form.banner_url current=gom.banner_url input_name="banner_file" label="Banner" %}
         </section>
 
-        <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
-            <div>
-                <h2 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <i data-lucide="qr-code" class="w-4 h-4 text-emerald-500" stroke-width="1.75"></i>Pix padrão
-                </h2>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400">Pré-preenche CEGs novas e é usada para itens deste GOM sem chave própria (ex.: Mercari). Nunca aparece para dívidas de outros GOMs.</p>
-            </div>
-            {% include 'goms/partials/_profile_field.html' with field=form.default_pix_key %}
-            {% include 'goms/partials/_profile_field.html' with field=form.default_pix_instructions %}
-        </section>
+        {% include 'goms/partials/_profile_pix.html' %}
 
         <div class="flex flex-wrap items-center justify-between gap-3">
             <a href="{% url 'envios_nacionais' %}" class="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1">

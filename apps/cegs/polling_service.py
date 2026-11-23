@@ -335,7 +335,7 @@ class PollingDemandService:
                                 f"Item: {item_def.name} (Set #{target_set.set_number})\n"
                                 f"Valor: R$ {slot.price:.2f}\n"
                                 f"Prazo de Pagamento: {prazo_str}\n"
-                                f"Chave Pix: {ceg.pix_key or 'Ver no painel'}"
+                                f"Chave Pix: {ceg.get_pix_key_item() or 'Ver no painel'}"
                             )
                             notifications_to_create.append(
                                 ParticipantNotification(
@@ -354,7 +354,7 @@ class PollingDemandService:
                                     f"Com base na nossa enquete de demanda, seu voto garantiu o slot oficial na compra em grupo *{ceg.title}*:\n\n"
                                     f"📦 *Item:* {item_def.name} (Set #{target_set.set_number})\n"
                                     f"💰 *Valor:* R$ {slot.price:.2f}\n"
-                                    f"🔑 *Chave Pix:* {ceg.pix_key or 'A definir'}{pix_inst}\n"
+                                    f"🔑 *Chave Pix:* {ceg.get_pix_key_item() or 'A definir'}{pix_inst}\n"
                                     f"⏰ *Prazo de Pagamento:* {prazo_str}\n\n"
                                     f"Acesse o site para acompanhar seu pedido e enviar o comprovante de pagamento!\n"
                                     f"Agradecemos pela participação! 💖"

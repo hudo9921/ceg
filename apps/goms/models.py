@@ -26,9 +26,17 @@ class Gom(models.Model):
     bio = models.TextField('Apresentação', blank=True)
     whatsapp_contato = models.CharField('WhatsApp de contato', max_length=30, blank=True)
     instagram = models.CharField('Instagram / X', max_length=60, blank=True)
-    default_pix_key = models.CharField('Chave Pix padrão', max_length=255, blank=True,
-                                       help_text='Pré-preenche CEGs novas.')
-    default_pix_instructions = models.TextField('Instruções Pix padrão', blank=True)
+    # Chaves Pix padrão por tipo de cobrança. Usadas quando a CEG/caixa não tem chave própria
+    # (hierarquia em docs/BUSINESS_RULES.md §1). Frete/taxa/frete nacional vazios = usa a de itens.
+    default_pix_key = models.CharField('Chave Pix padrão — itens', max_length=255, blank=True,
+                                       help_text='Pagamento dos itens das CEGs sem chave própria.')
+    default_pix_instructions = models.TextField('Instruções — itens', blank=True)
+    default_pix_key_frete = models.CharField('Chave Pix padrão — frete internacional', max_length=255, blank=True)
+    default_pix_instructions_frete = models.TextField('Instruções — frete internacional', blank=True)
+    default_pix_key_taxa = models.CharField('Chave Pix padrão — taxa aduaneira', max_length=255, blank=True)
+    default_pix_instructions_taxa = models.TextField('Instruções — taxa aduaneira', blank=True)
+    default_pix_key_frete_nacional = models.CharField('Chave Pix padrão — frete nacional', max_length=255, blank=True)
+    default_pix_instructions_frete_nacional = models.TextField('Instruções — frete nacional', blank=True)
     is_active = models.BooleanField('Ativo', default=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 
@@ -44,6 +52,18 @@ class Gom(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)[:60] or 'gom'
         super().save(*args, **kwargs)
+
+    PIX_KINDS = ('item', 'frete', 'taxa', 'frete_nacional')
+
+    def pix_for(self, kind: str) -> tuple[str, str]:
+        """(chave, instruções) padrão do GOM para o tipo; sem chave específica, usa a de itens."""
+        if kind not in self.PIX_KINDS:
+            raise ValueError(f'Tipo de Pix desconhecido: {kind}')
+        suffix = '' if kind == 'item' else f'_{kind}'
+        key = getattr(self, f'default_pix_key{suffix}')
+        if key:
+            return key, getattr(self, f'default_pix_instructions{suffix}')
+        return self.default_pix_key, self.default_pix_instructions
 
 
 class GomMembership(models.Model):

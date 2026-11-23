@@ -26,7 +26,7 @@ python manage.py test apps.participants.tests.ParticipantProfileTests
 # 2. Testes de CEGs / Criação / Edição / Recorte (< 10s)
 python manage.py test apps.cegs.tests.CreationsHubIntegrationTests apps.cegs.tests_crop_studio
 python manage.py test apps.cegs.tests_crop_studio
-python manage.py test apps.cegs.tests.CEGModelTest
+python manage.py test apps.goms.tests_pix           # chaves Pix padrão do GOM e hierarquia
 python manage.py test apps.cegs.tests.CEGUpdateViewTest
 
 # 3. Testes de Caixas / Logística / Vitrine (< 8s)

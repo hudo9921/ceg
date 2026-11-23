@@ -582,7 +582,7 @@ class ClaimSlotView(View):
                     'message': success_msg,
                     'claim_id': claim.id,
                     'total_price': str(claim.total_price),
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_item(),
                 })
 
             messages.success(request, success_msg)
@@ -746,7 +746,7 @@ class BulkClaimView(View):
                     'message': f"🎉 Reservado com sucesso!",
                     'result': 'SUCCESS',
                     'total_price': str(claim.total_price),
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_item(),
                 })
 
             except AddedToWaitingListError as e:
@@ -828,7 +828,7 @@ class BulkClaimView(View):
                         'message': f"🎉 Unidade #{c.slot.unit_number} reservada com sucesso!",
                         'result': 'SUCCESS',
                         'total_price': str(c.total_price),
-                        'pix_key': ceg.pix_key,
+                        'pix_key': ceg.get_pix_key_item(),
                     })
 
                 if len(claims) < qty:
@@ -875,7 +875,7 @@ class BulkClaimView(View):
                 'succeeded': successes,
                 'waiting_list': waiting,
                 'failed': len(results) - successes - waiting,
-                'pix_key': ceg.pix_key,
+                'pix_key': ceg.get_pix_key_item(),
             }
         })
 

@@ -165,8 +165,8 @@
                     </button>
                     {% endif %}
                 </div>
-                {% elif group.ceg.pix_key %}
-                <button type="button" @click="copyPix('{{ group.ceg.pix_key }}', '{{ group.ceg.id }}')"
+                {% elif group.ceg.get_pix_key_item %}
+                <button type="button" @click="copyPix('{{ group.ceg.get_pix_key_item }}', '{{ group.ceg.id }}')"
                     class="w-full py-1.5 px-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
                     <i data-lucide="copy" class="w-3.5 h-3.5" stroke-width="1.75"></i>
                     <span x-text="copiedPixCegId === '{{ group.ceg.id }}' ? 'Chave Copiada!' : 'Copiar Pix'"></span>

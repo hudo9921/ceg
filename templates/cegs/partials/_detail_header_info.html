@@ -78,7 +78,7 @@
     </div>
 
     <!-- Coluna da Direita: Card Acrílico de Pagamento Pix -->
-    {% if ceg.pix_key %}
+    {% if ceg.get_pix_key_item %}
     <div class="bg-gradient-to-br from-slate-900 via-purple-950/70 to-slate-900 text-white rounded-2xl p-4 sm:p-5 w-full lg:w-80 shadow-md border border-purple-500/30 space-y-3 flex-shrink-0 self-start">
         <div class="flex justify-between items-center text-xs font-black">
             <span class="text-slate-400 uppercase tracking-wider text-[10px] font-bold">Chave Pix da CEG</span>
@@ -87,10 +87,10 @@
         <div>
             <div class="text-[11px] text-slate-400">Titular / Chave:</div>
             <div class="font-mono text-xs sm:text-sm font-bold truncate text-pink-300 select-all bg-black/50 px-2.5 py-1.5 rounded-xl border border-white/10 mt-1">
-                {{ ceg.pix_key }}
+                {{ ceg.get_pix_key_item }}
             </div>
         </div>
-        <button type="button" @click="copyPix('{{ ceg.pix_key }}')"
+        <button type="button" @click="copyPix('{{ ceg.get_pix_key_item }}')"
                 class="w-full py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
             <i data-lucide="copy" class="w-3.5 h-3.5" stroke-width="1.75"></i>
             <span>Copiar Chave Pix</span>

@@ -632,6 +632,16 @@ class MyClaimsView(View):
         sem_caixa_dict['pix_instructions_frete'] = sem_caixa_dict['pix_instructions']
         sem_caixa_dict['pix_key_taxa'] = sem_caixa_dict['pix_key']
         sem_caixa_dict['pix_instructions_taxa'] = sem_caixa_dict['pix_instructions']
+        if not sem_caixa_dict['mixed_goms'] and sem_caixa_dict['gom_ids']:
+            # Um único GOM: frete e taxa usam as chaves padrão do GOM para cada tipo.
+            only_gom_id = next(iter(sem_caixa_dict['gom_ids']))
+            sem_gom = (next((c['ceg'].gom for c in cegs_dict.values() if c['ceg'].gom_id == only_gom_id), None)
+                       or next((it.gom for it in itens_individuais_list if it.gom_id == only_gom_id), None))
+            if sem_gom is not None:
+                for kind in ('frete', 'taxa'):
+                    key, inst = sem_gom.pix_for(kind)
+                    if key:
+                        sem_caixa_dict[f'pix_key_{kind}'], sem_caixa_dict[f'pix_instructions_{kind}'] = key, inst
         sem_caixa_dict['pix_key_item'] = sem_caixa_dict['pix_key']
         sem_caixa_dict['pix_instructions_item'] = sem_caixa_dict['pix_instructions']
         sem_caixa_dict['has_distinct_pix_keys'] = False
@@ -864,7 +874,7 @@ class MyClaimsView(View):
                         'valor': item.frete_inter,
                         'itens_count': 1,
                         'prazo': p_frete,
-                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else gom_pix.get(item.gom_id, ('', ''))[0]),
+                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else item.gom.pix_for('frete')[0]),
                         'pix_instructions': (item.caixa.get_pix_instructions_frete() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
@@ -887,7 +897,7 @@ class MyClaimsView(View):
                         'valor': item.taxa_aduaneira,
                         'itens_count': 1,
                         'prazo': p_taxa,
-                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else gom_pix.get(item.gom_id, ('', ''))[0]),
+                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else item.gom.pix_for('taxa')[0]),
                         'pix_instructions': (item.caixa.get_pix_instructions_taxa() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
@@ -992,7 +1002,7 @@ class MyClaimsView(View):
                     'badgeClass': claim.lifecycle.get('badge_class', ''),
                     'detail': claim.lifecycle.get('detail', ''),
                 },
-                'pixKey': claim.slot.set.ceg.pix_key or '',
+                'pixKey': claim.slot.set.ceg.get_pix_key_item(),
                 'cegId': str(claim.slot.set.ceg.id),
                 'isItemPaid': bool(claim.status == Claim.Status.PAID or claim.slot.is_item_paid),
                 'freteInter': f"{(claim.slot.frete_inter or 0):.2f}",

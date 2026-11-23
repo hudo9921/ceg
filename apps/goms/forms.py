@@ -30,9 +30,13 @@ class GomProfileForm(forms.ModelForm):
     class Meta:
         model = Gom
         fields = ['name', 'bio', 'whatsapp_contato', 'instagram', 'logo_url', 'banner_url',
-                  'default_pix_key', 'default_pix_instructions']
+                  'default_pix_key', 'default_pix_instructions',
+                  'default_pix_key_frete', 'default_pix_instructions_frete',
+                  'default_pix_key_taxa', 'default_pix_instructions_taxa',
+                  'default_pix_key_frete_nacional', 'default_pix_instructions_frete_nacional']
         widgets = {'bio': forms.Textarea(attrs={'rows': 3}),
-                   'default_pix_instructions': forms.Textarea(attrs={'rows': 2})}
+                   **{f'default_pix_instructions{s}': forms.Textarea(attrs={'rows': 2})
+                      for s in ('', '_frete', '_taxa', '_frete_nacional')}}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

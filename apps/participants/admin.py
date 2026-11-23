@@ -93,8 +93,8 @@ class ClaimAdmin(admin.ModelAdmin):
             f"📦 *Item:* {obj.slot.item_definition.name} (Set {obj.slot.set.set_number})\n"
             f"💰 *Valor:* R$ {obj.total_price:.2f}\n"
         )
-        if obj.status == Claim.Status.PENDING and ceg.pix_key:
-            msg += f"🔑 *Chave Pix:* {ceg.pix_key}\n"
+        if obj.status == Claim.Status.PENDING and ceg.get_pix_key_item():
+            msg += f"🔑 *Chave Pix:* {ceg.get_pix_key_item()}\n"
             msg += f"Assim que fizer o Pix, por favor envie o comprovante por aqui!"
         elif obj.status == Claim.Status.PAID:
             msg += f"✅ Pagamento confirmado com sucesso!"

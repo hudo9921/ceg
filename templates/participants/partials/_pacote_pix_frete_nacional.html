@@ -1,0 +1,22 @@
+{% comment %}Pix do frete nacional do pacote: chave padrão do GOM que envia (frete nacional → itens).{% endcomment %}
+<div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-1.5">
+    <p class="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+        <i data-lucide="truck" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+        Pague o frete nacional (R$ {{ pacote.valor_frete_nacional|floatformat:2 }}) para {{ pacote.gom.name }}
+    </p>
+    {% if pacote.pix_key_frete_nacional %}
+        <div class="flex items-center gap-2">
+            <span class="flex-1 min-w-0 truncate text-[11px] font-mono text-slate-700 dark:text-slate-200 select-all">{{ pacote.pix_key_frete_nacional }}</span>
+            <button type="button" @click="copyPix('{{ pacote.pix_key_frete_nacional|escapejs }}', 'pacote_{{ pacote.id }}')"
+                    class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 cursor-pointer shrink-0">
+                <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75"></i>
+                <span class="text-[11px]" x-text="copiedPixCegId === 'pacote_{{ pacote.id }}' ? 'Copiada!' : 'Pix'"></span>
+            </button>
+        </div>
+        {% if pacote.pix_instructions_frete_nacional %}
+            <p class="text-[10px] text-emerald-800 dark:text-emerald-300 whitespace-pre-line">{{ pacote.pix_instructions_frete_nacional }}</p>
+        {% endif %}
+    {% else %}
+        <p class="text-[10px] text-emerald-800 dark:text-emerald-300">Chave Pix ainda não cadastrada — o GOM vai te passar.</p>
+    {% endif %}
+</div>

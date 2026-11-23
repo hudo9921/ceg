@@ -140,10 +140,10 @@
                     {% endif %}
                 </div>
                 {% else %}
-                {% if c_data.ceg.pix_key %}
+                {% if c_data.ceg.get_pix_key_item %}
                 <div class="flex items-center justify-between gap-1.5 p-1.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
-                    <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.ceg.pix_key }}">{{ c_data.ceg.pix_key }}</span>
-                    <button type="button" @click="copyPix('{{ c_data.ceg.pix_key }}', '{{ c_data.ceg.id }}')"
+                    <span class="text-[10px] font-mono text-slate-700 dark:text-slate-300 select-all truncate min-w-0" title="{{ c_data.ceg.get_pix_key_item }}">{{ c_data.ceg.get_pix_key_item }}</span>
+                    <button type="button" @click="copyPix('{{ c_data.ceg.get_pix_key_item }}', '{{ c_data.ceg.id }}')"
                         class="px-2.5 py-1 bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer shrink-0">
                         <i data-lucide="check" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId === '{{ c_data.ceg.id }}'"></i>
                         <i data-lucide="copy" class="w-3 h-3" stroke-width="1.75" x-show="copiedPixCegId !== '{{ c_data.ceg.id }}'"></i>

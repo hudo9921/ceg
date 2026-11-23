@@ -338,8 +338,8 @@ class CaixaDetailView(View):
                     else:
                         participant_taxa_paga_total += slot_taxa
 
-                if not participant_pix_key and ceg.pix_key:
-                    participant_pix_key = ceg.pix_key
+                if not participant_pix_key and ceg.get_pix_key_item():
+                    participant_pix_key = ceg.get_pix_key_item()
                     participant_pix_instructions = ceg.pix_instructions
 
             for p_ceg in participant_cegs_dict.values():

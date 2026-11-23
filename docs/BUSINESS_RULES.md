@@ -13,17 +13,19 @@ O sistema suporta três tipos de cobrança financeira por item:
 3. **Taxa Aduaneira (Receita Federal):** Imposto de importação quando a remessa chega ao Brasil (ex: R$ 15,00).
 
 ### 1.1. Hierarquia de Resolução de Chaves Pix:
-- **Itens:** Pertence à CEG. Sempre usa `ceg.pix_key` (via `ceg.get_pix_key_item()`).
-- **Frete Internacional:** Cascata prioritária:
+Cada GOM define em **Perfil do GOM** (`/gom/perfil/`) uma chave padrão por tipo de cobrança: itens, frete internacional, taxa aduaneira e frete nacional (`Gom.pix_for(tipo)`). A resolução acontece na hora; a CEG não guarda cópia, então mudar o padrão do GOM vale para todas as CEGs sem chave própria.
+- **Itens:** `ceg.pix_key` → padrão do GOM (itens). *(`ceg.get_pix_key_item()`)*
+- **Frete Internacional:**
   1. `caixa.pix_key_frete`
   2. `ceg.pix_key_frete`
-  3. `ceg.pix_key`
-  *(Método: `ceg.get_pix_key_frete()`)*
-- **Taxa Aduaneira (Alfandegária):** Cascata prioritária:
-  1. `caixa.pix_key_taxa`
-  2. `ceg.pix_key_taxa`
-  3. `ceg.pix_key`
-  *(Método: `ceg.get_pix_key_taxa()`)*
+  3. padrão do GOM para frete
+  4. `ceg.pix_key`
+  5. padrão do GOM (itens)
+
+  *(`ceg.get_pix_key_frete()` / `caixa.get_pix_key_frete()`)*
+- **Taxa Aduaneira:** a mesma cascata, com os campos de taxa. *(`get_pix_key_taxa()`)*
+- **Frete Nacional (pacote):** padrão do GOM para frete nacional → padrão do GOM (itens). *(`pacote.pix_key_frete_nacional`)* Aparece no card do pacote na Minha Caixinha enquanto o frete não está pago.
+- Tipo sem chave no GOM usa a chave de itens do GOM. Instruções seguem a mesma cascata.
 
 ### 1.1.1. Multi-GOM: a chave é sempre do GOM credor
 - Item sem chave própria (Mercari, caixa sem chave, prazos) usa a chave padrão **do GOM dono do item**: `Gom.default_pix_key` ou, na falta, a primeira CEG daquele GOM (`apps/participants/gom_panel.py`).
