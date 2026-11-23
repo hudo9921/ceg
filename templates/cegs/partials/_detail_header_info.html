@@ -48,7 +48,7 @@
                     <span>Copiar Vagas Abertas</span>
                 </button>
 
-                {% if user.is_staff %}
+                {% if is_gom_staff %}
                 <button type="button" @click="openCropStudioFromDetail()"
                         class="px-3.5 py-1.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-black rounded-xl transition shadow-xs hover:shadow flex items-center gap-1.5 cursor-pointer active:scale-95"
                         title="Recortar fotos dos integrantes a partir da imagem desta CEG">

@@ -1,5 +1,5 @@
 {% load static %}
-{% if user.is_staff %}
+{% if is_platform_admin %}
 <!-- Modal de Edição dos Banners da Home (Modo Claro & Modo Escuro) -->
 <div x-data="{
     isOpen: false,

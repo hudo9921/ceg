@@ -1,5 +1,5 @@
-{% comment %}Menu de gestão da sidebar. M1: telas operacionais só para staff; equipe para membros de GOM;
-GOMs da plataforma para o superusuário (ver docs/MULTI_GOM_DESIGN.md).{% endcomment %}
+{% comment %}Menu de gestão da sidebar: telas operacionais para a equipe do GOM ativo (is_gom_staff);
+equipe para membros; GOMs da plataforma e Django Admin para o superusuário (ver docs/MULTI_GOM_DESIGN.md).{% endcomment %}
 <!-- Gestão / Staff Admin (ShieldCheck) - Acordeão Inline na Sidebar -->
 <div class="space-y-1">
     <button type="button"
@@ -25,7 +25,7 @@ GOMs da plataforma para o superusuário (ver docs/MULTI_GOM_DESIGN.md).{% endcom
          x-transition:leave-end="opacity-0 -translate-y-1"
          class="pl-3 pr-1 py-1 space-y-1 border-l-2 border-purple-200/70 dark:border-white/10 ml-5 my-1">
         
-        {% if request.user.is_staff %}
+        {% if is_gom_staff %}
         <a href="{% url 'creations_hub' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'creations' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="sparkles" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500"></i>
@@ -96,7 +96,7 @@ GOMs da plataforma para o superusuário (ver docs/MULTI_GOM_DESIGN.md).{% endcom
             <span class="truncate">GOMs da plataforma</span>
         </a>
         {% endif %}
-        {% if request.user.is_staff %}
+        {% if is_platform_admin %}
         <a href="/admin/" target="_blank"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all text-slate-500 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium">
             <i data-lucide="external-link" class="w-3.5 h-3.5 flex-shrink-0 text-slate-400"></i>

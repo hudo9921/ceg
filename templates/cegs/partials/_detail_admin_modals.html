@@ -2,7 +2,7 @@
      MODAIS DE GESTÃO DO ORGANIZADOR / STAFF (CEG DETAIL)
      100% Lucide Icons & Suporte a Dark Mode (Cyber-Luxury / Soft Y2K)
      ======================================================================= -->
-{% if user.is_staff %}
+{% if is_gom_staff %}
 <!-- Modal para Editar Informações e Foto da CEG (Organizador) -->
         <div x-show="editCegModalOpen" x-cloak
             class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"

@@ -17,7 +17,7 @@
             </div>
         </div>
 
-        {% if user.is_staff %}
+        {% if is_gom_staff %}
         <!-- Ações Administrativas Rápidas para Staff -->
         <div class="flex items-center gap-1.5 flex-wrap">
             <a href="{% url 'ceg_bulk_allocator' slug=ceg.slug %}"

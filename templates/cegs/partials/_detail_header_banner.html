@@ -28,7 +28,7 @@
                 <span>{{ ceg.era.group.name }} &bull; {{ ceg.era.name }}</span>
             </span>
         </div>
-        {% if user.is_staff %}
+        {% if is_gom_staff %}
         <button type="button" @click="editCegModalOpen = true"
                 class="px-3.5 py-1.5 bg-black/75 hover:bg-black text-white text-xs font-bold rounded-xl backdrop-blur-md shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer border border-white/25 active:scale-95">
             <i data-lucide="image" class="w-3.5 h-3.5 text-pink-400" stroke-width="1.75"></i>
@@ -37,7 +37,7 @@
         {% endif %}
     </div>
 </div>
-{% elif user.is_staff %}
+{% elif is_gom_staff %}
 <!-- Estado Vazio para Staff: Adicionar Foto -->
 <div @click="editCegModalOpen = true"
      class="w-full py-8 border-2 border-dashed border-pink-200 hover:border-pink-400 dark:border-white/10 dark:hover:border-pink-500/50 bg-pink-50/40 hover:bg-pink-50/80 dark:bg-white/[0.02] dark:hover:bg-white/[0.05] rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-center gap-2.5 text-xs font-bold text-pink-600 dark:text-pink-400 cursor-pointer transition shadow-2xs">

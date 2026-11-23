@@ -15,6 +15,7 @@ from apps.cegs.models import Caixa, ItemSlot, TipoItem, ItemVitrine
 from apps.groups.models import KpopGroup, Era
 from .image_utils import process_image_upload
 from apps.core.permissions import StaffRequiredMixin
+from apps.goms.access import can_manage
 
 logger = logging.getLogger(__name__)
 
@@ -99,12 +100,14 @@ class VitrineListView(View):
         total_vendidos = ItemVitrine.objects.filter(status=ItemVitrine.Status.VENDIDO).count()
 
         # Itens para renderização no template (suporta filtragem instantânea no client-side)
-        itens = queryset
+        itens = list(queryset)
+        for it in itens:  # vitrine é pública e compartilhada; gestão só nos itens do próprio GOM
+            it.can_manage = can_manage(request, it)
 
         tipos_item = TipoItem.objects.all().order_by('nome')
         groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        is_staff_user = bool(request.user.is_authenticated and request.user.is_staff)
+        is_staff_user = getattr(request, 'is_gom_staff', False)
 
         eras_by_group = {}
         for e in eras:
@@ -168,7 +171,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
         tipos_item = TipoItem.objects.all().order_by('nome')
         groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        caixas = Caixa.objects.all().order_by('-created_at')
+        caixas = Caixa.objects.for_gom(request.active_gom).order_by('-created_at')
 
         eras_by_group = {}
         for e in eras:
@@ -231,7 +234,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
         era = Era.objects.filter(pk=era_id).first() if era_id else None
 
         caixa_id = request.POST.get('origem_caixa')
-        origem_caixa = Caixa.objects.filter(pk=caixa_id).first() if caixa_id else None
+        origem_caixa = Caixa.objects.for_gom(request.active_gom).filter(pk=caixa_id).first() if caixa_id else None
 
         # Upload de Imagem ou URL direta
         raw_image_url = request.POST.get('image_url', '').strip()
@@ -250,6 +253,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
                 final_image_url = saved_url
 
         item = ItemVitrine.objects.create(
+            gom=request.active_gom,
             titulo=titulo,
             descricao=descricao,
             tipo_item=tipo_item,
@@ -273,11 +277,11 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
     """Permite à GOM editar dados de um item existente na Vitrine."""
 
     def get(self, request, slug):
-        item = get_object_or_404(ItemVitrine, slug=slug)
+        item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
         tipos_item = TipoItem.objects.all().order_by('nome')
         groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        caixas = Caixa.objects.all().order_by('-created_at')
+        caixas = Caixa.objects.for_gom(request.active_gom).order_by('-created_at')
 
         eras_by_group = {}
         for e in eras:
@@ -307,7 +311,7 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
         return render(request, 'cegs/vitrine_form.html', context)
 
     def post(self, request, slug):
-        item = get_object_or_404(ItemVitrine, slug=slug)
+        item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
 
         titulo = request.POST.get('titulo', '').strip()
         if not titulo:
@@ -342,7 +346,7 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
         item.era = Era.objects.filter(pk=era_id).first() if era_id else None
 
         caixa_id = request.POST.get('origem_caixa')
-        item.origem_caixa = Caixa.objects.filter(pk=caixa_id).first() if caixa_id else None
+        item.origem_caixa = Caixa.objects.for_gom(request.active_gom).filter(pk=caixa_id).first() if caixa_id else None
 
         # Imagem
         raw_image_url = request.POST.get('image_url', '').strip()
@@ -370,7 +374,7 @@ class VitrineItemDeleteView(StaffRequiredMixin, View):
     """Exclui um item da Vitrine."""
 
     def post(self, request, slug):
-        item = get_object_or_404(ItemVitrine, slug=slug)
+        item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
         titulo = item.titulo
         item.delete()
         messages.success(request, f"🗑️ Item '{titulo}' excluído da Vitrine.")
@@ -381,7 +385,7 @@ class VitrineToggleStatusView(StaffRequiredMixin, View):
     """Alterna rapidamente o status de um item (Disponível, Reservado, Vendido)."""
 
     def post(self, request, slug):
-        item = get_object_or_404(ItemVitrine, slug=slug)
+        item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
         novo_status = request.POST.get('status', '').strip().upper()
 
         if novo_status in [ItemVitrine.Status.DISPONIVEL, ItemVitrine.Status.RESERVADO, ItemVitrine.Status.VENDIDO]:
@@ -403,7 +407,7 @@ class CaixaTransferUnclaimedToVitrineView(StaffRequiredMixin, View):
     """
 
     def get(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
 
         # Localiza todos os slots em CEGs vinculadas a esta Caixa que estejam disponíveis/não claimados
         # e que ainda não tenham sido transferidos para a Vitrine
@@ -429,7 +433,7 @@ class CaixaTransferUnclaimedToVitrineView(StaffRequiredMixin, View):
         return render(request, 'cegs/caixa_transfer_vitrine.html', context)
 
     def post(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
 
         unclaimed_slots = ItemSlot.objects.filter(
             set__ceg__caixa=caixa,
@@ -485,6 +489,7 @@ class CaixaTransferUnclaimedToVitrineView(StaffRequiredMixin, View):
 
                 # Criação do ItemVitrine
                 ItemVitrine.objects.create(
+                    gom=request.active_gom,
                     titulo=titulo_final,
                     descricao=f"Item de pronta entrega transferido da remessa '{caixa.nome}' (CEG: {ceg.title}).",
                     tipo_item=item_def.tipo_item,

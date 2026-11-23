@@ -58,7 +58,7 @@
             <!-- Divisor -->
             <div class="my-3 border-t border-purple-100/50 dark:border-white/5"></div>
 
-            {% if request.user.is_staff or is_gom_member %}
+            {% if is_gom_member or is_platform_admin %}
             {% include 'components/_sidebar_gom_menu.html' %}
             {% endif %}
         </nav>

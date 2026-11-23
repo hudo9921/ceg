@@ -119,6 +119,7 @@ MIDDLEWARE = [
     'apps.core.admin_throttle.AdminLoginThrottleMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'apps.core.two_factor.StaffTwoFactorMiddleware',
+    'apps.goms.access.GomStaffMiddleware',
     'apps.cegs.middleware.UploadSizeExceptionMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

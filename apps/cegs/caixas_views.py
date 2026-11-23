@@ -12,7 +12,8 @@ from django.utils.dateparse import parse_date
 from django.views import View
 
 from .models import Caixa, CEG, ItemIndividual, TipoItem, CaixaItemRate, ItemSlot, CEGItemDefinition
-from apps.core.permissions import StaffRequiredMixin
+from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin
+from apps.goms.access import can_manage
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class CaixasDashboardView(StaffRequiredMixin, View):
         status_filter = request.GET.get('status', '').strip().upper()
         search_query = request.GET.get('q', '').strip()
 
-        caixas_qs = Caixa.objects.prefetch_related(
+        caixas_qs = Caixa.objects.for_gom(request.active_gom).prefetch_related(
             'cegs__era__group',
             'itens_individuais__comprador'
         ).annotate(
@@ -59,7 +60,7 @@ class CaixasDashboardView(StaffRequiredMixin, View):
             Caixa.Status.TRIBUTADA,
             Caixa.Status.LIBERADA,
         ]
-        metrics = Caixa.objects.aggregate(
+        metrics = Caixa.objects.for_gom(request.active_gom).aggregate(
             total_caixas=Count('id'),
             caixas_kr=Count('id', filter=Q(origem=Caixa.Origem.KR)),
             caixas_jp=Count('id', filter=Q(origem=Caixa.Origem.JP)),
@@ -71,10 +72,10 @@ class CaixasDashboardView(StaffRequiredMixin, View):
         caixas_jp = metrics['caixas_jp'] or 0
         caixas_em_transito = metrics['caixas_em_transito'] or 0
         caixas_entregues = metrics['caixas_entregues'] or 0
-        total_cegs_vinculadas = CEG.objects.filter(caixa__isnull=False).count()
+        total_cegs_vinculadas = CEG.objects.for_gom(request.active_gom).filter(caixa__isnull=False).count()
 
         # CEGs disponíveis sem caixa (para vincular pelo organizador)
-        cegs_sem_caixa = list(CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at'))
+        cegs_sem_caixa = list(CEG.objects.for_gom(request.active_gom).filter(caixa__isnull=True).select_related('era__group').order_by('-created_at'))
 
         status_step_map = {
             Caixa.Status.EM_CONSOLIDACAO: 1,
@@ -128,7 +129,7 @@ class CaixasDashboardView(StaffRequiredMixin, View):
             'origem_filter': origem_filter,
             'status_filter': status_filter,
             'search_query': search_query,
-            'is_staff_user': request.user.is_authenticated and request.user.is_staff,
+            'is_staff_user': True,
         }
         return render(request, 'cegs/caixas_list.html', context)
 
@@ -154,11 +155,12 @@ class CaixaDetailView(View):
             slug=slug
         )
 
-        is_staff_user = request.user.is_authenticated and request.user.is_staff
+        # Visão de gestão só para a equipe do GOM dono da caixa; os demais veem só o que é deles.
+        is_staff_user = can_manage(request, caixa)
         cegs = list(caixa.cegs.select_related('era__group').prefetch_related('sets').all())
-        cegs_sem_caixa = list(CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')) if is_staff_user else []
+        cegs_sem_caixa = list(CEG.objects.for_gom(request.active_gom).filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')) if is_staff_user else []
         itens_individuais = list(caixa.itens_individuais.select_related('comprador', 'tipo_item').all().order_by('-created_at'))
-        itens_individuais_sem_caixa = list(ItemIndividual.objects.filter(caixa__isnull=True).select_related('comprador', 'tipo_item').order_by('-created_at')) if is_staff_user else []
+        itens_individuais_sem_caixa = list(ItemIndividual.objects.for_gom(request.active_gom).filter(caixa__isnull=True).select_related('comprador', 'tipo_item').order_by('-created_at')) if is_staff_user else []
 
         status_step_map = {
             Caixa.Status.EM_CONSOLIDACAO: 1,
@@ -424,9 +426,10 @@ class CaixaDetailView(View):
             'configured_rates_count': len(configured_rates),
             'all_tipos_item': all_tipos,
             'tipos_item_json': json.dumps([{'id': t.id, 'nome': t.nome} for t in all_tipos]),
-            'all_caixas': Caixa.objects.all().order_by('-created_at') if is_staff_user else Caixa.objects.none(),
+            'all_caixas': Caixa.objects.for_gom(request.active_gom).order_by('-created_at') if is_staff_user else Caixa.objects.none(),
             'item_individual_statuses': ItemIndividual.Status.choices,
             'is_staff_user': is_staff_user,
+            'is_gom_staff': is_staff_user,
             'is_caixa_frete_expired': is_caixa_frete_expired,
             'is_caixa_taxa_expired': is_caixa_taxa_expired,
 
@@ -471,7 +474,7 @@ class CaixaCreateView(StaffRequiredMixin, View):
     """Criação de uma nova Caixa / Remessa internacional."""
 
     def get(self, request):
-        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
+        cegs_sem_caixa = CEG.objects.for_gom(request.active_gom).filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
         return render(request, 'cegs/caixa_form.html', {
             'action': 'create',
             'origem_choices': Caixa.Origem.choices,
@@ -511,6 +514,7 @@ class CaixaCreateView(StaffRequiredMixin, View):
         try:
             with transaction.atomic():
                 caixa = Caixa(
+                    gom=request.active_gom,
                     nome=nome,
                     origem=origem,
                     status=status,
@@ -533,7 +537,7 @@ class CaixaCreateView(StaffRequiredMixin, View):
                 # Atrela CEGs selecionadas se houver
                 ceg_ids = request.POST.getlist('ceg_ids')
                 if ceg_ids:
-                    CEG.objects.filter(id__in=ceg_ids).update(caixa=caixa, shipping_status=caixa.status)
+                    CEG.objects.for_gom(request.active_gom).filter(id__in=ceg_ids).update(caixa=caixa, shipping_status=caixa.status)
 
             messages.success(request, f"Caixa '{caixa.nome}' criada com sucesso!")
             return redirect('caixa_detail', slug=caixa.slug)
@@ -547,8 +551,8 @@ class CaixaUpdateView(StaffRequiredMixin, View):
     """Edição dos dados cadastrais e financeiros de uma Caixa."""
 
     def get(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
-        cegs_sem_caixa = CEG.objects.filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
+        cegs_sem_caixa = CEG.objects.for_gom(request.active_gom).filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
         return render(request, 'cegs/caixa_form.html', {
             'action': 'edit',
             'caixa': caixa,
@@ -558,7 +562,7 @@ class CaixaUpdateView(StaffRequiredMixin, View):
         })
 
     def post(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
 
         nome = request.POST.get('nome', '').strip()
         origem = request.POST.get('origem', caixa.origem).strip()
@@ -645,7 +649,7 @@ class CaixaUpdateStatusView(StaffRequiredMixin, View):
     """
 
     def post(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
         novo_status = request.POST.get('novo_status', '').strip()
         data_evento = parse_date(request.POST.get('data_evento', '') or '')
 
@@ -680,7 +684,7 @@ class CaixaLinkCEGView(StaffRequiredMixin, View):
     """Vincula uma ou mais CEGs a esta Caixa."""
 
     def post(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
         ceg_ids = request.POST.getlist('ceg_ids')
         single_id = request.POST.get('ceg_id')
         if single_id and single_id not in ceg_ids:
@@ -690,7 +694,7 @@ class CaixaLinkCEGView(StaffRequiredMixin, View):
             messages.warning(request, "Nenhuma CEG selecionada para vincular.")
             return redirect('caixa_detail', slug=caixa.slug)
 
-        updated_count = CEG.objects.filter(id__in=ceg_ids).update(
+        updated_count = CEG.objects.for_gom(request.active_gom).filter(id__in=ceg_ids).update(
             caixa=caixa,
             shipping_status=caixa.status
         )
@@ -709,7 +713,7 @@ class CaixaUnlinkCEGView(StaffRequiredMixin, View):
     """Desvincula uma CEG da Caixa."""
 
     def post(self, request, slug, ceg_id):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
         ceg = get_object_or_404(CEG, id=ceg_id, caixa=caixa)
 
         ceg.caixa = None
@@ -724,7 +728,7 @@ class CaixaLinkItemIndividualView(StaffRequiredMixin, View):
     """Vincula um ou mais Itens Individuais (Mercari) a esta Caixa."""
 
     def post(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
         item_ids = request.POST.getlist('item_ids')
         single_id = request.POST.get('item_id')
         if single_id and single_id not in item_ids:
@@ -736,7 +740,7 @@ class CaixaLinkItemIndividualView(StaffRequiredMixin, View):
 
         # Mapeia status da caixa para o status do item
         novo_status = caixa.status if caixa.status in ItemIndividual.Status.values else ItemIndividual.Status.COMPRADO
-        updated_count = ItemIndividual.objects.filter(id__in=item_ids).update(
+        updated_count = ItemIndividual.objects.for_gom(request.active_gom).filter(id__in=item_ids).update(
             caixa=caixa,
             status=novo_status
         )
@@ -755,7 +759,7 @@ class CaixaUnlinkItemIndividualView(StaffRequiredMixin, View):
     """Desvincula um Item Individual (Mercari) da Caixa."""
 
     def post(self, request, slug, item_id):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
         item = get_object_or_404(ItemIndividual, id=item_id, caixa=caixa)
 
         item.caixa = None
@@ -774,7 +778,7 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
     """
 
     def post(self, request, slug):
-        caixa = get_object_or_404(Caixa, slug=slug)
+        caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         rates_to_process = []
@@ -998,7 +1002,7 @@ class TipoItemCreateView(StaffRequiredMixin, View):
         })
 
 
-class TipoItemDeleteView(StaffRequiredMixin, View):
+class TipoItemDeleteView(PlatformAdminRequiredMixin, View):  # catálogo compartilhado
     """Exclui um TipoItem se não houver itens ou definições vinculadas a ele."""
 
     def post(self, request, pk):

@@ -21,7 +21,7 @@ class GOMNotificationsView(StaffRequiredMixin, View):
         # Auto-sincronização de eventos retroativos caso ainda não existam notificações
         AuditService.sync_recent_gom_notifications(50)
 
-        qs = GOMNotification.objects.select_related(
+        qs = GOMNotification.objects.for_gom(request.active_gom).select_related(
             'participant',
             'ceg__era__group',
             'slot__item_definition',
@@ -60,7 +60,7 @@ class GOMNotificationsView(StaffRequiredMixin, View):
             )
 
         # Contadores para as abas
-        all_notifs = GOMNotification.objects.all()
+        all_notifs = GOMNotification.objects.for_gom(request.active_gom)
         total_notifications = all_notifs.count()
         total_unread = all_notifs.filter(is_read=False).count()
         count_claims = all_notifs.filter(notification_type__in=[
@@ -104,9 +104,9 @@ class GOMNotificationsView(StaffRequiredMixin, View):
 class MarkGOMNotificationReadView(StaffRequiredMixin, View):
     """Marca uma notificação individual como lida via AJAX."""
     def post(self, request, notification_id):
-        notif = get_object_or_404(GOMNotification, id=notification_id)
+        notif = get_object_or_404(GOMNotification.objects.for_gom(request.active_gom), id=notification_id)
         notif.mark_as_read()
-        unread_count = GOMNotification.objects.filter(is_read=False).count()
+        unread_count = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False).count()
         return JsonResponse({
             'success': True,
             'notification_id': notif.id,
@@ -122,7 +122,7 @@ class MarkAllGOMNotificationsReadView(StaffRequiredMixin, View):
     """Marca todas as notificações (ou filtradas por tipo) como lidas via AJAX."""
     def post(self, request):
         action_type = (request.POST.get('action_type') or request.GET.get('action_type', 'all')).strip().lower()
-        qs = GOMNotification.objects.filter(is_read=False)
+        qs = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False)
 
         if action_type == 'claims':
             qs = qs.filter(notification_type__in=[
@@ -139,7 +139,7 @@ class MarkAllGOMNotificationsReadView(StaffRequiredMixin, View):
             qs = qs.filter(notification_type=GOMNotification.NotificationType.ACCOUNT)
 
         updated_count = qs.update(is_read=True, read_at=timezone.now())
-        remaining_unread = GOMNotification.objects.filter(is_read=False).count()
+        remaining_unread = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False).count()
 
         return JsonResponse({
             'success': True,

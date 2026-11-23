@@ -36,7 +36,7 @@ class InviteFlowTests(TestCase):
         res = self._signup(self.owner_token, 'dona')
         self.assertRedirects(res, reverse('backoffice_home'), fetch_redirect_response=False)
         user = User.objects.get(username='dona')
-        self.assertFalse(user.is_staff)  # membros não recebem is_staff (dados isolados só na M2)
+        self.assertFalse(user.is_staff)  # membros não recebem is_staff: o acesso vem do vínculo
         self.assertEqual(GomMembership.objects.get(user=user, gom=self.gom).role, 'OWNER')
 
         self.client.logout()
@@ -109,9 +109,11 @@ class TeamRulesTests(TestCase):
         self.assertEqual(self.client.post(TEAM, {'action': 'remove', 'membership_id': other_m.pk}).status_code, 404)
         self.assertTrue(GomMembership.objects.get(pk=other_m.pk).is_active)
 
-    def test_member_without_staff_cannot_open_operational_screens_yet(self):
+    def test_member_without_is_staff_uses_operational_screens_of_own_gom(self):
+        # M2: o acesso vem do vínculo com o GOM, não do is_staff do Django.
         self.client.force_login(self.owner)
-        self.assertEqual(self.client.get(reverse('creations_hub')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('creations_hub')).status_code, 200)
+        self.assertEqual(self.client.get('/admin/').status_code, 302)  # /admin/ é só da plataforma
 
     def test_platform_screen_is_superuser_only(self):
         self.client.force_login(self.owner)

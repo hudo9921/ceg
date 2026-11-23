@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from apps.core.permissions import StaffRequiredMixin
+from apps.goms.access import can_manage
 
 from apps.cegs.models import CEG
 from apps.cegs.polling_service import PollingDemandService, PollingError
@@ -19,7 +20,7 @@ class CEGVoteView(View):
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
 
-        is_staff = request.user.is_authenticated and request.user.is_staff
+        is_staff = can_manage(request, ceg)  # poderes de staff só na CEG do próprio GOM
         p = get_session_participant(request)
 
         # Joiners precisam estar autenticados via OTP; a identidade vem SOMENTE da sessão.
@@ -109,7 +110,7 @@ class CEGVoteView(View):
 class ConsolidatePollingView(StaffRequiredMixin, View):
     """Endpoint administrativo para consolidar a enquete e gerar N sets físicos com alocação."""
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         is_json = request.content_type == 'application/json'
         if is_json:

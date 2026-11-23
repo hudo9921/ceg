@@ -19,8 +19,8 @@ class CEGStatusView(StaffRequiredMixin, View):
         era_id = request.GET.get('era') or None
         search = request.GET.get('search', '').strip()
 
-        filter_options = AnalyticsService.get_filter_options()
-        status_data = AnalyticsService.get_cegs_operational_status()
+        filter_options = AnalyticsService.get_filter_options(gom=request.active_gom)
+        status_data = AnalyticsService.get_cegs_operational_status(gom=request.active_gom)
 
         selected_group_name = None
         if group_id:
@@ -37,7 +37,7 @@ class CEGStatusView(StaffRequiredMixin, View):
                     break
 
         tipos_item = list(TipoItem.objects.values('id', 'nome'))
-        caixas = Caixa.objects.all().order_by('-created_at')
+        caixas = Caixa.objects.for_gom(request.active_gom).order_by('-created_at')
 
         return render(request, 'analytics/ceg_status.html', {
             'filter_options': filter_options,
@@ -63,7 +63,7 @@ class CEGStatusView(StaffRequiredMixin, View):
             'ceg_share_map': status_data.get('ceg_share_map', {}),
             'ceg_share_map_json': json.dumps(status_data.get('ceg_share_map', {})),
             'ceg_statuses': CEG.Status.choices,
-            'is_staff_user': request.user.is_authenticated and request.user.is_staff,
+            'is_staff_user': True,
         })
 
 
@@ -80,10 +80,8 @@ class SalesReportView(StaffRequiredMixin, View):
         time_window = request.GET.get('window') or 'all'
         month = request.GET.get('month') or None
 
-        filter_options = AnalyticsService.get_filter_options()
-        sales_data = AnalyticsService.get_sales_analytics(
-            group_id=group_id, era_id=era_id, time_window=time_window, month=month, category=category
-        )
+        filter_options = AnalyticsService.get_filter_options(gom=request.active_gom)
+        sales_data = AnalyticsService.get_sales_analytics(group_id=group_id, era_id=era_id, time_window=time_window, month=month, category=category, gom=request.active_gom)
 
         selected_group_name = None
         if group_id:
@@ -165,7 +163,7 @@ class CEGStatusApiView(StaffRequiredMixin, View):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
-        data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id, category=category)
+        data = AnalyticsService.get_cegs_operational_status(group_id=group_id, era_id=era_id, category=category, gom=request.active_gom)
         return JsonResponse(data)
 
 
@@ -176,9 +174,7 @@ class SalesReportApiView(StaffRequiredMixin, View):
         era_id = request.GET.get('era') or None
         time_window = request.GET.get('window') or 'all'
         month = request.GET.get('month') or None
-        data = AnalyticsService.get_sales_analytics(
-            group_id=group_id, era_id=era_id, time_window=time_window, month=month, category=category
-        )
+        data = AnalyticsService.get_sales_analytics(group_id=group_id, era_id=era_id, time_window=time_window, month=month, category=category, gom=request.active_gom)
         return JsonResponse(data)
 
 
@@ -189,13 +185,13 @@ class AnalyticsDashboardView(StaffRequiredMixin, View):
         era_id = request.GET.get('era') or None
         month = request.GET.get('month') or None
 
-        filter_options = AnalyticsService.get_filter_options()
-        summary = AnalyticsService.get_summary_metrics(group_id=group_id, era_id=era_id, month=month)
-        monthly_flow = AnalyticsService.get_monthly_sales_flow(group_id=group_id, era_id=era_id)
-        detailed_inventory = AnalyticsService.get_detailed_inventory_table(group_id=group_id, era_id=era_id)
-        group_comparison = AnalyticsService.get_group_comparison()
-        members = AnalyticsService.get_member_popularity(group_id=group_id, era_id=era_id)
-        sets_near = AnalyticsService.get_sets_near_completion(group_id=group_id, era_id=era_id)
+        filter_options = AnalyticsService.get_filter_options(gom=request.active_gom)
+        summary = AnalyticsService.get_summary_metrics(group_id=group_id, era_id=era_id, month=month, gom=request.active_gom)
+        monthly_flow = AnalyticsService.get_monthly_sales_flow(group_id=group_id, era_id=era_id, gom=request.active_gom)
+        detailed_inventory = AnalyticsService.get_detailed_inventory_table(group_id=group_id, era_id=era_id, gom=request.active_gom)
+        group_comparison = AnalyticsService.get_group_comparison(gom=request.active_gom)
+        members = AnalyticsService.get_member_popularity(group_id=group_id, era_id=era_id, gom=request.active_gom)
+        sets_near = AnalyticsService.get_sets_near_completion(group_id=group_id, era_id=era_id, gom=request.active_gom)
 
         chart_data = {
             'monthly': {
@@ -243,12 +239,12 @@ class AnalyticsApiView(StaffRequiredMixin, View):
         month = request.GET.get('month') or None
 
         return JsonResponse({
-            'summary': AnalyticsService.get_summary_metrics(group_id=group_id, era_id=era_id, month=month),
-            'monthly_flow': AnalyticsService.get_monthly_sales_flow(group_id=group_id, era_id=era_id),
-            'detailed_inventory': AnalyticsService.get_detailed_inventory_table(group_id=group_id, era_id=era_id),
-            'group_comparison': AnalyticsService.get_group_comparison(),
-            'members': AnalyticsService.get_member_popularity(group_id=group_id, era_id=era_id),
-            'sets_near': AnalyticsService.get_sets_near_completion(group_id=group_id, era_id=era_id),
-            'filter_options': AnalyticsService.get_filter_options(),
+            'summary': AnalyticsService.get_summary_metrics(group_id=group_id, era_id=era_id, month=month, gom=request.active_gom),
+            'monthly_flow': AnalyticsService.get_monthly_sales_flow(group_id=group_id, era_id=era_id, gom=request.active_gom),
+            'detailed_inventory': AnalyticsService.get_detailed_inventory_table(group_id=group_id, era_id=era_id, gom=request.active_gom),
+            'group_comparison': AnalyticsService.get_group_comparison(gom=request.active_gom),
+            'members': AnalyticsService.get_member_popularity(group_id=group_id, era_id=era_id, gom=request.active_gom),
+            'sets_near': AnalyticsService.get_sets_near_completion(group_id=group_id, era_id=era_id, gom=request.active_gom),
+            'filter_options': AnalyticsService.get_filter_options(gom=request.active_gom),
         })
 

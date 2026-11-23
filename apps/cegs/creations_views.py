@@ -15,7 +15,7 @@ from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, It
 from apps.cegs.services import ClaimService
 from .image_utils import process_image_upload
 from apps.participants.models import Participant, Claim
-from apps.core.permissions import StaffRequiredMixin
+from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,9 @@ class CreationsHubView(StaffRequiredMixin, View):
     def get(self, request):
         groups = KpopGroup.objects.prefetch_related('eras', 'members').order_by('name')
         eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        cegs = CEG.objects.select_related('era__group').prefetch_related('sets').order_by('-created_at')
-        caixas = Caixa.objects.all().order_by('-created_at')
+        gom = request.active_gom
+        cegs = CEG.objects.for_gom(gom).select_related('era__group').prefetch_related('sets').order_by('-created_at')
+        caixas = Caixa.objects.for_gom(gom).order_by('-created_at')
 
         # Dicionário de grupos e eras para seleção em cascata e edição no Alpine.js
         groups_data = []
@@ -76,7 +77,7 @@ class CreationsHubView(StaffRequiredMixin, View):
 
         # Participantes cadastrados para pré-reserva de itens no cadastro da CEG
         participants = list(
-            Participant.objects.all().order_by('name').values(
+            Participant.objects.for_gom(gom).order_by('name').values(
                 'id', 'name', 'username', 'whatsapp', 'social_handle'
             )
         )
@@ -247,7 +248,7 @@ class CreateGroupView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=group')
 
 
-class UpdateGroupView(StaffRequiredMixin, View):
+class UpdateGroupView(PlatformAdminRequiredMixin, View):  # catálogo compartilhado: só a plataforma edita
     """Atualiza as informações de um Grupo ou Solista existente."""
 
     def post(self, request):
@@ -404,7 +405,7 @@ class CreateEraView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=era')
 
 
-class UpdateEraView(StaffRequiredMixin, View):
+class UpdateEraView(PlatformAdminRequiredMixin, View):  # catálogo compartilhado: só a plataforma edita
     """Atualiza as informações de uma Era / Comeback existente."""
 
     def post(self, request):
@@ -601,7 +602,7 @@ class CreateCEGView(StaffRequiredMixin, View):
         shipping_status = Caixa.Status.EM_CONSOLIDACAO
         if caixa_id:
             try:
-                caixa = Caixa.objects.filter(id=int(caixa_id)).first()
+                caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id)).first()
                 if caixa:
                     shipping_status = caixa.status
             except (ValueError, TypeError):
@@ -611,6 +612,7 @@ class CreateCEGView(StaffRequiredMixin, View):
             with transaction.atomic():
                 # 1. Cria a CEG
                 ceg = CEG.objects.create(
+                    gom=request.active_gom,
                     era=era,
                     caixa=caixa,
                     shipping_status=shipping_status,
@@ -703,7 +705,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                             p_id = idata.get('participant_id') or idata.get('pre_assigned_participant_id') if idata else None
                             if p_id:
                                 try:
-                                    participant = Participant.objects.get(id=int(p_id))
+                                    participant = Participant.objects.for_gom(request.active_gom).get(id=int(p_id))
                                     slot.claimed_by = participant
                                     slot.status = ItemSlot.Status.RESERVED
                                     slot.claimed_at = now
@@ -746,7 +748,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                             p_id = idata.get('participant_id') or idata.get('pre_assigned_participant_id') if idata else None
                             if p_id:
                                 try:
-                                    participant = Participant.objects.get(id=int(p_id))
+                                    participant = Participant.objects.for_gom(request.active_gom).get(id=int(p_id))
                                     slot.claimed_by = participant
                                     slot.status = ItemSlot.Status.RESERVED
                                     slot.claimed_at = now
@@ -811,7 +813,7 @@ class CreateSetView(StaffRequiredMixin, View):
             messages.error(request, "Selecione a CEG para a qual deseja adicionar o Set.")
             return redirect(next_url or '/creations/?tab=sets')
 
-        ceg = get_object_or_404(CEG, id=ceg_id)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), id=ceg_id)
 
         # Determina o próximo número do Set (ignorando o set avulso #0)
         if set_number_input and set_number_input.isdigit():
@@ -875,7 +877,7 @@ class AddItemToCEGView(StaffRequiredMixin, View):
             messages.error(request, "Selecione a CEG e informe o Nome do Item.")
             return redirect('/creations/?tab=items')
 
-        ceg = get_object_or_404(CEG, id=ceg_id)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), id=ceg_id)
 
         try:
             price = Decimal(price_str)

@@ -36,7 +36,7 @@
                 </span>
                 {% endif %}
 
-                {% if user.is_staff %}
+                {% if is_gom_staff %}
                 <!-- Botão Selecionar Todos deste Set -->
                 <button type="button" @click="selectAllInSet([
                                 {% for s in set.slots.all %}

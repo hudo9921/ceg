@@ -1,4 +1,6 @@
 from django.db import models
+
+from apps.goms.scoping import ParticipantQuerySet, scoped_manager
 from django.utils import timezone
 import re
 
@@ -98,6 +100,13 @@ def clean_phone_number(phone: str, default_country: str = '55') -> str:
 
 
 class Participant(models.Model):
+    # Multi-GOM: o joiner é compartilhado; o GOM o enxerga se o conhece (cadastro) ou tem vínculo
+    # por claim/item/voto/pacote (apps.goms.scoping.participant_gom_filter).
+    known_by_goms = models.ManyToManyField('goms.Gom', blank=True, related_name='known_participants',
+                                           verbose_name='GOMs que conhecem este joiner')
+    objects = ParticipantQuerySet.as_manager()
+    last_login_at = models.DateTimeField('Último login por WhatsApp', null=True, blank=True)
+
     name = models.CharField('Nome Completo do Participante', max_length=150)
     username = models.CharField(
         'Nome de Usuário / Apelido',
@@ -314,6 +323,8 @@ class Participant(models.Model):
 
 
 class Claim(models.Model):
+    objects = scoped_manager('slot__set__ceg__gom')  # Multi-GOM: dono via slot
+
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Aguardando Pagamento'
         PAID = 'PAID', 'Pago / Confirmado'

@@ -93,7 +93,7 @@ Resultado: no dia seguinte à migração, tudo funciona como hoje para o ValCegs
 | # | Entrega | O que muda para o usuário |
 | :--- | :--- | :--- |
 | **M1** ✅ | Fundação: app `goms`, membros, convites, GOM ativo, papéis, 2FA para membros, tela de GOMs da plataforma, tela de equipe | Nada para joiners; você já consegue criar GOMs e convidar donos |
-| **M2** | Dono dos dados: FKs, migração, `for_gom` em todas as views de backoffice, `/admin/` só da plataforma, testes de isolamento | GOMs operam isolados |
+| **M2** ✅ | Dono dos dados: FKs, migração, `for_gom` em todas as views de backoffice, `/admin/` só da plataforma, testes de isolamento | GOMs operam isolados |
 | **M3** | Joiner: selo e filtro na home, `/gom/<slug>/`, `/me/` e Caixinha por GOM | Joiners compram de vários GOMs |
 | **M4** | Configurações por GOM: perfil, Pix padrão, envio, analytics por GOM, visão da plataforma | Cada GOM se configura sozinho |
 
@@ -108,6 +108,22 @@ Depois: **Fase 5** (endereço salvo no perfil do joiner; cada GOM vê o endereç
   - `/painel/`: leva cada pessoa à tela inicial do seu papel.
 - **Proteção até a M2:** membros **não** recebem `is_staff` e levam 403 nas telas operacionais (CEGs, caixas etc.), que continuam só para staff até os dados terem dono.
 - **Migração:** `goms.0002` cria o ValCegs. Superusuários viram donos e os demais `is_staff` viram admins.
+
+### Estado da M2 (entregue)
+- **Dono dos dados:** `gom` em CEG, Caixa, ItemIndividual, ItemVitrine, PacoteNacional, GOMNotification e ConfiguracaoEnvio (um por GOM). Em AuditLog é opcional: evento de plataforma fica sem GOM. Todos os registros existentes foram para o ValCegs (`cegs.0034`).
+- **Escopo:** `Modelo.objects.for_gom(gom)` (`apps/goms/scoping.py`); os modelos derivados usam o caminho até o dono.
+  - `Participant.objects.for_gom(gom)` traz quem o GOM conhece (`known_by_goms`) ou com quem tem claim, item, voto ou pacote.
+  - Em todas as views do backoffice, objetos de outro GOM respondem 404.
+- **Acesso:**
+  - `request.is_gom_staff` e `request.active_gom` vêm do `GomStaffMiddleware`.
+  - `StaffRequiredMixin` passou a exigir vínculo com o GOM ativo.
+  - Páginas públicas (CEG, caixa, vitrine) usam `can_manage(request, obj)`: as ferramentas de gestão só aparecem para o GOM dono.
+- **Plataforma (superusuário):** `/admin/` do Django, banner da home, bot de WhatsApp, editar grupo/era e excluir tipo de item.
+- **Joiners:** buscas e listas só com quem o GOM conhece. O cadastro de quem já fez login (`Participant.last_login_at`) não é alterado pela equipe (`apps/goms/joiners.py`).
+- **Pacotes:** a "Minha Caixinha" cria um pacote por GOM quando o joiner pede o envio de itens de mais de um GOM.
+- **LGPD:** o pedido de exclusão notifica cada GOM que conhece o joiner.
+- **Vazamento corrigido:** a página pública da CEG enviava o WhatsApp de quem pegou itens avulsos para qualquer visitante.
+- **Teste de isolamento** (`apps/goms/tests_isolation.py`): um membro do GOM B varre todas as rotas com objetos do GOM A. O teste falha se alguma tela mostrar dados do A ou se algum dado do A mudar.
 
 ## 7. Riscos e cuidados
 - **Vazamento entre GOMs** é o risco nº 1. Mitigação: `for_gom` obrigatório, 404 para objetos de outro GOM e a matriz entre GOMs no CI.

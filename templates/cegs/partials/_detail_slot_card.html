@@ -65,7 +65,7 @@
              'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 opacity-60': status === 'CANCELLED',
              'cursor-pointer': status === 'AVAILABLE' && !isStandby
          }"
-     {% if user.is_staff %}@slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"{% endif %}
+     {% if is_gom_staff %}@slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"{% endif %}
      @bulk-claim-add-selected.window="if ($event.detail.ids.includes(slotId) && status === 'AVAILABLE') {
          if (!$store.claimSelection.slots.some(s => s.id === slotId)) {
              $store.claimSelection.slots.push({
@@ -94,7 +94,7 @@
     <!-- 1. Topo: Integrante, Tipo, Checkbox Staff & Preço Tabular -->
     <div class="flex justify-between items-start gap-1">
         <div class="flex items-center gap-1 flex-wrap">
-            {% if user.is_staff %}
+            {% if is_gom_staff %}
             <input type="checkbox" :checked="selectedSlotIds.includes({{ slot.id }})"
                    @click.stop="toggleSlotSelection({{ slot.id }}, {{ slot.item_definition.id }})"
                    class="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-pink-600 focus:ring-pink-500 cursor-pointer shadow-2xs"
@@ -117,7 +117,7 @@
         </div>
 
         <div class="flex items-center gap-1 shrink-0">
-            {% if user.is_staff %}
+            {% if is_gom_staff %}
             <button type="button" @click.stop="openManageSlotModal({
                     id: {{ slot.id }}, itemDefId: {{ slot.item_definition.id }},
                     name: '{{ slot.item_definition.name|escapejs }}', member: '{{ slot.item_definition.member_name|default:''|escapejs }}',

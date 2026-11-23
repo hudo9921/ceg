@@ -8,6 +8,14 @@ admin.site.site_header = "K-pop CEG Manager"
 admin.site.site_title = "Painel do Organizador de CEGs"
 admin.site.index_title = "Gestão de Compras em Grupo (K-pop)"
 
+
+def _platform_admin_only(request):
+    """/admin/ do Django é da plataforma: só superusuário (GOMs usam as telas próprias)."""
+    return request.user.is_active and request.user.is_superuser
+
+
+admin.site.has_permission = _platform_admin_only
+
 from django.http import HttpResponse
 from apps.participants.privacy_views import PrivacyPolicyView
 

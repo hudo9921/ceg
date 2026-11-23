@@ -17,6 +17,10 @@ def login_participant(request, participant) -> None:
     """Autentica o participante na sessão, rotacionando a chave (anti session fixation)."""
     request.session.cycle_key()
     request.session[SESSION_KEY] = participant.id
+    # A partir do primeiro login o cadastro passa a ser do joiner (apps.goms.joiners).
+    from django.utils import timezone
+    type(participant).objects.filter(pk=participant.pk).update(last_login_at=timezone.now())
+    participant.last_login_at = timezone.now()
 
 
 def logout_participant(request) -> None:

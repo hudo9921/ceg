@@ -32,7 +32,7 @@
                     <span>{{ avulso_definitions|length }} ite{{ avulso_definitions|length|pluralize:"m,ns" }} &bull; {{ avulso_slots|length }} unidade{{ avulso_slots|length|pluralize }}</span>
                 </span>
 
-                {% if user.is_staff %}
+                {% if is_gom_staff %}
                 <button type="button" @click="openAddAvulsoModal()"
                     class="px-3.5 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer text-xs active:scale-95">
                     <i data-lucide="plus" class="w-3.5 h-3.5" stroke-width="1.75"></i>
@@ -61,7 +61,7 @@
                     Esta CEG ainda não possui itens avulsos cadastrados. Itens avulsos possuem estoque fixo e não são multiplicados quando novos Sets são abertos.
                 </p>
             </div>
-            {% if user.is_staff %}
+            {% if is_gom_staff %}
             <div class="pt-2">
                 <button type="button" @click="openAddAvulsoModal()"
                     class="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl transition shadow-xs inline-flex items-center gap-2 cursor-pointer active:scale-95">

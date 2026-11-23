@@ -644,7 +644,7 @@
                 </div>
             </a>
             <div class="flex items-center gap-2">
-                {% if request.user.is_authenticated and request.user.is_staff %}
+                {% if is_gom_staff %}
                     <a href="{% url 'gom_notifications' %}"
                        class="relative p-1.5 rounded-xl bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center justify-center">
                         <i data-lucide="bell" class="w-4 h-4"></i>

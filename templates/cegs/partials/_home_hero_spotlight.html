@@ -15,7 +15,7 @@
              alt="{{ home_banner.alt_text|default:'ValCegs Masterlist' }}"
              class="hidden dark:block w-full h-full object-cover sm:object-contain object-center relative z-10 transition-opacity duration-300">
 
-        {% if user.is_staff %}
+        {% if is_platform_admin %}
         <!-- Botão Flutuante de Gestão de Banners para Organizador/Staff -->
         <button type="button"
                 @click="$dispatch('open-banner-modal')"

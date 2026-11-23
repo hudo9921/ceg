@@ -21,7 +21,7 @@ class AuditDashboardView(StaffRequiredMixin, View):
     Permite filtrar e visualizar criação de contas, claims, pagamentos, envios e segmentações.
     """
     def get(self, request):
-        qs = AuditLog.objects.select_related(
+        qs = AuditLog.objects.for_gom(request.active_gom).select_related(
             'actor', 'participant', 'ceg', 'slot__item_definition',
             'slot__set__ceg', 'item_individual', 'pacote_nacional'
         ).all()
@@ -178,7 +178,7 @@ class AuditDashboardView(StaffRequiredMixin, View):
             return response
 
         # KPIs Rápidos (em uma única query agregada)
-        kpis = AuditLog.objects.aggregate(
+        kpis = AuditLog.objects.for_gom(request.active_gom).aggregate(
             total_logs=Count('id'),
             total_accounts=Count('id', filter=Q(event_type=AuditLog.EventType.ACCOUNT_CREATED)),
             total_claims=Count('id', filter=Q(
@@ -204,10 +204,10 @@ class AuditDashboardView(StaffRequiredMixin, View):
         page_obj = paginator.get_page(page_number)
 
         # Dados auxiliares para filtros
-        cegs_qs = CEG.objects.select_related('era__group', 'caixa').only(
+        cegs_qs = CEG.objects.for_gom(request.active_gom).select_related('era__group', 'caixa').only(
             'id', 'title', 'slug', 'era_id', 'era__group_id', 'era__group__name', 'era__name', 'caixa_id'
         ).order_by('title')
-        caixas_qs = Caixa.objects.only('id', 'nome').order_by('nome')
+        caixas_qs = Caixa.objects.for_gom(request.active_gom).only('id', 'nome').order_by('nome')
         grupos_qs = KpopGroup.objects.only('id', 'name').order_by('name')
         eras_qs = Era.objects.select_related('group').only('id', 'name', 'group__name', 'group_id').order_by('group__name', 'name')
         event_choices = AuditLog.EventType.choices

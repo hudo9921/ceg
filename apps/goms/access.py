@@ -48,9 +48,12 @@ def gom_role(user, gom):
 
 
 def accessible_goms(user):
+    """GOMs em que o usuário pode atuar; os da própria equipe vêm primeiro (GOM padrão)."""
+    own = [m.gom for m in active_memberships(user)]
     if is_platform_admin(user):
-        return list(Gom.objects.filter(is_active=True).order_by('name'))
-    return [m.gom for m in active_memberships(user)]
+        own_ids = {g.id for g in own}
+        return own + [g for g in Gom.objects.filter(is_active=True).order_by('name') if g.id not in own_ids]
+    return own
 
 
 def get_active_gom(request):
@@ -100,3 +103,42 @@ def platform_admin_required(view):
             return _deny(request)
         return view(request, *args, **kwargs)
     return _wrapped
+
+
+def has_backoffice_access(request) -> bool:
+    """Membro do GOM ativo (ou plataforma) com o 2FA da sessão já verificado."""
+    from apps.core.two_factor import is_two_factor_verified, requires_two_factor
+
+    user = getattr(request, 'user', None)
+    if not (user and user.is_authenticated and user.is_active):
+        return False
+    gom = get_active_gom(request)
+    if gom is None or gom_role(user, gom) is None:
+        return False
+    return not requires_two_factor(user) or is_two_factor_verified(user)
+
+
+def can_manage(request, obj) -> bool:
+    """Pode gerenciar este objeto: equipe do GOM ativo E o objeto pertence a esse GOM."""
+    if not getattr(request, 'is_gom_staff', False):
+        return False
+    gom_id = getattr(obj, 'gom_id', None)
+    if gom_id is None and obj is not None and hasattr(obj, 'pk') and obj.__class__.__name__ == 'Gom':
+        gom_id = obj.pk
+    return gom_id is not None and gom_id == request.active_gom.id
+
+
+class GomStaffMiddleware:
+    """Define `request.active_gom` e `request.is_gom_staff` (depois do 2FA e da sessão)."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, 'user', None)
+        if user is not None and user.is_authenticated:
+            request.active_gom = get_active_gom(request)
+            request.is_gom_staff = has_backoffice_access(request)
+        else:
+            request.active_gom, request.is_gom_staff = None, False
+        return self.get_response(request)

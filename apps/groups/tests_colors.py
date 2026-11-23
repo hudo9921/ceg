@@ -101,7 +101,8 @@ class ColorExtractionTestCase(TestCase):
     def test_update_era_auto_reextracts_color_when_empty(self, mock_extract):
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        staff_user = User.objects.create_user(username='staffuser', password='password123', is_staff=True)
+        # Editar era é da plataforma (catálogo compartilhado entre GOMs).
+        staff_user = User.objects.create_superuser(username='staffuser', password='password123', email='s@x.com')
         self.client.force_login(staff_user)
 
         mock_extract.return_value = '#10B981'
@@ -131,7 +132,7 @@ class ColorExtractionTestCase(TestCase):
     def test_update_era_saves_custom_color_with_or_without_hash(self):
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        staff_user = User.objects.create_user(username='staffuser2', password='password123', is_staff=True)
+        staff_user = User.objects.create_superuser(username='staffuser2', password='password123', email='s2@x.com')
         self.client.force_login(staff_user)
 
         group = KpopGroup.objects.create(name='Update Test Group 2')

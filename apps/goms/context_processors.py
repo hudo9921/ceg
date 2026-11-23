@@ -15,5 +15,7 @@ def gom_context(request):
         'is_gom_member': role is not None,
         'is_gom_owner': role == GomMembership.Role.OWNER,
         'is_platform_admin': is_platform_admin(user),
+        # Equipe do GOM ativo com 2FA ok. Páginas de um objeto sobrescrevem com can_manage(obj).
+        'is_gom_staff': getattr(request, 'is_gom_staff', False),
         'switchable_goms': accessible_goms(user),
     }

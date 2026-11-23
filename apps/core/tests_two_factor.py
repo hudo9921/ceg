@@ -12,6 +12,7 @@ from apps.core.permissions import is_staff_user
 from apps.core.two_factor import regenerate_backup_codes
 
 SETUP = reverse('staff_2fa_setup')
+BACKOFFICE = reverse('creations_hub')
 VERIFY = reverse('staff_2fa_verify')
 MANAGE = reverse('staff_2fa_manage')
 
@@ -38,14 +39,14 @@ class StaffTwoFactorTests(TestCase):
 
     # --- bloqueio antes do 2FA -------------------------------------------------
     def test_staff_without_device_is_sent_to_setup_everywhere(self):
-        for path in ('/admin/', reverse('creations_hub'), reverse('home')):
+        for path in (BACKOFFICE, reverse('gom_team'), reverse('home')):
             res = self.client.get(path)
             self.assertEqual(res.status_code, 302, path)
             self.assertTrue(res['Location'].startswith(SETUP), res['Location'])
 
     def test_enrolled_but_unverified_staff_is_sent_to_verify(self):
         self._enroll()
-        res = self.client.get('/admin/')
+        res = self.client.get(BACKOFFICE)
         self.assertTrue(res['Location'].startswith(VERIFY))
 
     def test_ajax_request_gets_json_403(self):
@@ -54,10 +55,13 @@ class StaffTwoFactorTests(TestCase):
         self.assertTrue(res.json()['requires_2fa'])
 
     def test_is_staff_user_requires_verified_session(self):
+        from django.test import RequestFactory
+        request = RequestFactory().get('/')
+        request.user, request.session = self.staff, self.client.session
         self.staff.is_verified = lambda: False
-        self.assertFalse(is_staff_user(self.staff))
+        self.assertFalse(is_staff_user(request))
         self.staff.is_verified = lambda: True
-        self.assertTrue(is_staff_user(self.staff))
+        self.assertTrue(is_staff_user(request))
 
     # --- cadastro ---------------------------------------------------------------
     def test_setup_flow_confirms_device_and_shows_backup_codes(self):
@@ -74,7 +78,7 @@ class StaffTwoFactorTests(TestCase):
         device.refresh_from_db()
         self.assertTrue(device.confirmed)
         self.assertEqual(len(res.context['codes']), 10)
-        self.assertEqual(self.client.get('/admin/').status_code, 200)
+        self.assertEqual(self.client.get(BACKOFFICE).status_code, 200)
         self.assertLessEqual(self.client.session.get_expiry_age(), 60 * 60 * 12)
 
     def test_setup_qr_is_stable_between_reloads(self):
@@ -85,19 +89,19 @@ class StaffTwoFactorTests(TestCase):
     # --- verificação ------------------------------------------------------------
     def test_verify_with_totp_unlocks_backoffice(self):
         device, _ = self._enroll()
-        res = self.client.post(VERIFY + '?next=/admin/', {'token': fmt(current_code(device))})
-        self.assertRedirects(res, '/admin/', fetch_redirect_response=False)
-        self.assertEqual(self.client.get('/admin/').status_code, 200)
+        res = self.client.post(VERIFY + '?next=' + BACKOFFICE, {'token': fmt(current_code(device))})
+        self.assertRedirects(res, BACKOFFICE, fetch_redirect_response=False)
+        self.assertEqual(self.client.get(BACKOFFICE).status_code, 200)
 
     def test_backup_code_works_only_once(self):
         _, codes = self._enroll()
         self.client.post(VERIFY, {'token': codes[0]})
-        self.assertEqual(self.client.get('/admin/').status_code, 200)
+        self.assertEqual(self.client.get(BACKOFFICE).status_code, 200)
 
         self.client.logout()
         self.client.force_login(self.staff)
         self.client.post(VERIFY, {'token': codes[0]})
-        self.assertNotEqual(self.client.get('/admin/').status_code, 200)
+        self.assertNotEqual(self.client.get(BACKOFFICE).status_code, 200)
         self.assertEqual(StaticToken.objects.filter(device__user=self.staff).count(), 9)
 
     def test_failed_attempts_are_throttled(self):
@@ -105,7 +109,7 @@ class StaffTwoFactorTests(TestCase):
         for _ in range(3):
             self.client.post(VERIFY, {'token': '000000'})
         self.client.post(VERIFY, {'token': fmt(current_code(device))})
-        self.assertNotEqual(self.client.get('/admin/').status_code, 200)
+        self.assertNotEqual(self.client.get(BACKOFFICE).status_code, 200)
 
     def test_next_cannot_redirect_off_site(self):
         device, _ = self._enroll()
@@ -124,7 +128,7 @@ class StaffTwoFactorTests(TestCase):
         self._enroll()
         call_command('reset_2fa', 'gom', stdout=StringIO())
         self.assertFalse(TOTPDevice.objects.filter(user=self.staff).exists())
-        self.assertTrue(self.client.get('/admin/')['Location'].startswith(SETUP))
+        self.assertTrue(self.client.get(BACKOFFICE)['Location'].startswith(SETUP))
 
 
 @override_settings(STAFF_2FA_REQUIRED=True)

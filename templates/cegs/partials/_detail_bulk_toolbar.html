@@ -2,7 +2,7 @@
      TOOLBAR DE AÇÕES EM MASSA (ORGANIZADOR)
      Sticky bar com 100% Lucide Icons
      ========================================== -->
-{% if user.is_staff %}
+{% if is_gom_staff %}
 <div x-show="selectedSlotIds.length > 0" x-cloak
      class="sticky top-20 z-40 bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-glass border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in backdrop-blur-xl">
     <div class="flex items-center gap-3">

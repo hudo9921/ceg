@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Q, Avg
+from django.db.models import Count, Q, Avg, Prefetch
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from apps.core.permissions import StaffRequiredMixin
@@ -43,17 +43,22 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
         participant_id = request.GET.get('participant_id', '').strip()
 
         # Participantes ativos que têm slots ou compras avulsas
-        participants_with_counts = Participant.objects.annotate(
-            total_slots=Count('reserved_slots', distinct=True),
-            total_mercari=Count('itens_individuais', distinct=True),
-            unpacked_slots=Count('reserved_slots', filter=Q(reserved_slots__pacote_nacional__isnull=True), distinct=True),
-            unpacked_mercari=Count('itens_individuais', filter=Q(itens_individuais__pacote_nacional__isnull=True), distinct=True),
+        gom = request.active_gom
+        # Contagens só com itens deste GOM (o joiner pode comprar de vários GOMs).
+        own_slot = Q(reserved_slots__set__ceg__gom=gom)
+        own_item = Q(itens_individuais__gom=gom)
+        participants_with_counts = Participant.objects.for_gom(gom).annotate(
+            total_slots=Count('reserved_slots', filter=own_slot, distinct=True),
+            total_mercari=Count('itens_individuais', filter=own_item, distinct=True),
+            unpacked_slots=Count('reserved_slots', filter=own_slot & Q(reserved_slots__pacote_nacional__isnull=True), distinct=True),
+            unpacked_mercari=Count('itens_individuais', filter=own_item & Q(itens_individuais__pacote_nacional__isnull=True), distinct=True),
         ).filter(Q(total_slots__gt=0) | Q(total_mercari__gt=0)).order_by('name')
 
-        all_participants_qs = Participant.objects.prefetch_related(
-            'reserved_slots__set__ceg',
-            'itens_individuais',
-            'pacotes_nacionais'
+        # Prefetch filtrado: get_financial_summary() passa a somar só o que é deste GOM.
+        all_participants_qs = Participant.objects.for_gom(gom).prefetch_related(
+            Prefetch('reserved_slots', queryset=ItemSlot.objects.for_gom(gom).select_related('set__ceg')),
+            Prefetch('itens_individuais', queryset=ItemIndividual.objects.for_gom(gom)),
+            Prefetch('pacotes_nacionais', queryset=PacoteNacional.objects.for_gom(gom)),
         ).order_by('name')
 
         q_filter = None
@@ -130,11 +135,11 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
         }
 
         if participant_id:
-            selected_participant = Participant.objects.filter(id=participant_id).first()
+            selected_participant = Participant.objects.for_gom(gom).filter(id=participant_id).first()
 
             if selected_participant:
                 # 1. Slots de CEG
-                slots = ItemSlot.objects.filter(claimed_by=selected_participant).select_related(
+                slots = ItemSlot.objects.for_gom(gom).filter(claimed_by=selected_participant).select_related(
                     'set__ceg__era__group',
                     'set__ceg__caixa',
                     'item_definition__tipo_item',
@@ -142,14 +147,14 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
                 ).order_by('-id')
 
                 # 2. Itens individuais Mercari / JP
-                itens_individuais = ItemIndividual.objects.filter(comprador=selected_participant).select_related(
+                itens_individuais = ItemIndividual.objects.for_gom(gom).filter(comprador=selected_participant).select_related(
                     'caixa',
                     'tipo_item',
                     'pacote_nacional'
                 ).order_by('-created_at')
 
                 # 3. Pacotes nacionais deste joiner
-                pacotes = list(PacoteNacional.objects.filter(participant=selected_participant).prefetch_related(
+                pacotes = list(PacoteNacional.objects.for_gom(gom).filter(participant=selected_participant).prefetch_related(
                     'slots__item_definition',
                     'slots__set__ceg',
                     'itens_individuais'
@@ -406,7 +411,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         feedback_filter = request.GET.get('feedback', '').strip()
         search_query = request.GET.get('q', '').strip()
 
-        qs = PacoteNacional.objects.select_related('participant').prefetch_related(
+        qs = PacoteNacional.objects.for_gom(request.active_gom).select_related('participant').prefetch_related(
             'slots__item_definition__tipo_item',
             'slots__set__ceg__era__group',
             'itens_individuais__tipo_item'
@@ -437,7 +442,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         pacotes = list(qs.order_by('-created_at'))
 
         # Métricas Globais em uma única query agregada
-        metrics = PacoteNacional.objects.aggregate(
+        metrics = PacoteNacional.objects.for_gom(request.active_gom).aggregate(
             total_pacotes=Count('id'),
             solicitados_count=Count('id', filter=Q(status=PacoteNacional.Status.SOLICITADO)),
             em_preparacao_count=Count('id', filter=Q(status=PacoteNacional.Status.EM_PREPARACAO)),
@@ -450,7 +455,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         media_feedback = round(media_val, 1) if media_val is not None else None
 
         # Lista de participantes para filtro (apenas campos necessários)
-        all_participants = Participant.objects.only('id', 'name', 'username', 'social_handle').order_by('name')
+        all_participants = Participant.objects.for_gom(request.active_gom).only('id', 'name', 'username', 'social_handle').order_by('name')
 
         stats = {
             'total_pacotes': metrics['total_pacotes'],
@@ -470,7 +475,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
             'participant_filter': participant_filter,
             'feedback_filter': feedback_filter,
             'search_query': search_query,
-            'configuracao_envio': ConfiguracaoEnvio.get_solo(),
+            'configuracao_envio': ConfiguracaoEnvio.get_for_gom(request.active_gom),
         })
 
 
@@ -482,7 +487,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
 
     def post(self, request):
         participant_id = request.POST.get('participant_id', '').strip()
-        participant = get_object_or_404(Participant, id=participant_id)
+        participant = get_object_or_404(Participant.objects.for_gom(request.active_gom), id=participant_id)
         next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant.id}")
 
         action_type = request.POST.get('action_type', 'novo_pacote').strip()
@@ -496,7 +501,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
 
         if action_type == 'adicionar_existente':
             pacote_id = request.POST.get('pacote_id', '').strip()
-            pacote = get_object_or_404(PacoteNacional, id=pacote_id, participant=participant)
+            pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id, participant=participant)
             if pacote.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                 messages.error(request, "Não é possível adicionar itens a um pacote que já foi enviado nacionalmente ou entregue.")
                 return redirect(next_url)
@@ -511,6 +516,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
             valor_frete = parse_decimal(valor_frete_str, default=None)
 
             pacote = PacoteNacional.objects.create(
+                gom=request.active_gom,
                 participant=participant,
                 identificador=identificador,
                 transportadora=transportadora or 'Correios',
@@ -528,7 +534,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
             if uid.startswith('slot_'):
                 slot_id = uid.replace('slot_', '')
                 try:
-                    slot = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').get(id=slot_id, claimed_by=participant)
+                    slot = ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg__caixa', 'pacote_nacional').get(id=slot_id, claimed_by=participant)
                     if not slot.pode_empacotar:
                         continue
                     slot.pacote_nacional = pacote
@@ -539,7 +545,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
             elif uid.startswith('mercari_'):
                 item_id = uid.replace('mercari_', '')
                 try:
-                    item = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').get(id=item_id, comprador=participant)
+                    item = ItemIndividual.objects.for_gom(request.active_gom).select_related('caixa', 'pacote_nacional').get(id=item_id, comprador=participant)
                     if not item.pode_empacotar:
                         continue
                     item.pacote_nacional = pacote
@@ -581,7 +587,7 @@ class MarcarPacoteEnviadoView(StaffRequiredMixin, View):
     """
 
     def post(self, request, pacote_id):
-        pacote = get_object_or_404(PacoteNacional, id=pacote_id)
+        pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
         codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
         transportadora = request.POST.get('transportadora', '').strip()
         next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={pacote.participant_id}")
@@ -602,7 +608,7 @@ class MarcarPacoteEntregueAdminView(StaffRequiredMixin, View):
     """
 
     def post(self, request, pacote_id):
-        pacote = get_object_or_404(PacoteNacional, id=pacote_id)
+        pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
         next_url = request.POST.get('next', f"/envios/")
 
         pacote.marcar_como_entregue(by='ADMIN', actor=request.user)
@@ -620,7 +626,7 @@ class AtualizarPacoteView(StaffRequiredMixin, View):
     """
 
     def post(self, request, pacote_id):
-        pacote = get_object_or_404(PacoteNacional, id=pacote_id)
+        pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
         next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={pacote.participant_id}")
 
         status = request.POST.get('status', pacote.status).strip()
@@ -660,7 +666,7 @@ class DesempacotarItemView(StaffRequiredMixin, View):
 
         if item_uid.startswith('slot_'):
             slot_id = item_uid.replace('slot_', '')
-            slot = get_object_or_404(ItemSlot, id=slot_id)
+            slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom), id=slot_id)
             if slot.pacote_nacional and slot.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                 messages.error(request, "Não é possível desempacotar um item que já foi enviado nacionalmente ou entregue.")
                 return redirect(next_url)
@@ -669,7 +675,7 @@ class DesempacotarItemView(StaffRequiredMixin, View):
             messages.success(request, f"Item '{slot.item_definition.name}' removido do pacote.")
         elif item_uid.startswith('mercari_'):
             item_id = item_uid.replace('mercari_', '')
-            item = get_object_or_404(ItemIndividual, id=item_id)
+            item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)
             if item.pacote_nacional and item.pacote_nacional.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                 messages.error(request, "Não é possível desempacotar um item que já foi enviado nacionalmente ou entregue.")
                 return redirect(next_url)
@@ -686,7 +692,7 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
     """
 
     def post(self, request, pacote_id):
-        pacote = get_object_or_404(PacoteNacional, id=pacote_id)
+        pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
         participant_id = pacote.participant_id
         identificador = pacote.identificador
         next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant_id}")
@@ -713,7 +719,7 @@ class AtualizarConfiguracaoEnvioView(StaffRequiredMixin, View):
         instrucoes = request.POST.get('instrucoes_envio', '').strip()
         next_url = request.POST.get('next', '/envios/')
 
-        config = ConfiguracaoEnvio.get_solo()
+        config = ConfiguracaoEnvio.get_for_gom(request.active_gom)
         config.link_formulario_google = link_google
         config.instrucoes_envio = instrucoes
         config.save()

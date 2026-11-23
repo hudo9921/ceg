@@ -89,7 +89,7 @@
                 <div class="font-bold text-slate-900 dark:text-white">{{ logged_participant.name }}</div>
                 <div class="text-[11px] text-slate-600 dark:text-slate-300 font-mono">{{ logged_participant.whatsapp }}</div>
             </div>
-            {% elif user.is_staff %}
+            {% elif is_gom_staff %}
             <div class="space-y-2.5 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Seu Nome Completo *</label>

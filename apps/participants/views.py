@@ -25,9 +25,10 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
     """
 
     def get(self, request):
-        recent_participants = Participant.objects.all().order_by('-created_at')[:25]
-        total_participants = Participant.objects.count()
-        with_twitter = Participant.objects.exclude(social_handle='').count()
+        known = Participant.objects.for_gom(request.active_gom)
+        recent_participants = known.order_by('-created_at')[:25]
+        total_participants = known.count()
+        with_twitter = known.exclude(social_handle='').count()
 
         return render(request, 'participants/bulk_create.html', {
             'recent_participants': recent_participants,
@@ -87,6 +88,7 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
             items=items,
             update_existing=update_existing,
             default_ddi=default_ddi,
+            gom=request.active_gom,
         )
 
         created_c = report['created_count']
@@ -1140,68 +1142,57 @@ class SolicitarEnvioNacionalView(View):
             messages.error(request, "Por favor, selecione ao menos um item da sua caixinha para solicitar o envio.")
             return redirect('my_claims')
 
-        pacote = PacoteNacional.objects.create(
-            participant=participant,
-            status=PacoteNacional.Status.SOLICITADO,
-            observacoes_joiner=observacoes,
-            solicitado_em=timezone.now()
-        )
-
-        slots_vinculados = 0
-        mercari_vinculados = 0
-
+        # Resolve os itens válidos primeiro e agrupa por GOM: cada GOM envia o próprio pacote.
+        por_gom = {}
         for uid in selected_uids:
+            obj = None
             if uid.startswith('slot_'):
-                slot_id = uid.replace('slot_', '')
-                try:
-                    slot = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').get(
-                        id=slot_id, claimed_by=participant
-                    )
-                    if not slot.pode_empacotar:
-                        continue
-                    slot.pacote_nacional = pacote
-                    slot.save(update_fields=['pacote_nacional'])
-                    slots_vinculados += 1
-                except ItemSlot.DoesNotExist:
-                    continue
+                obj = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').filter(
+                    id=uid.replace('slot_', ''), claimed_by=participant).first()
+                gom_id = obj.set.ceg.gom_id if obj else None
             elif uid.startswith('mercari_'):
-                item_id = uid.replace('mercari_', '')
-                try:
-                    item = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').get(
-                        id=item_id, comprador=participant
-                    )
-                    if not item.pode_empacotar:
-                        continue
-                    item.pacote_nacional = pacote
-                    item.save(update_fields=['pacote_nacional'])
-                    mercari_vinculados += 1
-                except ItemIndividual.DoesNotExist:
-                    continue
+                obj = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').filter(
+                    id=uid.replace('mercari_', ''), comprador=participant).first()
+                gom_id = obj.gom_id if obj else None
+            if obj is not None and obj.pode_empacotar:
+                por_gom.setdefault(gom_id, []).append(obj)
 
-        total = slots_vinculados + mercari_vinculados
-
+        total = sum(len(objs) for objs in por_gom.values())
         if total == 0:
-            pacote.delete()
             messages.error(request, "Nenhum dos itens selecionados pôde ser solicitado (itens já empacotados, com pendências financeiras ou em trânsito).")
             return redirect('my_claims')
 
-        # Registra auditoria
-        try:
-            AuditLog.objects.create(
-                event_type=AuditLog.EventType.PACKAGE_REQUESTED,
+        identificadores = []
+        for gom_id, objs in por_gom.items():
+            pacote = PacoteNacional.objects.create(
+                gom_id=gom_id,
                 participant=participant,
-                participant_name=participant.name,
-                participant_phone=participant.whatsapp,
-                pacote_nacional=pacote,
-                action_label=f"Solicitação de envio nacional ({total} itens) via Minha Caixinha",
-                new_value=pacote.identificador,
+                status=PacoteNacional.Status.SOLICITADO,
+                observacoes_joiner=observacoes,
+                solicitado_em=timezone.now()
             )
-        except Exception:
-            pass
+            for obj in objs:
+                obj.pacote_nacional = pacote
+                obj.save(update_fields=['pacote_nacional'])
+            identificadores.append(pacote.identificador)
+            try:
+                AuditLog.objects.create(
+                    gom_id=gom_id,
+                    event_type=AuditLog.EventType.PACKAGE_REQUESTED,
+                    participant=participant,
+                    participant_name=participant.name,
+                    participant_phone=participant.whatsapp,
+                    pacote_nacional=pacote,
+                    action_label=f"Solicitação de envio nacional ({len(objs)} itens) via Minha Caixinha",
+                    new_value=pacote.identificador,
+                )
+            except Exception:
+                pass
 
+        pacotes_txt = ', '.join(identificadores)
         messages.success(
             request,
-            f"🎉 Solicitação de envio do pacote {pacote.identificador} ({total} item(ns)) realizada com sucesso! "
+            f"🎉 Solicitação de envio ({total} item(ns)) realizada com sucesso! Pacote(s): {pacotes_txt}. "
             "A GOM foi notificada e em breve cotará seu frete nacional."
         )
         return redirect('/me/?tab=caixinha')

@@ -27,13 +27,15 @@ def _wants_json(request) -> bool:
     )
 
 
-def is_staff_user(user) -> bool:
-    """Staff com a sessão já verificada pelo 2FA (ver `apps.core.two_factor`)."""
-    from apps.core.two_factor import is_two_factor_verified, requires_two_factor
-
-    if not (user and user.is_authenticated and user.is_staff):
-        return False
-    return not requires_two_factor(user) or is_two_factor_verified(user)
+def is_staff_user(request) -> bool:
+    """
+    Equipe do GOM ativo (dono/admin ou plataforma) com 2FA verificado — ver apps.goms.access.
+    Recebe a requisição: o acesso depende do GOM em que a pessoa está atuando.
+    """
+    if getattr(request, 'is_gom_staff', None) is not None:
+        return request.is_gom_staff
+    from apps.goms.access import has_backoffice_access
+    return has_backoffice_access(request)
 
 
 def deny_staff_access(request):
@@ -56,12 +58,18 @@ def deny_staff_access(request):
     return redirect_to_login(request.get_full_path(), STAFF_LOGIN_URL)
 
 
+def _active_gom(request):
+    from apps.goms.access import get_active_gom
+    return get_active_gom(request)
+
+
 class StaffRequiredMixin:
-    """Garante que apenas usuários autenticados com `is_staff` acessem a view."""
+    """Equipe do GOM ativo. A view deve filtrar tudo por `request.active_gom` (for_gom)."""
 
     def dispatch(self, request, *args, **kwargs):
-        if not is_staff_user(request.user):
+        if not is_staff_user(request):
             return deny_staff_access(request)
+        request.active_gom = getattr(request, 'active_gom', None) or _active_gom(request)
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -69,7 +77,26 @@ def staff_required(view_func):
     """Equivalente de `StaffRequiredMixin` para views em função."""
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
-        if not is_staff_user(request.user):
+        if not is_staff_user(request):
             return deny_staff_access(request)
+        request.active_gom = getattr(request, 'active_gom', None) or _active_gom(request)
         return view_func(request, *args, **kwargs)
     return _wrapped
+
+
+def is_platform_admin_request(request) -> bool:
+    """Administrador da plataforma (superusuário) com 2FA verificado."""
+    from apps.core.two_factor import is_two_factor_verified, requires_two_factor
+    user = getattr(request, 'user', None)
+    if not (user and user.is_authenticated and user.is_active and user.is_superuser):
+        return False
+    return not requires_two_factor(user) or is_two_factor_verified(user)
+
+
+class PlatformAdminRequiredMixin:
+    """Ações da plataforma (banner da home, bot de WhatsApp, catálogo compartilhado)."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not is_platform_admin_request(request):
+            return deny_staff_access(request)
+        return super().dispatch(request, *args, **kwargs)

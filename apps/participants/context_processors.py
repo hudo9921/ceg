@@ -19,10 +19,11 @@ def current_participant(request):
             request.session.pop('participant_id', None)
 
     # Contagem de notificações pendentes para a GOM
-    if hasattr(request, 'user') and request.user.is_authenticated and request.user.is_staff:
+    if getattr(request, 'is_gom_staff', False):
         try:
             from apps.cegs.models import GOMNotification
-            context['gom_unread_notifications_count'] = GOMNotification.objects.filter(is_read=False).count()
+            context['gom_unread_notifications_count'] = (
+                GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False).count())
         except Exception:
             context['gom_unread_notifications_count'] = 0
 

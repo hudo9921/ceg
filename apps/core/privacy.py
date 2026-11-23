@@ -120,7 +120,7 @@ def open_obligations(participant) -> list[str]:
 def request_deletion(participant) -> bool:
     """Joiner solicita exclusão. Retorna False se já houver pedido nos últimos 7 dias."""
     from apps.cegs.models import AuditLog, GOMNotification
-    from apps.participants.models import ParticipantNotification
+    from apps.participants.models import Participant, ParticipantNotification
 
     recent = AuditLog.objects.filter(
         participant=participant, event_type=AuditLog.EventType.DATA_DELETION_REQUEST,
@@ -135,15 +135,21 @@ def request_deletion(participant) -> bool:
         participant=participant, metadata={'pendencias': obligations},
     )
     pendencias = ("Pendências: " + "; ".join(obligations) + ".") if obligations else "Sem pendências abertas."
-    GOMNotification.objects.create(
-        notification_type=GOMNotification.NotificationType.SYSTEM,
-        title=f"Pedido de exclusão de dados (LGPD): {participant.display_name}",
-        message=(f"{participant.display_name} pediu a exclusão da conta. {pendencias} "
-                 "Após concluir as pendências, use a ação 'Anonimizar (LGPD)' no admin de Participantes."),
-        participant=participant, audit_log=log,
-        action_url=f"/admin/participants/participant/{participant.id}/change/",
-        action_label="Abrir no Admin",
-    )
+    # Avisa cada GOM que conhece o joiner (para concluir pendências). A anonimização é da plataforma.
+    from apps.goms.models import Gom
+    for gom in Gom.objects.all():
+        if not Participant.objects.for_gom(gom).filter(pk=participant.pk).exists():
+            continue
+        GOMNotification.objects.create(
+            gom=gom,
+            notification_type=GOMNotification.NotificationType.SYSTEM,
+            title=f"Pedido de exclusão de dados (LGPD): {participant.display_name}",
+            message=(f"{participant.display_name} pediu a exclusão da conta. {pendencias} "
+                     "Conclua as pendências deste GOM; a plataforma fará a anonimização."),
+            participant=participant, audit_log=log,
+            action_url=f"/cegs/consulta-joiner/?participant_id={participant.id}",
+            action_label="Ver Joiner",
+        )
     ParticipantNotification.objects.create(
         participant=participant,
         title="Pedido de exclusão recebido",

@@ -57,7 +57,9 @@ def iter_routes(patterns=None, prefix=''):
             yield prefix + route, p.name
 
 
-class RoutePermissionMatrixTests(TestCase):
+class RouteFixtures:
+    """Um objeto de cada tipo (no GOM padrão) e montagem de URLs para varrer todas as rotas."""
+
     def setUp(self):
         ClaimService.reset_in_memory_counters()
         group = KpopGroup.objects.create(name="tripleS")
@@ -116,6 +118,8 @@ class RoutePermissionMatrixTests(TestCase):
     def _build(self, route):
         return '/' + PARAM_RE.sub(lambda m: str(self._value_for(route, m.group('name'))), route)
 
+
+class RoutePermissionMatrixTests(RouteFixtures, TestCase):
     def _protected_routes(self, skip):
         routes = [(r, n) for r, n in iter_routes() if n not in skip]
         self.assertGreater(len(routes), 50, "A varredura de rotas encontrou poucas rotas.")

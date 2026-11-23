@@ -1,3 +1,4 @@
+from apps.goms.joiners import apply_profile_updates, remember
 import re
 import csv
 import io
@@ -193,7 +194,8 @@ class BulkParticipantService:
         cls,
         items: list[dict],
         update_existing: bool = True,
-        default_ddi: str = '55'
+        default_ddi: str = '55',
+        gom=None,
     ) -> dict:
         """
         Cadastra ou atualiza participantes no banco em uma transação atômica.
@@ -225,13 +227,10 @@ class BulkParticipantService:
                 existing = Participant.objects.filter(whatsapp=cleaned_phone).first()
 
                 if existing:
-                    if update_existing:
-                        existing.name = name
-                        if social:
-                            existing.social_handle = social
-                        if username:
-                            existing.username = username
-                        existing.save()
+                    # O GOM passa a conhecer o joiner; o cadastro de quem já fez login é dele.
+                    remember(existing, gom)
+                    if update_existing and apply_profile_updates(
+                            existing, name=name, username=username, social_handle=social):
                         updated.append(existing)
                     else:
                         skipped.append(existing)
@@ -242,6 +241,7 @@ class BulkParticipantService:
                         social_handle=social,
                         username=username,
                     )
+                    remember(new_p, gom)
                     created.append(new_p)
 
         return {

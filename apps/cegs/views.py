@@ -17,7 +17,8 @@ from apps.groups.models import Era
 from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem, HomeBannerConfig
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
-from apps.core.permissions import StaffRequiredMixin
+from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin
+from apps.goms.access import can_manage
 from .image_utils import process_image_upload, crop_image_from_coordinates
 
 logger = logging.getLogger(__name__)
@@ -136,9 +137,9 @@ class HomeView(View):
             pool_tipos_item.append(t)
 
         ceg_share_map = {}
-        if request.user.is_authenticated and request.user.is_staff:
+        if getattr(request, 'is_gom_staff', False):
             for c in list(active_cegs) + list(full_cegs) + list(scheduled_cegs):
-                if hasattr(c, 'share_data'):
+                if hasattr(c, 'share_data') and can_manage(request, c):
                     ceg_share_map[c.id] = c.share_data
 
         home_banner = HomeBannerConfig.get_active()
@@ -160,8 +161,8 @@ class HomeView(View):
         })
 
 
-class UpdateHomeBannerView(StaffRequiredMixin, View):
-    """Atualiza as imagens de banner da tela inicial (Modo Claro e Modo Escuro)."""
+class UpdateHomeBannerView(PlatformAdminRequiredMixin, View):
+    """Atualiza os banners da home compartilhada (só a plataforma)."""
     def post(self, request):
         banner_config = HomeBannerConfig.objects.filter(is_active=True).first()
         if not banner_config:
@@ -221,6 +222,8 @@ class CEGDetailView(View):
             CEG.objects.select_related('era__group', 'caixa'),
             slug=slug
         )
+        # Controles de gestão só para a equipe do GOM dono desta CEG.
+        manage = can_manage(request, ceg)
 
         now = timezone.now()
         if ceg.status == CEG.Status.SCHEDULED and ceg.opens_at and ceg.opens_at <= now:
@@ -288,9 +291,10 @@ class CEGDetailView(View):
                     'is_frete_nacional_paid': s.is_frete_nacional_paid,
                     'frete_inter': float(s.frete_inter) if s.frete_inter is not None else None,
                     'taxa_aduaneira': float(s.taxa_aduaneira) if s.taxa_aduaneira is not None else None,
-                    'claimed_by_id': s.claimed_by_id,
+                    'claimed_by_id': s.claimed_by_id if manage else None,
                     'claimed_by_name': s.claimed_by.display_name if s.claimed_by else '',
-                    'claimed_by_whatsapp': s.claimed_by.whatsapp if s.claimed_by else '',
+                    # Contato do joiner só para a equipe do GOM (a página é pública).
+                    'claimed_by_whatsapp': s.claimed_by.whatsapp if (manage and s.claimed_by) else '',
                     'claimed_by_social': s.claimed_by.social_handle if s.claimed_by else '',
                 })
             avulso_items_data.append({
@@ -318,14 +322,14 @@ class CEGDetailView(View):
             {'code': code, 'label': label}
             for code, label in CEGItemDefinition.ItemType.choices
         ]
-        if request.user.is_authenticated and request.user.is_staff:
-            from apps.participants.models import Participant
+        if manage:
+            gom = request.active_gom
             all_participants = list(
-                Participant.objects.all().order_by('name').values(
+                Participant.objects.for_gom(gom).order_by('name').values(
                     'id', 'name', 'username', 'whatsapp', 'social_handle'
                 )
             )
-            all_caixas = Caixa.objects.all().order_by('-created_at')
+            all_caixas = Caixa.objects.for_gom(gom).order_by('-created_at')
             all_eras = list(Era.objects.select_related('group').all().order_by('group__name', 'name'))
             status_choices = CEG.Status.choices
             tipo_item_list = list(TipoItem.objects.all().order_by('nome').values('id', 'nome', 'descricao'))
@@ -360,13 +364,11 @@ class CEGDetailView(View):
         logged_participant = None
         participant_id = request.session.get('participant_id')
         if participant_id:
-            from apps.participants.models import Participant
             try:
                 logged_participant = Participant.objects.get(id=participant_id)
             except Participant.DoesNotExist:
                 request.session.pop('participant_id', None)
         if not logged_participant and request.user.is_authenticated:
-            from apps.participants.models import Participant
             logged_participant = Participant.objects.filter(username=request.user.username).first()
 
         prefilled_name = ''
@@ -446,6 +448,7 @@ class CEGDetailView(View):
 
         return render(request, 'cegs/detail.html', {
             'ceg': ceg,
+            'is_gom_staff': manage,
             'sets': regular_sets,
             'avulso_set': avulso_set,
             'avulso_slots': avulso_slots,
@@ -495,7 +498,7 @@ class ClaimSlotView(View):
         )
 
         logged_id = request.session.get('participant_id')
-        is_staff = request.user.is_authenticated and request.user.is_staff
+        is_staff = can_manage(request, ceg)  # poderes de staff só na CEG do próprio GOM
 
         # 1. Se não estiver logado via telefone e não for staff, bloqueia
         if not logged_id and not is_staff:
@@ -613,7 +616,7 @@ class BulkClaimView(View):
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
         logged_id = request.session.get('participant_id')
-        is_staff = request.user.is_authenticated and request.user.is_staff
+        is_staff = can_manage(request, ceg)  # poderes de staff só na CEG do próprio GOM
 
         if not logged_id and not is_staff:
             return JsonResponse({
@@ -878,13 +881,13 @@ class ToggleSlotPaymentView(View):
     - Frete Nacional pago (is_frete_nacional_paid)
     """
     def post(self, request, slot_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({
                 'success': False,
                 'message': 'Acesso restrito: apenas o organizador pode alterar status de pagamento.'
             }, status=403)
 
-        slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg', 'claimed_by'), id=slot_id)
+        slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg', 'claimed_by'), id=slot_id)
 
         try:
             if request.content_type == 'application/json':
@@ -946,7 +949,7 @@ class UpdateCEGFeesView(StaffRequiredMixin, View):
     - Prazo Pagamento Taxa Aduaneira
     """
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         def parse_dt(dt_str):
             if not dt_str:
@@ -995,7 +998,7 @@ class UpdateCEGFeesView(StaffRequiredMixin, View):
         if caixa_id is not None:
             if caixa_id.strip():
                 try:
-                    caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                    caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id.strip())).first()
                     ceg.caixa = caixa
                     if caixa:
                         ceg.shipping_status = caixa.status
@@ -1051,7 +1054,7 @@ class UpdateCEGView(StaffRequiredMixin, View):
     - Regras / Descrição e Chave Pix / Instruções
     """
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         try:
             title = request.POST.get('title', '').strip()
@@ -1083,7 +1086,7 @@ class UpdateCEGView(StaffRequiredMixin, View):
             if caixa_id is not None:
                 if caixa_id.strip():
                     try:
-                        caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                        caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id.strip())).first()
                         ceg.caixa = caixa
                         if caixa:
                             ceg.shipping_status = caixa.status
@@ -1164,10 +1167,10 @@ class ManageSlotView(View):
     - Trocar participante do claim ou atribuir a um novo participante
     """
     def post(self, request, slot_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
 
-        slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg', 'item_definition', 'claimed_by'), id=slot_id)
+        slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg', 'item_definition', 'claimed_by'), id=slot_id)
 
         try:
             if request.content_type == 'application/json':
@@ -1312,7 +1315,7 @@ class ManageSlotView(View):
             # 5. Trocar ou Atribuir Participante
             elif participant_id:
                 try:
-                    new_participant = Participant.objects.get(id=participant_id)
+                    new_participant = Participant.objects.for_gom(request.active_gom).get(id=participant_id)
                     slot.claimed_by = new_participant
                     if not slot.claimed_at:
                         slot.claimed_at = timezone.now()
@@ -1382,10 +1385,10 @@ class BulkManageCEGItemsView(View):
     - Excluir múltiplos slots específicos de sets
     """
     def post(self, request, slug):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
 
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         try:
             if request.content_type == 'application/json':
@@ -1584,7 +1587,7 @@ class DeleteSetView(StaffRequiredMixin, View):
     Além disso, notifica os participantes que estavam no set via WhatsApp Gateway.
     """
     def post(self, request, set_id):
-        ceg_set = get_object_or_404(CEGSet.objects.select_related('ceg'), id=set_id)
+        ceg_set = get_object_or_404(CEGSet.objects.for_gom(request.active_gom).select_related('ceg'), id=set_id)
         ceg = ceg_set.ceg
         set_number = ceg_set.set_number
 
@@ -1730,10 +1733,10 @@ class CEGLogsAndWaitingListView(View):
     e a Lista de Espera por Item na interface da CEG.
     """
     def get(self, request, slug):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
 
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         # 1. Logs de tentativas nos slots desta CEG
         logs_qs = ClaimAttemptLog.objects.filter(
@@ -1795,7 +1798,7 @@ class DeleteCEGView(StaffRequiredMixin, View):
     Requer autenticação de segurança com a senha do administrador logado.
     """
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         password = ''
@@ -1837,7 +1840,7 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
     - Pré-reserva opcional de participante
     """
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         name = request.POST.get('name', '').strip()
@@ -1921,7 +1924,7 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
                 # Se houver pré-reserva selecionada, vincula ao primeiro slot
                 if participant_id and created_slots:
                     try:
-                        participant = Participant.objects.get(id=int(participant_id))
+                        participant = Participant.objects.for_gom(request.active_gom).get(id=int(participant_id))
                         first_slot = created_slots[0]
                         now = timezone.now()
                         first_slot.claimed_by = participant
@@ -1940,6 +1943,7 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
                         try:
                             from .models import AuditLog
                             AuditLog.objects.create(
+                                gom_id=ceg.gom_id,
                                 event_type=AuditLog.EventType.SLOT_ASSIGNED,
                                 actor=request.user,
                                 actor_name=request.user.get_full_name() or request.user.username,
@@ -1977,7 +1981,7 @@ class UpdateAvulsoItemView(StaffRequiredMixin, View):
     - Quantidade de unidades (expande adicionando slots ou contrai removendo apenas slots vagos)
     """
     def post(self, request, slug, item_def_id):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
@@ -2099,7 +2103,7 @@ class DeleteAvulsoItemView(StaffRequiredMixin, View):
     - Deleta com segurança slots e a definição do item
     """
     def post(self, request, slug, item_def_id):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
@@ -2146,10 +2150,10 @@ class CropCEGItemPhotoView(View):
     2. Coordenadas {x, y, width, height} para recorte via Pillow no backend.
     """
     def post(self, request, slug, item_def_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
 
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg)
 
         try:

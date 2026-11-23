@@ -2,6 +2,8 @@ import math
 import re
 from apps.core.fields import EncryptedTextField
 from django.db import models
+
+from apps.goms.scoping import default_gom_id, scoped_manager
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.text import slugify
@@ -24,6 +26,11 @@ class TipoItem(models.Model):
 
 
 class Caixa(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='caixas',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono da caixa (só agrupa CEGs/itens do mesmo GOM).')
+    objects = scoped_manager('gom')
+
     class Origem(models.TextChoices):
         KR = 'KR', 'Coreia do Sul (KR)'
         JP = 'JP', 'Japão (JP / Mercari)'
@@ -418,6 +425,8 @@ class Caixa(models.Model):
 
 class CaixaItemRate(models.Model):
     """Valores unitários e prazos de frete internacional e taxa aduaneira por tipo de item em uma Caixa."""
+    objects = scoped_manager('caixa__gom')  # Multi-GOM: dono via caixa
+
     caixa = models.ForeignKey(
         Caixa,
         on_delete=models.CASCADE,
@@ -458,6 +467,11 @@ class CaixaItemRate(models.Model):
 
 
 class CEG(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='cegs',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono da CEG.')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Rascunho'
         POLLING = 'POLLING', 'Em Enquete / Sondagem de Demanda'
@@ -972,6 +986,8 @@ class CEG(models.Model):
 
 
 class CEGItemDefinition(models.Model):
+    objects = scoped_manager('ceg__gom')  # Multi-GOM: dono via ceg
+
     class ItemType(models.TextChoices):
         PHOTOCARD = 'PHOTOCARD', 'Photocard'
         POB = 'POB', 'Pre-Order Benefit (POB)'
@@ -1075,6 +1091,8 @@ class CEGItemDefinition(models.Model):
 
 
 class CEGSet(models.Model):
+    objects = scoped_manager('ceg__gom')  # Multi-GOM: dono via ceg
+
     ceg = models.ForeignKey(
         CEG,
         on_delete=models.CASCADE,
@@ -1156,6 +1174,11 @@ class CEGSet(models.Model):
 
 
 class PacoteNacional(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='pacotes_nacionais',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM que envia o pacote (um pacote = um GOM).')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         SOLICITADO = 'SOLICITADO', 'Solicitado pelo Joiner'
         EM_PREPARACAO = 'EM_PREPARACAO', 'Em Preparação / Embalando'
@@ -1296,6 +1319,7 @@ class PacoteNacional(models.Model):
         # Audit Log
         try:
             AuditLog.objects.create(
+                gom_id=self.gom_id,
                 event_type=AuditLog.EventType.PACKAGE_SENT,
                 actor=actor,
                 actor_name=actor.get_full_name() or actor.username if actor else 'Sistema / Admin',
@@ -1355,6 +1379,7 @@ class PacoteNacional(models.Model):
         try:
             actor_display = actor.get_full_name() or actor.username if actor else (self.participant.display_name if by == 'JOINER' else 'Sistema / Admin')
             AuditLog.objects.create(
+                gom_id=self.gom_id,
                 event_type=AuditLog.EventType.PACKAGE_DELIVERED,
                 actor=actor,
                 actor_name=actor_display,
@@ -1378,6 +1403,8 @@ class PacoteNacional(models.Model):
 
 
 class ItemSlot(models.Model):
+    objects = scoped_manager('set__ceg__gom')  # Multi-GOM: dono via set__ceg
+
     class Status(models.TextChoices):
         AVAILABLE = 'AVAILABLE', 'Disponível'
         RESERVED = 'RESERVED', 'Reservado'
@@ -1624,6 +1651,8 @@ class CEGInterestVote(models.Model):
     Voto / Demonstração de interesse de um participante em um item/membro de uma CEG em fase de enquete.
     O timestamp possui precisão de microssegundos para critério de desempate inquestionável.
     """
+    objects = scoped_manager('ceg__gom')  # Multi-GOM: dono via ceg
+
     ceg = models.ForeignKey(
         'cegs.CEG',
         on_delete=models.CASCADE,
@@ -1680,6 +1709,8 @@ class CEGInterestVote(models.Model):
 
 
 class ClaimAttemptLog(models.Model):
+    objects = scoped_manager('slot__set__ceg__gom')  # Multi-GOM: dono via slot__set__ceg
+
     class Result(models.TextChoices):
         SUCCESS = 'SUCCESS', '1º Lugar (Reserva Garantida)'
         AUTO_FALLBACK = 'AUTO_FALLBACK', 'Venceu via Auto-Fallback (Próximo Set)'
@@ -1713,6 +1744,8 @@ class ClaimAttemptLog(models.Model):
 
 
 class ItemWaitingList(models.Model):
+    objects = scoped_manager('item_definition__ceg__gom')  # Multi-GOM: dono via item_definition__ceg
+
     class Status(models.TextChoices):
         WAITING = 'WAITING', 'Aguardando Vaga'
         PROMOTED = 'PROMOTED', 'Promovido para Reserva'
@@ -1758,6 +1791,11 @@ class ItemWaitingList(models.Model):
 
 
 class ItemIndividual(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='itens_individuais',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono do item.')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         COMPRADO = 'COMPRADO', 'Comprado'
         WAREHOUSE = 'WAREHOUSE', 'Na Warehouse (Armazém)'
@@ -1983,6 +2021,11 @@ class ItemIndividual(models.Model):
 
 
 class AuditLog(models.Model):
+    # Multi-GOM: eventos de plataforma (sem GOM) ficam com gom=None.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.SET_NULL, null=True, blank=True,
+                            related_name='audit_logs', verbose_name='GOM')
+    objects = scoped_manager('gom')
+
     class EventType(models.TextChoices):
         ACCOUNT_CREATED = 'ACCOUNT_CREATED', 'Cadastro de Participante'
         CLAIM_ATTEMPT = 'CLAIM_ATTEMPT', 'Tentativa de Claim'
@@ -2069,6 +2112,19 @@ class AuditLog(models.Model):
         verbose_name_plural = 'Logs de Auditoria'
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        # Multi-GOM: evento sem GOM explícito herda o GOM da CEG/item/pacote relacionado.
+        if self.gom_id is None:
+            for related in (self.ceg, self.item_individual, self.pacote_nacional):
+                if related is not None and getattr(related, 'gom_id', None):
+                    self.gom_id = related.gom_id
+                    break
+            else:
+                slot = self.slot
+                if slot is not None:
+                    self.gom_id = slot.set.ceg.gom_id
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"[{self.get_event_type_display()}] {self.action_label} ({self.created_at.strftime('%d/%m/%Y %H:%M')})"
 
@@ -2078,6 +2134,11 @@ class ConfiguracaoEnvio(models.Model):
     Configuração singleton de envio nacional gerenciada pela GOM.
     Permite configurar o formulário externo (Google Forms) para coleta de endereços e regras.
     """
+    # Multi-GOM: uma configuração de envio por GOM (antes era singleton).
+    gom = models.OneToOneField('goms.Gom', on_delete=models.CASCADE, related_name='configuracao_envio',
+                               default=default_gom_id, verbose_name='GOM')
+    objects = scoped_manager('gom')
+
     link_formulario_google = models.URLField(
         'Link do Formulário de Envio (Google Forms)',
         max_length=500,
@@ -2099,8 +2160,15 @@ class ConfiguracaoEnvio(models.Model):
         return "Configuração de Envio Nacional"
 
     @classmethod
+    def get_for_gom(cls, gom):
+        """Configuração de envio do GOM (criada vazia na primeira vez)."""
+        config, _ = cls.objects.get_or_create(gom=gom)
+        return config
+
+    @classmethod
     def get_solo(cls):
-        config, _ = cls.objects.get_or_create(id=1)
+        """Legado (telas do joiner até a M3): configuração do GOM padrão (ValCegs)."""
+        config, _ = cls.objects.get_or_create(gom_id=default_gom_id())
         return config
 
 
@@ -2110,6 +2178,11 @@ class ItemVitrine(models.Model):
     Pode ser cadastrado diretamente pela GOM ou transferido a partir de
     slots não claimados de Caixas internacionais que chegaram na casa da GOM.
     """
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='itens_vitrine',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono do item de pronta entrega.')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         DISPONIVEL = 'DISPONIVEL', 'Disponível à Pronta Entrega'
         RESERVADO = 'RESERVADO', 'Reservado'
@@ -2255,6 +2328,11 @@ class GOMNotification(models.Model):
     Notificação operacional para a GOM (administração).
     Categoriza eventos em tempo real como Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros.
     """
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='notificacoes',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM que recebe a notificação.')
+    objects = scoped_manager('gom')
+
     class NotificationType(models.TextChoices):
         CLAIM = 'CLAIM', 'Claim / Reserva de Photocard'
         PACKAGE_REQUEST = 'PACKAGE_REQUEST', 'Solicitação de Envio Nacional'
