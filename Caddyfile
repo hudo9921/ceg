@@ -7,5 +7,6 @@ valcegs.duckdns.org {
 }
 
 :80 {
-    reverse_proxy ceg-web:8000
+    # Acesso HTTP pelo IP cru: redireciona para o domínio com HTTPS (cookies são Secure).
+    redir https://valcegs.duckdns.org{uri} permanent
 }

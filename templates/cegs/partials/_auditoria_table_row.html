@@ -170,7 +170,7 @@
                     participant_phone: '{{ log.participant_phone|default:""|escapejs }}',
                     old_value: '{{ log.old_value|default:""|escapejs }}',
                     new_value: '{{ log.new_value|default:""|escapejs }}',
-                    metadata: {{ log.metadata|default:"{}"|safe }}
+                    metadata: {{ log.metadata|json_attr:"{}" }}
                 })"
                 class="px-2.5 py-1 text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:text-pink-800 dark:hover:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-950/40 rounded-lg transition border border-pink-200 dark:border-pink-800/40 cursor-pointer">
             Detalhes

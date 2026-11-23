@@ -14,6 +14,16 @@ from apps.auth_otp.services import OTPService
 from apps.analytics.services import AnalyticsService
 
 
+def _real_png_bytes():
+    """PNG válido gerado pelo Pillow (uploads inválidos agora são recusados)."""
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new('RGB', (8, 8), 'pink').save(buf, format='PNG')
+    return buf.getvalue()
+
+
+
 class CEGConcurrencyAndStandbyTests(TransactionTestCase):
     def setUp(self):
         ClaimService.reset_in_memory_counters()
@@ -642,7 +652,7 @@ class CreationsHubIntegrationTests(TestCase):
         from django.urls import reverse
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        tiny_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+        tiny_png = _real_png_bytes()
         uploaded_banner = SimpleUploadedFile("ceg_header.png", tiny_png, content_type="image/png")
 
         post_data = {
@@ -1871,7 +1881,7 @@ class UpdateCEGViewTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.force_login(self.staff_user)
         # 1. Upload de imagem
-        image_file = SimpleUploadedFile("banner_teste.jpg", b"fake_image_content", content_type="image/jpeg")
+        image_file = SimpleUploadedFile("banner_teste.jpg", _real_png_bytes(), content_type="image/jpeg")
         res = self.client.post(f'/ceg/{self.ceg.slug}/edit/', {
             'title': self.ceg.title,
             'banner_file': image_file

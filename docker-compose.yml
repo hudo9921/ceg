@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-valcegs}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-valcegs_secure_password_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
       POSTGRES_DB: ${POSTGRES_DB:-valcegs_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -31,10 +31,13 @@ services:
     container_name: valcegs-web
     restart: unless-stopped
     env_file: .env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/1}
     expose:
       - "8000"
+    # Apenas localhost: o acesso público passa pelo Caddy (HTTPS).
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,7 +50,9 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      - "8080:8080"
+      # Apenas localhost: o Django usa a rede interna (valcegs-evolution:8080).
+      # Para abrir o manager da Evolution: ssh -L 8080:localhost:8080 ubuntu@<servidor>
+      - "127.0.0.1:8080:8080"
     volumes:
       - evolution_instances:/evolution/instances
       - evolution_store:/evolution/store

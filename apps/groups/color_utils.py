@@ -52,14 +52,9 @@ def extract_dominant_color(image_source, default_color: str = '#EC4899') -> str:
             # URL externa HTTP/HTTPS
             elif clean_str.startswith(('http://', 'https://')):
                 try:
-                    import urllib.request
-                    req = urllib.request.Request(
-                        clean_str,
-                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                    )
-                    with urllib.request.urlopen(req, timeout=3.5) as resp:
-                        image_bytes = resp.read()
-                        pil_image = Image.open(io.BytesIO(image_bytes))
+                    from apps.core.net import fetch_public_url
+                    image_bytes = fetch_public_url(clean_str, timeout=3.5)
+                    pil_image = Image.open(io.BytesIO(image_bytes))
                 except Exception as e:
                     logger.warning(f"Erro ao baixar imagem externa para cor ({clean_str[:60]}...): {e}")
 
@@ -78,8 +73,10 @@ def extract_dominant_color(image_source, default_color: str = '#EC4899') -> str:
 
                     # 1. Tenta caminho no MEDIA_ROOT
                     if hasattr(settings, 'MEDIA_ROOT') and settings.MEDIA_ROOT:
-                        full_local = os.path.join(settings.MEDIA_ROOT, storage_path)
-                        if os.path.exists(full_local):
+                        media_root = os.path.realpath(settings.MEDIA_ROOT)
+                        full_local = os.path.realpath(os.path.join(media_root, storage_path))
+                        # Bloqueia path traversal (../../) para fora do MEDIA_ROOT
+                        if full_local.startswith(media_root + os.sep) and os.path.exists(full_local):
                             pil_image = Image.open(full_local)
 
                     # 2. Tenta no default_storage

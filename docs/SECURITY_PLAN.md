@@ -26,12 +26,19 @@
 - [x] Convenção única: anônimo → redirect para o login (ou JSON 401); autenticado sem staff → 403 (página ou JSON).
 
 ## Fase 3 — Hardening da Plataforma
-- [ ] Settings: `DEBUG=False` por padrão, `SECRET_KEY` obrigatória, cookies seguros, HSTS, `SECURE_PROXY_SSL_HEADER`.
-- [ ] Docker: portas 8000/8080 apenas em `127.0.0.1`; sem senha padrão do Postgres.
-- [ ] CDN: versões fixas + SRI; remover `|safe` em `_auditoria_table_row.html`.
-- [ ] Uploads: rejeitar arquivos que o Pillow não abre; bloquear IPs privados em fetch server-side (crop, `color_utils`).
-- [ ] Admin: caminho não óbvio, rate limit de login, 2FA para staff.
-- [ ] Logging de eventos de segurança sem PII em texto claro.
+- [x] Settings: `DEBUG=False` por padrão, `SECRET_KEY` obrigatória fora do DEBUG, cookies `Secure`/`HttpOnly`/`SameSite`, HSTS (30 dias), `SECURE_PROXY_SSL_HEADER`, nosniff, referrer policy, COOP, `X_FRAME_OPTIONS=DENY`.
+- [x] CI roda `check --deploy --fail-level WARNING` (silenciados apenas W005/W008/W021, com justificativa em settings).
+- [x] Docker: portas 8000/8080 apenas em `127.0.0.1`; `POSTGRES_PASSWORD` obrigatória; Redis ligado ao Django (`REDIS_URL`).
+- [x] Caddy: `:80` (IP cru) redireciona para `https://valcegs.duckdns.org`.
+- [x] CDN: versões fixas em todas as libs + SRI (exceto Tailwind Play CDN, que não envia CORS — resolver com build local do Tailwind).
+- [x] XSS: `|safe` removido; JSON embutido em `<script>`/atributos via filtros `json_embed`/`json_attr` (`apps/core/templatetags`).
+- [x] Uploads: arquivos que o Pillow não abre são recusados (`InvalidImageError`), mensagem amigável via middleware.
+- [x] SSRF: `apps/core/net.py:fetch_public_url` (só http/https, bloqueia IPs internos inclusive em redirects, limite de tamanho) no crop e no `color_utils`; path traversal bloqueado no `color_utils`.
+- [x] Admin: rate limit de login (10 falhas / 15 min por IP e por usuário, HTTP 429) em `apps/core/admin_throttle.py`.
+- [x] Logging de segurança (logger `security`: logins staff, bloqueios, acessos negados; OTP sem código e com telefone mascarado).
+- [ ] **Adiado:** 2FA para staff (`django-otp` + cadastro de TOTP) — exige fluxo de cadastro do dispositivo; fazer antes de liberar endereços (Fase 5).
+- [ ] **Não feito por decisão:** mudar o caminho `/admin/` — segurança por obscuridade com baixo ganho após o rate limit, e `/admin/login/` está fixo em dezenas de pontos.
+- [ ] **Pendente (performance + CSP):** build local do Tailwind para remover o Play CDN e permitir uma Content-Security-Policy.
 
 ## Fase 4 — Fundações de Proteção de Dados (LGPD)
 - [ ] Campos criptografados para endereço/CEP/CPF (chave própria em env var).

@@ -94,6 +94,12 @@ O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Amp
 - **`valcegs-evolution`:** Evolution API v2.3.0 para envio e recebimento de OTP e notificações via WhatsApp.
 - **`valcegs-caddy`:** Proxy reverso com SSL automático (Let's Encrypt / DuckDNS / sslip.io).
 
+### Segurança da infraestrutura
+- Apenas o Caddy (80/443) é público; Django (8000), Evolution (8080) e Postgres (5432) escutam só em `127.0.0.1`.
+- Manager da Evolution API: `ssh -L 8080:localhost:8080 ubuntu@<servidor>` e abrir `http://localhost:8080`.
+- `.env` do servidor precisa de `SECRET_KEY`, `POSTGRES_PASSWORD` e `DEBUG=False`. Desenvolvimento local usa `DEBUG=True` (ver `.env.example`).
+- Detalhes e pendências: [docs/SECURITY_PLAN.md](SECURITY_PLAN.md).
+
 ### Migração Neon -> Oracle Local
 Para migrar bancos de dados do Neon para a Oracle com 1 comando:
 ```bash

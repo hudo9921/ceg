@@ -5,12 +5,15 @@ Toda view exclusiva da GOM/organização deve herdar `StaffRequiredMixin` (ou us
 `staff_required`). O teste `apps/core/tests.py` percorre todas as rotas e falha se
 uma rota não pública responder 200 para visitantes anônimos ou joiners.
 """
+import logging
 from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
+
+security_logger = logging.getLogger('security')
 
 STAFF_LOGIN_URL = '/admin/login/'
 DENIED_MESSAGE = 'Acesso restrito ao organizador.'
@@ -41,6 +44,8 @@ def deny_staff_access(request):
             status=status,
         )
     if request.user.is_authenticated:
+        security_logger.warning("Acesso staff negado (usuário=%s, rota=%s)",
+                                request.user.get_username(), request.path)
         raise PermissionDenied(DENIED_MESSAGE)
     messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
     return redirect_to_login(request.get_full_path(), STAFF_LOGIN_URL)

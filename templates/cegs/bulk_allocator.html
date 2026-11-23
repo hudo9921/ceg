@@ -7,8 +7,8 @@
 <script id="allocator-data" type="application/json">
 {
     "cegSlug": "{{ ceg.slug|default:'' }}",
-    "matrix": {{ matrix_json|safe|default:"{}" }},
-    "participants": {{ participants_json|safe|default:"[]" }}
+    "matrix": {{ matrix_json|json_embed:"{}" }},
+    "participants": {{ participants_json|json_embed:"[]" }}
 }
 </script>
 

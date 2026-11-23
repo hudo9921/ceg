@@ -6,15 +6,29 @@ K-pop Group Order (CEG) Management Platform.
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Carrega variáveis de ambiente de .env se existir
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kr6krlgapr$0xjn!hb-uio%p=5pypxe^sk3t9$y%(uzc0^y4fw')
 
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
+def env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None or value.strip() == '':
+        return default
+    return value.strip().lower() in ('true', '1', 'yes', 'on')
+
+
+# Seguro por padrão: desenvolvimento local precisa de DEBUG=True no .env (ver .env.example).
+DEBUG = env_bool('DEBUG', False)
+
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("SECRET_KEY é obrigatória quando DEBUG=False.")
+    SECRET_KEY = 'django-insecure-dev-only-key-nao-use-em-producao'
 
 # Domínios Permitidos
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '*')
@@ -66,6 +80,7 @@ INSTALLED_APPS = [
     'apps.participants',
     'apps.auth_otp',
     'apps.analytics',
+    'apps.core',
 ]
 
 MIDDLEWARE = [
@@ -76,6 +91,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.core.admin_throttle.AdminLoginThrottleMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'apps.cegs.middleware.UploadSizeExceptionMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -97,6 +113,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.participants.context_processors.current_participant',
             ],
+            'builtins': ['apps.core.templatetags.json_embed'],
         },
     },
 ]
@@ -212,3 +229,71 @@ ZAPI_CLIENT_TOKEN = os.getenv('ZAPI_CLIENT_TOKEN', '')
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Permite formulários grandes de alocação em lote
+
+# ==============================================================================
+# Segurança HTTP (produção). O redirect HTTP -> HTTPS é feito pelo Caddy.
+# ==============================================================================
+# O Caddy informa o protocolo original; sem isso o Django acha que tudo é HTTP.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', 60 * 60 * 24 * 14))  # 14 dias
+# CSRF_COOKIE_HTTPONLY fica False: scripts do front leem o cookie csrftoken via getCookie().
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Cookies só trafegam por HTTPS fora do DEBUG (SECURE_COOKIES=False apenas para emergências).
+SESSION_COOKIE_SECURE = env_bool('SECURE_COOKIES', not DEBUG)
+CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
+
+# HSTS: o navegador passa a exigir HTTPS. Comece baixo e aumente após validar.
+SECURE_HSTS_SECONDS = 0 if DEBUG else int(os.getenv('SECURE_HSTS_SECONDS', 60 * 60 * 24 * 30))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+# Avisos do `check --deploy` aceitos conscientemente (o CI falha em qualquer outro):
+SILENCED_SYSTEM_CHECKS = [
+    'security.W005',  # HSTS includeSubDomains: não há subdomínios próprios
+    'security.W008',  # SECURE_SSL_REDIRECT: o redirect HTTP -> HTTPS é feito pelo Caddy
+    'security.W021',  # HSTS preload: compromisso de longo prazo, avaliar depois
+]
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
+
+# ==============================================================================
+# Cache compartilhado (Redis no Docker; memória local em dev/testes).
+# Usado pelo rate limit do login do admin, que precisa valer entre os workers.
+# ==============================================================================
+REDIS_URL = os.getenv('REDIS_URL', '')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'KEY_PREFIX': 'valcegs',
+        }
+    }
+else:
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+
+# ==============================================================================
+# Logging: eventos de segurança vão para o stdout do container (docker logs).
+# ==============================================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {'format': '{asctime} {levelname} {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'},
+    },
+    'loggers': {
+        'django.security': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+        'security': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'apps.auth_otp': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+    },
+}

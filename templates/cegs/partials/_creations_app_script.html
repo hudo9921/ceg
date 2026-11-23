@@ -4,11 +4,11 @@
     "currentCategory": "{{ category_filter|default:'all' }}",
     "selectedCaixaId": "{{ preselected_caixa_id|default:'' }}",
     "autoOpenModal": "{{ auto_open_modal|default:'' }}",
-    "groups": {{ groups_json|safe|default:"[]" }},
-    "participants": {{ participants_json|safe|default:"[]" }},
-    "caixas": {{ caixas_json|safe|default:"[]" }},
+    "groups": {{ groups_json|json_embed:"[]" }},
+    "participants": {{ participants_json|json_embed:"[]" }},
+    "caixas": {{ caixas_json|json_embed:"[]" }},
     "itensIndividuais": [],
-    "tiposItem": {{ tipos_item_json|safe|default:"[]" }}
+    "tiposItem": {{ tipos_item_json|json_embed:"[]" }}
 }
 </script>
 

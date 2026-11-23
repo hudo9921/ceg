@@ -32,6 +32,13 @@ jobs:
       - name: Run test suite
         run: python manage.py test apps --noinput
 
+      - name: Django deploy security checklist
+        env:
+          DEBUG: "False"
+          SECRET_KEY: "ci-deploy-check-${{ github.run_id }}-not-a-real-secret-value-0123456789"
+          ALLOWED_HOSTS: "valcegs.duckdns.org"
+        run: python manage.py check --deploy --fail-level WARNING
+
   deploy:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
