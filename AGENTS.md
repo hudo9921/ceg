@@ -5,6 +5,7 @@
 > **2. NUNCA USE EMOJIS BRUTOS:** Utilize 100% Lucide Icons (`stroke-width="1.75"`).
 > **3. PALETA BIPOLAR OBRIGATÓRIA:** Todo componente deve suportar Soft Y2K (Modo Claro) e Cyber-Luxury (Modo Escuro com `dark:`).
 > **4. PERMISSÕES CENTRALIZADAS:** Views da GOM herdam `apps.core.permissions.StaffRequiredMixin` (nunca crie outra cópia). Quem precisa de 2FA é decidido só em `apps.core.two_factor.requires_two_factor` (novos papéis de GOM entram ali). Rotas públicas ou do joiner precisam ser registradas em `apps/core/tests.py`, senão a matriz de permissões falha.
+> **4.1. SEM CDN EXTERNO:** bibliotecas JS/CSS ficam em `static/vendor/` e cores/tema do Tailwind em `static/src/tailwind.theme.js` (a CSP bloqueia scripts de outros domínios).
 > **5. NUNCA USE `|safe` PARA DADOS:** JSON em templates usa `{{ x|json_embed }}` (em `<script>`) ou `{{ x|json_attr }}` (em atributos). Download de URL informada por usuário usa `apps.core.net.fetch_public_url` (anti-SSRF).
 > **6. DADOS PESSOAIS (LGPD):** endereço, CEP, CPF e afins usam `apps.core.fields.EncryptedTextField`; telas de staff que exibem esses dados chamam `apps.core.privacy.log_pii_access`.
 > **7. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.

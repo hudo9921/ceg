@@ -108,6 +108,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'apps.core.security_headers.SecurityHeadersMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -145,8 +146,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.participants.context_processors.current_participant',
+                'apps.core.context_processors.frontend',
             ],
-            'builtins': ['apps.core.templatetags.json_embed'],
+            'builtins': ['apps.core.templatetags.json_embed', 'django.templatetags.static'],
         },
     },
 ]
@@ -187,6 +189,14 @@ LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = True
+
+# Tailwind: 'build' usa static/css/tailwind.css (gerado por `npm run build:css`, feito no
+# Docker); 'cdn' usa o Play CDN e só serve para desenvolvimento.
+TAILWIND_MODE = os.getenv('TAILWIND_MODE', 'cdn' if DEBUG else 'build')
+if TAILWIND_MODE not in ('build', 'cdn'):
+    raise ImproperlyConfigured("TAILWIND_MODE deve ser 'build' ou 'cdn'.")
+# Emergência: True envia a CSP só como relatório (não bloqueia nada).
+CSP_REPORT_ONLY = env_bool('CSP_REPORT_ONLY', False)
 
 # Static Files (WhiteNoise com compressão e hash para cache)
 STATIC_URL = '/static/'

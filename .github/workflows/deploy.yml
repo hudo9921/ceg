@@ -27,6 +27,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Audit dependencies for known vulnerabilities
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --progress-spinner off
+
       - name: Check for missing migrations
         run: python manage.py makemigrations --check --dry-run
 
@@ -50,6 +55,7 @@ jobs:
           docker run --rm --entrypoint sh ceg-ci -c '
             test "$(whoami)" = app &&
             test -f /app/staticfiles/staticfiles.json &&
+            grep -q "css/tailwind.css" /app/staticfiles/staticfiles.json &&
             test ! -e /app/.env && test ! -e /app/backups'
 
   deploy:
@@ -70,35 +76,6 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/ceg
-            touch .env && chmod 600 .env
-
-            # Completa o .env do servidor. NUNCA sobrescreve um valor existente
-            # (trocar FIELD_ENCRYPTION_KEY tornaria os endereços ilegíveis).
-            ensure_var() {
-              if ! grep -q "^$1=." .env; then
-                sed -i "/^$1=\s*$/d" .env
-                printf '%s=%s\n' "$1" "$2" >> .env
-                echo "[env] $1 adicionada ao .env"
-              fi
-            }
-            # Senha com que o volume do Postgres foi inicializado (antigo default do compose).
-            ensure_var POSTGRES_PASSWORD "valcegs_secure_password_2026"
-            ensure_var SECRET_KEY "$(openssl rand -hex 48)"
-            [ -n "$FIELD_ENCRYPTION_KEY" ] && ensure_var FIELD_ENCRYPTION_KEY "$FIELD_ENCRYPTION_KEY"
-            [ -n "$BACKUP_PASSPHRASE" ] && ensure_var BACKUP_PASSPHRASE "$BACKUP_PASSPHRASE"
-            # Produção nunca roda com DEBUG ligado.
-            sed -i 's/^DEBUG=.*/DEBUG=False/' .env
-            # A porta 8080 da Evolution agora só escuta em localhost: o Django usa a rede interna.
-            sed -i -E 's#^EVOLUTION_API_URL=https?://(localhost|127\.0\.0\.1|150\.136\.166\.17)(:8080)?/?$#EVOLUTION_API_URL=http://valcegs-evolution:8080#' .env
-
-            # Variáveis obrigatórias: sem elas o container não sobe. Aborta antes do build
-            # para que a versão atual continue no ar.
-            for var in SECRET_KEY POSTGRES_PASSWORD FIELD_ENCRYPTION_KEY; do
-              grep -q "^${var}=." .env || { echo "ERRO: defina ${var} no .env do servidor"; exit 1; }
-            done
-            BACKUP_DIR=/home/ubuntu/ceg-backups bash scripts/backup_database.sh
-            git reset --hard
-            git pull origin main
-            chmod +x entrypoint.sh scripts/*.sh || true
-            docker compose up -d --build
-            docker image prune -f
+            git fetch origin main
+            git reset --hard origin/main
+            bash scripts/deploy.sh

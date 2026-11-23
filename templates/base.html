@@ -16,81 +16,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind: CSS compilado em produção; Play CDN só no desenvolvimento (settings.TAILWIND_MODE) -->
+    {% if tailwind_cdn %}
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-                    },
-                    screens: {
-                        'xs': '480px',
-                    },
-                    colors: {
-                        kpop: {
-                            50: '#fdf2f8',
-                            100: '#fce7f3',
-                            200: '#fbcfe8',
-                            300: '#f9a8d4',
-                            400: '#f472b6',
-                            500: '#ec4899',
-                            600: '#db2777',
-                            700: '#be185d',
-                            800: '#9d174d',
-                            900: '#831843',
-                        },
-                        pastel: {
-                            pink: '#FFE5EC',
-                            rose: '#FFC2D1',
-                            deeprose: '#FB6F92',
-                            sky: '#E0F2FE',
-                            blue: '#BAE6FD',
-                            lavender: '#F3E8FF',
-                            lilac: '#E9D5FF',
-                            peach: '#FFEDD5',
-                            mint: '#DCFCE7'
-                        },
-                        // Paleta Bipolar: Soft Y2K (Modo Claro) e Cyber-Luxury (Modo Escuro)
-                        cyber: {
-                            obsidian: '#0B0A0F',
-                            surface: '#14121B',
-                            elevated: '#1A1724',
-                            silver: '#E2E8F0',
-                            neon: '#F472B6',
-                            electric: '#C084FC',
-                            ice: '#38BDF8',
-                            border: 'rgba(255, 255, 255, 0.08)'
-                        },
-                        y2k: {
-                            bg: '#F8F7FA',
-                            surface: '#FFFFFF',
-                            text: '#1E1B26',
-                            lavender: '#E9D5FF',
-                            mint: '#CCFBF1',
-                            blush: '#FCE7F3',
-                            butter: '#FEF9C3',
-                            border: 'rgba(233, 213, 255, 0.6)'
-                        }
-                    },
-                    boxShadow: {
-                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                        'glow': '0 0 35px -5px var(--era-accent, rgba(244,114,182,0.35))',
-                        'cyber': '0 0 15px -3px rgba(192, 132, 252, 0.25)',
-                        'y2k': '0 4px 20px -2px rgba(233, 213, 255, 0.4)'
-                    },
-                    animation: {
-                        'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@1.78.0/dist/umd/lucide.min.js" integrity="sha384-sIX/YUxYX8m6ScaDw5aKBBB6bNORBl44BK0Zh9sp1AX1rkdtT/fHe0RwajVfOtOC" crossorigin="anonymous"></script>
+    <script src="{% static 'src/tailwind.theme.js' %}"></script>
+    {% else %}
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    {% endif %}
+    <!-- Lucide Icons (servido localmente: static/vendor) -->
+    <script src="{% static 'vendor/lucide-1.78.0.min.js' %}"></script>
     <script>
         function initLucideIcons() {
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -188,13 +122,12 @@
             };
         }
     </script>
-    <!-- Alpine.js CDN -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" integrity="sha384-9Ax3MmS9AClxJyd5/zafcXXjxmwFhZCdsT6HJoJjarvCaAkJlk5QDzjLJm+Wdx5F" crossorigin="anonymous"
-        onerror="this.onerror=null; this.src='https://unpkg.com/alpinejs@3.14.9/dist/cdn.min.js'"></script>
+    <!-- Alpine.js (servido localmente: static/vendor) -->
+    <script defer src="{% static 'vendor/alpinejs-3.14.9.min.js' %}"></script>
 
-    <!-- Cropper.js CDN (Para Estúdio de Recorte de Photocards) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" integrity="sha384-oMy41mb/qJnpJlpXOF57hSu2KGi47l/UV9+tPNrBOs7/ap5Vubj/3phrCtjutHMQ" crossorigin="anonymous" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" integrity="sha384-r+ljwOAhwY4/kdyzMnuBg7MEVoWpTMp5EYUDntB/E9qzNwL9dAEcNrb2XaV+mJc2" crossorigin="anonymous"></script>
+    <!-- Cropper.js (Estúdio de Recorte de Photocards, servido localmente) -->
+    <link rel="stylesheet" href="{% static 'vendor/cropperjs-1.5.13.min.css' %}">
+    <script src="{% static 'vendor/cropperjs-1.5.13.min.js' %}"></script>
     <style>
         [x-cloak] { display: none !important; }
 

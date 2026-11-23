@@ -10,6 +10,9 @@ planilhas/*
 *.backup*
 media/
 staticfiles/
+node_modules/
+# CSS gerado por `npm run build:css` (o Docker compila no build)
+static/css/tailwind.css
 .env
 .env.*
 .env.oracle

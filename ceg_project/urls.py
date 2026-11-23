@@ -12,6 +12,12 @@ from django.http import HttpResponse
 from apps.participants.privacy_views import PrivacyPolicyView
 
 def health_check(request):
+    """Usado pelo deploy para confirmar que a nova versão subiu e alcança o banco."""
+    from django.db import connection
+    try:
+        connection.ensure_connection()
+    except Exception:
+        return HttpResponse("DB indisponivel", status=503, content_type="text/plain")
     return HttpResponse("OK", content_type="text/plain")
 
 urlpatterns = [

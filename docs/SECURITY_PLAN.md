@@ -38,7 +38,7 @@
 - [x] Logging de segurança (logger `security`: logins staff, bloqueios, acessos negados; OTP sem código e com telefone mascarado).
 - [x] 2FA para staff entregue na Fase 4.6 (ver abaixo).
 - [ ] **Não feito por decisão:** mudar o caminho `/admin/` — segurança por obscuridade com baixo ganho após o rate limit, e `/admin/login/` está fixo em dezenas de pontos.
-- [ ] **Pendente (performance + CSP):** build local do Tailwind para remover o Play CDN e permitir uma Content-Security-Policy.
+- [x] Build local do Tailwind + CSP — feito na Fase 4.7.
 
 ## Fase 4 — Fundações de Proteção de Dados (LGPD)
 - [x] `EncryptedTextField` (Fernet, `apps/core/fields.py`) com chave própria `FIELD_ENCRYPTION_KEY` (rotação via `rotate_encryption_keys`). Endereço/CEP do `PacoteNacional` já criptografados (migração `cegs.0032` criptografa dados legados).
@@ -57,7 +57,7 @@
 - [x] Cabeçalhos no Caddy: CSP mínima, `Permissions-Policy`, sem `Server`.
 - [x] `pip-audit`: nenhuma vulnerabilidade conhecida nas dependências (23/11/2026).
 - [ ] **Com você:** trocar a senha do admin em `/admin/password_change/` caso ainda seja a do `.env` (ex.: `admin123`).
-- [ ] **Pendente:** CSP completa exige build local do Tailwind (o Play CDN precisa de scripts inline/eval).
+- [x] CSP completa — feita na Fase 4.7.
 
 ## Fase 4.6 — 2FA obrigatório no backoffice
 - [x] TOTP (`django-otp`) + 10 códigos de recuperação de uso único; QR code gerado no servidor.
@@ -65,6 +65,15 @@
 - [x] `is_staff_user` também exige sessão verificada (defesa em profundidade).
 - [x] Tentativas erradas com espera crescente (throttling do django-otp); sessão de staff expira em 12h (`STAFF_SESSION_AGE`).
 - [x] Recuperação: `python manage.py reset_2fa <usuario>` ou excluir o dispositivo no admin (seção OTP).
+
+## Fase 4.7 — Frontend sem CDN, CSP e deploy automatizado
+- [x] Tailwind compilado no build do Docker (estágio Node); Play CDN só em desenvolvimento.
+- [x] Alpine, Lucide, Cropper e Chart.js servidos de `static/vendor/` (arquivos conferidos contra os hashes SRI anteriores).
+- [x] CSP no Django: scripts só do próprio site, `connect-src 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `upgrade-insecure-requests`. Ainda exige `'unsafe-inline'`/`'unsafe-eval'` (scripts inline nos templates e Alpine.js).
+- [x] `ALLOWED_HOSTS` explícito em produção.
+- [x] Deploy versionado em `scripts/deploy.sh`: troca a senha padrão do Postgres (pública no histórico do git), confere `/health/` com banco e instala o cron de backup/retenção.
+- [x] CI roda `pip-audit` a cada push.
+- [ ] **Futuro:** remover `'unsafe-eval'` exigiria o build CSP do Alpine (reescrever expressões dos templates); backups fora do servidor (ex.: bucket R2 com criptografia).
 
 ## Depois deste plano
 - **Fase 5:** endereço/CEP no perfil, pré-preenchendo a solicitação da Caixinha.

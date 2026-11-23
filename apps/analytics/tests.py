@@ -407,7 +407,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertEqual(summary['avg_ticket_per_buyer'], 40.00)
 
         # Script do Chart.js
-        self.assertContains(res, 'chart.umd.min.js')
+        self.assertContains(res, 'vendor/chartjs-4.4.1.umd.min.js')
 
         # JSON dos gráficos no script tag
         content = res.content.decode('utf-8')

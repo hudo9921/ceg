@@ -1,3 +1,5 @@
-# Garante que scripts shell sempre mantenham quebras de linha LF no Linux/Render
+# Scripts executados no Linux (servidor/containers) precisam de LF.
 *.sh text eol=lf
 build.sh text eol=lf
+Caddyfile text eol=lf
+Dockerfile text eol=lf
