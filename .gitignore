@@ -13,6 +13,7 @@ staticfiles/
 node_modules/
 # CSS gerado por `npm run build:css` (o Docker compila no build)
 static/css/tailwind.css
+static/js/lucide-subset.min.js
 .env
 .env.*
 .env.oracle

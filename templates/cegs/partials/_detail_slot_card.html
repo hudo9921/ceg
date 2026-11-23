@@ -142,7 +142,7 @@
     <div class="rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-white/10 aspect-[2/3] w-full relative group/img cursor-pointer shadow-2xs"
          @click.stop="openZoom('{{ slot.item_definition.image_url|escapejs }}', '{{ slot.item_definition.name|escapejs }}')"
          title="Clique para ampliar o photocard">
-        <img src="{{ slot.item_definition.image_url }}" alt="{{ slot.item_definition.name }}"
+        <img loading="lazy" decoding="async" src="{{ slot.item_definition.image_url }}" alt="{{ slot.item_definition.name }}"
              class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300">
         <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-[10px] text-white font-bold gap-1 backdrop-blur-2xs">
             <i data-lucide="maximize-2" class="w-3 h-3" stroke-width="1.75"></i>

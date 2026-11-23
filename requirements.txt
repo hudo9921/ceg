@@ -14,3 +14,4 @@ redis>=5.0
 cryptography>=42.0
 django-otp>=1.5
 qrcode>=7.4
+Brotli>=1.1  # WhiteNoise gera .br dos estáticos

@@ -1,12 +1,16 @@
 {
   "name": "valcegs-frontend",
   "private": true,
-  "description": "Build do CSS (Tailwind) da plataforma ValCegs.",
+  "description": "Build do frontend da plataforma ValCegs (CSS do Tailwind e subconjunto de ícones Lucide).",
   "scripts": {
+    "build": "npm run build:css && npm run build:icons",
     "build:css": "tailwindcss -c tailwind.config.js -i static/src/tailwind.css -o static/css/tailwind.css --minify",
+    "build:icons": "node scripts/build-lucide.mjs",
     "watch:css": "tailwindcss -c tailwind.config.js -i static/src/tailwind.css -o static/css/tailwind.css --watch"
   },
   "devDependencies": {
+    "esbuild": "0.25.0",
+    "lucide": "1.78.0",
     "tailwindcss": "3.4.17"
   }
 }

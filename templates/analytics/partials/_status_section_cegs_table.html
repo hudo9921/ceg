@@ -54,7 +54,7 @@
                         <td class="py-3 px-4">
                             <div class="flex items-center gap-3">
                                 {% if c.banner_url or c.image_url %}
-                                    <img src="{{ c.banner_url|default:c.image_url }}" alt="{{ c.title }}"
+                                    <img loading="lazy" decoding="async" src="{{ c.banner_url|default:c.image_url }}" alt="{{ c.title }}"
                                          @click="zoomPhoto = '{{ c.banner_url|default:c.image_url }}'"
                                          class="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
                                          title="Clique para ampliar o banner da CEG" />

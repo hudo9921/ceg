@@ -3,6 +3,20 @@ services:
     image: postgres:16-alpine
     container_name: valcegs-db
     restart: unless-stopped
+    # Ajuste para a VM (Postgres vem configurado para 128 MB de cache por padrão).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=4GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=128MB
+      - -c
+      - random_page_cost=1.1
+    shm_size: 256mb
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-valcegs}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}

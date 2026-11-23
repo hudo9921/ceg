@@ -2,7 +2,7 @@
 Content-Security-Policy e Permissions-Policy.
 
 Todos os scripts e estilos são servidos pelo próprio site (static/vendor + Tailwind
-compilado); só as fontes vêm do Google Fonts. 'unsafe-inline' e 'unsafe-eval' continuam
+compilado), inclusive as fontes (static/fonts). 'unsafe-inline' e 'unsafe-eval' continuam
 necessários porque os templates usam <script> inline e o Alpine.js avalia expressões
 (x-data, @click) com `new Function`. Mesmo assim a política impede carregar scripts de
 qualquer outro domínio, enviar dados para fora (connect-src/form-action) e o site ser
@@ -13,13 +13,13 @@ from django.conf import settings
 
 def build_csp() -> str:
     script_src = ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
-    if settings.TAILWIND_MODE == 'cdn':  # só desenvolvimento
+    if settings.FRONTEND_MODE == 'dev':  # Play CDN do Tailwind, só desenvolvimento
         script_src.append('https://cdn.tailwindcss.com')
     directives = {
         'default-src': ["'self'"],
         'script-src': script_src,
-        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-        'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'font-src': ["'self'", 'data:'],
         # Fotos de photocards podem vir de URLs externas e do R2 (https), além de uploads em blob/data.
         'img-src': ["'self'", 'data:', 'blob:', 'https:'],
         'media-src': ["'self'", 'blob:', 'https:'],

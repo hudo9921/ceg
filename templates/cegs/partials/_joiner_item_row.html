@@ -32,7 +32,7 @@
                class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
                :title="'Abrir CEG: ' + item.ceg_titulo">
                 <template x-if="item.image_url">
-                    <img :src="item.image_url" :alt="item.nome"
+                    <img loading="lazy" decoding="async" :src="item.image_url" :alt="item.nome"
                          class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
                 </template>
                 <template x-if="!item.image_url">
@@ -47,7 +47,7 @@
                        class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
                        title="Abrir anúncio Mercari">
                         <template x-if="item.image_url">
-                            <img :src="item.image_url" :alt="item.nome"
+                            <img loading="lazy" decoding="async" :src="item.image_url" :alt="item.nome"
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
                         </template>
                         <template x-if="!item.image_url">
@@ -58,7 +58,7 @@
                 <template x-if="!item.link_pedido">
                     <div class="w-full h-full flex items-center justify-center">
                         <template x-if="item.image_url">
-                            <img :src="item.image_url" :alt="item.nome"
+                            <img loading="lazy" decoding="async" :src="item.image_url" :alt="item.nome"
                                  class="w-full h-full object-contain">
                         </template>
                         <template x-if="!item.image_url">

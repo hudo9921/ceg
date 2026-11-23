@@ -60,8 +60,11 @@ ceg/
   - **Modo Claro (Soft Y2K Pastels):** Fundo base `#F8F7FA`, textos `#1E1B26`, lavanda suave `#E9D5FF`, menta `#CCFBF1`, blush `#FCE7F3` e bordas translúcidas.
   - **Modo Escuro (Cyber-Luxury):** Fundo obsidiana `#0B0A0F`, superfícies acrílicas `#14121B` / `#1A1724`, textos prateados `#E2E8F0`, acentos neon pink `#F472B6`, roxo elétrico `#C084FC` e azul gelo `#38BDF8`.
 - **Sistema de Ícones:** 100% Lucide Icons com espessura padrão `stroke-width="1.75"`, inicializados automaticamente com Alpine.js (`icons-refresh`).
-- **Framework CSS:** Tailwind CSS 3.4.17. Tema único em `static/src/tailwind.theme.js` (cores `cyber-*`, `y2k-*`, `kpop-*`...). Produção usa o CSS compilado (`npm run build:css` → `static/css/tailwind.css`, gerado no build do Docker); desenvolvimento (`DEBUG=True`) usa o Play CDN com o mesmo tema (`TAILWIND_MODE`).
+- **Framework CSS:** Tailwind CSS 3.4.17. Tema único em `static/src/tailwind.theme.js` (cores `cyber-*`, `y2k-*`, `kpop-*`...). Produção usa o CSS compilado (`npm run build:css` → `static/css/tailwind.css`, gerado no build do Docker); desenvolvimento (`DEBUG=True`) usa o Play CDN com o mesmo tema (`FRONTEND_MODE=dev`).
 - **Bibliotecas JS/CSS:** servidas pelo próprio site em `static/vendor/` (Alpine 3.14.9, Lucide 1.78.0, Cropper 1.5.13, Chart.js 4.4.1), sem CDN externo — exigência da CSP.
+- **Ícones em produção:** `npm run build:icons` (`scripts/build-lucide.mjs`) gera `static/js/lucide-subset.min.js` só com os ícones citados em templates/código (~180 ícones, 13 KB gzip contra 114 KB do pacote completo). Ícone novo em template entra automaticamente no próximo build.
+- **Fontes:** Outfit e JetBrains Mono servidas localmente (`static/fonts/`, `static/css/fonts.css`), sem Google Fonts.
+- **Cropper.js** só é carregado pelas telas com o estúdio de recorte (`_crop_studio_modal.html`).
 - **Reatividade Leve:** Alpine.js para filtros instantâneos, carrinhos flutuantes, modais e cópia de Pix.
 
 ---
@@ -79,8 +82,8 @@ python manage.py migrate
 python manage.py runserver
 
 # (Opcional) testar o CSS de produção localmente
-npm install; npm run build:css   # ou npm run watch:css
-$env:TAILWIND_MODE = 'build'; python manage.py runserver
+npm install; npm run build        # CSS + subconjunto de ícones (npm run watch:css para o CSS)
+$env:FRONTEND_MODE = 'build'; python manage.py runserver
 
 # Executar testes unitários (ver AGENTS.md para testes rápidos específicos)
 python manage.py test apps.analytics.tests
@@ -105,6 +108,7 @@ O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Amp
 - `.env` do servidor precisa de `SECRET_KEY`, `POSTGRES_PASSWORD` e `DEBUG=False`. Desenvolvimento local usa `DEBUG=True` (ver `.env.example`).
 - `FIELD_ENCRYPTION_KEY` (criptografia de endereços) também é obrigatória — **guarde uma cópia fora do servidor**. `BACKUP_PASSPHRASE` ativa a criptografia dos backups.
 - O deploy (`scripts/deploy.sh`, chamado pelo GitHub Actions) faz: completa o `.env` → backup → build → troca única da senha padrão do Postgres → sobe → confere `/health/` (que também testa o banco) → instala o cron diário de backup (03:00) e de `purge_personal_data` (03:30). Se `/health/` falhar, o job falha e mostra os logs.
+- Desempenho: Caddy comprime as respostas (zstd/gzip); WhiteNoise serve estáticos pré-comprimidos (Brotli) com cache longo; sessões ficam no Redis (`cached_db`); o Postgres tem `shared_buffers`/`work_mem` ajustados no `docker-compose.yml`.
 - Headers de segurança (CSP, Permissions-Policy) saem do Django (`apps/core/security_headers.py`); `CSP_REPORT_ONLY=True` no `.env` é a chave de emergência.
 - Detalhes e pendências: [docs/SECURITY_PLAN.md](SECURITY_PLAN.md).
 

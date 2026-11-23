@@ -9,7 +9,7 @@ TEMPLATES_DIR = Path(settings.BASE_DIR) / 'templates'
 # Único script externo tolerado: o Play CDN do Tailwind, e só no modo de desenvolvimento.
 EXTERNAL_SCRIPT_RE = re.compile(r'<script[^>]+src="https?://(?!cdn\.tailwindcss\.com/)', re.I)
 EXTERNAL_STYLESHEET_RE = re.compile(
-    r'<link[^>]+rel="stylesheet"[^>]+href="https?://(?!fonts\.googleapis\.com/)', re.I)
+    r'<link(?=[^>]*rel="(?:stylesheet|preload|modulepreload|preconnect)")[^>]*href="https?://', re.I)
 
 
 def directives(response):
@@ -25,10 +25,12 @@ class ContentSecurityPolicyTests(TestCase):
         self.assertEqual(csp['base-uri'], ["'self'"])
         self.assertEqual(csp['form-action'], ["'self'"])
         self.assertEqual(csp['connect-src'], ["'self'"])
+        self.assertEqual(csp['font-src'], ["'self'", 'data:'])
+        self.assertEqual(csp['style-src'], ["'self'", "'unsafe-inline'"])
         external = [s for s in csp['script-src'] if s.startswith('http')]
         self.assertLessEqual(set(external), {'https://cdn.tailwindcss.com'})
 
-    @override_settings(TAILWIND_MODE='build')
+    @override_settings(FRONTEND_MODE='build')
     def test_production_mode_uses_compiled_css_and_no_external_scripts(self):
         res = Client().get(reverse('home'))
         csp = directives(res)

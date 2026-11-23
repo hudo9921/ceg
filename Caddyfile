@@ -1,4 +1,6 @@
 (security_headers) {
+    # Compressão das páginas HTML/JSON (estáticos já saem pré-comprimidos pelo WhiteNoise).
+    encode zstd gzip
     header {
         # CSP e Permissions-Policy são enviados pelo Django (apps/core/security_headers.py).
         -Server

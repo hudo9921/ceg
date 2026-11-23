@@ -43,7 +43,7 @@
                             <!-- Foto / Thumbnail -->
                             <td class="py-3 px-3">
                                 {% if slot.item_definition.image_url %}
-                                    <img src="{{ slot.item_definition.image_url }}"
+                                    <img loading="lazy" decoding="async" src="{{ slot.item_definition.image_url }}"
                                          alt="{{ slot.item_definition.name }}"
                                          class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
                                 {% else %}

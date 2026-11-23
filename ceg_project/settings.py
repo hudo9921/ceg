@@ -109,7 +109,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'apps.core.security_headers.SecurityHeadersMiddleware',
-    'django.middleware.gzip.GZipMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -190,11 +189,12 @@ TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = True
 
-# Tailwind: 'build' usa static/css/tailwind.css (gerado por `npm run build:css`, feito no
-# Docker); 'cdn' usa o Play CDN e só serve para desenvolvimento.
-TAILWIND_MODE = os.getenv('TAILWIND_MODE', 'cdn' if DEBUG else 'build')
-if TAILWIND_MODE not in ('build', 'cdn'):
-    raise ImproperlyConfigured("TAILWIND_MODE deve ser 'build' ou 'cdn'.")
+# Frontend: 'build' usa os arquivos gerados por `npm run build` (feito no Docker):
+# static/css/tailwind.css e static/js/lucide-subset.min.js. 'dev' usa o Play CDN do Tailwind
+# e o Lucide completo (static/vendor), sem precisar de Node — só para desenvolvimento.
+FRONTEND_MODE = os.getenv('FRONTEND_MODE', 'dev' if DEBUG else 'build')
+if FRONTEND_MODE not in ('build', 'dev'):
+    raise ImproperlyConfigured("FRONTEND_MODE deve ser 'build' ou 'dev'.")
 # Emergência: True envia a CSP só como relatório (não bloqueia nada).
 CSP_REPORT_ONLY = env_bool('CSP_REPORT_ONLY', False)
 
@@ -320,6 +320,8 @@ if REDIS_URL:
             'KEY_PREFIX': 'valcegs',
         }
     }
+    # Sessão lida do Redis (gravada também no banco): evita uma query por requisição.
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 else:
     CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 

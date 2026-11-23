@@ -27,7 +27,7 @@
                     <div class="flex justify-between items-start gap-3">
                         <div class="flex items-start gap-3 min-w-0">
                             {% if s.banner_url or s.image_url %}
-                                <img src="{{ s.banner_url|default:s.image_url }}" alt="{{ s.ceg_title }}"
+                                <img loading="lazy" decoding="async" src="{{ s.banner_url|default:s.image_url }}" alt="{{ s.ceg_title }}"
                                      @click="zoomPhoto = '{{ s.banner_url|default:s.image_url }}'"
                                      class="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer hover:scale-105 transition flex-shrink-0"
                                      title="Clique para ampliar o banner da CEG" />

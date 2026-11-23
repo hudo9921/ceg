@@ -12,19 +12,18 @@
             document.documentElement.classList.remove('dark');
         }
     </script>
-    <!-- Google Fonts: Outfit (Cyber/High-end) & JetBrains Mono (Tech/Tabular) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Tailwind: CSS compilado em produção; Play CDN só no desenvolvimento (settings.TAILWIND_MODE) -->
-    {% if tailwind_cdn %}
+    <!-- Fontes locais: Outfit (texto) & JetBrains Mono (tabular). Sem Google Fonts (desempenho + LGPD). -->
+    <link rel="preload" href="{% static 'fonts/outfit-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+    <!-- Assets: compilados em produção; Play CDN + Lucide completo no desenvolvimento (settings.FRONTEND_MODE) -->
+    {% if frontend_build %}
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    <script defer src="{% static 'js/lucide-subset.min.js' %}"></script>
+    {% else %}
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="{% static 'src/tailwind.theme.js' %}"></script>
-    {% else %}
-    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    <script defer src="{% static 'vendor/lucide-1.78.0.min.js' %}"></script>
     {% endif %}
-    <!-- Lucide Icons (servido localmente: static/vendor) -->
-    <script src="{% static 'vendor/lucide-1.78.0.min.js' %}"></script>
     <script>
         function initLucideIcons() {
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -125,9 +124,6 @@
     <!-- Alpine.js (servido localmente: static/vendor) -->
     <script defer src="{% static 'vendor/alpinejs-3.14.9.min.js' %}"></script>
 
-    <!-- Cropper.js (Estúdio de Recorte de Photocards, servido localmente) -->
-    <link rel="stylesheet" href="{% static 'vendor/cropperjs-1.5.13.min.css' %}">
-    <script src="{% static 'vendor/cropperjs-1.5.13.min.js' %}"></script>
     <style>
         [x-cloak] { display: none !important; }
 

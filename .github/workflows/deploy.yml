@@ -49,6 +49,11 @@ jobs:
           FIELD_ENCRYPTION_KEY: "PvBl4dRZHZK0Xs-UbheEbyh495jHI5KleOOxXwgYGMs="  # chave descartável, só para o CI
         run: python manage.py check --deploy --fail-level WARNING
 
+      - name: Validate Caddyfile and docker-compose.yml
+        run: |
+          docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:alpine caddy validate --config /etc/caddy/Caddyfile
+          POSTGRES_PASSWORD=ci touch .env && POSTGRES_PASSWORD=ci docker compose config --quiet
+
       - name: Docker image builds (collectstatic, non-root user)
         run: |
           docker build -t ceg-ci .
@@ -56,6 +61,7 @@ jobs:
             test "$(whoami)" = app &&
             test -f /app/staticfiles/staticfiles.json &&
             grep -q "css/tailwind.css" /app/staticfiles/staticfiles.json &&
+            grep -q "js/lucide-subset.min.js" /app/staticfiles/staticfiles.json &&
             test ! -e /app/.env && test ! -e /app/backups'
 
   deploy:
