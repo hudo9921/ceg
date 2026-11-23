@@ -3,3 +3,6 @@
 build.sh text eol=lf
 Caddyfile text eol=lf
 Dockerfile text eol=lf
+# Bibliotecas de terceiros: bytes exatamente como publicados.
+static/vendor/*.js -text
+static/vendor/*.css -text
