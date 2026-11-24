@@ -1,0 +1,26 @@
+{% comment %}Passo 2 do login do joiner: código de 6 dígitos enviado no WhatsApp.{% endcomment %}
+<form action="{% url 'login_otp' %}" method="POST" class="space-y-4">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="verify_otp">
+    <input type="hidden" name="phone" value="{{ phone }}">
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+
+    <p class="text-[15px]">Mandamos um código para <span class="ui-mono font-bold">{{ formatted_phone|default:phone }}</span>.</p>
+
+    {% if dev_code %}
+        <p class="ui-well flex items-center justify-between gap-3 p-3 text-sm">
+            <span>Modo dev: código <strong class="ui-mono">{{ dev_code }}</strong></span>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" onclick="document.querySelector('input[name=code]').value = '{{ dev_code }}'">Preencher</button>
+        </p>
+    {% endif %}
+
+    <label class="block space-y-1.5">
+        <span class="ui-label">Código de 6 dígitos</span>
+        <input type="text" name="code" maxlength="6" pattern="[0-9]{6}" required autofocus autocomplete="one-time-code" inputmode="numeric"
+               value="{{ dev_code|default:'' }}" placeholder="000000" class="ui-input w-full text-center ui-mono !text-3xl !min-h-[64px] tracking-[.3em]">
+    </label>
+
+    <button type="submit" class="ui-btn ui-btn-primary w-full">Entrar</button>
+
+    <a href="{% url 'login_otp' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="block text-center ui-muted text-sm hover:underline">Usar outro número</a>
+</form>

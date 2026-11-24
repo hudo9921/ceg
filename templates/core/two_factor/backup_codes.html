@@ -1,25 +1,13 @@
 {% extends 'core/two_factor/_layout.html' %}
 
 {% block title %}Códigos de recuperação — ValCegs{% endblock %}
-{% block icon %}key-round{% endblock %}
 {% block heading %}{% if first_time %}Verificação ativada{% else %}Novos códigos de recuperação{% endif %}{% endblock %}
-{% block lead %}Guarde estes códigos em um lugar seguro (gerenciador de senhas). Cada um funciona uma única vez se você ficar sem o celular.{% endblock %}
+{% block lead %}Guarde estes códigos num lugar seguro (gerenciador de senhas). Cada um funciona uma única vez se você ficar sem o celular.{% endblock %}
 
 {% block body %}
-<div class="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 rounded-2xl text-xs text-amber-900 dark:text-amber-200 flex gap-2">
-    <i data-lucide="triangle-alert" class="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" stroke-width="1.75"></i>
-    <span>Eles não serão exibidos de novo.{% if not first_time %} Os códigos anteriores deixaram de funcionar.{% endif %}</span>
-</div>
-
-<ul class="grid grid-cols-2 gap-2 font-mono text-sm font-bold text-slate-800 dark:text-slate-100 select-all">
-    {% for code in codes %}
-        <li class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center tracking-wider">{{ code }}</li>
-    {% endfor %}
+<p class="ui-well p-3 text-sm ui-warn" role="alert">Eles não serão exibidos de novo.{% if not first_time %} Os códigos anteriores deixaram de funcionar.{% endif %}</p>
+<ul class="grid grid-cols-2 gap-2 select-all">
+    {% for code in codes %}<li class="ui-well px-3 py-2.5 text-center ui-mono font-bold tracking-wider">{{ code }}</li>{% endfor %}
 </ul>
-
-<a href="{{ next_url }}"
-   class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-2">
-    <i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>
-    <span>Já guardei, continuar</span>
-</a>
+<a href="{{ next_url }}" class="ui-btn ui-btn-primary w-full">Já guardei, continuar</a>
 {% endblock %}

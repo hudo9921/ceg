@@ -1,32 +1,26 @@
-{% comment %}Lista de CEGs na página pública do GOM. Parâmetros: titulo, cegs, vazio.{% endcomment %}
+{% comment %}CEGs na página pública do GOM. Parâmetros: titulo, cegs, vazio.{% endcomment %}
 <section class="space-y-3">
-    <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-        <i data-lucide="sparkles" class="w-5 h-5 text-pink-500" stroke-width="1.75"></i>{{ titulo }}
-    </h2>
+    <h2 class="ui-disp text-2xl">{{ titulo }}</h2>
     {% if cegs %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for ceg in cegs %}
-                <a href="{% url 'ceg_detail' ceg.slug %}"
-                   class="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:border-pink-300 dark:hover:border-pink-500/40 transition">
+                <a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-lift overflow-hidden block">
                     {% if ceg.display_image_url %}
-                        <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt=""
-                             loading="lazy" decoding="async" class="w-full aspect-[16/9] object-cover">
+                        <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt="" loading="lazy" decoding="async" class="w-full aspect-[16/9] object-cover">
+                    {% else %}
+                        <span class="block w-full aspect-[16/9]" style="background: var(--ui-holo)"></span>
                     {% endif %}
-                    <div class="p-3.5 space-y-1">
-                        <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">{{ ceg.era.group.name }} · {{ ceg.era.name }}</p>
-                        <p class="text-sm font-black text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400">{{ ceg.title }}</p>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                            {% if ceg.status == 'SCHEDULED' and ceg.opens_at %}
-                                Abre em {{ ceg.opens_at|date:"d/m H:i" }}
-                            {% else %}
-                                {{ ceg.available_slots_count }} vaga{{ ceg.available_slots_count|pluralize }} disponíve{{ ceg.available_slots_count|pluralize:"l,is" }}
-                            {% endif %}
-                        </p>
-                    </div>
+                    <span class="block p-4 space-y-1">
+                        <span class="block ui-label truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</span>
+                        <span class="block text-base font-bold leading-snug">{{ ceg.title }}</span>
+                        <span class="ui-status {% if ceg.status == 'SCHEDULED' %}ui-warn{% else %}ui-ok{% endif %}">
+                            {% if ceg.status == 'SCHEDULED' and ceg.opens_at %}Abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}{% else %}{{ ceg.available_slots_count }} vaga{{ ceg.available_slots_count|pluralize }} livre{{ ceg.available_slots_count|pluralize }}{% endif %}
+                        </span>
+                    </span>
                 </a>
             {% endfor %}
         </div>
     {% elif vazio %}
-        <p class="text-sm text-slate-500 dark:text-slate-400 p-6 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">{{ vazio }}</p>
+        <p class="ui-card p-6 text-center ui-muted">{{ vazio }}</p>
     {% endif %}
 </section>

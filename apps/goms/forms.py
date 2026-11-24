@@ -4,9 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import Gom, GomMembership
 from .permissions import DEFAULT_PRESET, PRESETS
 
-INPUT_CLASS = ('w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 '
-               'dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white '
-               'focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500')
+INPUT_CLASS = 'ui-input w-full'  # design system (static/css/ui.css)
 
 
 def _style(form):
