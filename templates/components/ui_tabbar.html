@@ -1,0 +1,9 @@
+{% comment %}Barra de abas (celular/tablet, abaixo de lg): as 5 seções do joiner. DESIGN_SYSTEM.md §7.{% endcomment %}
+<nav class="ui-tabbar lg:hidden" aria-label="Navegação principal">
+    {% for item in joiner_nav %}
+        <a href="{{ item.url }}" class="ui-tab{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
+            <i data-lucide="{{ item.icon }}" class="w-[22px] h-[22px]" stroke-width="1.75"></i>
+            <span>{{ item.label }}</span>
+        </a>
+    {% endfor %}
+</nav>

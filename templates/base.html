@@ -15,6 +15,8 @@
     <!-- Fontes locais: Outfit (texto) & JetBrains Mono (tabular). Sem Google Fonts (desempenho + LGPD). -->
     <link rel="preload" href="{% static 'fonts/outfit-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+    <!-- Tokens e componentes do redesign (Pearl Y2K / Y3K Chrome) — DESIGN_SYSTEM.md §7 -->
+    <link rel="stylesheet" href="{% static 'css/ui.css' %}">
     <!-- Assets: compilados em produção; Play CDN + Lucide completo no desenvolvimento (settings.FRONTEND_MODE) -->
     {% if frontend_build %}
     <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
@@ -625,79 +627,39 @@
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-[#F8F7FA] dark:bg-[#0B0A0F] text-[#1E1B26] dark:text-[#E2E8F0] min-h-screen flex flex-col font-sans antialiased transition-colors duration-200 overflow-x-hidden">
+<body class="ui-page min-h-screen flex flex-col antialiased overflow-x-hidden">
 
-    <!-- Contêiner de Navegação Principal -->
-    <div>
-        <!-- Navegação Principal: Sidebar Deezer (Desktop) + Dock Flutuante Godly (Mobile) -->
-        {% include 'components/sidebar_dock_nav.html' %}
-
-        <!-- Topbar Mobile Slim (Identificação da marca e atalhos rápidos) -->
-        <header class="lg:hidden sticky top-0 z-30 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-xl border-b border-purple-100/70 dark:border-white/10 px-4 py-2.5 flex items-center justify-between">
-            <a href="{% url 'home' %}" class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-xs">
-                    <i data-lucide="disc-3" class="w-4 h-4"></i>
-                </div>
-                <div class="flex items-baseline gap-1">
-                    <span class="font-black text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-rose-400 to-sky-500 dark:from-cyber-neon dark:via-cyber-electric dark:to-cyber-ice">ValCegs</span>
-                    <span class="text-[9px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500">Manager</span>
-                </div>
-            </a>
-            <div class="flex items-center gap-2">
-                {% if is_gom_staff %}
-                    <a href="{% url 'gom_notifications' %}"
-                       class="relative p-1.5 rounded-xl bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center justify-center">
-                        <i data-lucide="bell" class="w-4 h-4"></i>
-                        {% if gom_unread_notifications_count > 0 %}
-                            <span class="gom-unread-badge absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
-                                {{ gom_unread_notifications_count }}
-                            </span>
-                        {% endif %}
-                    </a>
-                    <a href="{% url 'creations_hub' %}"
-                       class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center gap-1">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-500"></i>
-                        <span>Admin</span>
-                    </a>
-                {% elif is_gom_member %}
-                    <a href="{% url 'gom_team' %}"
-                       class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon border border-purple-200/80 dark:border-white/10 flex items-center gap-1">
-                        <i data-lucide="users" class="w-3.5 h-3.5" stroke-width="1.75"></i>
-                        <span>Equipe</span>
-                    </a>
-                {% endif %}
-            </div>
-        </header>
-
-    </div>
+    <!-- Navegação: barra lateral (desktop) + barra superior e abas (celular) — DESIGN_SYSTEM.md §7 -->
+    {% include 'components/ui_sidebar.html' %}
+    {% include 'components/ui_topbar.html' %}
+    {% include 'components/ui_tabbar.html' %}
 
     <!-- Área Principal de Conteúdo (Deslocada pela Sidebar no Desktop) -->
-    <div class="lg:pl-20 transition-all duration-300 min-h-screen flex flex-col flex-1 w-full">
-    <!-- Flash Messages -->
+    <div class="lg:pl-60 min-h-screen flex flex-col flex-1 w-full">
+    <!-- Mensagens -->
     {% if messages %}
-        <div class="max-w-4xl mx-auto px-4 mt-4 w-full">
+        <div class="max-w-4xl mx-auto px-4 mt-4 w-full space-y-2" role="status">
             {% for message in messages %}
-                <div class="p-4 mb-3 rounded-2xl text-sm font-medium flex items-center justify-between shadow-sm
-                    {% if message.tags == 'error' %} bg-red-50 dark:bg-red-950/50 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800/60
-                    {% elif message.tags == 'success' %} bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60
-                    {% else %} bg-pink-50 dark:bg-slate-900 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-slate-700 {% endif %}">
-                    <span>{{ message }}</span>
-                    <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 ml-3">✕</button>
+                <div class="ui-card px-4 py-3 text-sm flex items-center justify-between gap-3">
+                    <span class="ui-status {% if message.tags == 'error' %}ui-danger{% elif message.tags == 'success' %}ui-ok{% elif message.tags == 'warning' %}ui-warn{% else %}ui-muted{% endif %} !text-sm !font-medium"><span class="text-ui-text">{{ message }}</span></span>
+                    <button type="button" onclick="this.parentElement.remove()" class="ui-icon-btn !w-8 !h-8 shrink-0" aria-label="Fechar mensagem">
+                        <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
+                    </button>
                 </div>
             {% endfor %}
         </div>
     {% endif %}
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 w-full pb-24 lg:pb-8">
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 w-full pb-28 lg:pb-10">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-md border-t border-purple-100/70 dark:border-white/5 py-6 mt-12 text-center text-xs text-slate-500 dark:text-cyber-silver transition-colors pb-24 lg:pb-6">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <p><strong>ValCegs Manager</strong> — Plataforma de Compras em Grupo, Claims e Photocard Splits.</p>
-            <p class="text-slate-400 dark:text-slate-500">Desenvolvido com Django & Tailwind CSS</p>
+    <!-- Rodapé -->
+    <footer class="border-t border-ui-line py-6 mt-8 pb-28 lg:pb-6 text-xs text-ui-muted">
+        <div class="max-w-7xl mx-auto px-4 lg:px-10 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p class="m-0"><span class="ui-disp ui-chrome text-sm">ValCegs</span> · compras em grupo de K-pop</p>
+            <a href="{% url 'privacy_policy' %}" class="text-ui-muted hover:text-ui-text">Política de privacidade</a>
         </div>
     </footer>
 

@@ -187,3 +187,62 @@ Para manter a consistência visual em qualquer novo template ou componente, util
 | **Badge de Sucesso (Pago)** | `bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold` | `dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800` |
 | **Badge de Alerta (Urgente)** | `bg-rose-50 text-rose-800 border border-rose-200 font-black` | `dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800` |
 | **Ícones Lucide** | Traço uniforme `stroke-[1.75]` | Traço uniforme `stroke-[1.75]` |
+
+---
+
+## 🧭 7. Redesign 2026 — "Pearl Y2K" (claro) × "Y3K Chrome" (escuro)
+
+Aprovado em 23/11/2026 depois do protótipo P0 (https://claude.ai/artifact/Qw48h6kSVGKVFms1LXbf7Z). O piloto da §6 (efeitos sobre o layout antigo) foi descartado; a §6 fica só como histórico.
+
+### 7.1. Princípios
+- **Estrutura no estilo Apple:**
+  - a foto é a protagonista;
+  - uma ação principal por bloco;
+  - texto de leitura com 16 px e nada abaixo de 11–12 px;
+  - frases em caixa normal;
+  - vidro só na navegação e nos controles.
+- **Cor só tem significado:** acento = ação/seleção; verde/âmbar/vermelho = status (pago/vence/vencida).
+- **Dois temas com personalidades diferentes**, trocados por tokens. Nenhum `dark:` espalhado nos componentes novos.
+
+### 7.2. Tokens (`static/css/ui.css`, `:root` = claro, `html.dark` = escuro)
+| Token | Claro (Pearl Y2K) | Escuro (Y3K Chrome) |
+| :--- | :--- | :--- |
+| Fundo / superfície / elevada | `#F7F6FB` (perolado) / `#FFFFFF` / `#F2EFF8` | `#0A0A0C` / `#141418` / `#1C1C22` |
+| Texto / secundário | `#1E1B26` / `#625C70` | `#ECEEF3` / `#9AA1B0` |
+| Acento (botões, seleção) | rosa `#C8307A` com gloss | azul elétrico `#2A62F5` com brilho |
+| Raios (card/controle/pílula) | 22 / 14 / 999 px | 4 / 3 / 3 px |
+| Fonte de destaque | M PLUS Rounded 1c | Chakra Petch (MAIÚSCULAS só em títulos) |
+| Assinatura | holográfico nas pílulas ativas e no progresso; gloss "holo-foil" no photocard | cromo prateado, cantos de HUD (`ui-hud`), barras segmentadas, scan-line no photocard |
+
+No Tailwind: `bg-ui-surface`, `text-ui-muted`, `border-ui-line`, `bg-ui-accent`, `text-ui-accent-text`, `rounded-ui-card`, `rounded-ui-ctl`, `font-display`… (`static/src/tailwind.theme.js`).
+
+### 7.3. Componentes (`ui-*`)
+- **Texto:** `ui-disp` (título), `ui-chrome` (marca e destaques), `ui-label` (metadado), `ui-mono` (dinheiro e números).
+- **Superfícies:** `ui-card`, `ui-hud` (cantos de HUD no escuro), `ui-well` (bloco interno).
+- **Ações:**
+  - botões `ui-btn` + `ui-btn-primary`, `ui-btn-ghost` ou `ui-btn-sm`;
+  - `ui-icon-btn` (44 px);
+  - `ui-chip` com `.is-on` para o selecionado;
+  - `ui-toggle` (controle segmentado).
+- **Dados:** `ui-seg` (barra de vagas/progresso), `ui-status` com `ui-ok`/`ui-warn`/`ui-danger`, `ui-pc` (moldura 2:3 de photocard).
+- **Navegação:** `ui-sidebar`, `ui-nav-item`, `ui-topbar`, `ui-tabbar` e `ui-tab`.
+- **Sobreposição:** `ui-sheet`, `ui-scrim`.
+
+### 7.4. Estrutura do joiner (navegação)
+Cinco seções, as mesmas na barra lateral (desktop) e na barra de abas (celular), definidas em `apps/core/context_processors.py`:
+1. **CEGs**
+2. **Vitrine** (separada das CEGs, por decisão do produto)
+3. **Pagar:** tudo o que o joiner deve, agrupado por GOM
+4. **Meus itens:** por GOM, CEG ou caixa
+5. **Envios**
+
+Até a fase P3, Pagar, Meus itens e Envios abrem as partes correspondentes do `/me/`.
+
+### 7.5. Fases
+| Fase | Escopo |
+| :--- | :--- |
+| P1 | Fundação: tokens, fontes, componentes, navegação (**entregue**) |
+| P2 | CEGs e página da CEG (lista antes da abertura; "Pegar meus X" no segundo zero) |
+| P3 | Pagar, Meus itens, Envios, login e 2FA |
+| P4 | Vitrine e páginas de GOM |
+| P5 | Backoffice |

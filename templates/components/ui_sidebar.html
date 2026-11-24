@@ -1,0 +1,51 @@
+{% comment %}
+Barra lateral (desktop, lg+). Seções do joiner (joiner_nav, de apps/core/context_processors.py),
+menu de gestão do GOM, conta e tema. DESIGN_SYSTEM.md §7.
+{% endcomment %}
+<aside class="ui-sidebar hidden lg:flex" aria-label="Navegação principal"
+       x-data="{ sidebarCollapsed: false, gomMenuOpen: {% if nav_section %}false{% else %}true{% endif %} }">
+    <a href="{% url 'home' %}" class="ui-disp ui-chrome text-[28px] px-3 pb-5 no-underline">ValCegs</a>
+
+    {% for item in joiner_nav %}
+        <a href="{{ item.url }}" class="ui-nav-item{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
+            <i data-lucide="{{ item.icon }}" class="w-5 h-5" stroke-width="1.75"></i>
+            <span>{{ item.label }}</span>
+        </a>
+    {% endfor %}
+
+    {% if is_gom_member or is_platform_admin %}
+        <div class="mt-4 pt-4 border-t border-ui-line">
+            {% include 'components/_sidebar_gom_menu.html' %}
+        </div>
+    {% endif %}
+
+    <div class="flex-1"></div>
+
+    {% if logged_participant %}
+        <div class="ui-well p-3 flex items-center gap-3">
+            <a href="{% url 'my_claims' %}" class="flex items-center gap-3 min-w-0 flex-1 no-underline text-ui-text">
+                <span class="w-9 h-9 rounded-ui-pill bg-ui-accent text-white flex items-center justify-center font-bold shrink-0">{{ logged_participant.display_name|slice:":1"|upper }}</span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold truncate">{{ logged_participant.display_name }}</span>
+                    <span class="ui-label block">Conectado</span>
+                </span>
+            </a>
+            <a href="{% url 'logout_participant' %}" class="ui-icon-btn !w-9 !h-9" aria-label="Sair">
+                <i data-lucide="log-out" class="w-4 h-4" stroke-width="1.75"></i>
+            </a>
+        </div>
+    {% else %}
+        <a href="{% url 'login_otp' %}" class="ui-btn ui-btn-primary w-full">
+            <i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i>
+            <span>Entrar</span>
+        </a>
+    {% endif %}
+
+    <div x-data="themeApp()" x-init="init()">
+        <button type="button" @click="toggleTheme()" class="ui-nav-item w-full bg-transparent border-0 cursor-pointer">
+            <i data-lucide="moon" x-show="!isDark" class="w-5 h-5" stroke-width="1.75"></i>
+            <i data-lucide="sun" x-show="isDark" x-cloak class="w-5 h-5" stroke-width="1.75"></i>
+            <span x-text="isDark ? 'Modo claro' : 'Modo escuro'">Modo escuro</span>
+        </button>
+    </div>
+</aside>

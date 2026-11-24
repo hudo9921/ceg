@@ -13,7 +13,7 @@
     <div x-show="activeMainTab === 'reservas'" class="space-y-8">
         {% include 'participants/partials/_header_metrics.html' %}
         <!-- Central de Pagamento Rápido e Semáforo de Prazos (Lado a lado no desktop, empilhados no mobile) -->
-        <div class="grid grid-cols-1 {% if prazos_proximos %}xl:grid-cols-2{% endif %} gap-4 items-start">
+        <div id="pagar" class="grid grid-cols-1 {% if prazos_proximos %}xl:grid-cols-2{% endif %} gap-4 items-start scroll-mt-20">
             {% include 'participants/partials/_quick_pix.html' %}
             {% include 'participants/partials/_semaforo_prazos.html' %}
         </div>

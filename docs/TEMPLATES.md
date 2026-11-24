@@ -210,8 +210,11 @@
   - `_notificacoes_list.html`: Feed operacional com cards, miniaturas de photocard, chips de CEG/Joiner e marcação instantânea.
   - `_notificacoes_pagination.html`: Paginação preservando filtros.
   - `_notificacoes_app_script.html`: Script Alpine.js com requisições assíncronas para leitura de notificações sem recarregar.
-- **Navegação Global Híbrida (`sidebar_dock_nav.html` — 181 linhas):**
-  - `_dock_nav_mobile.html`: Dock bar flutuante mobile (Godly style) modularizada (< 50 linhas).
+- **Navegação (redesign 2026, DESIGN_SYSTEM §7.4):**
+  - `components/ui_sidebar.html`: barra lateral fixa no desktop (seções do joiner, menu do GOM, conta, tema).
+  - `components/ui_topbar.html`: barra superior no celular (marca, tema, atalhos da equipe, conta).
+  - `components/ui_tabbar.html`: barra de 5 abas no celular.
+  - As seções e qual está ativa vêm de `apps/core/context_processors.frontend` (`joiner_nav`, `nav_section`).
 - **Cadastro em Massa de Participantes (`bulk_create.html` — 30 linhas):**
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
@@ -228,7 +231,7 @@
   - `team.html`: equipe do GOM. Partials: `_team_members.html` (papéis e remoção) e `_team_invites.html` (convidar e cancelar).
   - `platform_goms.html`: GOMs da plataforma.
   - `partials/_invite_link.html`: link exibido uma única vez. `partials/_gom_switcher.html`: seletor de GOM ativo.
-  - `components/_sidebar_gom_menu.html`: menu de gestão da sidebar (extraído de `sidebar_dock_nav.html`).
+  - `components/_sidebar_gom_menu.html`: menu de gestão da sidebar (incluído pela `ui_sidebar.html`).
 - **Verificação em Duas Etapas do Backoffice (`templates/core/two_factor/`):**
   - `_layout.html`: moldura comum (ícone, título, botão Sair); `_token_field.html`: campo do código + botão.
   - `setup.html` (QR code + chave manual), `verify.html` (código do app ou de recuperação), `backup_codes.html` (exibidos uma única vez), `manage.html` (status e gerar novos códigos).

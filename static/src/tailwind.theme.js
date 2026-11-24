@@ -11,11 +11,35 @@
                 fontFamily: {
                     sans: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
                     mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                    // Fonte de destaque do tema ativo (claro: M PLUS Rounded 1c; escuro: Chakra Petch) — static/css/ui.css
+                    display: ['var(--ui-font-display)'],
+                },
+                // Raios do tema ativo (claro arredondado, escuro reto)
+                borderRadius: {
+                    'ui-card': 'var(--ui-r-card)',
+                    'ui-ctl': 'var(--ui-r-ctl)',
+                    'ui-pill': 'var(--ui-r-pill)',
+                    'ui-media': 'var(--ui-r-media)',
                 },
                 screens: {
                     'xs': '480px',
                 },
                 colors: {
+                    // Cores semânticas do tema ativo (trocam sozinhas no modo escuro) — static/css/ui.css
+                    ui: {
+                        bg: 'var(--ui-bg)',
+                        surface: 'var(--ui-surface)',
+                        'surface-2': 'var(--ui-surface-2)',
+                        line: 'var(--ui-line)',
+                        text: 'var(--ui-text)',
+                        muted: 'var(--ui-muted)',
+                        accent: 'var(--ui-accent)',
+                        'accent-text': 'var(--ui-accent-text)',
+                        'accent-soft': 'var(--ui-accent-soft)',
+                        danger: 'var(--ui-danger)',
+                        warn: 'var(--ui-warn)',
+                        ok: 'var(--ui-ok)',
+                    },
                     kpop: {
                         50: '#fdf2f8',
                         100: '#fce7f3',
