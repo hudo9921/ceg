@@ -3,17 +3,18 @@ services:
     image: postgres:16-alpine
     container_name: valcegs-db
     restart: unless-stopped
-    # Ajuste para a VM (Postgres vem configurado para 128 MB de cache por padrão).
+    # Memória do Postgres ajustável pelo .env. Os padrões cabem na VM E2.1.Micro (1 GB);
+    # numa Ampere A1 (12 GB) use p.ex. PG_SHARED_BUFFERS=512MB e PG_EFFECTIVE_CACHE_SIZE=4GB.
     command:
       - postgres
       - -c
-      - shared_buffers=512MB
+      - shared_buffers=${PG_SHARED_BUFFERS:-128MB}
       - -c
-      - effective_cache_size=4GB
+      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-512MB}
       - -c
-      - work_mem=16MB
+      - work_mem=${PG_WORK_MEM:-4MB}
       - -c
-      - maintenance_work_mem=128MB
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-64MB}
       - -c
       - random_page_cost=1.1
     shm_size: 256mb
@@ -36,7 +37,7 @@ services:
     image: redis:alpine
     container_name: valcegs-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory ${REDIS_MAXMEMORY:-64mb} --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
 

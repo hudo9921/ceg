@@ -75,7 +75,7 @@ jobs:
           FIELD_ENCRYPTION_KEY: ${{ secrets.FIELD_ENCRYPTION_KEY }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         with:
-          host: 150.136.166.17
+          host: 129.213.164.99
           username: ubuntu
           key: ${{ secrets.ORACLE_SSH_KEY }}
           envs: FIELD_ENCRYPTION_KEY,BACKUP_PASSPHRASE
