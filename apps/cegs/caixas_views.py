@@ -418,6 +418,15 @@ class CaixaDetailView(View):
             'itens_individuais_data': itens_individuais_data,
             'itens_individuais_json': json.dumps(itens_individuais_data),
             'current_step': current_step,
+            # Linha do tempo do joiner (P4): 6 etapas com a data quando houver.
+            'caixa_steps': [
+                ('No armazém', ''),
+                ('Embalada', ''),
+                ('A caminho', caixa.data_envio.strftime('%d/%m') if caixa.data_envio else ''),
+                ('No Brasil', caixa.data_recebimento.strftime('%d/%m') if caixa.data_recebimento else ''),
+                ('Liberada', ''),
+                ('Na casa da GOM', ''),
+            ],
             'status_choices': [c for c in Caixa.Status.choices if c[0] != Caixa.Status.FINALIZADA],
             'origem_choices': Caixa.Origem.choices,
             'total_slots_cegs': total_slots_cegs,
@@ -427,6 +436,8 @@ class CaixaDetailView(View):
             'configured_rates_count': len(configured_rates),
             'all_tipos_item': all_tipos,
             'tipos_item_json': json.dumps([{'id': t.id, 'nome': t.nome} for t in all_tipos]),
+            # Lista (não string JSON) para o json_script: o modal de edição faz x-for sobre ela.
+            'tipos_item_list': [{'id': t.id, 'nome': t.nome} for t in all_tipos],
             'all_caixas': Caixa.objects.for_gom(request.active_gom).order_by('-created_at') if is_staff_user else Caixa.objects.none(),
             'item_individual_statuses': ItemIndividual.Status.choices,
             'is_staff_user': is_staff_user,
@@ -449,6 +460,11 @@ class CaixaDetailView(View):
             'participant_total_geral_pendente': participant_total_geral_pendente,
             'participant_pix_key': participant_pix_key,
             'participant_pix_instructions': participant_pix_instructions,
+            # "Sua parte nesta caixa" (P4): frete e taxa com a chave Pix da caixa para cada tipo.
+            'parte_rows': [row for row in (
+                ('frete', 'Frete internacional', participant_frete_pendente_total, participant_frete_pago_total, caixa.get_pix_key_frete()),
+                ('taxa', 'Taxa aduaneira', participant_taxa_pendente_total, participant_taxa_paga_total, caixa.get_pix_key_taxa()),
+            ) if participant and (row[2] > 0 or row[3] > 0)],
         }
         return render(request, 'cegs/caixa_detail.html', context)
 
