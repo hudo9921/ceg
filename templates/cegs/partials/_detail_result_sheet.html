@@ -1,0 +1,47 @@
+{% comment %}Resultado do "Pegar meus X": o que foi garantido, lista de espera e o que perdeu, com o Pix para pagar.{% endcomment %}
+<div x-show="claimResultOpen" x-cloak class="ui-scrim flex items-end sm:items-center justify-center p-0 sm:p-4"
+     @keydown.escape.window="claimResultOpen = false">
+    <div class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-md space-y-4" role="dialog" aria-modal="true" aria-labelledby="claim-result-title"
+         @click.outside="claimResultOpen = false">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <p class="ui-label m-0">Resultado da reserva</p>
+                <h2 id="claim-result-title" class="ui-disp ui-chrome text-2xl mt-1 mb-0" x-text="claimHeadline()"></h2>
+            </div>
+            <button type="button" class="ui-icon-btn" aria-label="Fechar" @click="claimResultOpen = false">
+                <i data-lucide="x" class="w-5 h-5" stroke-width="1.75"></i>
+            </button>
+        </div>
+
+        <ul class="list-none m-0 p-0 space-y-2 max-h-[40vh] overflow-y-auto">
+            <template x-for="(r, i) in claimResults" :key="i">
+                <li class="ui-well px-3 py-2.5 flex items-center justify-between gap-3">
+                    <span class="min-w-0">
+                        <span class="block text-sm font-semibold truncate" x-text="r.item_name || r.name"></span>
+                        <span class="block text-[12px] ui-muted truncate" x-show="!r.success && !r.is_waiting_list" x-text="r.message"></span>
+                    </span>
+                    <span class="ui-status shrink-0"
+                          :class="r.success ? 'ui-ok' : (r.is_waiting_list ? 'ui-warn' : 'ui-danger')"
+                          x-text="r.success ? 'Garantido' : (r.is_waiting_list ? ('Lista de espera #' + r.position) : 'Não foi dessa vez')"></span>
+                </li>
+            </template>
+        </ul>
+
+        <div class="space-y-2" x-show="claimSummary && claimSummary.succeeded > 0">
+            <p class="m-0 text-[13px] ui-muted">Pague o item para confirmar sua reserva. Chave Pix deste GOM:</p>
+            <div class="ui-well px-3 py-2.5 flex items-center gap-2">
+                <span class="ui-mono text-[13px] flex-1 min-w-0 truncate" x-text="claimSummary?.pix_key || 'Chave ainda não cadastrada'"></span>
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" x-show="claimSummary?.pix_key"
+                        @click="navigator.clipboard.writeText(claimSummary?.pix_key); pixCopied = true; setTimeout(() => pixCopied = false, 2000)"
+                        x-text="pixCopied ? 'Copiado!' : 'Copiar'"></button>
+            </div>
+            <a href="{% url 'my_claims' %}?tab=pagar#pagar" class="ui-btn ui-btn-primary w-full">
+                <i data-lucide="wallet" class="w-4 h-4" stroke-width="1.75"></i>
+                <span>Ver tudo o que devo</span>
+            </a>
+        </div>
+
+        <button type="button" class="ui-btn ui-btn-ghost w-full" @click="claimResultOpen = false"
+                x-text="$store.claimSelection.slots.length ? 'Tentar outros itens' : 'Continuar vendo'"></button>
+    </div>
+</div>

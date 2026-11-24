@@ -15,7 +15,7 @@
                  taxa_aduaneira: '{% if idef.first_slot.taxa_aduaneira is not None and idef.first_slot.taxa_aduaneira > 0 %}{{ idef.first_slot.taxa_aduaneira|floatformat:2 }}{% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 %}{{ ceg.taxa_aduaneira|floatformat:2 }}{% endif %}'
              }, this.selectedQty);
          },
-         buyDirect() { this.syncStore(); $store.claimSelection.openModal(); $dispatch('sync-claim-selection'); },
+         buyDirect() { this.syncStore();{% if is_gom_staff %} $store.claimSelection.openModal(); $dispatch('sync-claim-selection');{% endif %} },
          toggleSelection() { if (this.isSelected) { $store.claimSelection.setAvulso({ id: {{ idef.id }} }, 0); } else { this.buyDirect(); } }
      }"
      :class="{ 'ring-2 ring-pink-500 border-pink-400 bg-pink-50/70 dark:bg-pink-950/40 shadow-md scale-[1.01]': isSelected }">
@@ -120,13 +120,7 @@
     <!-- 5. Bloco de Ação: Seletor de Quantidade & Compra -->
     <div class="pt-2 border-t border-slate-100 dark:border-white/5 space-y-2">
         {% if idef.available_count > 0 %}
-            <div x-show="isStandby">
-                <button type="button" disabled class="w-full py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[11px] sm:text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1 border border-slate-200 dark:border-white/5">
-                    <i data-lucide="clock" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
-                    <span>Aguarde abertura</span>
-                </button>
-            </div>
-            <div x-show="!isStandby" class="space-y-2">
+            <div class="space-y-2">
                 <!-- Seletor de Quantidade -->
                 <div class="flex items-center justify-between gap-2 p-1 bg-slate-50 dark:bg-white/[0.04] rounded-xl border border-slate-200/80 dark:border-white/10">
                     <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1.5">Qtd:</span>
@@ -148,15 +142,15 @@
                     <button type="button" @click.stop="buyDirect()"
                             class="w-full py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95 shadow-2xs bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white shadow-xs">
                         <i data-lucide="shopping-bag" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
-                        <span>Comprar / Reservar</span>
+                        <span>{% if is_gom_staff %}Comprar / Reservar{% else %}Adicionar à lista{% endif %}</span>
                     </button>
                 </template>
                 <template x-if="isSelected">
                     <div class="flex items-center gap-1 w-full">
-                        <button type="button" @click.stop="$store.claimSelection.openModal(); $dispatch('sync-claim-selection')"
+                        <button type="button" @click.stop="{% if is_gom_staff %}$store.claimSelection.openModal(); $dispatch('sync-claim-selection'){% endif %}"
                                 class="flex-1 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black text-center transition flex items-center justify-center gap-1 cursor-pointer select-none active:scale-95 shadow-xs bg-gradient-to-r from-pink-600 to-rose-600 text-white">
                             <i data-lucide="check" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
-                            <span class="truncate" x-text="'Finalizar (' + selectedQty + ' un.)'"></span>
+                            <span class="truncate" x-text="{% if is_gom_staff %}'Finalizar (' + selectedQty + ' un.)'{% else %}'Na lista (' + selectedQty + ' un.)'{% endif %}"></span>
                         </button>
                         <button type="button" @click.stop="$store.claimSelection.setAvulso({ id: {{ idef.id }} }, 0)"
                                 class="w-8 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-white/[0.08] hover:bg-rose-100 hover:text-rose-600 text-slate-500 dark:text-slate-400 flex items-center justify-center text-xs transition cursor-pointer active:scale-95"

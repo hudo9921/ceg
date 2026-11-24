@@ -5,6 +5,7 @@
 <script>
 function cegDetailApp() {
     return {
+         ...cegBuyMixin(),
          isStandby: {{ ceg.is_standby|yesno:'true,false' }},
          secondsLeft: {{ ceg.countdown_seconds }},
          timer: null,
@@ -1681,17 +1682,22 @@ function cegDetailApp() {
                 }
             });
             if (this.secondsLeft > 0) {
-                this.timer = setInterval(() => {
-                    if (this.secondsLeft > 0) {
-                        this.secondsLeft--;
-                        if (this.secondsLeft <= 0) {
-                            this.isStandby = false;
-                            clearInterval(this.timer);
-                            window.dispatchEvent(new CustomEvent('standby-ended'));
-                        }
+                // Contagem por horário-alvo: não atrasa com aba em segundo plano nem com travadas do navegador.
+                const openAt = Date.now() + this.secondsLeft * 1000;
+                const tick = () => {
+                    const left = Math.max(0, Math.ceil((openAt - Date.now()) / 1000));
+                    if (left !== this.secondsLeft) this.secondsLeft = left;
+                    if (left <= 0) {
+                        this.isStandby = false;
+                        clearInterval(this.timer);
+                        document.removeEventListener('visibilitychange', tick);
+                        window.dispatchEvent(new CustomEvent('standby-ended'));
                     }
-                }, 1000);
+                };
+                this.timer = setInterval(tick, 250);
+                document.addEventListener('visibilitychange', tick);
             }
+            if (!this.isAdmin) this.initSavedList();
         }
     };
 }

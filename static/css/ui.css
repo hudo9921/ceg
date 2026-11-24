@@ -146,6 +146,9 @@ html.dark .ui-nav-item.is-on { background: rgba(42, 98, 245, .14); color: #BFD2F
 .ui-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; font-size: 11px; font-weight: 600; color: var(--ui-muted); text-decoration: none; }
 .ui-tab.is-on { color: var(--ui-accent-text); }
 html.dark .ui-tab { font-family: var(--ui-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+/* barra de compra do joiner na CEG (§7.6): acima da tab bar no celular, rodapé ao lado da sidebar no desktop */
+.ui-buybar { position: fixed; left: 0; right: 0; bottom: calc(67px + env(safe-area-inset-bottom)); z-index: 40; background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
+@media (min-width: 1024px) { .ui-buybar { left: 15rem; bottom: 0; } }
 .ui-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 16px; background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-bottom: 1px solid var(--ui-line); }
 
 /* ------------------------------------------------------------- sheet / overlay */

@@ -1,0 +1,37 @@
+{% comment %}
+Barra de compra do joiner (DESIGN_SYSTEM §7.6). A lista é montada durante a contagem; no segundo zero
+o botão destrava e um toque envia tudo (quickClaim). É competitivo: nada é comprado automaticamente.
+No celular fica acima da barra de abas; no desktop, colada no rodapé ao lado da barra lateral.
+{% endcomment %}
+<div x-show="$store.claimSelection.slots.length > 0" x-cloak
+     x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100"
+     class="ui-buybar">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+            <p class="m-0 text-[15px] font-bold whitespace-nowrap" x-text="listCountLabel()"></p>
+            <p class="m-0 ui-mono ui-muted text-[13px]" x-text="listTotalLabel()"></p>
+        </div>
+        <button type="button" @click="$store.claimSelection.clear()" class="ui-btn ui-btn-ghost ui-btn-sm">Limpar</button>
+        {% if logged_participant %}
+            <button type="button" x-show="isStandby" class="ui-btn ui-btn-ghost min-w-[150px] cursor-not-allowed" aria-disabled="true" tabindex="-1">
+                <i data-lucide="clock" class="w-4 h-4" stroke-width="1.75"></i>
+                <span class="ui-mono" x-text="'Abre em ' + countdownShort()"></span>
+            </button>
+            <button type="button" x-show="!isStandby" x-cloak @click="quickClaim()" :disabled="quickClaimLoading"
+                    class="ui-btn ui-btn-primary min-w-[150px]">
+                <i data-lucide="zap" class="w-4 h-4" stroke-width="1.75"></i>
+                <span x-text="quickClaimLoading ? 'Enviando…' : ('Pegar meus ' + listCount())"></span>
+            </button>
+        {% else %}
+            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}" class="ui-btn ui-btn-primary">
+                <i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i>
+                <span>Entrar para reservar</span>
+            </a>
+        {% endif %}
+    </div>
+    {% if logged_participant %}
+    <p x-show="isStandby" class="m-0 pb-2 text-center text-[12px] ui-muted">Sua lista fica salva neste aparelho. Quando abrir, toque rápido em "Pegar".</p>
+    {% else %}
+    <p class="m-0 pb-2 text-center text-[12px] ui-muted">Entre antes de abrir para não perder tempo no segundo zero.</p>
+    {% endif %}
+</div>
