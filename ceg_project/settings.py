@@ -49,7 +49,7 @@ OTP_RETENTION_DAYS = int(os.getenv('OTP_RETENTION_DAYS', 30))
 
 # Domínios Permitidos (Host header). Em produção nunca aceita '*': sem ALLOWED_HOSTS no
 # .env, vale a lista dos domínios servidos pelo Caddy.
-PRODUCTION_HOSTS = ['valcegs.duckdns.org', '150.136.166.17.sslip.io']
+PRODUCTION_HOSTS = ['valcegs.duckdns.org', '129.213.164.99.sslip.io']
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '').strip()
 if allowed_hosts_env and allowed_hosts_env != '*':
     parsed_hosts = []
@@ -76,9 +76,8 @@ else:
         'https://*.onrender.com',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
-        'http://150.136.166.17',
-        'https://150.136.166.17',
-        'http://150.136.166.17:8000',
+        'http://129.213.164.99',
+        'https://129.213.164.99',
         'http://*.sslip.io',
         'https://*.sslip.io',
     ]

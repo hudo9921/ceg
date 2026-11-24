@@ -98,10 +98,10 @@ python manage.py test apps.cegs.tests_caixas
 
 ## 5. Infraestrutura & Produção (Oracle Cloud + Docker)
 
-O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Ampere A1 — 24GB RAM):
+O ambiente de produção roda conteinerizado numa VM Always Free da Oracle Cloud. Desde nov/2026 é a `VM.Standard.E2.1.Micro` (x86, 1 GB RAM + 4 GB de swap, IP 129.213.164.99), porque a Ampere A1 antiga foi recolhida no fim do trial e não havia capacidade A1 livre. Memória ajustável pelo `.env`: `GUNICORN_WORKERS` (padrão 2), `GUNICORN_THREADS` (4), `PG_SHARED_BUFFERS` (128MB), `PG_EFFECTIVE_CACHE_SIZE` (512MB), `PG_WORK_MEM` (4MB), `REDIS_MAXMEMORY` (64mb). Numa A1 suba esses valores.
 - **`valcegs-db`:** PostgreSQL 16 Alpine local (zero limite de computing time, latência interna < 1ms). Gerencia tanto o banco Django (`valcegs_db`) quanto o da Evolution API (`evolution`).
 - **`valcegs-redis`:** Cache em memória para sessões e filas da Evolution API.
-- **`valcegs-web`:** Aplicação Django com Gunicorn (4 workers, 4 threads).
+- **`valcegs-web`:** Aplicação Django com Gunicorn (`GUNICORN_WORKERS` × `GUNICORN_THREADS`, padrão 2 × 4).
 - **`valcegs-evolution`:** Evolution API v2.3.0 para envio e recebimento de OTP e notificações via WhatsApp.
 - **`valcegs-caddy`:** Proxy reverso com SSL automático (Let's Encrypt / DuckDNS / sslip.io).
 
@@ -112,7 +112,7 @@ O ambiente de produção roda conteinerizado em uma instância Oracle Cloud (Amp
 - `FIELD_ENCRYPTION_KEY` (criptografia de endereços) também é obrigatória — **guarde uma cópia fora do servidor**. `BACKUP_PASSPHRASE` ativa a criptografia dos backups.
 - O deploy (`scripts/deploy.sh`, chamado pelo GitHub Actions) faz: completa o `.env` → backup → build → troca única da senha padrão do Postgres → sobe → confere `/health/` (que também testa o banco) → instala o cron diário de backup (03:00) e de `purge_personal_data` (03:30). Se `/health/` falhar, o job falha e mostra os logs.
 - Miniaturas: imagens hospedadas têm versão de 640 px usada em listas (`|thumb`); `generate_thumbnails` roda após o deploy e no cron diário (04:15).
-- Desempenho: Caddy comprime as respostas (zstd/gzip); WhiteNoise serve estáticos pré-comprimidos (Brotli) com cache longo; sessões ficam no Redis (`cached_db`); o Postgres tem `shared_buffers`/`work_mem` ajustados no `docker-compose.yml`.
+- Desempenho: Caddy comprime as respostas (zstd/gzip); WhiteNoise serve estáticos pré-comprimidos (Brotli) com cache longo; sessões ficam no Redis (`cached_db`); o Postgres tem `shared_buffers`/`work_mem` ajustáveis pelo `.env` (ver acima).
 - Headers de segurança (CSP, Permissions-Policy) saem do Django (`apps/core/security_headers.py`); `CSP_REPORT_ONLY=True` no `.env` é a chave de emergência.
 - Detalhes e pendências: [docs/SECURITY_PLAN.md](SECURITY_PLAN.md).
 
