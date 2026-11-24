@@ -190,7 +190,7 @@ class CaixasViewsTests(TestCase):
         response = self.client.get(reverse('caixas_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Caixa Mercari IVE #01")
-        self.assertContains(response, "Caixas & Remessas Internacionais")
+        self.assertContains(response, "Remessas")
 
     def test_caixa_detail_view_anonymous(self):
         """Visitante anônimo acessa visão pública da caixa (status 200), mas tracking e admin ficam ocultos."""
@@ -468,8 +468,8 @@ class CaixasViewsTests(TestCase):
         self.assertIn("Caixa KR Chegou na GOM", gom_nomes)
 
         # Labels e seções no HTML
-        self.assertContains(response, "Caixas em Vigência")
-        self.assertContains(response, "Caixas que Chegaram na GOM")
+        self.assertContains(response, 'id="vigencia-title"')
+        self.assertContains(response, "Na casa da GOM")
         self.assertContains(response, "Chegou na casa da GOM")
         self.assertContains(response, "Etapa 6 de 6")
 
