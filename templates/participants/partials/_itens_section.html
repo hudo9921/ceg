@@ -1,0 +1,84 @@
+{% comment %}
+Meus itens (P3b): claims de CEG e itens avulsos numa lista, agrupada por GOM/CEG/caixa, com filtro por
+etapa (A pagar → Enviado) e busca. Dados: `items_panel` (apps/participants/items_panel.py).
+{% endcomment %}
+{{ items_panel|json_script:"items-data" }}
+{{ item_stages|json_script:"item-stages-data" }}
+{% include 'participants/partials/_itens_script.html' %}
+
+<section x-show="activeMainTab === 'reservas'" x-data="itemsPanel()" class="space-y-5" aria-labelledby="itens-title">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-1.5">
+            <p class="ui-label">Meus itens</p>
+            <h1 id="itens-title" class="ui-disp text-3xl sm:text-4xl"><span x-text="items.length">{{ items_panel|length }}</span> <span x-text="items.length === 1 ? 'item' : 'itens'">itens</span></h1>
+        </div>
+        <div class="ui-toggle w-full sm:w-auto sm:min-w-[320px]" role="group" aria-label="Agrupar por">
+            <button type="button" @click="setGroup('gom')" :class="groupBy === 'gom' && 'is-on'" :aria-pressed="(groupBy === 'gom').toString()">Por GOM</button>
+            <button type="button" @click="setGroup('ceg')" :class="groupBy === 'ceg' && 'is-on'" :aria-pressed="(groupBy === 'ceg').toString()">Por CEG</button>
+            <button type="button" @click="setGroup('caixa')" :class="groupBy === 'caixa' && 'is-on'" :aria-pressed="(groupBy === 'caixa').toString()">Por caixa</button>
+        </div>
+    </header>
+
+    {% if items_panel %}
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <label class="sm:w-72">
+                <span class="sr-only">Buscar nos meus itens</span>
+                <input type="search" x-model.debounce.150ms="query" class="ui-input w-full" placeholder="Buscar integrante, CEG, caixa…">
+            </label>
+            <div class="flex gap-2 overflow-x-auto pb-1 -mb-1" role="toolbar" aria-label="Filtrar por etapa">
+                <button type="button" class="ui-chip flex-none" :class="!stage && 'is-on'" :aria-pressed="(!stage).toString()" @click="stage = 0">
+                    Todos <span class="ui-mono ui-muted text-[12px]" x-text="items.length"></span>
+                </button>
+                <template x-for="s in stages" :key="s.stage">
+                    <button type="button" class="ui-chip flex-none" :class="stage === s.stage && 'is-on'" :aria-pressed="(stage === s.stage).toString()"
+                            :disabled="!countFor(s.stage)" :style="!countFor(s.stage) && 'opacity:.5'" @click="stage = stage === s.stage ? 0 : s.stage">
+                        <span x-text="s.label"></span> <span class="ui-mono ui-muted text-[12px]" x-text="countFor(s.stage)"></span>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <template x-for="grp in groups" :key="grp.title">
+            <section class="space-y-2.5">
+                <div class="flex items-baseline justify-between gap-3">
+                    <h2 class="ui-disp text-xl">
+                        <template x-if="grp.url"><a :href="grp.url" class="hover:underline" x-text="grp.title"></a></template>
+                        <template x-if="!grp.url"><span x-text="grp.title"></span></template>
+                    </h2>
+                    <span class="ui-label" x-text="grp.sub"></span>
+                </div>
+                <div class="ui-card overflow-hidden">
+                    <template x-for="it in grp.items" :key="it.key">
+                        <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-t first:border-t-0" style="border-color: var(--ui-line)">
+                            <button type="button" class="flex items-center gap-3 flex-[1_1_220px] min-w-0 text-left" :class="it.preview ? 'cursor-pointer' : 'cursor-default'"
+                                    @click="open(it)" :aria-label="it.preview ? 'Ver ' + it.name : it.name">
+                                <span class="w-12 aspect-[2/3] flex-none overflow-hidden rounded-[10px] ui-well">
+                                    <template x-if="it.thumb"><img :src="it.thumb" :data-full="it.image" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async"
+                                         onerror="if(this.dataset.full&&this.src!==this.dataset.full){this.src=this.dataset.full}"></template>
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="block text-base font-bold truncate"><span x-text="it.name"></span><span x-show="it.set" class="ui-muted font-medium" x-text="' · Set ' + it.set"></span></span>
+                                    <span class="block ui-muted text-[13px] truncate" x-text="where(it)"></span>
+                                </span>
+                            </button>
+                            <div class="flex flex-col items-end gap-1.5 ml-auto">
+                                <span class="ui-seg !w-28" aria-hidden="true">
+                                    <template x-for="n in 5" :key="n"><span :class="n <= it.stage && 'is-on'"></span></template>
+                                </span>
+                                <span class="ui-status" :class="stageCls(it)" x-text="stageName(it.stage)" :title="it.label + (it.detail ? ' · ' + it.detail : '')"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+        </template>
+
+        <p x-show="!filtered.length" x-cloak class="ui-card p-6 text-center ui-muted">Nenhum item com esse filtro.</p>
+    {% else %}
+        <div class="ui-card p-8 text-center space-y-3">
+            <p class="ui-disp text-2xl">Nenhum item ainda</p>
+            <p class="ui-muted text-[15px]">Quando você pegar um photocard numa CEG, ele aparece aqui.</p>
+            <a href="{% url 'home' %}" class="ui-btn ui-btn-primary">Ver CEGs abertas</a>
+        </div>
+    {% endif %}
+</section>
