@@ -1,0 +1,33 @@
+{% comment %}Avisos do joiner (cancelamentos, estornos, novidades), recolhidos por padrão; marcar como lido.{% endcomment %}
+<section class="ui-card overflow-hidden" aria-labelledby="avisos-title">
+    <div class="flex flex-wrap items-center gap-3 p-4 sm:p-5">
+        <div class="flex-1 min-w-0">
+            <h2 id="avisos-title" class="text-base font-bold flex flex-wrap items-center gap-2">
+                Avisos & Notificações
+                <span x-show="unreadNotificationsCount > 0" x-cloak class="ui-status ui-danger" x-text="unreadNotificationsCount + (unreadNotificationsCount === 1 ? ' novo' : ' novos')"></span>
+            </h2>
+            <p class="ui-muted text-sm">Cancelamentos de sets, estornos e novidades das suas compras.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" x-show="unreadNotificationsCount > 0" x-cloak class="ui-btn ui-btn-ghost ui-btn-sm" @click="markAllNotificationsRead()">Marcar todos como lidos</button>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="toggleNotifications()" :aria-expanded="notificationsOpen.toString()"
+                    x-text="notificationsOpen ? 'Recolher' : 'Ver avisos ({{ notifications|length }})'">Ver avisos</button>
+        </div>
+    </div>
+
+    <ul x-show="notificationsOpen" x-collapse>
+        {% for notif in notifications %}
+            <li class="px-4 sm:px-5 py-4 border-t space-y-2" style="border-color: var(--ui-line)"
+                :class="!(allMarkedRead || isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})) && 'ui-well !rounded-none'">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 class="text-[15px] font-bold flex-1 min-w-0">{{ notif.title }}</h3>
+                    <span class="ui-label">{{ notif.created_at|date:"d/m \à\s H:i" }}</span>
+                    <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm"
+                            x-show="!allMarkedRead && !isRead({{ notif.id }}, {{ notif.is_read|yesno:'true,false' }})"
+                            @click="markNotificationRead({{ notif.id }})">Marcar como lido</button>
+                </div>
+                <p class="text-sm whitespace-pre-line">{{ notif.message }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+</section>

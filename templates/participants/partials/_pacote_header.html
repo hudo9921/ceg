@@ -1,0 +1,29 @@
+{% comment %}Cabeçalho de um pacote: código, GOM, etapas (Solicitado → Entregue) e rastreio. Usa `pacote`.{% endcomment %}
+<div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+        <h3 class="text-lg font-bold ui-mono">{{ pacote.identificador }}</h3>
+        <p class="ui-muted text-[13px]">{{ pacote.gom.name }}{% if pacote.transportadora %} · {{ pacote.transportadora }}{% endif %} · {{ pacote.total_itens }} ite{{ pacote.total_itens|pluralize:"m,ns" }}</p>
+    </div>
+    <span class="ui-status flex-none {% if pacote.status == 'ENTREGUE' %}ui-ok{% elif pacote.status == 'SOLICITADO' %}ui-warn{% else %}ui-muted{% endif %}">
+        {% if pacote.status == 'SOLICITADO' %}Solicitado{% elif pacote.status == 'EM_PREPARACAO' %}Embalando{% elif pacote.status == 'ENVIADO' %}Enviado{% else %}Entregue{% endif %}
+    </span>
+</div>
+<ol class="grid grid-cols-4 gap-1.5" aria-label="Etapas do pacote">
+    {% for step, label in pacote_steps %}
+        <li class="space-y-1.5" {% if step == pacote.status %}aria-current="step"{% endif %}>
+            <span class="block h-1.5 rounded-full" style="background: {% if forloop.counter <= pacote.step_number %}var(--ui-seg-on){% else %}var(--ui-seg-off){% endif %}"></span>
+            <span class="block text-[12px] font-semibold {% if forloop.counter > pacote.step_number %}ui-muted{% endif %}">{{ label }}</span>
+        </li>
+    {% endfor %}
+</ol>
+{% if pacote.codigo_rastreio %}
+    <div class="ui-well flex items-center gap-3 p-3">
+        <span class="flex-1 min-w-0">
+            <span class="block ui-label">Rastreio{% if pacote.data_envio %} · postado {{ pacote.data_envio|date:"d/m" }}{% endif %}</span>
+            <span class="block ui-mono font-bold truncate select-all">{{ pacote.codigo_rastreio }}</span>
+        </span>
+        {% if pacote.tracking_url %}
+            <a href="{{ pacote.tracking_url }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-sm flex-none" style="background: var(--ui-surface); color: var(--ui-text)">Rastrear</a>
+        {% endif %}
+    </div>
+{% endif %}

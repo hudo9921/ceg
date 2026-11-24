@@ -1,111 +1,39 @@
-    <!-- Header da Caixinha -->
-    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-6 shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div class="space-y-1">
-                <span class="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wide">Logística Nacional & Encomendas</span>
-                <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 flex items-center justify-center shadow-xs">
-                        <i data-lucide="package" class="w-4 h-4"></i>
-                    </div>
-                    <span>Minha Caixinha</span>
-                </h2>
-                <p class="text-xs text-slate-500 dark:text-cyber-silver max-w-2xl leading-relaxed">
-                    Aqui ficam guardados seus photocards e itens que já chegaram no Brasil e tiveram todas as taxas quitadas. 
-                    Quando estiver pronto(a) para receber, basta preencher o formulário da GOM e solicitar o envio nacional abaixo.
-                </p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 flex items-center gap-1.5 shadow-xs">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>{{ total_caixinha_disponivel }} pronto(s) para envio</span>
-                </span>
-                {% if itens_caixinha_bloqueados %}
-                <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60 flex items-center gap-1.5 shadow-xs">
-                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span>{{ itens_caixinha_bloqueados|length }} em trânsito/pendência</span>
-                </span>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- FORMULÁRIO DE ENVIO: um por GOM com itens prontos (cada GOM envia o próprio pacote) -->
+{% comment %}Itens prontos na caixinha: escolher (photocards selecionáveis) e pedir o envio. Antes, o formulário de cada GOM.{% endcomment %}
+{% if total_caixinha_disponivel > 0 %}
     {% for ev in envio_por_gom %}
         {% include 'participants/partials/_caixinha_envio_gom.html' %}
     {% endfor %}
 
-    <!-- ITENS PRONTOS PARA SOLICITAÇÃO -->
-    <div class="bg-white dark:bg-cyber-surface rounded-2xl border border-slate-200/80 dark:border-white/10 p-5 sm:p-6 shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-bold shadow-xs">
-                    <i data-lucide="sparkles" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-base font-black text-slate-900 dark:text-white">Itens Prontos para Envio</h3>
-                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px] rounded-full uppercase tracking-wider">
-                            {{ total_caixinha_disponivel }} disponível(is)
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-500 dark:text-cyber-silver">
-                        Itens quitados e já presentes no estoque da GOM. Selecione os que deseja agrupar no próximo envio.
-                    </p>
-                </div>
+    <form method="post" action="{% url 'solicitar_envio_nacional' %}" class="ui-card p-4 sm:p-5 space-y-4" aria-labelledby="prontos-title">
+        {% csrf_token %}
+        <input type="hidden" name="selected_uids" :value="selectedCaixinhaUids.join(',')">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 id="prontos-title" class="ui-disp text-xl">Prontos para enviar</h2>
+                <p class="ui-muted text-sm"><span x-text="selectedCaixinhaUids.length"></span> de {{ total_caixinha_disponivel }} escolhido{{ total_caixinha_disponivel|pluralize }}</p>
             </div>
-
-            {% if total_caixinha_disponivel > 0 %}
-            <div class="flex items-center gap-2 self-end sm:self-center">
-                <button type="button" @click="toggleSelectAllCaixinha()"
-                        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs">
-                    <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
-                    <span x-text="selectedCaixinhaUids.length === caixinhaProntos.length ? 'Desmarcar Todos' : 'Selecionar Todos'"></span>
-                </button>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
-                    <span x-text="selectedCaixinhaUids.length"></span> de {{ total_caixinha_disponivel }} selecionado(s)
-                </span>
-            </div>
-            {% endif %}
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="toggleSelectAllCaixinha()"
+                    x-text="selectedCaixinhaUids.length === caixinhaProntos.length ? 'Desmarcar todos' : 'Escolher todos'">Escolher todos</button>
         </div>
 
-        {% if total_caixinha_disponivel > 0 %}
-        <form method="post" action="{% url 'solicitar_envio_nacional' %}" class="space-y-5">
-            {% csrf_token %}
-            <input type="hidden" name="selected_uids" :value="selectedCaixinhaUids.join(',')">
+        {% include 'participants/partials/_caixinha_prontos_grid.html' %}
 
-            <!-- Grid de Itens Prontos com Imagens e Detalhes -->
-            {% include 'participants/partials/_caixinha_prontos_grid.html' %}
+        <label class="block space-y-1.5">
+            <span class="ui-label">Observações para a GOM (opcional)</span>
+            <textarea name="observacoes" rows="2" class="ui-input w-full !py-3"
+                      placeholder="Ex.: juntar com o pacote de outra pessoa, cuidado com photocard frágil…"></textarea>
+        </label>
 
-            <!-- Campo de Observações do Joiner -->
-            <div class="space-y-1.5 pt-2">
-                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                    Observações ou Instruções para o Envio <span class="text-slate-400 font-normal">(Opcional)</span>
-                </label>
-                <textarea name="observacoes" rows="2"
-                          placeholder="Ex: Juntar com encomenda de outra pessoa, cuidado com photocard frágil, preferência por transportadora, etc."
-                          class="w-full p-3 bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-cyber-surface focus:ring-2 focus:ring-pink-500 focus:outline-none transition"></textarea>
-            </div>
-
-            <!-- Botão de Ação -->
-            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 dark:border-white/10">
-                <p class="text-xs text-slate-500 dark:text-cyber-silver">
-                    Ao solicitar, o pacote será criado com status <strong class="text-slate-700 dark:text-slate-300">Solicitado</strong> e a GOM fará a cotação do frete.
-                </p>
-                <button type="submit"
-                        :disabled="selectedCaixinhaUids.length === 0"
-                        class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="send" class="w-4 h-4"></i>
-                    <span>Solicitar Envio (<span x-text="selectedCaixinhaUids.length"></span> selecionado(s))</span>
-                </button>
-            </div>
-        </form>
-        {% else %}
-        <div class="p-8 text-center text-slate-400 dark:text-cyber-silver space-y-2">
-            <i data-lucide="package-open" class="w-10 h-10 mx-auto text-slate-300 dark:text-white/20 mb-2"></i>
-            <div class="text-sm font-bold text-slate-700 dark:text-slate-300">Sua caixinha não possui itens prontos para empacotar no momento.</div>
-            <p class="text-xs text-slate-400 dark:text-cyber-silver max-w-md mx-auto">
-                Assim que suas compras chegarem ao Brasil e tiverem todas as taxas quitadas, elas aparecerão aqui disponíveis para você solicitar o envio.
-            </p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p class="ui-muted text-sm">A GOM calcula o frete e a cobrança aparece em Pagar.</p>
+            <button type="submit" class="ui-btn ui-btn-primary w-full sm:w-auto" :disabled="selectedCaixinhaUids.length === 0">
+                <span x-text="selectedCaixinhaUids.length ? 'Pedir envio de ' + selectedCaixinhaUids.length + (selectedCaixinhaUids.length === 1 ? ' item' : ' itens') : 'Escolha os itens'">Pedir envio</span>
+            </button>
         </div>
-        {% endif %}
+    </form>
+{% else %}
+    <div class="ui-card p-8 text-center space-y-2">
+        <h2 class="ui-disp text-xl">Nada pronto para envio ainda</h2>
+        <p class="ui-muted text-[15px] max-w-md mx-auto">Quando suas compras chegarem na casa da GOM e as taxas estiverem pagas, elas aparecem aqui para você pedir o envio.</p>
     </div>
+{% endif %}

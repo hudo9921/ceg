@@ -1061,6 +1061,7 @@ class MyClaimsView(View):
             # Seção Meus itens (P3b): claims + avulsos numa lista, com etapa para agrupar e filtrar.
             'items_panel': build_items(claims_list, itens_individuais_list),
             'item_stages': stage_options(),
+            'pacote_steps': PacoteNacional.JOINER_STEPS,
             'prazos_urgentes_count': prazos_urgentes_count,
             'total_any_unpaid_count': total_any_unpaid_count,
             'cegs_com_pendencias': cegs_com_pendencias,

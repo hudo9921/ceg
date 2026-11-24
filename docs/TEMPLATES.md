@@ -69,21 +69,21 @@
 - `_detail_buy_script.html`: `cegBuyMixin()` com a compra competitiva do joiner (`quickClaim`, lista salva no aparelho, rótulos da barra).
 
 ### 2.3. Portal do Participante (`my_claims.html` — 45 linhas)
-- `_header_notices.html`: Saudação com sparkles, dados de perfil e accordion de avisos contextuais.
+- `_header_notices.html` (P3): topo da conta no visual novo (Olá, nome, WhatsApp, @; Editar perfil e Sair), convite para completar o cadastro e os dados do Alpine. Avisos em `_header_notifications.html` (recolhidos, marcar como lido).
 - `_tabs_nav.html`: abas do painel no visual novo (P3): **Pagar · Meus itens · Envios** (IDs internos `pagar`, `reservas`, `caixinha`; `?tab=pagar|itens|envios`; sem `?tab=`, abre Pagar se houver cobrança).
 - `_itens_section.html` + `_itens_script.html` (P3b): seção **Meus itens**. Claims e itens avulsos numa lista (`items_panel` de `apps/participants/items_panel.py`), agrupada Por GOM / Por CEG / Por caixa (escolha guardada no navegador), filtro por etapa (A pagar, A caminho, No Brasil, Na caixinha, Enviado; vem do `code` do `lifecycle`), busca e barra de 5 etapas por item. Toque no item abre a prévia. Substituiu métricas, filtros, pastas/tabela por CEG e a seção Mercari (partials removidos).
 - `_pagar_section.html` + `_pagar_gom.html` (P3): seção **Pagar**. "Você deve R$ X", cobranças agrupadas por GOM (item, frete, taxa, frete nacional), cada uma com prazo e a chave Pix certa. Dados: `charges` de `apps/participants/charges.py` (`build_charges`). Substituiu a Central de Pagamento Rápido e o Semáforo de Prazos (`_quick_pix*` e `_semaforo_prazos.html`, removidos).
-- `_caixinha_tab.html`: Orquestrador de hold e envios nacionais:
-  - `_caixinha_prontos.html`: Itens prontos para envio com formulário de solicitação:
-    - `_caixinha_prontos_grid.html`: Grid de photocards e itens prontos com proporção 2:3, fotos, badges de integrante e zoom lightbox.
-  - `_caixinha_bloqueados.html`: Itens retidos com pendências financeiras ou alfandegárias.
-  - `_caixinha_pacotes.html`: Orquestrador de pacotes nacionais:
-    - `_caixinha_pacotes_andamento.html`: Envios em andamento com status, rastreio e fotos dos photocards.
-    - `_caixinha_pacotes_recebidos.html`: Histórico de pacotes entregues e avaliações.
+- `_caixinha_tab.html` (P3c): aba **Envios** ("Sua caixinha") no visual novo:
+  - `_caixinha_prontos.html`: formulário de envio de cada GOM (`_caixinha_envio_gom.html`) e o pedido "Pedir envio de N":
+    - `_caixinha_prontos_grid.html`: photocards prontos selecionáveis (`ui-pick` + `ui-tick`, miniatura `|thumb`).
+  - `_caixinha_bloqueados.html`: itens que ainda não dá para enviar (`ui-details`, recolhido).
+  - `_caixinha_pacotes.html`: pacotes nacionais:
+    - `_caixinha_pacotes_andamento.html`: "Pacotes a caminho" com etapas Solicitado → Embalando → Enviado → Entregue (`_pacote_header.html`, `PacoteNacional.step_number`), itens (`_pacote_itens.html`), Pix do frete nacional e ações.
+    - `_caixinha_pacotes_recebidos.html`: "Pacotes recebidos" com rastreio, itens e avaliação.
 - `_modais.html`: Orquestrador de modais (Perfil, Zoom de photocard, Confirmação e Cancelamento de pacotes).
   - `_modal_perfil_privacidade.html`: Seção LGPD do perfil (baixar meus dados em JSON, pedir exclusão com confirmação `EXCLUIR`, link da política).
 - **Página pública `privacidade.html`** (`/privacidade/`): Política de privacidade (dados coletados, finalidade, compartilhamento, retenção e direitos).
-- `_my_claims_app_script.html`: Motor Alpine.js (`myClaimsApp`) desacoplado com filtros, cópia Pix e caixinha.
+- `_my_claims_app_script.html`: `myClaimsApp` enxuto (~120 linhas): abas com `?tab=` e destaque do menu, seleção da caixinha, modais de pacote, prévia, copiar Pix e avisos.
 
 ### 2.4. Hub de Criações & Operações GOM (`creations.html` — 31 linhas)
 - `_creations_header.html`: Topo da central com métricas dinâmicas e coroa de gestão.
@@ -211,7 +211,6 @@
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
 - **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
-  - `_caixinha_envio_gom.html`: formulário de envio de cada GOM.
 - **Perfil do GOM:** `goms/profile.html` + `goms/partials/_profile_field.html` e `_profile_image.html` (`/gom/perfil/`).
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
