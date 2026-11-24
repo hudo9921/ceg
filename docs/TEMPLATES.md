@@ -54,13 +54,16 @@
   - `_detail_polling_card.html`: Card toploader de candidato da enquete com acordeão de auditoria de votos.
   - `_detail_polling_vote_modal.html`: Barra flutuante de votação múltipla e modal de submissão de votos.
 - `_detail_claim_modal.html`: Orquestrador de checkout e reservas:
-  - `_detail_claim_bar.html`: Barra sticky inferior com contador de photocards selecionados e totalizador.
+  - `_detail_claim_bar.html`: Barra sticky inferior do **staff** com contador de photocards selecionados e totalizador.
+  - `_detail_buybar.html`: Barra de compra do **joiner** (`ui-buybar`): contagem "Abre em" e depois "Pegar meus X" num toque (DESIGN_SYSTEM §7.6).
+  - `_detail_result_sheet.html`: Folha de resultado da compra do joiner (Garantido / Lista de espera / Não foi dessa vez + Pix).
   - `_detail_claim_bulk_modal.html`: Modal de carrinho multi-slot com submissão atômica e cópia Pix instantânea.
   - `_detail_claim_single_modal.html`: Modal de reserva de slot individual com fallback.
 - `_detail_bulk_toolbar.html`: Toolbar flutuante sticky de ações em lote para staff (pagamentos, preços, exclusão e checkout).
 - `_detail_share_modal.html`: Modal de divulgação de vagas abertas com contagem ao vivo de caracteres Twitter/X.
 - `_detail_admin_modals.html`: Suite completa de modais administrativos (Editar CEG, Prazos/Taxas, Slot, Disputa, Avulsos).
 - `_detail_app_script.html`: Motor Alpine.js (`cegDetailApp`) com carrinho `$store.claimSelection` e contadores.
+- `_detail_buy_script.html`: `cegBuyMixin()` com a compra competitiva do joiner (`quickClaim`, lista salva no aparelho, rótulos da barra).
 
 ### 2.3. Portal do Participante (`my_claims.html` — 45 linhas)
 - `_header_notices.html`: Saudação com sparkles, dados de perfil e accordion de avisos contextuais.

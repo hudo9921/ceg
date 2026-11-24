@@ -63,9 +63,9 @@
              'border-amber-200/90 dark:border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20 shadow-2xs': status === 'RESERVED',
              'border-sky-200/90 dark:border-sky-500/30 bg-sky-50/40 dark:bg-sky-950/20 shadow-2xs': status === 'PAID',
              'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 opacity-60': status === 'CANCELLED',
-             'cursor-pointer': status === 'AVAILABLE' && !isStandby
+             'cursor-pointer': status === 'AVAILABLE'
          }"
-     {% if is_gom_staff %}@slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"{% endif %}
+     {% if is_gom_staff %}@slot-payment-updated.window="onBulkPaymentUpdated($event.detail)"{% else %}@slots-claimed.window="if ($event.detail.ids.includes(slotId)) status = 'RESERVED'"{% endif %}
      @bulk-claim-add-selected.window="if ($event.detail.ids.includes(slotId) && status === 'AVAILABLE') {
          if (!$store.claimSelection.slots.some(s => s.id === slotId)) {
              $store.claimSelection.slots.push({
@@ -79,7 +79,7 @@
              });
          }
      }"
-     @click="if (!isStandby && status === 'AVAILABLE') {
+     @click="if (status === 'AVAILABLE') {
          $store.claimSelection.toggle({
              id: {{ slot.id }},
              name: '{{ slot.item_definition.name|escapejs }}',

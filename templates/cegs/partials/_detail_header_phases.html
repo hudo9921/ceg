@@ -62,7 +62,7 @@
                 {% if ceg.prazo_pagamento_item %}
                 <span class="text-amber-300 flex items-center gap-1">
                     <i data-lucide="clock" class="w-3 h-3 text-amber-400" stroke-width="1.75"></i>
-                    <span>Prazo: {{ ceg.prazo_pagamento_item|date:"d/m/Y às H:i" }}</span>
+                    <span>Prazo: {{ ceg.prazo_pagamento_item|date:"d/m/Y \à\s H:i" }}</span>
                 </span>
                 {% else %}
                 <span class="text-slate-400 font-normal">Sem prazo limite estipulado</span>
@@ -92,7 +92,7 @@
                 {% if ceg.prazo_pagamento_frete_inter %}
                 <span class="text-sky-300 flex items-center gap-1">
                     <i data-lucide="clock" class="w-3 h-3 text-sky-400" stroke-width="1.75"></i>
-                    <span>Prazo: {{ ceg.prazo_pagamento_frete_inter|date:"d/m/Y às H:i" }}</span>
+                    <span>Prazo: {{ ceg.prazo_pagamento_frete_inter|date:"d/m/Y \à\s H:i" }}</span>
                 </span>
                 {% else %}
                 <span class="text-slate-400 font-normal">Prazo a definir</span>
@@ -122,7 +122,7 @@
                 {% if ceg.prazo_pagamento_taxa_aduaneira %}
                 <span class="text-emerald-300 flex items-center gap-1">
                     <i data-lucide="clock" class="w-3 h-3 text-emerald-400" stroke-width="1.75"></i>
-                    <span>Prazo: {{ ceg.prazo_pagamento_taxa_aduaneira|date:"d/m/Y às H:i" }}</span>
+                    <span>Prazo: {{ ceg.prazo_pagamento_taxa_aduaneira|date:"d/m/Y \à\s H:i" }}</span>
                 </span>
                 {% else %}
                 <span class="text-slate-400 font-normal">Prazo a definir</span>

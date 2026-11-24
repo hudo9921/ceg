@@ -227,6 +227,7 @@ No Tailwind: `bg-ui-surface`, `text-ui-muted`, `border-ui-line`, `bg-ui-accent`,
 - **Dados:** `ui-seg` (barra de vagas/progresso), `ui-status` com `ui-ok`/`ui-warn`/`ui-danger`, `ui-pc` (moldura 2:3 de photocard).
 - **Navegação:** `ui-sidebar`, `ui-nav-item`, `ui-topbar`, `ui-tabbar` e `ui-tab`.
 - **Sobreposição:** `ui-sheet`, `ui-scrim`.
+- **Compra:** `ui-buybar` (barra de compra fixa: acima da `ui-tabbar` no celular, no rodapé ao lado da sidebar no desktop).
 
 ### 7.4. Estrutura do joiner (navegação)
 Cinco seções, as mesmas na barra lateral (desktop) e na barra de abas (celular), definidas em `apps/core/context_processors.py`:
@@ -242,7 +243,22 @@ Até a fase P3, Pagar, Meus itens e Envios abrem as partes correspondentes do `/
 | Fase | Escopo |
 | :--- | :--- |
 | P1 | Fundação: tokens, fontes, componentes, navegação (**entregue**) |
-| P2 | CEGs e página da CEG (lista antes da abertura; "Pegar meus X" no segundo zero) |
+| P2 | CEGs e página da CEG. P2a, compra competitiva (§7.6): **entregue**. P2b, visual da página e da home: pendente |
 | P3 | Pagar, Meus itens, Envios, login e 2FA |
 | P4 | Vitrine e páginas de GOM |
 | P5 | Backoffice |
+
+### 7.6. Compra competitiva no segundo zero (joiner)
+Decisão do produto: o joiner monta a lista antes, mas **a compra é manual e competitiva**. Nada é comprado automaticamente quando a contagem zera.
+
+1. **Durante a contagem:** os cards ficam selecionáveis ("Adicionar à lista" / "Na lista"). A `ui-buybar` mostra a quantidade, o total e um botão neutro "Abre em mm:ss", que não faz nada.
+2. **No segundo zero:** o botão vira "Pegar meus X" (primário). Um toque envia tudo para `/ceg/<slug>/bulk-claim/`, sem formulário. Nome e WhatsApp vêm da sessão.
+3. **Resultado:** a `ui-sheet` mostra cada item como Garantido, Lista de espera #n ou Não foi dessa vez, com a chave Pix e o atalho "Ver tudo o que devo" (`/me/?tab=pagar#pagar`).
+
+Detalhes:
+- **Contagem:** usa um horário-alvo (`Date.now() + countdown_seconds`), com tique de 250 ms e recálculo no `visibilitychange`. Não atrasa com a aba em segundo plano. O servidor continua sendo a autoridade (`CEGNotOpenYetError`).
+- **Lista salva:** fica no `localStorage` (`ceg-list:<slug>`), por aparelho. Sobrevive a recarregar a página.
+- **Depois do envio:** os itens respondidos saem da lista e os cards viram indisponíveis (evento `slots-claimed`).
+- **Visitante sem login:** vê "Entrar para reservar" com `?next=` da CEG.
+- **Staff:** continua com a barra e o modal antigos (`_detail_claim_bar.html`), que permitem reservar para outra pessoa.
+- **Arquivos:** `_detail_buybar.html`, `_detail_result_sheet.html` e `_detail_buy_script.html` (`cegBuyMixin()`, misturado em `cegDetailApp()`). Testes em `apps/cegs/tests_buying_flow.py`.

@@ -20,7 +20,7 @@
                 <span>VOTAÇÃO DA ENQUETE EM CONTAGEM REGRESSIVA</span>
             </h3>
             <p class="text-xs text-amber-100 max-w-xl">
-                A seleção de integrantes e o envio de votos abrem oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y às H:i:s" }}</strong>.
+                A seleção de integrantes e o envio de votos abrem oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y \à\s H:i:s" }}</strong>.
                 A grade abaixo está bloqueada e destravará em tempo real no segundo zero!
             </p>
         </div>
@@ -121,8 +121,8 @@
                 <span>MODO STANDBY ATIVO (HYPE & COUNTDOWN)</span>
             </h3>
             <p class="text-xs text-amber-100">
-                Esta CEG abre oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y às H:i:s" }}</strong>.
-                Os botões de reserva estão travados e destravarão automaticamente no segundo zero!
+                Esta CEG abre oficialmente em <strong>{{ ceg.opens_at|date:"d/m/Y \à\s H:i:s" }}</strong>.
+                {% if is_gom_staff %}Os botões de reserva destravam no segundo zero.{% else %}Monte sua lista agora. No segundo zero, toque em "Pegar" rápido: quem toca primeiro leva.{% endif %}
             </p>
         </div>
         <div class="flex space-x-2 text-center font-mono">
