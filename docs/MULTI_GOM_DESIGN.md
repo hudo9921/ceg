@@ -9,7 +9,7 @@
 | Organização | Vários GOMs. Cada GOM tem um **GOM principal** (dono) e **admins de GOM** (ajudantes). O GOM A nunca vê dados do GOM B. |
 | Plataforma | Você (superusuário) administra a plataforma: cria GOMs, vê tudo, usa o `/admin/` do Django. |
 | Vitrine para o joiner | **Home compartilhada** com CEGs de todos os GOMs (selo e filtro por GOM) **+ página própria** por GOM (`/gom/<slug>/`). |
-| Limites do admin de GOM | Faz tudo o que o dono faz, **exceto gerenciar a equipe** (convidar, remover, mudar papel). |
+| Limites do admin de GOM | O dono escolhe o que cada admin pode fazer (§3.1). Gerenciar a equipe (convidar, remover, mudar papel, permissões) é sempre só do dono. |
 | Entrada de novos GOMs | **Você cria o GOM e convida o dono** por link (ele define senha e 2FA). Sem cadastro aberto. |
 
 ## 2. Modelo de dados
@@ -60,9 +60,19 @@ A hierarquia atual não muda (item → `ceg.pix_key`; frete/taxa → caixa → C
 - **`/admin/` do Django:** só superusuário. Membros de GOM não recebem `is_staff`.
 - **2FA:** `requires_two_factor` passa a valer para superusuários e para qualquer membro ativo de GOM.
 
+### 3.1. Permissões por admin
+- **Catálogo único:** `apps/goms/permissions.py` (`CATALOG`, 16 chaves em 7 áreas; `PRESETS`: Ajudante completo, Só logística, Só pagamentos, Só criação). Só existe permissão para funcionalidade que existe.
+- **Guardadas em** `GomMembership.permissions` (lista). `None` = acesso completo (admins anteriores a esta função). Dono e plataforma sempre têm tudo.
+- **Views:** toda view com `StaffRequiredMixin` declara `gom_permission` (chave, tupla = qualquer uma, ou `ANY`). Sem declarar, a view quebra (`ImproperlyConfigured`) e o teste `apps.goms.tests_permissions` falha. Views em função usam `@staff_required('chave')`.
+- **Checagens dentro de views públicas** (CEG, enquete): `has_gom_permission(request, 'chave')` + `deny_gom_permission(request, as_json=True)`. Os poderes de staff no claim/voto exigem `pedidos.editar`.
+- **Pix (`pix.alterar`, sensível):** sem ela, `pix_fields()` ignora os campos Pix enviados em CEG e caixa (mantém o valor atual ou deixa em branco = Pix padrão do GOM), e o perfil do GOM esconde as chaves. Convites nunca ligam essa permissão.
+- **Templates:** `gom_perms` no contexto (`{% if 'ceg.editar' in gom_perms %}`); a sidebar mostra só o que a pessoa pode usar, e `/painel/` leva à primeira tela permitida.
+- **Tela:** `/gom/equipe/` (modelos + interruptores por área, prévia do menu, barra "Salvar permissões"). Cada alteração vira um `AuditLog` do GOM (`field_name='permissoes'`) e guarda `permissions_updated_by/at`.
+
 ### Testes que garantem o isolamento
 - **Matriz entre GOMs:** um membro do GOM B percorre todas as rotas de backoffice com objetos do GOM A e só pode receber 404/403.
 - **Matriz de papéis:** um admin recebe 403 nas telas de equipe; o dono recebe 200.
+- **Permissões (`apps.goms.tests_permissions`):** toda view de staff declara uma permissão válida; admin limitado leva 403 fora do que pode; Pix ignorado sem `pix.alterar`; convite aplica o modelo.
 - **A matriz atual** (anônimo, joiner, usuário comum, staff sem 2FA) continua valendo.
 
 ## 4. Experiência

@@ -10,7 +10,7 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import JsonResponse
 
 security_logger = logging.getLogger('security')
@@ -63,25 +63,76 @@ def _active_gom(request):
     return get_active_gom(request)
 
 
+PERMISSION_DENIED_MESSAGE = 'Sem permissão para isso. Fale com o dono do GOM.'
+
+
+def has_gom_permission(request, permission) -> bool:
+    """`permission`: chave de apps.goms.permissions, tupla (qualquer uma) ou ANY."""
+    from apps.goms.access import has_gom_perm
+    keys = permission if isinstance(permission, (tuple, list, set, frozenset)) else (permission,)
+    return has_gom_perm(request, *keys)
+
+
+def deny_gom_permission(request, as_json=False):
+    """Membro da equipe sem a permissão específica: 403 (JSON ou página) com explicação."""
+    security_logger.info("Permissão de GOM negada (usuário=%s, rota=%s)",
+                         request.user.get_username(), request.path)
+    if as_json or _wants_json(request):
+        return JsonResponse({'success': False, 'message': PERMISSION_DENIED_MESSAGE,
+                             'error': PERMISSION_DENIED_MESSAGE}, status=403)
+    raise PermissionDenied(PERMISSION_DENIED_MESSAGE)
+
+
+def check_staff(request, permission):
+    """Resposta de negação (ou None se pode seguir). Também fixa `request.active_gom`."""
+    if not is_staff_user(request):
+        return deny_staff_access(request)
+    request.active_gom = getattr(request, 'active_gom', None) or _active_gom(request)
+    if permission is None:
+        raise ImproperlyConfigured('View de staff sem gom_permission (ver apps.goms.permissions).')
+    if not has_gom_permission(request, permission):
+        return deny_gom_permission(request)
+    return None
+
+
+PIX_PERMISSION = 'pix.alterar'
+
+
+def pix_fields(request, names, current=None):
+    """
+    Valores dos campos Pix do POST, só para quem pode alterar chaves Pix. Sem a permissão,
+    mantém os valores atuais do objeto (edição) ou vazio (criação = segue o Pix padrão do GOM).
+    """
+    if has_gom_permission(request, PIX_PERMISSION):
+        return [request.POST.get(name, '').strip() for name in names]
+    return [(getattr(current, name, '') or '') if current is not None else '' for name in names]
+
+
 class StaffRequiredMixin:
-    """Equipe do GOM ativo. A view deve filtrar tudo por `request.active_gom` (for_gom)."""
+    """
+    Equipe do GOM ativo. A view deve filtrar tudo por `request.active_gom` (for_gom) e declarar
+    `gom_permission` (chave de apps.goms.permissions, tupla = qualquer uma, ou ANY).
+    """
+    gom_permission = None
 
     def dispatch(self, request, *args, **kwargs):
-        if not is_staff_user(request):
-            return deny_staff_access(request)
-        request.active_gom = getattr(request, 'active_gom', None) or _active_gom(request)
+        denied = check_staff(request, self.gom_permission)
+        if denied is not None:
+            return denied
         return super().dispatch(request, *args, **kwargs)
 
 
-def staff_required(view_func):
-    """Equivalente de `StaffRequiredMixin` para views em função."""
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not is_staff_user(request):
-            return deny_staff_access(request)
-        request.active_gom = getattr(request, 'active_gom', None) or _active_gom(request)
-        return view_func(request, *args, **kwargs)
-    return _wrapped
+def staff_required(permission):
+    """Equivalente de `StaffRequiredMixin` para views em função: @staff_required('ceg.editar')."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            denied = check_staff(request, permission)
+            if denied is not None:
+                return denied
+            return view_func(request, *args, **kwargs)
+        return _wrapped
+    return decorator
 
 
 def is_platform_admin_request(request) -> bool:

@@ -17,7 +17,8 @@ from apps.groups.models import Era
 from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem, HomeBannerConfig
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
-from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin
+from apps.core.permissions import (PlatformAdminRequiredMixin, StaffRequiredMixin, deny_gom_permission,
+                                   has_gom_permission, pix_fields)
 from apps.goms.access import can_manage
 from .image_utils import process_image_upload, crop_image_from_coordinates
 
@@ -507,7 +508,8 @@ class ClaimSlotView(View):
         )
 
         logged_id = request.session.get('participant_id')
-        is_staff = can_manage(request, ceg)  # poderes de staff só na CEG do próprio GOM
+        # poderes de staff só na CEG do próprio GOM e com permissão de editar pedidos
+        is_staff = can_manage(request, ceg) and has_gom_permission(request, 'pedidos.editar')
 
         # 1. Se não estiver logado via telefone e não for staff, bloqueia
         if not logged_id and not is_staff:
@@ -625,7 +627,8 @@ class BulkClaimView(View):
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
         logged_id = request.session.get('participant_id')
-        is_staff = can_manage(request, ceg)  # poderes de staff só na CEG do próprio GOM
+        # poderes de staff só na CEG do próprio GOM e com permissão de editar pedidos
+        is_staff = can_manage(request, ceg) and has_gom_permission(request, 'pedidos.editar')
 
         if not logged_id and not is_staff:
             return JsonResponse({
@@ -895,6 +898,8 @@ class ToggleSlotPaymentView(View):
                 'success': False,
                 'message': 'Acesso restrito: apenas o organizador pode alterar status de pagamento.'
             }, status=403)
+        if not has_gom_permission(request, 'pag.confirmar'):
+            return deny_gom_permission(request, as_json=True)
 
         slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg', 'claimed_by'), id=slot_id)
 
@@ -957,6 +962,7 @@ class UpdateCEGFeesView(StaffRequiredMixin, View):
     - Prazo Pagamento Frete Inter
     - Prazo Pagamento Taxa Aduaneira
     """
+    gom_permission = 'caixas.valores'
     def post(self, request, slug):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
@@ -1062,6 +1068,7 @@ class UpdateCEGView(StaffRequiredMixin, View):
     - Prazos e Datas (Abertura/Standby, Encerramento, Prazo do item)
     - Regras / Descrição e Chave Pix / Instruções
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
@@ -1073,12 +1080,8 @@ class UpdateCEGView(StaffRequiredMixin, View):
             opens_at_str = request.POST.get('opens_at', '').strip()
             closes_at_str = request.POST.get('closes_at', '').strip()
             prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
-            pix_key = request.POST.get('pix_key', '').strip()
-            pix_instructions = request.POST.get('pix_instructions', '').strip()
-            pix_key_frete = request.POST.get('pix_key_frete', '').strip()
-            pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
-            pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
-            pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
+            (pix_key, pix_instructions, pix_key_frete, pix_instructions_frete,
+             pix_key_taxa, pix_instructions_taxa) = pix_fields(request, ['pix_key', 'pix_instructions', 'pix_key_frete', 'pix_instructions_frete', 'pix_key_taxa', 'pix_instructions_taxa'], current=ceg)
             description = request.POST.get('description', '').strip()
             banner_url_input = request.POST.get('banner_url', '').strip()
             remove_banner = request.POST.get('remove_banner') in ('1', 'true', 'on')
@@ -1178,6 +1181,8 @@ class ManageSlotView(View):
     def post(self, request, slot_id):
         if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'pedidos.editar'):
+            return deny_gom_permission(request, as_json=True)
 
         slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg', 'item_definition', 'claimed_by'), id=slot_id)
 
@@ -1396,6 +1401,8 @@ class BulkManageCEGItemsView(View):
     def post(self, request, slug):
         if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'ceg.editar'):
+            return deny_gom_permission(request, as_json=True)
 
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
@@ -1595,6 +1602,7 @@ class DeleteSetView(StaffRequiredMixin, View):
     Ao excluir o Set, todos os seus slots e eventuais reservas são permanentemente removidos.
     Além disso, notifica os participantes que estavam no set via WhatsApp Gateway.
     """
+    gom_permission = 'ceg.excluir'
     def post(self, request, set_id):
         ceg_set = get_object_or_404(CEGSet.objects.for_gom(request.active_gom).select_related('ceg'), id=set_id)
         ceg = ceg_set.ceg
@@ -1744,6 +1752,8 @@ class CEGLogsAndWaitingListView(View):
     def get(self, request, slug):
         if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'ceg.espera'):
+            return deny_gom_permission(request, as_json=True)
 
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
@@ -1806,6 +1816,7 @@ class DeleteCEGView(StaffRequiredMixin, View):
     incluindo todos os seus sets, slots, claims, fila de espera e votos.
     Requer autenticação de segurança com a senha do administrador logado.
     """
+    gom_permission = 'ceg.excluir'
     def post(self, request, slug):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
@@ -1848,6 +1859,7 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
     - Gera os ItemSlots no container de avulsos da CEG (set_number=0)
     - Pré-reserva opcional de participante
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
@@ -1989,6 +2001,7 @@ class UpdateAvulsoItemView(StaffRequiredMixin, View):
     - Nome, membro, tipo_item, preço padrão, imagem
     - Quantidade de unidades (expande adicionando slots ou contrai removendo apenas slots vagos)
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug, item_def_id):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
@@ -2111,6 +2124,7 @@ class DeleteAvulsoItemView(StaffRequiredMixin, View):
     - Impede exclusão se houver pagamentos confirmados (is_item_paid=True)
     - Deleta com segurança slots e a definição do item
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug, item_def_id):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
@@ -2161,6 +2175,8 @@ class CropCEGItemPhotoView(View):
     def post(self, request, slug, item_def_id):
         if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'ceg.editar'):
+            return deny_gom_permission(request, as_json=True)
 
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg)

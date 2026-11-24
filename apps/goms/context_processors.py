@@ -1,4 +1,4 @@
-from .access import accessible_goms, get_active_gom, gom_role, is_platform_admin
+from .access import accessible_goms, get_active_gom, gom_permissions, gom_role, is_platform_admin
 from .models import GomMembership
 
 
@@ -18,4 +18,6 @@ def gom_context(request):
         # Equipe do GOM ativo com 2FA ok. Páginas de um objeto sobrescrevem com can_manage(obj).
         'is_gom_staff': getattr(request, 'is_gom_staff', False),
         'switchable_goms': accessible_goms(user),
+        # Permissões no GOM ativo: {% if 'ceg.editar' in gom_perms %} (apps.goms.permissions).
+        'gom_perms': gom_permissions(request),
     }

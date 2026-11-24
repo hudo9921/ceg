@@ -18,6 +18,7 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
     Pode ser acessada com uma CEG pré-selecionada (/ceg/<slug>/alocar-massa/)
     ou de forma geral (/cegs/alocar-joiners/), selecionando a CEG desejada.
     """
+    gom_permission = 'pedidos.editar'
     def get(self, request, slug=None):
         search_query = request.GET.get('q', '').strip()
         group_id = request.GET.get('group_id', '').strip()
@@ -112,6 +113,7 @@ class CEGBulkAllocatorAPIView(StaffRequiredMixin, View):
     """
     Endpoints AJAX JSON para processamento de colagem, execução em lote e gravação da matriz.
     """
+    gom_permission = 'pedidos.editar'
     def post(self, request, slug):
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 

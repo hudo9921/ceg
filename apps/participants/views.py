@@ -24,6 +24,7 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
     Permite colar linhas (Excel, Sheets, CSV, TSV) ou usar grade dinâmica interativa,
     com suporte robusto a números brasileiros (DDD 9 dígitos) e internacionais (+DDI).
     """
+    gom_permission = 'pedidos.editar'
 
     def get(self, request):
         known = Participant.objects.for_gom(request.active_gom)

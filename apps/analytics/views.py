@@ -13,6 +13,7 @@ class CEGStatusView(StaffRequiredMixin, View):
     Foco em status de CEGs, completude de sets (o que falta para fechar),
     sets completos porém pendentes (frete, taxa, pagamentos), valores das CEGs e fluxo Mercari.
     """
+    gom_permission = 'analytics.ver'
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -73,6 +74,7 @@ class SalesReportView(StaffRequiredMixin, View):
     Foco em faturamento, volume de claims/itens, gráficos temporais mês a mês
     (volume e valores em R$), ticket médio, ranking de itens e participantes.
     """
+    gom_permission = 'analytics.ver'
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -159,6 +161,7 @@ class SalesReportView(StaffRequiredMixin, View):
 
 
 class CEGStatusApiView(StaffRequiredMixin, View):
+    gom_permission = 'analytics.ver'
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -168,6 +171,7 @@ class CEGStatusApiView(StaffRequiredMixin, View):
 
 
 class SalesReportApiView(StaffRequiredMixin, View):
+    gom_permission = 'analytics.ver'
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -180,6 +184,7 @@ class SalesReportApiView(StaffRequiredMixin, View):
 
 # Mantém compatibilidade com AnalyticsDashboardView e AnalyticsApiView antigos
 class AnalyticsDashboardView(StaffRequiredMixin, View):
+    gom_permission = 'analytics.ver'
     def get(self, request):
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None
@@ -233,6 +238,7 @@ class AnalyticsDashboardView(StaffRequiredMixin, View):
 
 
 class AnalyticsApiView(StaffRequiredMixin, View):
+    gom_permission = 'analytics.ver'
     def get(self, request):
         group_id = request.GET.get('group') or None
         era_id = request.GET.get('era') or None

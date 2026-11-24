@@ -166,6 +166,7 @@ class VitrineListView(View):
 
 class VitrineItemCreateView(StaffRequiredMixin, View):
     """Permite à GOM adicionar um novo item diretamente na Vitrine."""
+    gom_permission = 'vitrine.editar'
 
     def get(self, request):
         tipos_item = TipoItem.objects.all().order_by('nome')
@@ -275,6 +276,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
 
 class VitrineItemUpdateView(StaffRequiredMixin, View):
     """Permite à GOM editar dados de um item existente na Vitrine."""
+    gom_permission = 'vitrine.editar'
 
     def get(self, request, slug):
         item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
@@ -372,6 +374,7 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
 
 class VitrineItemDeleteView(StaffRequiredMixin, View):
     """Exclui um item da Vitrine."""
+    gom_permission = 'vitrine.editar'
 
     def post(self, request, slug):
         item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
@@ -383,6 +386,7 @@ class VitrineItemDeleteView(StaffRequiredMixin, View):
 
 class VitrineToggleStatusView(StaffRequiredMixin, View):
     """Alterna rapidamente o status de um item (Disponível, Reservado, Vendido)."""
+    gom_permission = 'vitrine.reservar'
 
     def post(self, request, slug):
         item = get_object_or_404(ItemVitrine.objects.for_gom(request.active_gom), slug=slug)
@@ -405,6 +409,7 @@ class CaixaTransferUnclaimedToVitrineView(StaffRequiredMixin, View):
     Permite à GOM transferir todos os itens não claimados (slots livres)
     de uma Caixa entregue ('Chegou na casa da GOM') diretamente para a Vitrine.
     """
+    gom_permission = 'vitrine.editar'
 
     def get(self, request, slug):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)

@@ -79,6 +79,11 @@ class GomMembership(models.Model):
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                    null=True, blank=True, related_name='+')
     created_at = models.DateTimeField('Desde', auto_now_add=True)
+    # Permissões do admin (apps.goms.permissions). None = acesso completo (admins antigos).
+    permissions = models.JSONField('Permissões', null=True, blank=True, default=None)
+    permissions_updated_at = models.DateTimeField('Permissões alteradas em', null=True, blank=True)
+    permissions_updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                               null=True, blank=True, related_name='+')
 
     class Meta:
         verbose_name = 'Membro de GOM'
@@ -109,6 +114,8 @@ class GomInvite(models.Model):
     role = models.CharField('Papel', max_length=10, choices=GomMembership.Role.choices,
                             default=GomMembership.Role.ADMIN)
     name = models.CharField('Para quem', max_length=80, blank=True)
+    # Permissões iniciais do admin convidado (ignoradas para dono).
+    permissions = models.JSONField('Permissões', null=True, blank=True, default=None)
     token_hash = models.CharField(max_length=64, unique=True, editable=False)
     expires_at = models.DateTimeField('Expira em')
     accepted_at = models.DateTimeField('Aceito em', null=True, blank=True)
@@ -130,11 +137,11 @@ class GomInvite(models.Model):
         return f'Convite {self.get_role_display()} — {self.gom}'
 
     @classmethod
-    def create_with_token(cls, *, gom, role, name='', created_by=None):
+    def create_with_token(cls, *, gom, role, name='', created_by=None, permissions=None):
         """Cria o convite e devolve (convite, token). O token não é recuperável depois."""
         token = secrets.token_urlsafe(32)
         invite = cls.objects.create(
-            gom=gom, role=role, name=name, created_by=created_by,
+            gom=gom, role=role, name=name, created_by=created_by, permissions=permissions,
             token_hash=_hash_token(token),
             expires_at=timezone.now() + timedelta(days=INVITE_VALID_DAYS),
         )

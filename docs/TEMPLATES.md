@@ -234,7 +234,7 @@
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).
   - `invite_accept.html`: aceitar convite.
-  - `team.html`: equipe do GOM. Partials: `_team_members.html` (papéis e remoção) e `_team_invites.html` (convidar e cancelar).
+  - `team.html`: equipe do GOM e permissões por admin (visual novo `ui-*`, Alpine `teamApp()`, dados em `#team-data`). Partials: `_team_script.html` (lógica), `_team_members.html` (lista), `_team_panel.html` (papel, remover, modelos, interruptores, prévia do menu, barra de salvar), `_team_invites.html` (convites pendentes) e `_team_invite_sheet.html` (convidar com modelo).
   - `platform_goms.html`: GOMs da plataforma.
   - `partials/_invite_link.html`: link exibido uma única vez. `partials/_gom_switcher.html`: seletor de GOM ativo.
   - `components/_sidebar_gom_menu.html`: menu de gestão da sidebar (incluído pela `ui_sidebar.html`).

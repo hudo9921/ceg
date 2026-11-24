@@ -15,7 +15,7 @@
                     <span class="gom-unread-badge absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-ui-danger text-white text-[10px] font-bold flex items-center justify-center">{{ gom_unread_notifications_count }}</span>
                 {% endif %}
             </a>
-            <a href="{% url 'creations_hub' %}" class="ui-icon-btn" aria-label="Gestão do GOM">
+            <a href="{% url 'backoffice_home' %}" class="ui-icon-btn" aria-label="Gestão do GOM">
                 <i data-lucide="layout-dashboard" class="w-5 h-5" stroke-width="1.75"></i>
             </a>
         {% elif is_gom_member %}

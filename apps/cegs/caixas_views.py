@@ -12,7 +12,7 @@ from django.utils.dateparse import parse_date
 from django.views import View
 
 from .models import Caixa, CEG, ItemIndividual, TipoItem, CaixaItemRate, ItemSlot, CEGItemDefinition
-from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin
+from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin, pix_fields
 from apps.goms.access import can_manage
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ class CaixasDashboardView(StaffRequiredMixin, View):
     Acessível por todos para consulta e transparência de envios, com controles
     de gerenciamento ativos para Administradores / Organizadores.
     """
+    gom_permission = ('caixas.editar', 'caixas.valores', 'caixas.etapa')
 
     def get(self, request):
         origem_filter = request.GET.get('origem', '').strip().upper()
@@ -472,6 +473,7 @@ def parse_safe_decimal(val, field_label="Valor"):
 
 class CaixaCreateView(StaffRequiredMixin, View):
     """Criação de uma nova Caixa / Remessa internacional."""
+    gom_permission = 'caixas.editar'
 
     def get(self, request):
         cegs_sem_caixa = CEG.objects.for_gom(request.active_gom).filter(caixa__isnull=True).select_related('era__group').order_by('-created_at')
@@ -492,10 +494,8 @@ class CaixaCreateView(StaffRequiredMixin, View):
         data_previsao = parse_date(request.POST.get('data_previsao', '') or '')
         data_recebimento = parse_date(request.POST.get('data_recebimento', '') or '')
         observacoes = request.POST.get('observacoes', '').strip()
-        pix_key_frete = request.POST.get('pix_key_frete', '').strip()
-        pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
-        pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
-        pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
+        pix_key_frete, pix_instructions_frete, pix_key_taxa, pix_instructions_taxa = pix_fields(
+            request, ['pix_key_frete', 'pix_instructions_frete', 'pix_key_taxa', 'pix_instructions_taxa'])
 
         frete_inter_total, err_frete = parse_safe_decimal(request.POST.get('frete_inter_total'), "Frete Internacional")
         taxa_aduaneira_total, err_taxa = parse_safe_decimal(request.POST.get('taxa_aduaneira_total'), "Taxa Aduaneira")
@@ -549,6 +549,7 @@ class CaixaCreateView(StaffRequiredMixin, View):
 
 class CaixaUpdateView(StaffRequiredMixin, View):
     """Edição dos dados cadastrais e financeiros de uma Caixa."""
+    gom_permission = 'caixas.editar'
 
     def get(self, request, slug):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -572,10 +573,8 @@ class CaixaUpdateView(StaffRequiredMixin, View):
         data_previsao = parse_date(request.POST.get('data_previsao', '') or '')
         data_recebimento = parse_date(request.POST.get('data_recebimento', '') or '')
         observacoes = request.POST.get('observacoes', '').strip()
-        pix_key_frete = request.POST.get('pix_key_frete', '').strip()
-        pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
-        pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
-        pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
+        pix_key_frete, pix_instructions_frete, pix_key_taxa, pix_instructions_taxa = pix_fields(
+            request, ['pix_key_frete', 'pix_instructions_frete', 'pix_key_taxa', 'pix_instructions_taxa'], current=caixa)
 
         frete_inter_total, err_frete = parse_safe_decimal(request.POST.get('frete_inter_total'), "Frete Internacional")
         taxa_aduaneira_total, err_taxa = parse_safe_decimal(request.POST.get('taxa_aduaneira_total'), "Taxa Aduaneira")
@@ -647,6 +646,7 @@ class CaixaUpdateStatusView(StaffRequiredMixin, View):
     Ao atualizar, propaga automaticamente em cascata para todas as CEGs atreladas
     e gera notificações para os compradores.
     """
+    gom_permission = 'caixas.etapa'
 
     def post(self, request, slug):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -682,6 +682,7 @@ class CaixaUpdateStatusView(StaffRequiredMixin, View):
 
 class CaixaLinkCEGView(StaffRequiredMixin, View):
     """Vincula uma ou mais CEGs a esta Caixa."""
+    gom_permission = 'caixas.editar'
 
     def post(self, request, slug):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -711,6 +712,7 @@ class CaixaLinkCEGView(StaffRequiredMixin, View):
 
 class CaixaUnlinkCEGView(StaffRequiredMixin, View):
     """Desvincula uma CEG da Caixa."""
+    gom_permission = 'caixas.editar'
 
     def post(self, request, slug, ceg_id):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -726,6 +728,7 @@ class CaixaUnlinkCEGView(StaffRequiredMixin, View):
 
 class CaixaLinkItemIndividualView(StaffRequiredMixin, View):
     """Vincula um ou mais Itens Individuais (Mercari) a esta Caixa."""
+    gom_permission = 'caixas.editar'
 
     def post(self, request, slug):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -757,6 +760,7 @@ class CaixaLinkItemIndividualView(StaffRequiredMixin, View):
 
 class CaixaUnlinkItemIndividualView(StaffRequiredMixin, View):
     """Desvincula um Item Individual (Mercari) da Caixa."""
+    gom_permission = 'caixas.editar'
 
     def post(self, request, slug, item_id):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -776,6 +780,7 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
     salva as configurações de taxa em CaixaItemRate e propaga em lote para todos os itens individuais
     e slots de CEGs vinculados a esta caixa.
     """
+    gom_permission = 'caixas.valores'
 
     def post(self, request, slug):
         caixa = get_object_or_404(Caixa.objects.for_gom(request.active_gom), slug=slug)
@@ -966,6 +971,7 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
 
 class TipoItemCreateView(StaffRequiredMixin, View):
     """Cria um novo TipoItem dinamicamente e retorna JSON."""
+    gom_permission = ('ceg.editar', 'caixas.valores')
 
     def post(self, request):
         nome = request.POST.get('nome', '').strip()
