@@ -28,7 +28,7 @@ class VitrineListView(View):
     """
 
     def get(self, request):
-        queryset = ItemVitrine.objects.select_related('tipo_item', 'group', 'era', 'origem_caixa')
+        queryset = ItemVitrine.objects.select_related('tipo_item', 'group', 'era', 'origem_caixa', 'gom')
 
         # 1. Filtro de Status (padrão: apenas DISPONIVEL)
         status_filter = request.GET.get('status', 'DISPONIVEL').strip().upper()

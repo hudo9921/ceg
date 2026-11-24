@@ -136,13 +136,11 @@
   - `_caixa_transfer_script.html`: Motor Alpine.js (`transferVitrineApp`).
 
 ### 2.6. Vitrine de Pronta Entrega
-- **Listagem Pública (`vitrine.html` — 14 linhas):**
-  - `_vitrine_hero.html`: Banner temático com degradê e atalhos de gestão.
-  - `_vitrine_filters.html`: Filtros por grupo, era, tipo de item e status de disponibilidade.
-  - `_vitrine_grid.html`: Grade de cards de photocard e itens à pronta entrega.
-  - `_vitrine_card_item.html`: Card individual com foto, badges de destaque, preço e botão de claim.
-  - `_vitrine_modal_detail.html`: Modal de detalhes do item com galeria de fotos e checkout rápido.
-  - `_vitrine_app_script.html`: Motor Alpine.js (`vitrineApp`).
+- **Listagem Pública (`vitrine.html`), visual novo (P4):**
+  - `_vitrine_hero.html`: título "Vitrine", contagem de disponíveis e "Adicionar item" para a equipe.
+  - `_vitrine_filters.html` (+ `_search`, `_pills`, `_dropdowns`): busca e ordem; tipos e subtipos de photocard em chips; grupo, era, integrante e status em "Filtros" (recolhido).
+  - `_vitrine_grid.html` + `_vitrine_card_item.html`: photocards (`ui-pick`/`ui-pc`, `|thumb`) com Destaque/Reservado/Vendido; os `data-*` do card alimentam filtro, ordem e a ficha (`openCard`). Equipe do GOM dono: Editar e Marcar vendido/Disponibilizar.
+  - `_vitrine_modal_detail.html`: ficha (`ui-sheet`) com "Tenho interesse · falar no WhatsApp" para o WhatsApp do GOM dono do item (`Gom.whatsapp_contato`).
 - **Formulário de Item (`vitrine_form.html` — 55 linhas):**
   - `_vitrine_form_fields.html`: Título, categoria, grupo, era, integrante com sugestões, preço, estoque e status.
   - `_vitrine_form_image.html`: Upload de arquivo, URL externa e prévia reativa com correção de `previewSrc`.

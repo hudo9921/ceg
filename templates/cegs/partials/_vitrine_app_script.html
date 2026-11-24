@@ -124,6 +124,17 @@ function vitrineApp() {
             this.modalOpen = true;
         },
 
+        // Abre a ficha a partir dos data-* do card (P4; sem strings JS montadas no HTML).
+        openCard(card) {
+            const d = card.dataset;
+            this.activeItem = {
+                titulo: d.title, imageUrl: d.image, group: d.group, era: d.era, integrante: d.member,
+                subCategory: d.subCategory, preco: d.preco, status: d.status, descricao: d.descricao,
+                tipo: d.tipo, gom: d.gom, whatsapp: d.whatsapp,
+            };
+            this.modalOpen = true;
+        },
+
         formatPreco(val) {
             if (val === null || val === undefined || val === '') return '0,00';
             if (typeof val === 'string') {
@@ -142,8 +153,17 @@ function vitrineApp() {
             if (this.activeItem.subCategory) {
                 extra += ` [${this.activeItem.subCategory}]`;
             }
-            const msg = `Olá! Tenho interesse no item da Vitrine ValCegs:\n\n✨ *${this.activeItem.titulo}*${extra}\n💰 Valor: R$ ${precoFmt}\n\nAinda está disponível?`;
-            return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            const loja = this.activeItem.gom ? ` de ${this.activeItem.gom}` : '';
+            const msg = `Olá! Tenho interesse no item da vitrine${loja}:
+
+*${this.activeItem.titulo}*${extra}
+Valor: R$ ${precoFmt}
+
+Ainda está disponível?`;
+            // WhatsApp da GOM dona do item (só dígitos; número brasileiro sem DDI ganha 55). Sem número: escolher contato.
+            let phone = String(this.activeItem.whatsapp || '').replace(/\D/g, '');
+            if (phone && phone.length <= 11) phone = '55' + phone;
+            return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
         }
     };
 }
