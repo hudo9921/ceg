@@ -26,35 +26,45 @@ equipe para membros; GOMs da plataforma e Django Admin para o superusuário (ver
          class="pl-3 pr-1 py-1 space-y-1 border-l-2 border-purple-200/70 dark:border-white/10 ml-5 my-1">
         
         {% if is_gom_staff %}
+        {% if 'ceg.editar' in gom_perms %}
         <a href="{% url 'creations_hub' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'creations' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="sparkles" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500"></i>
             <span class="truncate">Hub de Criações</span>
         </a>
+        {% endif %}
 
+        {% if 'analytics.ver' in gom_perms %}
         <a href="{% url 'cegs_status' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'status' in request.path or request.resolver_match.url_name == 'cegs_status' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="activity" class="w-3.5 h-3.5 flex-shrink-0 text-amber-500"></i>
             <span class="truncate">Status das CEGs</span>
         </a>
+        {% endif %}
 
+        {% if 'caixas.editar' in gom_perms or 'caixas.valores' in gom_perms or 'caixas.etapa' in gom_perms %}
         <a href="{% url 'caixas_dashboard' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'caixa' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="plane" class="w-3.5 h-3.5 flex-shrink-0 text-sky-500"></i>
             <span class="truncate">Caixas & Remessas</span>
         </a>
+        {% endif %}
 
+        {% if 'pedidos.ver' in gom_perms %}
         <a href="{% url 'consulta_joiner' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'consulta-joiner' in request.path or request.resolver_match.url_name == 'consulta_joiner' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="users" class="w-3.5 h-3.5 flex-shrink-0 text-purple-500"></i>
             <span class="truncate">Consulta Joiner 360º</span>
         </a>
+        {% endif %}
 
+        {% if 'envios.pacotes' in gom_perms or 'gom.envio' in gom_perms %}
         <a href="{% url 'envios_nacionais' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'envio' in request.path or request.resolver_match.url_name == 'envios_nacionais' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="truck" class="w-3.5 h-3.5 flex-shrink-0 text-emerald-500"></i>
             <span class="truncate">Envios Nacionais</span>
         </a>
+        {% endif %}
 
         <a href="{% url 'gom_notifications' %}"
            class="group flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'notificacoes' in request.path or request.resolver_match.url_name == 'gom_notifications' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
@@ -69,17 +79,21 @@ equipe para membros; GOMs da plataforma e Django Admin para o superusuário (ver
             {% endif %}
         </a>
 
+        {% if 'analytics.ver' in gom_perms %}
         <a href="{% url 'auditoria_logs' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'auditoria' in request.path or 'logs' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="shield" class="w-3.5 h-3.5 flex-shrink-0 text-indigo-500"></i>
             <span class="truncate">Auditoria & Logs</span>
         </a>
+        {% endif %}
 
+        {% if 'analytics.ver' in gom_perms %}
         <a href="{% url 'sales_report' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if 'vendas' in request.path or 'sales' in request.path %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="trending-up" class="w-3.5 h-3.5 flex-shrink-0 text-teal-500"></i>
             <span class="truncate">Relatório de Vendas</span>
         </a>
+        {% endif %}
         {% endif %}
 
         {% if is_gom_member %}
@@ -88,11 +102,13 @@ equipe para membros; GOMs da plataforma e Django Admin para o superusuário (ver
             <i data-lucide="users" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500" stroke-width="1.75"></i>
             <span class="truncate">Equipe{% if active_gom %} · {{ active_gom.name }}{% endif %}</span>
         </a>
+        {% if 'gom.perfil' in gom_perms or 'pix.alterar' in gom_perms %}
         <a href="{% url 'gom_profile' %}"
            class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-[11px] transition-all {% if request.resolver_match.url_name == 'gom_profile' %}bg-pink-100/80 dark:bg-cyber-elevated text-pink-700 dark:text-cyber-neon font-bold border border-pink-200/70 dark:border-white/10{% else %}text-slate-600 dark:text-cyber-silver hover:bg-purple-50 dark:hover:bg-cyber-elevated hover:text-pink-600 dark:hover:text-cyber-neon font-medium{% endif %}">
             <i data-lucide="store" class="w-3.5 h-3.5 flex-shrink-0 text-pink-500" stroke-width="1.75"></i>
             <span class="truncate">Perfil do GOM</span>
         </a>
+        {% endif %}
         {% endif %}
         {% if is_platform_admin %}
         <a href="{% url 'platform_goms' %}"

@@ -13,12 +13,12 @@ from apps.participants.session_auth import safe_next_url
 
 from .access import (
     ACTIVE_GOM_SESSION_KEY, accessible_goms, gom_member_required, gom_owner_required,
-    gom_role, is_gom_member, is_platform_admin, platform_admin_required,
+    gom_role, has_gom_perm, is_gom_member, is_platform_admin, platform_admin_required,
 )
 from .forms import GomCreateForm, InviteForm, InviteSignupForm, _style
 from .models import Gom, GomInvite, GomMembership
 from .services import (
-    TeamRuleError, accept_invite, change_role, create_gom, remove_member, revoke_invite,
+    TeamRuleError, accept_invite, change_role, create_gom, remove_member, revoke_invite, set_permissions,
 )
 
 
@@ -38,15 +38,27 @@ class BackofficeLoginView(LoginView):
         return reverse('backoffice_home')
 
 
+FIRST_SCREENS = [
+    ('creations_hub', ['ceg.editar']),
+    ('caixas_dashboard', ['caixas.editar', 'caixas.valores', 'caixas.etapa']),
+    ('consulta_joiner', ['pedidos.ver']),
+    ('envios_nacionais', ['envios.pacotes', 'gom.envio']),
+    ('cegs_status', ['analytics.ver']),
+    ('gom_profile', ['gom.perfil', 'pix.alterar']),
+]
+
+
 @never_cache
 def backoffice_home(request):
     """Primeira tela depois do login, conforme o papel."""
     user = request.user
     if not user.is_authenticated:
         return redirect('backoffice_login')
-    if user.is_staff or user.is_superuser:
-        return redirect('creations_hub')
-    if is_gom_member(user):
+    if user.is_staff or user.is_superuser or is_gom_member(user):
+        # Primeira tela que a pessoa pode usar (permissões do admin: apps.goms.permissions).
+        for url_name, perms in FIRST_SCREENS:
+            if has_gom_perm(request, *perms):
+                return redirect(url_name)
         return redirect('gom_team')
     raise PermissionDenied('Esta conta não faz parte da equipe de nenhum GOM.')
 
@@ -108,17 +120,47 @@ def team(request):
         if form.is_valid():
             _invite, token = GomInvite.create_with_token(
                 gom=gom, role=form.cleaned_data['role'], name=form.cleaned_data['name'],
-                created_by=request.user)
+                created_by=request.user, permissions=form.invite_permissions())
             new_link, form = invite_link(request, token), InviteForm()
+    memberships = list(gom.memberships.filter(is_active=True)
+                       .select_related('user', 'permissions_updated_by').order_by('-role', 'user__username'))
     return render(request, 'goms/team.html', {
         'gom': gom,
         'is_owner': is_owner,
-        'memberships': gom.memberships.filter(is_active=True).select_related('user'),
+        'memberships': memberships,
+        'team_data': _team_data(request, memberships, is_owner),
         'invites': gom.invites.pending(),
         'form': form,
         'new_link': new_link,
         'roles': GomMembership.Role.choices,
     })
+
+
+def _team_data(request, memberships, is_owner):
+    """Dados da tela de equipe (Alpine): membros, catálogo de permissões e modelos."""
+    from django.utils import timezone
+
+    from . import permissions as perms
+
+    members = []
+    for m in memberships:
+        changed = ''
+        if m.permissions_updated_at:
+            who = m.permissions_updated_by.get_username() if m.permissions_updated_by else 'alguém'
+            changed = f"{who} em {timezone.localtime(m.permissions_updated_at):%d/%m às %H:%M}"
+        members.append({
+            'id': m.id, 'name': m.user.get_username(), 'is_owner': m.is_owner, 'is_me': m.user_id == request.user.id,
+            'since': f'{timezone.localtime(m.created_at):%d/%m/%Y}', 'perms': sorted(perms.membership_permissions(m)),
+            'changed': changed,
+        })
+    return {
+        'can_edit': is_owner,
+        'members': members,
+        'areas': perms.areas(),
+        'presets': [{'key': k, 'name': v[0], 'help': v[1], 'perms': v[2]} for k, v in perms.PRESETS.items()],
+        'total': len(perms.ALL),
+        'menu': [{'name': name, 'perms': keys} for name, keys in perms.MENU],
+    }
 
 
 def _handle_member_action(request, gom):
@@ -128,10 +170,13 @@ def _handle_member_action(request, gom):
         if action == 'revoke':
             revoke_invite(get_object_or_404(GomInvite, pk=request.POST.get('invite_id'), gom=gom), request.user)
             messages.success(request, 'Convite cancelado.')
-        elif action in ('role', 'remove'):
+        elif action in ('role', 'remove', 'perms'):
             membership = get_object_or_404(GomMembership, pk=request.POST.get('membership_id'),
                                            gom=gom, is_active=True)
-            if action == 'role':
+            if action == 'perms':
+                set_permissions(membership, request.POST.getlist('perms'), request.user)
+                messages.success(request, f'Permissões de {membership.user.get_username()} salvas.')
+            elif action == 'role':
                 change_role(membership, request.POST.get('role'), request.user)
                 messages.success(request, 'Papel atualizado.')
             else:
@@ -211,18 +256,22 @@ def gom_profile(request):
     from .forms import GomProfileForm
 
     gom = request.active_gom
-    form = GomProfileForm(request.POST or None, instance=gom)
+    can_profile, can_pix = has_gom_perm(request, 'gom.perfil'), has_gom_perm(request, 'pix.alterar')
+    if not (can_profile or can_pix):
+        raise PermissionDenied('Sem permissão para isso. Fale com o dono do GOM.')
+    form = GomProfileForm(request.POST or None, instance=gom, can_edit_profile=can_profile, can_edit_pix=can_pix)
+    context = {'gom': gom, 'form': form, 'can_edit_profile': can_profile, 'can_edit_pix': can_pix}
     if request.method == 'POST' and form.is_valid():
         profile = form.save(commit=False)
         try:
             for field, folder in (('logo', 'goms/logos'), ('banner', 'goms/banners')):
                 upload = request.FILES.get(f'{field}_file')
-                if upload:
+                if upload and can_profile:
                     setattr(profile, f'{field}_url', process_image_upload(file_obj=upload, folder=folder))
         except ImageSizeError as exc:
             messages.error(request, str(exc))
-            return render(request, 'goms/profile.html', {'gom': gom, 'form': form})
+            return render(request, 'goms/profile.html', context)
         profile.save()
         messages.success(request, 'Perfil do GOM atualizado.')
         return redirect('gom_profile')
-    return render(request, 'goms/profile.html', {'gom': gom, 'form': form})
+    return render(request, 'goms/profile.html', context)

@@ -10,6 +10,7 @@ from django.views import View
 from apps.cegs.models import GOMNotification
 from apps.cegs.audit_service import AuditService
 from apps.core.permissions import StaffRequiredMixin
+from apps.goms.permissions import ANY
 
 
 class GOMNotificationsView(StaffRequiredMixin, View):
@@ -17,6 +18,7 @@ class GOMNotificationsView(StaffRequiredMixin, View):
     Central de Notificações Operacionais da GOM.
     Exibe feed filtrável por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).
     """
+    gom_permission = ANY
     def get(self, request):
         # Auto-sincronização de eventos retroativos caso ainda não existam notificações
         AuditService.sync_recent_gom_notifications(50)
@@ -103,6 +105,7 @@ class GOMNotificationsView(StaffRequiredMixin, View):
 
 class MarkGOMNotificationReadView(StaffRequiredMixin, View):
     """Marca uma notificação individual como lida via AJAX."""
+    gom_permission = ANY
     def post(self, request, notification_id):
         notif = get_object_or_404(GOMNotification.objects.for_gom(request.active_gom), id=notification_id)
         notif.mark_as_read()
@@ -120,6 +123,7 @@ class MarkGOMNotificationReadView(StaffRequiredMixin, View):
 
 class MarkAllGOMNotificationsReadView(StaffRequiredMixin, View):
     """Marca todas as notificações (ou filtradas por tipo) como lidas via AJAX."""
+    gom_permission = ANY
     def post(self, request):
         action_type = (request.POST.get('action_type') or request.GET.get('action_type', 'all')).strip().lower()
         qs = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False)

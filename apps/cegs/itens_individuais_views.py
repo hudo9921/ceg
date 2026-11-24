@@ -37,6 +37,7 @@ def parse_optional_decimal(v_str):
 
 class ParticipantLookupAPIView(StaffRequiredMixin, View):
     """Retorna dados de participante existente pelo telefone para preenchimento ágil."""
+    gom_permission = ('pedidos.ver', 'pedidos.editar')
 
     def get(self, request):
         phone_raw = request.GET.get('phone', '').strip()
@@ -66,6 +67,7 @@ class ParticipantLookupAPIView(StaffRequiredMixin, View):
 
 class CreateItemIndividualView(StaffRequiredMixin, View):
     """Cadastra um novo Item Individual (Mercari, Surugaya, etc.)."""
+    gom_permission = 'pedidos.editar'
 
     def post(self, request):
         nome = request.POST.get('nome', '').strip()
@@ -240,6 +242,7 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
 
 class UpdateItemIndividualView(StaffRequiredMixin, View):
     """Atualiza dados, status e valores de um Item Individual existente."""
+    gom_permission = 'pedidos.editar'
 
     def post(self, request, item_id):
         item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)
@@ -353,6 +356,7 @@ class UpdateItemIndividualView(StaffRequiredMixin, View):
 
 class ToggleItemPaymentView(StaffRequiredMixin, View):
     """Alterna rapidamente o status de pagamento de item (produto), frete internacional ou taxa aduaneira."""
+    gom_permission = 'pag.confirmar'
 
     def post(self, request, item_id):
         item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)
@@ -432,6 +436,7 @@ class ToggleItemPaymentView(StaffRequiredMixin, View):
 
 class DeleteItemIndividualView(StaffRequiredMixin, View):
     """Remove um Item Individual."""
+    gom_permission = 'pedidos.editar'
 
     def post(self, request, item_id):
         item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)

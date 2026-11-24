@@ -1,0 +1,45 @@
+{% comment %}Convidar admin/dono (só o dono). Admin começa com um modelo; Pix nunca vem ligado num convite.{% endcomment %}
+<div x-show="inviteOpen" x-cloak class="ui-scrim flex items-end sm:items-center justify-center p-0 sm:p-4"
+     @click.self="inviteOpen = false" @keydown.escape.window="inviteOpen = false">
+    <form method="post" class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-lg space-y-4" role="dialog" aria-modal="true"
+          aria-labelledby="invite-title">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="invite">
+        <h2 id="invite-title" class="ui-disp text-2xl">Convidar para a equipe</h2>
+
+        <label class="flex flex-col gap-1.5">
+            <span class="ui-label">{{ form.name.label }}</span>
+            <input type="text" name="name" maxlength="80" class="ui-input" placeholder="ex.: Bia">
+        </label>
+
+        <div class="space-y-1.5">
+            <span class="ui-label" id="invite-role-label">Papel</span>
+            <div class="ui-toggle" role="radiogroup" aria-labelledby="invite-role-label">
+                {% for value, label in roles %}
+                    <label :class="invRole === '{{ value }}' && 'is-on'">
+                        <input type="radio" name="role" value="{{ value }}" class="sr-only" x-model="invRole">{{ label }}
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="space-y-2" x-show="invRole === 'ADMIN'">
+            <span class="ui-label" id="invite-preset-label">Começa com o modelo</span>
+            <div class="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="invite-preset-label">
+                <template x-for="p in presets" :key="p.key">
+                    <label class="ui-chip cursor-pointer" :class="invPreset === p.key && 'is-on'">
+                        <input type="radio" name="preset" :value="p.key" class="sr-only" x-model="invPreset"><span x-text="p.name"></span>
+                    </label>
+                </template>
+            </div>
+            <p class="ui-muted text-[13px]" x-text="invHelp"></p>
+            <p class="ui-muted text-[13px]">Chaves Pix nunca vêm ligadas num convite. Você libera depois, se precisar.</p>
+        </div>
+        <p class="ui-muted text-[13px]" x-show="invRole === 'OWNER'">Donos têm acesso total, inclusive à equipe.</p>
+
+        <div class="flex justify-end gap-2.5">
+            <button type="button" class="ui-btn ui-btn-ghost" @click="inviteOpen = false">Cancelar</button>
+            <button type="submit" class="ui-btn ui-btn-primary">Gerar link de convite</button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,98 @@
+{% comment %}Painel de permissões do membro escolhido (teamApp). O dono edita; os demais só veem.{% endcomment %}
+<section class="ui-card overflow-hidden" aria-labelledby="perm-title">
+    <div class="p-5 space-y-4 border-b" style="border-color: var(--ui-line)">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 id="perm-title" class="ui-disp text-2xl" x-text="sel.name"></h2>
+                <p class="ui-muted text-sm mt-1">
+                    <span x-text="summary(sel, draft)"></span> · desde <span x-text="sel.since"></span>
+                </p>
+            </div>
+            {% if is_owner %}
+                <div class="flex flex-wrap items-center gap-2" x-show="!sel.is_me">
+                    <form method="post" class="flex items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="role">
+                        <input type="hidden" name="membership_id" :value="sel.id">
+                        <label class="ui-label" :for="'role-' + sel.id">Papel</label>
+                        <select name="role" :id="'role-' + sel.id" class="ui-input !min-h-[36px] !text-[13px]" onchange="this.form.submit()">
+                            {% for value, label in roles %}
+                                <option value="{{ value }}" :selected="sel.is_owner === ('{{ value }}' === 'OWNER')">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    <form method="post" @submit="if (!confirm('Remover ' + sel.name + ' da equipe?')) $event.preventDefault()">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="membership_id" :value="sel.id">
+                        <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm ui-danger">Remover da equipe</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+
+        <p x-show="sel.is_owner" class="ui-well p-3.5 text-sm">
+            O dono tem acesso a tudo, inclusive à equipe. Para limitar esta conta, transforme outra pessoa em dona primeiro.
+        </p>
+
+        <div x-show="!sel.is_owner" class="space-y-2">
+            <p class="ui-label">Modelo</p>
+            <div class="flex flex-wrap gap-2" role="group" aria-label="Modelo de permissões">
+                <template x-for="p in presets" :key="p.key">
+                    <button type="button" class="ui-chip" :class="presetOf(draft) === p.key && 'is-on'" :disabled="!canEdit"
+                            :aria-pressed="(presetOf(draft) === p.key).toString()" @click="applyPreset(p)" x-text="p.name"></button>
+                </template>
+                <span class="ui-chip" :class="!presetOf(draft) && 'is-on'" aria-hidden="true">Personalizado</span>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" x-show="!sel.is_owner">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="perms">
+        <input type="hidden" name="membership_id" :value="sel.id">
+        <template x-for="k in draft" :key="k"><input type="hidden" name="perms" :value="k"></template>
+
+        <template x-for="area in areas" :key="area.name">
+            <div class="py-1 border-b" style="border-color: var(--ui-line)" role="group" :aria-label="area.name">
+                <div class="flex items-center gap-3 px-5 pt-3.5 pb-1">
+                    <span class="ui-label" x-text="area.name"></span>
+                    <span class="ui-label ml-auto" x-text="areaCount(area)"></span>
+                </div>
+                <template x-for="p in area.perms" :key="p.key">
+                    <div class="flex items-center gap-3 px-5 py-2 min-h-[52px]">
+                        <span class="flex-1 min-w-0">
+                            <span class="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+                                <span x-text="p.label"></span>
+                                <span x-show="p.sensitive" class="ui-status ui-warn">Sensível</span>
+                            </span>
+                            <span class="block ui-muted text-[13px] mt-0.5" x-show="p.help" x-text="p.help"></span>
+                        </span>
+                        <button type="button" class="ui-switch !ml-0" role="switch" :aria-checked="has(p.key).toString()"
+                                :aria-label="p.label" :disabled="!canEdit" @click="toggle(p.key)"
+                                :class="!canEdit && 'opacity-60 !cursor-default'">
+                            <span class="ui-knob" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <div class="px-5 py-4 space-y-2">
+            <p class="ui-label">Menu que <span x-text="sel.name"></span> vê</p>
+            <div class="flex flex-wrap gap-1.5">
+                <template x-for="item in menuPreview" :key="item"><span class="ui-chip !h-8 !text-[13px]" x-text="item"></span></template>
+                <span x-show="!menuPreview.length" class="ui-muted text-sm">Só a equipe e as notificações.</span>
+            </div>
+            <p class="ui-muted text-[13px]" x-show="sel.changed">Última alteração: <span x-text="sel.changed"></span> (fica na auditoria do GOM)</p>
+        </div>
+
+        {% if is_owner %}
+            <div x-show="dirty" x-cloak class="ui-card fixed z-40 left-1/2 lg:left-[calc(50%+120px)] -translate-x-1/2 w-[min(640px,calc(100%-32px))] bottom-[88px] lg:bottom-6 flex flex-wrap items-center gap-3 px-4 py-3" role="status">
+                <span class="flex-1 text-[15px] font-semibold">Alterações não salvas</span>
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="resetDraft()">Descartar</button>
+                <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">Salvar permissões</button>
+            </div>
+        {% endif %}
+    </form>
+</section>

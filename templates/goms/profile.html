@@ -24,6 +24,7 @@
             <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-800 dark:text-rose-200">{{ form.non_field_errors|join:" " }}</div>
         {% endif %}
 
+        {% if can_edit_profile %}
         <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 grid sm:grid-cols-2 gap-4">
             <h2 class="sm:col-span-2 text-sm font-black text-slate-900 dark:text-white">Página pública</h2>
             {% include 'goms/partials/_profile_field.html' with field=form.name %}
@@ -33,8 +34,9 @@
             {% include 'goms/partials/_profile_image.html' with field=form.logo_url current=gom.logo_url input_name="logo_file" label="Logo" %}
             {% include 'goms/partials/_profile_image.html' with field=form.banner_url current=gom.banner_url input_name="banner_file" label="Banner" %}
         </section>
+        {% endif %}
 
-        {% include 'goms/partials/_profile_pix.html' %}
+        {% if can_edit_pix %}{% include 'goms/partials/_profile_pix.html' %}{% endif %}
 
         <div class="flex flex-wrap items-center justify-between gap-3">
             <a href="{% url 'envios_nacionais' %}" class="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1">

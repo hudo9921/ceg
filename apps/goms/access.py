@@ -47,6 +47,40 @@ def gom_role(user, gom):
     return None
 
 
+def active_membership(user, gom):
+    """Vínculo ativo do usuário neste GOM (ou None)."""
+    if gom is None:
+        return None
+    return next((m for m in active_memberships(user) if m.gom_id == gom.id), None)
+
+
+def gom_permissions(request):
+    """Permissões efetivas no GOM ativo (apps.goms.permissions), calculadas uma vez por requisição."""
+    from . import permissions as perms
+
+    if not hasattr(request, '_gom_permissions'):
+        user = getattr(request, 'user', None)
+        gom = get_active_gom(request) if user and user.is_authenticated else None
+        if gom is None or gom_role(user, gom) is None:
+            result = frozenset()
+        elif is_platform_admin(user):
+            result = perms.ALL
+        else:
+            result = perms.membership_permissions(active_membership(user, gom))
+        request._gom_permissions = result
+    return request._gom_permissions
+
+
+def has_gom_perm(request, *keys) -> bool:
+    """True se a pessoa tem QUALQUER uma das permissões no GOM ativo. `ANY` = qualquer membro."""
+    from .permissions import ANY
+
+    granted = gom_permissions(request)
+    if not granted:
+        return False
+    return any(key == ANY or key in granted for key in keys)
+
+
 def accessible_goms(user):
     """GOMs em que o usuário pode atuar; os da própria equipe vêm primeiro (GOM padrão)."""
     own = [m.gom for m in active_memberships(user)]

@@ -15,7 +15,7 @@ from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, It
 from apps.cegs.services import ClaimService
 from .image_utils import process_image_upload
 from apps.participants.models import Participant, Claim
-from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin
+from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin, pix_fields
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,7 @@ def parse_local_datetime(val_str: str):
 
 class CreationsHubView(StaffRequiredMixin, View):
     """Página principal de criações e gerenciamento para o Organizador."""
+    gom_permission = 'ceg.editar'
 
     def get(self, request):
         groups = KpopGroup.objects.prefetch_related('eras', 'members').order_by('name')
@@ -192,6 +193,7 @@ def extract_member_names(request):
 
 class CreateGroupView(StaffRequiredMixin, View):
     """Cadastra um novo Grupo ou Solista de K-pop."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         name = request.POST.get('name', '').strip()
@@ -339,6 +341,7 @@ class UpdateGroupView(PlatformAdminRequiredMixin, View):  # catálogo compartilh
 
 class CreateEraView(StaffRequiredMixin, View):
     """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         group_id = request.POST.get('group_id')
@@ -500,6 +503,7 @@ class CreateCEGView(StaffRequiredMixin, View):
     - Construtor dinâmico de itens/photocards com valores
     - Geração automática do Set #1 e de seus slots físicos
     """
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         era_id = request.POST.get('era_id')
@@ -514,8 +518,7 @@ class CreateCEGView(StaffRequiredMixin, View):
         prazo_pagamento_frete_inter_str = request.POST.get('prazo_pagamento_frete_inter', '').strip()
         prazo_pagamento_taxa_aduaneira_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
         # Em branco = a CEG segue as chaves Pix padrão do GOM (resolvidas na hora: CEG._resolve_pix).
-        pix_key = request.POST.get('pix_key', '').strip()
-        pix_instructions = request.POST.get('pix_instructions', '').strip()
+        pix_key, pix_instructions = pix_fields(request, ['pix_key', 'pix_instructions'])
         banner_file = request.FILES.get('banner_file')
         banner_base64 = request.POST.get('banner_base64', '').strip()
         banner_url_input = request.POST.get('banner_url', '').strip()
@@ -802,6 +805,7 @@ class CreateCEGView(StaffRequiredMixin, View):
 
 class CreateSetView(StaffRequiredMixin, View):
     """Adiciona um novo Set a uma CEG existente e gera os slots automaticamente."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         next_url = request.POST.get('next')
@@ -858,6 +862,7 @@ class CreateSetView(StaffRequiredMixin, View):
 
 class AddItemToCEGView(StaffRequiredMixin, View):
     """Adiciona uma nova definição de item/photocard a uma CEG existente."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         ceg_id = request.POST.get('ceg_id')

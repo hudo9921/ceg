@@ -20,6 +20,7 @@ class AuditDashboardView(StaffRequiredMixin, View):
     Painel Central de Auditoria e Logs de Atividades.
     Permite filtrar e visualizar criação de contas, claims, pagamentos, envios e segmentações.
     """
+    gom_permission = 'analytics.ver'
     def get(self, request):
         qs = AuditLog.objects.for_gom(request.active_gom).select_related(
             'actor', 'participant', 'ceg', 'slot__item_definition',

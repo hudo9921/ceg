@@ -37,6 +37,7 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
     - Lista de todos os pacotes nacionais enviados/preparados para ele e feedbacks recebidos
     - Ferramenta de empacotamento de novos itens do participante
     """
+    gom_permission = 'pedidos.ver'
 
     def get(self, request):
         q = request.GET.get('q', '').strip()
@@ -404,6 +405,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
     - Visualização dos feedbacks e avaliações por estrelas (1 a 5)
     - Ações de despacho, marcação de entrega, edição e exclusão de pacotes
     """
+    gom_permission = ('envios.pacotes', 'gom.envio')
 
     def get(self, request):
         status_filter = request.GET.get('status', '').strip()
@@ -484,6 +486,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
     Agrupa itens selecionados de um participante em um PacoteNacional (novo ou existente).
     Garante que apenas itens com permissão e sem bloqueios sejam empacotados.
     """
+    gom_permission = 'envios.pacotes'
 
     def post(self, request):
         participant_id = request.POST.get('participant_id', '').strip()
@@ -585,6 +588,7 @@ class MarcarPacoteEnviadoView(StaffRequiredMixin, View):
     Marca um pacote como enviado nacionalmente, preenche/atualiza o código de rastreio
     e envia notificação ao participante.
     """
+    gom_permission = 'envios.pacotes'
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
@@ -606,6 +610,7 @@ class MarcarPacoteEntregueAdminView(StaffRequiredMixin, View):
     Permite que o operador staff marque o pacote como entregue manualmente
     diretamente pelo painel administrativo.
     """
+    gom_permission = 'envios.pacotes'
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
@@ -624,6 +629,7 @@ class AtualizarPacoteView(StaffRequiredMixin, View):
     """
     Atualiza detalhes do pacote nacional (código de rastreio, frete, transportadora, status e notas).
     """
+    gom_permission = 'envios.pacotes'
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
@@ -658,6 +664,7 @@ class DesempacotarItemView(StaffRequiredMixin, View):
     """
     Remove um item (slot ou individual) de seu pacote nacional.
     """
+    gom_permission = 'envios.pacotes'
 
     def post(self, request):
         item_uid = request.POST.get('item_uid', '').strip()
@@ -690,6 +697,7 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
     """
     Exclui um pacote nacional e desassocia todos os itens contidos nele.
     """
+    gom_permission = 'envios.pacotes'
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
@@ -713,6 +721,7 @@ class AtualizarConfiguracaoEnvioView(StaffRequiredMixin, View):
     """
     Atualiza o link do formulário Google e instruções de envio nacional configurados pela GOM.
     """
+    gom_permission = 'gom.envio'
 
     def post(self, request):
         link_google = request.POST.get('link_formulario_google', '').strip()

@@ -1,47 +1,19 @@
-{% comment %}Lista de membros ativos; dono pode trocar papel e remover (nunca o último dono).{% endcomment %}
-<section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
-    <h2 class="text-sm font-black text-slate-900 dark:text-white">Membros</h2>
-    <ul class="divide-y divide-slate-100 dark:divide-slate-800">
-        {% for m in memberships %}
-            <li class="py-3 flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-8 h-8 rounded-full flex items-center justify-center {% if m.is_owner %}bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400{% endif %}">
-                        <i data-lucide="{% if m.is_owner %}crown{% else %}user{% endif %}" class="w-4 h-4" stroke-width="1.75"></i>
-                    </span>
-                    <div>
-                        <p class="text-sm font-bold text-slate-800 dark:text-slate-100">
-                            {{ m.user.get_username }}{% if m.user == request.user %} <span class="text-[11px] font-normal text-slate-400">(você)</span>{% endif %}
-                        </p>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ m.get_role_display }} · desde {{ m.created_at|date:"d/m/Y" }}</p>
-                    </div>
-                </div>
-                {% if is_owner %}
-                    <div class="flex items-center gap-2">
-                        <form method="post" class="flex items-center gap-1.5">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="role">
-                            <input type="hidden" name="membership_id" value="{{ m.id }}">
-                            <select name="role" onchange="this.form.submit()" aria-label="Papel de {{ m.user.get_username }}"
-                                    class="px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100">
-                                {% for value, label in roles %}
-                                    <option value="{{ value }}" {% if value == m.role %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                        <form method="post" onsubmit="return confirm('Remover {{ m.user.get_username|escapejs }} da equipe?')">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="remove">
-                            <input type="hidden" name="membership_id" value="{{ m.id }}">
-                            <button type="submit" title="Remover da equipe"
-                                    class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer">
-                                <i data-lucide="user-minus" class="w-4 h-4" stroke-width="1.75"></i>
-                            </button>
-                        </form>
-                    </div>
-                {% endif %}
-            </li>
-        {% empty %}
-            <li class="py-3 text-xs text-slate-500 dark:text-slate-400">Nenhum membro ainda.</li>
-        {% endfor %}
-    </ul>
+{% comment %}Lista da equipe (teamApp): escolher um membro abre as permissões dele no painel ao lado.{% endcomment %}
+<section class="ui-card overflow-hidden" aria-label="Membros da equipe">
+    <template x-for="m in members" :key="m.id">
+        <button type="button" @click="pick(m.id)" :aria-pressed="(m.id === selId).toString()"
+                class="w-full flex items-center gap-3 px-4 py-3.5 min-h-[64px] text-left border-b last:border-b-0 transition-colors cursor-pointer"
+                style="border-color: var(--ui-line)"
+                :style="m.id === selId ? 'background: var(--ui-surface-2); box-shadow: inset 3px 0 0 var(--ui-accent)' : ''">
+            <span class="w-10 h-10 flex-none flex items-center justify-center rounded-ui-pill text-[15px] font-extrabold text-[#1E1B26]"
+                  style="background: var(--ui-holo)" x-text="initial(m.name)" aria-hidden="true"></span>
+            <span class="flex-1 min-w-0">
+                <span class="block text-[15px] font-bold truncate">
+                    <span x-text="m.name"></span><span x-show="m.is_me" class="ui-muted font-normal text-[13px]"> (você)</span>
+                </span>
+                <span class="block ui-muted text-[13px]" x-text="summary(m)"></span>
+            </span>
+        </button>
+    </template>
+    <p x-show="!members.length" class="p-4 ui-muted text-sm">Nenhum membro ainda.</p>
 </section>

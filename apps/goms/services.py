@@ -50,13 +50,16 @@ def accept_invite(invite_id, user):
             raise TeamRuleError('Este convite não é mais válido.')
         membership, created = GomMembership.objects.get_or_create(
             user=user, gom=invite.gom,
-            defaults={'role': invite.role, 'invited_by': invite.created_by})
+            defaults={'role': invite.role, 'invited_by': invite.created_by,
+                      'permissions': invite.permissions})
         if not created:
             # Reentrada de quem tinha saído; nunca rebaixa um dono por convite de admin.
             membership.is_active = True
             if invite.role == GomMembership.Role.OWNER:
                 membership.role = GomMembership.Role.OWNER
-            membership.save(update_fields=['is_active', 'role'])
+            else:
+                membership.permissions = invite.permissions
+            membership.save(update_fields=['is_active', 'role', 'permissions'])
         invite.accepted_at = timezone.now()
         invite.accepted_by = user
         invite.save(update_fields=['accepted_at', 'accepted_by'])
@@ -75,6 +78,33 @@ def change_role(membership, new_role, actor):
     membership.save(update_fields=['role'])
     security_logger.info("Papel alterado: %s em %s -> %s (por %s)", membership.user.get_username(),
                          membership.gom.slug, new_role, actor.get_username())
+
+
+def set_permissions(membership, keys, actor):
+    """Salva as permissões de um admin (o dono sempre tem tudo) e registra na auditoria do GOM."""
+    from apps.cegs.models import AuditLog
+
+    from . import permissions as perms
+
+    if membership.role == GomMembership.Role.OWNER:
+        raise TeamRuleError('O dono do GOM sempre tem acesso total.')
+    before = perms.membership_permissions(membership)
+    new = perms.clean(keys)
+    membership.permissions = new
+    membership.permissions_updated_at = timezone.now()
+    membership.permissions_updated_by = actor
+    membership.save(update_fields=['permissions', 'permissions_updated_at', 'permissions_updated_by'])
+    added, removed = sorted(set(new) - before), sorted(before - set(new))
+    AuditLog.objects.create(
+        gom=membership.gom, event_type=AuditLog.EventType.OTHER, actor=actor,
+        actor_name=actor.get_username(),
+        action_label=f'Permissões de {membership.user.get_username()} alteradas'[:255],
+        field_name='permissoes',
+        old_value=f'{len(before)} de {len(perms.ALL)}', new_value=f'{len(new)} de {len(perms.ALL)}',
+        metadata={'membro': membership.user.get_username(), 'adicionadas': added, 'removidas': removed},
+    )
+    security_logger.info("Permissões alteradas: %s em %s (+%s -%s) por %s", membership.user.get_username(),
+                         membership.gom.slug, added, removed, actor.get_username())
 
 
 def remove_member(membership, actor):
