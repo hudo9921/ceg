@@ -2,7 +2,7 @@
 <div x-show="showNewTipoModal" x-cloak
      class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs"
      @click.self="closeNewTipoModal()">
-    <div class="bg-white dark:bg-[#14121B] rounded-3xl border border-violet-200/70 dark:border-white/10 max-w-md w-full p-6 shadow-2xl space-y-4 transform transition-all">
+    <div class="ui-card max-w-md w-full p-6 space-y-4 transform transition-all">
         
         <!-- Header -->
         <div class="flex justify-between items-center border-b border-violet-100 dark:border-white/10 pb-3">
@@ -25,13 +25,13 @@
             <div>
                 <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1.5">Nome do Tipo de Item *</label>
                 <input type="text" x-model="newTipoNome" required placeholder="Ex: Mini Poster, Keyring, Inclusão, Labubu"
-                       class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-violet-500 focus:bg-white transition">
+                       class="ui-input w-full">
             </div>
 
             <div>
                 <label class="block font-bold text-slate-700 dark:text-cyber-silver mb-1.5">Descrição (Opcional)</label>
                 <input type="text" x-model="newTipoDesc" placeholder="Breve detalhe sobre esta categoria de item"
-                       class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl text-slate-700 dark:text-cyber-silver focus:ring-2 focus:ring-violet-500 focus:bg-white transition">
+                       class="ui-input w-full">
             </div>
 
             <div class="p-3 bg-violet-50/60 dark:bg-violet-950/30 rounded-xl border border-violet-200/60 dark:border-white/10 flex items-start gap-2">
@@ -43,11 +43,11 @@
 
             <div class="flex justify-end gap-2.5 pt-3 border-t border-violet-100 dark:border-white/10">
                 <button type="button" @click="closeNewTipoModal()"
-                        class="px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver font-bold rounded-xl transition cursor-pointer">
+                        class="ui-btn ui-btn-ghost cursor-pointer">
                     Cancelar
                 </button>
                 <button type="submit" :disabled="newTipoSubmitting"
-                        class="px-5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-black rounded-xl transition shadow-md shadow-violet-500/25 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:scale-[1.02]">
+                        class="ui-btn ui-btn-primary cursor-pointer">
                     <span x-show="newTipoSubmitting" class="animate-spin"><i data-lucide="loader-2" class="w-3.5 h-3.5"></i></span>
                     <i x-show="!newTipoSubmitting" data-lucide="check" class="w-3.5 h-3.5"></i>
                     <span>Criar Tipo</span>

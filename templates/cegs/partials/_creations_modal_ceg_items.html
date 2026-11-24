@@ -2,11 +2,11 @@
 <div class="p-4 sm:p-5 bg-pink-50/40 dark:bg-pink-950/20 rounded-2xl border border-pink-200/70 dark:border-pink-500/20 space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-pink-100 dark:border-white/10 pb-2">
         <div>
-            <span class="text-xs font-black text-pink-900 dark:text-pink-300 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="ui-label flex items-center gap-1.5">
                 <i data-lucide="layers" class="w-3.5 h-3.5 text-pink-500"></i>
                 <span>6. Definição de Itens, Valores e Pré-Reservas</span>
             </span>
-            <span class="text-[11px] text-slate-500 dark:text-slate-400">
+            <span class="text-[11px] ui-muted">
                 Defina os photocards/itens da CEG e pré-reserve slots para participantes cadastrados se desejar.
             </span>
         </div>
@@ -25,7 +25,7 @@
                 <span>+ Novo Tipo</span>
             </button>
             <button type="button" @click="addItem()"
-                    class="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer hover:scale-[1.02]">
+                    class="ui-btn ui-btn-primary cursor-pointer">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                 <span>Adicionar Item</span>
             </button>
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Barra de Atalho em Lote (Mass Apply) & Tipo de Item -->
-    <div class="p-3.5 bg-white dark:bg-[#1A1724] border border-pink-200/70 dark:border-white/10 rounded-2xl space-y-3 shadow-xs">
+    <div class="ui-card p-3.5 space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-pink-100 dark:border-white/10 pb-2">
             <span class="text-[11px] font-black text-pink-900 dark:text-pink-300 uppercase flex items-center gap-1.5">
                 <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
@@ -56,9 +56,9 @@
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                 <!-- 1. Tipo de Item em Lote -->
                 <div :class="isPhotocardTipo(batchTipoItemId) ? 'sm:col-span-3' : 'sm:col-span-5'">
-                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Tipo de Item</label>
+                    <label class="block text-[10px] font-bold uppercase tracking-wide mb-1">Tipo de Item</label>
                     <select x-model="batchTipoItemId" @change="onBatchTipoChange()"
-                            class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-2xs">
+                            class="ui-input w-full">
                         <template x-for="t in tiposItem" :key="t.id">
                             <option :value="t.id" x-text="t.nome" :selected="t.id == batchTipoItemId"></option>
                         </template>
@@ -72,7 +72,7 @@
                         <span>Subcategoria</span>
                     </label>
                     <select x-model="batchSubCategory"
-                            class="w-full bg-white dark:bg-cyber-surface border border-pink-300 dark:border-white/10 text-pink-950 dark:text-pink-200 font-black rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-2xs">
+                            class="ui-input w-full text-pink-950 font-black">
                         <option value="Regulares">Regulares</option>
                         <option value="Pob">Pob</option>
                         <option value="LD">LD</option>
@@ -83,18 +83,18 @@
 
                 <!-- 3. Preço Padrão em Lote -->
                 <div class="sm:col-span-3">
-                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-1">Preço em Lote (R$)</label>
+                    <label class="block text-[10px] font-bold uppercase tracking-wide mb-1">Preço em Lote (R$)</label>
                     <div class="relative">
                         <span class="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">R$</span>
                         <input type="number" step="0.01" x-model="batchDefaultPrice"
-                               class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-2xs">
+                               class="ui-input w-full pl-8 pr-2 font-black">
                     </div>
                 </div>
 
                 <!-- 4. Botão Mass Apply -->
                 <div :class="isPhotocardTipo(batchTipoItemId) ? 'sm:col-span-3' : 'sm:col-span-4'">
                     <button type="button" @click="applyBatchToAll()"
-                            class="w-full py-2 px-3 bg-slate-900 dark:bg-pink-600 hover:bg-black dark:hover:bg-pink-700 text-white font-black text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            class="ui-btn ui-btn-primary w-full cursor-pointer">
                         <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i>
                         <span>Aplicar em Todos</span>
                     </button>
@@ -108,7 +108,7 @@
                 <input type="text" x-model="batchMembersText"
                        placeholder="Adicionar novos photocards/itens (nomes separados por vírgula)..."
                        @keydown.enter.prevent="addMembersBatch()"
-                       class="w-full bg-slate-50 dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:bg-white focus:outline-none focus:ring-1 focus:ring-pink-500">
+                       class="ui-input w-full">
             </div>
             <div class="sm:col-span-2">
                 <button type="button" @click="addMembersBatch()"
@@ -128,7 +128,7 @@
     </div>
 
     <!-- Totalizadores -->
-    <div class="p-3 bg-white dark:bg-[#1A1724] border border-pink-200/80 dark:border-white/10 rounded-2xl flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 shadow-xs">
+    <div class="ui-card p-3 flex items-center justify-between text-xs font-bold">
         <span>Total de Itens: <strong class="text-pink-600 dark:text-pink-400" x-text="items.length"></strong></span>
         <span>Faturamento 1 Set: <strong class="text-emerald-700 dark:text-emerald-400" x-text="'R$ ' + calculateSetTotal()"></strong></span>
     </div>

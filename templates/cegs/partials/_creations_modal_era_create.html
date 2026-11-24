@@ -2,7 +2,7 @@
 <div x-show="activeModal === 'era'" x-cloak
      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
      @click.self="closeModal()">
-    <div class="bg-white dark:bg-[#14121B] w-full max-w-lg rounded-3xl shadow-2xl border border-purple-100 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="ui-card w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         
         <!-- Header do Modal -->
         <div class="p-5 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-indigo-50 via-purple-50 to-white dark:from-indigo-950/30 dark:via-purple-950/30 dark:to-[#14121B]">
@@ -11,8 +11,8 @@
                     <i data-lucide="disc" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-black text-slate-900 dark:text-white">Cadastrar Era Nova</h3>
-                    <p class="text-[11px] text-slate-500 dark:text-cyber-silver">Vincule o comeback (álbum/single) ao grupo.</p>
+                    <h3 class="ui-disp text-lg">Cadastrar Era Nova</h3>
+                    <p class="text-[11px] ui-muted">Vincule o comeback (álbum/single) ao grupo.</p>
                 </div>
             </div>
             <button type="button" @click="closeModal()" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer">
@@ -23,9 +23,9 @@
         <form id="create_era_form" action="{% url 'create_era' %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
             {% csrf_token %}
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Grupo / Solista *</label>
+                <label class="ui-label block mb-1.5">Grupo / Solista *</label>
                 <select name="group_id" required
-                        class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                        class="ui-input w-full">
                     <option value="">-- Selecione o Grupo --</option>
                     {% for g in groups %}
                         <option value="{{ g.id }}">{{ g.name }}</option>
@@ -34,27 +34,27 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nome da Era / Comeback *</label>
+                <label class="ui-label block mb-1.5">Nome da Era / Comeback *</label>
                 <input type="text" name="name" required
                        placeholder="Ex: CRAZY, With YOU-th, Armageddon, ATE"
-                       class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                       class="ui-input w-full">
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Data de Lançamento (opcional)</label>
+                <label class="ui-label block mb-1.5">Data de Lançamento (opcional)</label>
                 <input type="date" name="release_date"
-                       class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                       class="ui-input w-full">
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Banner Promocional da Era</label>
+                <label class="ui-label block mb-1.5">Banner Promocional da Era</label>
 
                 <!-- Preview -->
                 <div x-show="eraBannerPreview" class="relative rounded-2xl overflow-hidden border border-indigo-200 dark:border-white/10 h-36 bg-slate-950 flex items-center justify-center group mb-2">
                     <img :src="eraBannerPreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
                     <img :src="eraBannerPreview" alt="Banner Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
                     <button type="button" @click="clearEraBanner()"
-                            class="absolute top-2 right-2 z-20 px-2.5 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                            class="ui-btn ui-btn-primary cursor-pointer">
                         <i data-lucide="trash-2" class="w-3 h-3"></i>
                         <span>Remover</span>
                     </button>
@@ -81,12 +81,12 @@
                 <input type="text" name="banner_url" x-model="eraBannerUrl"
                        @input="eraBannerPreview = $event.target.value; eraBannerBase64 = ''"
                        placeholder="Ou cole a URL direta do banner (https://...)"
-                       class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                       class="ui-input w-full">
             </div>
 
             <!-- Cor Tema da Era -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                <label class="ui-label block mb-1.5 flex items-center justify-between">
                     <span class="flex items-center gap-1.5">
                         <i data-lucide="palette" class="w-3.5 h-3.5 text-indigo-400"></i>
                         <span>Cor Tema da Era (Opcional)</span>
@@ -97,9 +97,9 @@
                     <input type="color" :value="eraColorHex || '#6366F1'" @input="eraColorHex = $event.target.value"
                            class="w-9 h-9 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-cyber-elevated shrink-0">
                     <input type="text" name="color_hex" x-model="eraColorHex" placeholder="Ex: #EC4899 (ou deixe vazio para automático)"
-                           class="flex-1 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                           class="ui-input w-full flex-1 font-mono uppercase">
                     <button type="button" x-show="eraColorHex" @click="eraColorHex = ''"
-                            class="px-2.5 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                            class="ui-btn ui-btn-ghost"
                             title="Redefinir para detecção automática">
                         Auto
                     </button>
@@ -107,19 +107,19 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Descrição / Notas do Comeback (opcional)</label>
+                <label class="ui-label block mb-1.5">Descrição / Notas do Comeback (opcional)</label>
                 <textarea name="description" rows="2"
                           placeholder="Ex: 4º Mini Álbum com versões Compact e Weverse."
-                          class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-cyber-surface transition"></textarea>
+                          class="ui-input w-full !py-3 p-3"></textarea>
             </div>
 
             <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex justify-end gap-2">
                 <button type="button" @click="closeModal()"
-                        class="px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver font-bold text-xs rounded-xl transition cursor-pointer">
+                        class="ui-btn ui-btn-ghost cursor-pointer">
                     Cancelar
                 </button>
                 <button type="submit"
-                        class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5 hover:scale-[1.02]">
+                        class="ui-btn ui-btn-primary cursor-pointer">
                     <i data-lucide="check" class="w-3.5 h-3.5"></i>
                     <span>Salvar Era</span>
                 </button>

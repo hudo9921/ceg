@@ -1,26 +1,26 @@
 <!-- ABA 2: GRADE INTERATIVA (LINHA POR LINHA) -->
 <div x-show="activeTab === 'table'" x-transition class="space-y-6">
 
-    <div class="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+    <div class="ui-card p-6 space-y-6">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
-                <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <h2 class="text-base font-bold flex items-center gap-2">
                     <i data-lucide="table" class="w-4 h-4 text-indigo-500"></i>
                     <span>Grade Interativa de Cadastro</span>
                 </h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p class="text-xs ui-muted mt-1">
                     Preencha os campos diretamente na tabela abaixo. Adicione quantas linhas precisar com os botões rápidos.
                 </p>
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" @click="addRow()"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-500/30 transition cursor-pointer">
+                        class="ui-btn ui-btn-primary cursor-pointer">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                     <span>Adicionar Linha</span>
                 </button>
                 <button type="button" @click="addMultipleRows(5)"
-                        class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer">
+                        class="ui-btn ui-btn-ghost cursor-pointer">
                     <span>+5 Linhas</span>
                 </button>
                 <button type="button" @click="clearTableRows()"
@@ -51,11 +51,11 @@
                             <td class="px-3 py-2 text-slate-400 font-mono text-[11px]" x-text="idx + 1"></td>
                             <td class="px-3 py-2">
                                 <input type="text" x-model="row.name" placeholder="Ex: Lucas Silva"
-                                       class="w-full text-xs p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100">
+                                       class="ui-input w-full p-2">
                             </td>
                             <td class="px-3 py-2">
                                 <select x-model="row.ddi"
-                                        class="w-full text-xs p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none font-semibold text-slate-700 dark:text-slate-200">
+                                        class="ui-input w-full p-2">
                                     <option value="55">🇧🇷 Brasil (+55)</option>
                                     <option value="1">🇺🇸 EUA / CA (+1)</option>
                                     <option value="82">🇰🇷 Coreia (+82)</option>
@@ -70,15 +70,15 @@
                             <td class="px-3 py-2">
                                 <input type="text" x-model="row.phone"
                                        :placeholder="row.ddi === '55' ? '11 98888-7777 ou 11988887777' : (row.ddi === 'custom' ? '+DDI número completo' : 'DDD e número sem +')"
-                                       class="w-full text-xs font-mono p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100">
+                                       class="ui-input w-full font-mono p-2">
                             </td>
                             <td class="px-3 py-2">
                                 <input type="text" x-model="row.social_handle" placeholder="@usuario"
-                                       class="w-full text-xs p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none text-indigo-600 dark:text-indigo-400 font-semibold bg-slate-50/50 dark:bg-slate-800/50">
+                                       class="ui-input w-full p-2 text-indigo-600">
                             </td>
                             <td class="px-3 py-2">
                                 <input type="text" x-model="row.username" placeholder="Apelido curto"
-                                       class="w-full text-xs p-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100">
+                                       class="ui-input w-full p-2">
                             </td>
                             <td class="px-3 py-2 text-center">
                                 <button type="button" @click="removeTableRow(idx)"

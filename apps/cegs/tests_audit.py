@@ -139,7 +139,7 @@ class AuditLogSystemTests(TestCase):
         self.client.force_login(self.staff_user)
         res_staff = self.client.get('/auditoria/')
         self.assertEqual(res_staff.status_code, 200)
-        self.assertContains(res_staff, 'Auditoria & Logs do Sistema')
+        self.assertContains(res_staff, 'Histórico de atividades')
 
     def test_dashboard_filtering_and_csv_export(self):
         """Testa filtros e exportação para CSV."""

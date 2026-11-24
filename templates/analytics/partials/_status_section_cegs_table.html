@@ -1,12 +1,12 @@
 <!-- SEÇÃO 4: VISÃO GERAL CONSOLIDADA E VALORES DAS CEGS -->
-<div x-show="selectedCategory === 'all' || selectedCategory === 'ceg'" class="bg-white dark:bg-[#14121B] rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden space-y-4 p-6">
+<div x-show="selectedCategory === 'all' || selectedCategory === 'ceg'" class="ui-card overflow-hidden space-y-4 p-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-4">
         <div>
-            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 class="ui-disp text-xl flex items-center gap-2">
                 <i data-lucide="bar-chart-3" class="w-5 h-5 text-purple-600"></i>
                 <span>Valores e Estatísticas Individuais de cada CEG</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Consolidação financeira de itens, fretes, taxas e prazos por compra em grupo.
             </p>
         </div>
@@ -17,7 +17,7 @@
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                 <span>Novo Set</span>
             </button>
-            <span class="text-xs text-slate-500 dark:text-slate-400 font-bold" x-text="getCegTableSubtext()">
+            <span class="text-xs ui-muted font-bold" x-text="getCegTableSubtext()">
                 Total: {{ cegs_overview|length }} CEG(s)
             </span>
             <button type="button"
@@ -64,8 +64,8 @@
                                     </div>
                                 {% endif %}
                                 <div class="min-w-0">
-                                    <div class="font-black text-slate-900 dark:text-white text-sm leading-snug">{{ c.clean_title|default:c.title }}</div>
-                                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                                    <div class="font-black text-sm leading-snug">{{ c.clean_title|default:c.title }}</div>
+                                    <div class="text-[11px] ui-muted font-semibold">
                                         {{ c.group_name }} • {{ c.era_name }}
                                     </div>
                                     {% if c.caixa_nome %}
@@ -159,7 +159,7 @@
                                 </button>
                                 <button type="button"
                                         @click="openEditCegModalById('{{ c.ceg_id }}')"
-                                        class="px-2 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs transition border border-slate-200 dark:border-white/10 flex items-center gap-1 cursor-pointer"
+                                        class="ui-btn ui-btn-ghost cursor-pointer"
                                         title="Editar Informações da CEG">
                                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                     <span>Editar</span>
@@ -177,7 +177,7 @@
                 <tr x-show="visibleCegsCount === 0" x-cloak>
                     <td colspan="10" class="py-8 text-center text-slate-400 space-y-2">
                         <i data-lucide="search" class="w-8 h-8 mx-auto text-slate-400"></i>
-                        <div class="font-bold text-slate-700 dark:text-slate-300">Nenhuma CEG encontrada com os filtros selecionados.</div>
+                        <div class="font-bold">Nenhuma CEG encontrada com os filtros selecionados.</div>
                         <div><button type="button" @click="clearFilters()" class="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline cursor-pointer">✕ Limpar Filtros</button></div>
                     </td>
                 </tr>

@@ -69,7 +69,7 @@ class GOMNotificationsTests(TestCase):
         self.client.force_login(self.staff_user)
         res_staff = self.client.get('/notificacoes/')
         self.assertEqual(res_staff.status_code, 200)
-        self.assertContains(res_staff, 'Central de Notificações')
+        self.assertContains(res_staff, 'Avisos do GOM')
 
     def test_filter_by_action_type_and_unread(self):
         """Testa filtros por tipo de ação (claims, solicitações, pagamentos) e status de leitura."""

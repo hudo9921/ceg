@@ -1,9 +1,9 @@
 <!-- TABELAS DE ANÁLISE COMPLEMENTAR: Top Itens Mais Vendidos & Principais Compradores -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Top Itens / Photocards mais vendidos -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 space-y-4">
+    <div class="ui-card p-6 space-y-4">
         <div class="flex justify-between items-center border-b border-slate-100 dark:border-white/10 pb-3">
-            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 class="ui-disp text-lg flex items-center gap-2">
                 <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
                 <span>Top Itens & Photocards Mais Vendidos</span>
             </h3>
@@ -23,7 +23,7 @@
                     {% for item in top_items %}
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td class="py-2.5 px-3">
-                                <div class="font-bold text-slate-900 dark:text-white">{{ item.name }}</div>
+                                <div class="font-bold">{{ item.name }}</div>
                                 <div class="text-[10px] text-slate-400">
                                     {{ item.member_name }} • {{ item.group_name }}
                                 </div>
@@ -46,9 +46,9 @@
     </div>
 
     <!-- Top Maiores Compradores -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 space-y-4">
+    <div class="ui-card p-6 space-y-4">
         <div class="flex justify-between items-center border-b border-slate-100 dark:border-white/10 pb-3">
-            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 class="ui-disp text-lg flex items-center gap-2">
                 <i data-lucide="crown" class="w-4 h-4 text-yellow-500"></i>
                 <span>Maiores Compradores</span>
             </h3>
@@ -68,7 +68,7 @@
                     {% for b in top_buyers %}
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td class="py-2.5 px-3">
-                                <div class="font-bold text-slate-900 dark:text-white">{{ b.display_name }}</div>
+                                <div class="font-bold">{{ b.display_name }}</div>
                                 <div class="text-[10px] text-slate-400">
                                     {% if b.social_handle %}{{ b.social_handle }} • {% endif %}{{ b.whatsapp }}
                                 </div>
