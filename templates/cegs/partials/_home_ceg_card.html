@@ -20,7 +20,7 @@ Os data-* alimentam os filtros de homeApp(); no celular o toque abre a gaveta de
             <img src="{{ card_img|thumb }}" data-full="{{ card_img }}" alt="" aria-hidden="true" loading="lazy" decoding="async"
                  class="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-60">
             <img src="{{ card_img|thumb }}" data-full="{{ card_img }}" alt="{{ ceg.title }}" loading="lazy" decoding="async"
-                 class="relative w-full h-full object-cover">
+                 class="ui-fade relative w-full h-full object-cover" x-init="$el.complete && $el.classList.add('is-loaded')" @load="$el.classList.add('is-loaded')">
         {% endif %}
         <button type="button" @click.stop="openBottomSheet({{ ceg.id }})" class="ui-tag absolute top-2 right-2 z-[3]" title="Ver quais vagas estão livres">
             <span class="ui-mono">{{ ceg.available_slots_count }}</span> vaga{{ ceg.available_slots_count|pluralize }}

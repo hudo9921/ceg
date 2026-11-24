@@ -217,10 +217,20 @@ html.dark .ui-stamp { border-color: #ECEEF3; color: #ECEEF3; background: rgba(10
 .ui-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .ui-num { width: 26px; height: 26px; flex: none; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: var(--ui-surface); border: 1px solid var(--ui-line); }
 html.dark .ui-num { border-radius: 2px; font-family: var(--ui-font-mono); }
-/* trilho horizontal (home: abrindo em breve) */
-.ui-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 340px); justify-content: start; gap: 16px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
-.ui-rail > * { scroll-snap-align: start; }
-@media (max-width: 639px) { .ui-rail { grid-auto-columns: 84%; } }
+/* trilho com arrastar suave (uiRail): snap no toque, sem snap enquanto o mouse arrasta */
+.ui-rail-track { display: flex; gap: 16px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 4px; padding: 8px 4px 12px; scrollbar-width: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
+.ui-rail-track::-webkit-scrollbar { display: none; }
+.ui-rail-track > * { scroll-snap-align: start; flex: none; }
+.ui-rail-track.is-dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
+.ui-rail-track.is-dragging * { pointer-events: none; }
+/* cards entram com leve fade + escala conforme aparecem no trilho (onde o navegador suporta) */
+@supports (animation-timeline: view()) {
+    .ui-rail-track > * { animation: ui-rail-in linear both; animation-timeline: view(inline); animation-range: entry 0% entry 70%; }
+    @keyframes ui-rail-in { from { opacity: .3; transform: scale(.94); } to { opacity: 1; transform: none; } }
+}
+/* imagens aparecem com fade quando carregam */
+.ui-fade { opacity: 0; transition: opacity .45s ease; }
+.ui-fade.is-loaded { opacity: 1; }
 .ui-lift { transition: transform .2s ease; }
 .ui-lift:hover { transform: translateY(-3px); }
 .ui-timer { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: var(--ui-r-pill); background: rgba(255, 255, 255, .9); color: #1E1B26; font-family: var(--ui-font-mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -230,4 +240,6 @@ html.dark .ui-timer { background: rgba(10, 10, 12, .85); color: #E6ECFF; border:
     .ui-btn, .ui-pc::after, .ui-pick, .ui-lift, .ui-knob::after, .ui-details > summary .ui-chevron { transition: none; }
     .ui-pick.is-free:hover, .ui-pick.is-on, .ui-lift:hover { transform: none; }
     .ui-count.is-pulse .ui-count-digits b { animation: none; }
+    .ui-rail-track > * { animation: none; }
+    .ui-fade { opacity: 1; transition: none; }
 }
