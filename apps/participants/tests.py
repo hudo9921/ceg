@@ -491,7 +491,11 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(prazos[0]['tipo'], 'ITEM')
         self.assertEqual(prazos[0]['ceg_id'], str(self.ceg.id))
         self.assertEqual(prazos[0]['valor'], 50.00)
-        self.assertContains(res, 'Prazos Próximos de Pagamento')
+        # Seção Pagar (P3): a cobrança do item aparece com o valor e o título da CEG.
+        charges = res.context['charges']
+        self.assertEqual(charges['count'], 1)
+        self.assertEqual(charges['total'], 50.00)
+        self.assertContains(res, 'Você deve')
         self.assertContains(res, 'LE SSERAFIM - CRAZY POB')
 
     def test_prazos_proximos_disappears_when_paid(self):
@@ -512,7 +516,8 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(res.status_code, 200)
         prazos = res.context['prazos_proximos']
         self.assertEqual(len(prazos), 0)
-        self.assertNotContains(res, 'Prazos Próximos de Pagamento')
+        self.assertEqual(res.context['charges']['count'], 0)
+        self.assertContains(res, 'Tudo pago')
 
     def test_claim_lifecycle_property_stages(self):
         from apps.participants.models import Claim
@@ -562,7 +567,7 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertIn('cegs_com_pendencias', res.context)
         self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
         self.assertEqual(res.context['total_geral_pendente_todas_cegs'], 50.00)
-        self.assertContains(res, 'Central de Pagamento Rápido (Pix)')
+        self.assertContains(res, 'Você deve')
 
         # Search text presence in JSON script
         self.assertIn('search_text', res.context['cegs_filter_list'][0])
@@ -690,10 +695,11 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(res.context['total_geral_pendente_global'], Decimal('105.00'))
 
         # 4. Renderização no template
-        self.assertContains(res, 'Por CEG')
-        self.assertContains(res, 'Por Caixa')
-        self.assertContains(res, 'Mercari')
-        self.assertContains(res, 'quickPixTab')
+        # Seção Pagar (P3): item da CEG + produto, frete e taxa do avulso = 105,00 no mesmo GOM.
+        charges = res.context['charges']
+        self.assertEqual(charges['total'], Decimal('105.00'))
+        self.assertEqual(len(charges['goms']), 1)
+        self.assertEqual({l['kind'] for l in charges['goms'][0]['lines']}, {'item', 'frete', 'taxa'})
         self.assertContains(res, 'Photobar Mercari Sakura')
         self.assertContains(res, 'Caixa Japão #01')
 
@@ -756,9 +762,12 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertContains(res, 'pix_item@banco.com')
         self.assertContains(res, 'pix_frete_ceg@transportadora.com')
         self.assertContains(res, 'pix_taxa_ceg@alfandega.com')
-        self.assertContains(res, 'Pix Itens:')
-        self.assertContains(res, 'Pix Frete:')
-        self.assertContains(res, 'Pix Taxa:')
+        # Seção Pagar (P3): uma linha por tipo, cada uma com a própria chave e instrução.
+        lines = {l['kind']: l for l in res.context['charges']['goms'][0]['lines']}
+        self.assertEqual(lines['item']['pix_key'], 'pix_item@banco.com')
+        self.assertEqual(lines['frete']['pix_key'], 'pix_frete_ceg@transportadora.com')
+        self.assertEqual(lines['taxa']['pix_key'], 'pix_taxa_ceg@alfandega.com')
+        self.assertContains(res, 'Comprovante taxa urgente')
 
         # 2. Testar sobrescrita pela Caixa (Caixa com chaves próprias de Frete e Taxa)
         caixa = Caixa.objects.create(
@@ -780,6 +789,10 @@ class ParticipantPrazosProximosTests(TestCase):
 
         res2 = self.client.get(reverse('my_claims'))
         self.assertEqual(res2.status_code, 200)
+        lines2 = {l['kind']: l for l in res2.context['charges']['goms'][0]['lines']}
+        self.assertEqual(lines2['frete']['pix_key'], 'pix_caixa_frete@courier.com')
+        self.assertEqual(lines2['taxa']['pix_key'], 'pix_caixa_taxa@receita.com')
+        self.assertIn('Caixa KR Chaves Específicas', lines2['frete']['title'])
 
         # Na visualização por Caixa
         caixa_pend = res2.context['caixas_com_pendencias'][0]

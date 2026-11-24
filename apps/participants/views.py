@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
+from .charges import build_charges
 from .gom_panel import gom_pix_defaults, goms_summary, mercari_pix_by_gom, shipping_configs_by_gom
 from .services import BulkParticipantService
 from apps.auth_otp.models import WhatsAppOTP
@@ -1054,6 +1055,8 @@ class MyClaimsView(View):
             'goms_list': goms_list,
             'envio_por_gom': shipping_configs_by_gom(itens_caixinha_prontos, goms_by_id),
             'prazos_proximos': prazos_proximos,
+            # Seção Pagar (P3): cobranças em aberto agrupadas por GOM, com a chave Pix de cada uma.
+            'charges': build_charges(list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais),
             'prazos_urgentes_count': prazos_urgentes_count,
             'total_any_unpaid_count': total_any_unpaid_count,
             'cegs_com_pendencias': cegs_com_pendencias,

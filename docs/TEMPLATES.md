@@ -70,13 +70,9 @@
 
 ### 2.3. Portal do Participante (`my_claims.html` — 45 linhas)
 - `_header_notices.html`: Saudação com sparkles, dados de perfil e accordion de avisos contextuais.
-- `_tabs_nav.html`: Alternador de abas principais (Minhas Reservas vs Minha Caixinha).
+- `_tabs_nav.html`: abas do painel no visual novo (P3): **Pagar · Meus itens · Envios** (IDs internos `pagar`, `reservas`, `caixinha`; `?tab=pagar|itens|envios`; sem `?tab=`, abre Pagar se houver cobrança).
 - `_header_metrics.html`: Indicadores interativos compactos em grade 2x2 no mobile e 4 colunas no desktop (Total, Faltam Pagar, Confirmados, Mercari).
-- `_quick_pix.html`: Central de cópia rápida Pix modularizada e responsiva (painel amplo e lateral com acordeão responsivo por CEG, Caixa e Mercari):
-  - `_quick_pix_ceg.html`: Pendências agrupadas por CEG com detalhamento e cópia instantânea.
-  - `_quick_pix_caixa.html`: Pendências agrupadas por Remessa Internacional.
-  - `_quick_pix_mercari.html`: Compras avulsas no Mercari Japão consolidadas.
-- `_semaforo_prazos.html`: Monitoramento de prazos críticos de pagamento com carrossel horizontal snap, navegação por setas e suporte a arraste.
+- `_pagar_section.html` + `_pagar_gom.html` (P3): seção **Pagar**. "Você deve R$ X", cobranças agrupadas por GOM (item, frete, taxa, frete nacional), cada uma com prazo e a chave Pix certa. Dados: `charges` de `apps/participants/charges.py` (`build_charges`). Substituiu a Central de Pagamento Rápido e o Semáforo de Prazos (`_quick_pix*` e `_semaforo_prazos.html`, removidos).
 - `_filtro_caixas.html`: Trilho horizontal snap de remessas com badges tipográficos limpos e gaveta informativa de rastreio.
 - `_filtros_painel.html`: Painel de busca instantânea, dropdowns de grupo/CEG e toggle Galeria/Tabela:
   - `_filtros_painel_status_chips.html`: Pílulas de status operacional e chips dinâmicos de filtros ativos.
@@ -227,7 +223,6 @@
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
 - **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
   - `_filtro_goms.html`: visão por GOM, acima do filtro de caixas.
-  - `_quick_pix_mercari_goms.html`: uma chave Pix por GOM.
   - `_caixinha_envio_gom.html`: formulário de envio de cada GOM.
 - **Perfil do GOM:** `goms/profile.html` + `goms/partials/_profile_field.html` e `_profile_image.html` (`/gom/perfil/`).
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
