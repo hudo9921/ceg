@@ -30,7 +30,7 @@
                             {% endif %}
                             <div>
                                 <div class="flex items-center gap-1.5 flex-wrap">
-                                    <div class="font-black text-slate-900 dark:text-white">{{ it.nome }}</div>
+                                    <div class="font-black">{{ it.nome }}</div>
                                     {% if it.tipo_item_nome %}
                                         <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
                                             <i data-lucide="tag" class="w-3 h-3"></i>
@@ -38,12 +38,12 @@
                                         </span>
                                     {% endif %}
                                 </div>
-                                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Qtd: {{ it.quantidade }}</div>
+                                <div class="text-[10px] ui-muted font-semibold">Qtd: {{ it.quantidade }}</div>
                             </div>
                         </div>
                     </td>
                     <td class="py-3 px-3">
-                        <div class="font-bold text-slate-900 dark:text-white">{{ it.comprador_name }}</div>
+                        <div class="font-bold">{{ it.comprador_name }}</div>
                         {% if it.comprador_phone %}
                             <a href="https://wa.me/{{ it.comprador_phone_clean }}" target="_blank"
                                class="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
@@ -52,7 +52,7 @@
                             </a>
                         {% endif %}
                         {% if it.comprador_handle %}
-                            <div class="text-[10px] text-slate-400 dark:text-slate-500">@{{ it.comprador_handle }}</div>
+                            <div class="text-[10px] ui-muted">@{{ it.comprador_handle }}</div>
                         {% endif %}
                     </td>
                     <td class="py-3 px-3">
@@ -63,26 +63,16 @@
                                 <span>{{ it.caixa_nome }}</span>
                             </a>
                             {% if it.tracking_code %}
-                                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                                <div class="text-[10px] ui-muted font-mono mt-0.5">
                                     Rastreio: {{ it.tracking_code }}
                                 </div>
                             {% endif %}
                         {% else %}
-                            <span class="text-[11px] text-slate-400 dark:text-slate-500 italic">Sem caixa vinculada</span>
+                            <span class="text-[11px] ui-muted italic">Sem caixa vinculada</span>
                         {% endif %}
                     </td>
                     <td class="py-3 px-3 text-center">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black
-                            {% if it.status == 'COMPRADO' %}bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300
-                            {% elif it.status == 'WAREHOUSE' %}bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300
-                            {% elif it.status == 'EM_CONSOLIDACAO' %}bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300
-                            {% elif it.status == 'ENVIADO' %}bg-sky-100 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300
-                            {% elif it.status == 'NO_BRASIL' %}bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300
-                            {% elif it.status == 'TRIBUTADO' %}bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300
-                            {% elif it.status == 'LIBERADO' %}bg-teal-100 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300
-                            {% elif it.status == 'NA_GOM' %}bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300
-                            {% elif it.status == 'FINALIZADO' %}bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300
-                            {% else %}bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300{% endif %}">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black {% if it.status == 'COMPRADO' %}bg-slate-100 dark:bg-white/10 {% elif it.status == 'WAREHOUSE' %}bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 {% elif it.status == 'EM_CONSOLIDACAO' %}bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 {% elif it.status == 'ENVIADO' %}bg-sky-100 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 {% elif it.status == 'NO_BRASIL' %}bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 {% elif it.status == 'TRIBUTADO' %}bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 {% elif it.status == 'LIBERADO' %}bg-teal-100 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 {% elif it.status == 'NA_GOM' %}bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 {% elif it.status == 'FINALIZADO' %}bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 {% else %}bg-slate-100 dark:bg-white/10 {% endif %}">
                             {{ it.status_display }}
                         </span>
                     </td>
@@ -118,14 +108,14 @@
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button"
                                     @click="openEditItem({{ it.id }})"
-                                    class="px-2 py-1 rounded bg-slate-100 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                                    class="ui-btn ui-btn-ghost cursor-pointer"
                                     title="Editar Detalhes do Item">
                                 <i data-lucide="edit-3" class="w-3 h-3"></i>
                                 <span>Editar</span>
                             </button>
                             {% if it.link_pedido %}
                                 <a href="{{ it.link_pedido }}" target="_blank"
-                                   class="px-2 py-1 rounded bg-slate-100 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-[10px] font-bold transition flex items-center gap-1"
+                                   class="ui-btn ui-btn-ghost"
                                    title="Abrir Link do Pedido">
                                     <i data-lucide="link" class="w-3 h-3"></i>
                                     <span>Pedido</span>

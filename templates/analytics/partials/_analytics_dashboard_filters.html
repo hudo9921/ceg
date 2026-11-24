@@ -1,7 +1,7 @@
 <!-- Barra de Filtros Dinâmicos -->
-<div class="bg-white dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+<div class="ui-card p-5 space-y-4">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+        <span class="ui-label flex items-center gap-1.5">
             <i data-lucide="target" class="w-3.5 h-3.5 text-pink-500"></i>
             <span>Filtros de Desempenho</span>
         </span>
@@ -9,12 +9,12 @@
         <!-- Pílulas de Atalho Rápido para Grupos -->
         <div class="flex flex-wrap items-center gap-1.5">
             <a href="{% url 'analytics_dashboard' %}"
-               class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {% if not selected_group %}bg-pink-600 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+               class="ui-btn ui-btn-primary cursor-pointer">
                 Todos os Grupos
             </a>
             {% for g in filter_options.groups %}
                 <a href="?group={{ g.id }}{% if selected_month %}&month={{ selected_month }}{% endif %}"
-                   class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {% if selected_group == g.id %}bg-pink-600 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+                   class="ui-btn ui-btn-primary cursor-pointer">
                     {{ g.name }}
                 </a>
             {% endfor %}
@@ -24,11 +24,11 @@
     <form method="get" x-ref="filterForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
         <!-- Dropdown Grupo -->
         <div>
-            <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Grupo de K-pop</label>
+            <label class="ui-label block mb-1">Grupo de K-pop</label>
             <select name="group"
                     x-model="selectedGroup"
                     @change="onGroupChange()"
-                    class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+                    class="ui-input w-full">
                 <option value="">Todos os Grupos</option>
                 {% for g in filter_options.groups %}
                     <option value="{{ g.id }}" {% if selected_group == g.id %}selected{% endif %}>
@@ -40,11 +40,11 @@
 
         <!-- Dropdown Era -->
         <div>
-            <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Era / Comeback</label>
+            <label class="ui-label block mb-1">Era / Comeback</label>
             <select name="era"
                     x-model="selectedEra"
                     @change="$refs.filterForm.submit()"
-                    class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+                    class="ui-input w-full">
                 <option value="">Todas as Eras</option>
                 <template x-for="era in currentEras" :key="era.id">
                     <option :value="era.id" :selected="era.id === selectedEra" x-text="era.name + (selectedGroup ? '' : ' (' + era.group_name + ')')"></option>
@@ -54,11 +54,11 @@
 
         <!-- Dropdown Mês -->
         <div>
-            <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Período / Mês</label>
+            <label class="ui-label block mb-1">Período / Mês</label>
             <select name="month"
                     x-model="selectedMonth"
                     @change="$refs.filterForm.submit()"
-                    class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
+                    class="ui-input w-full">
                 <option value="">Todos os Meses</option>
                 {% for m in filter_options.months %}
                     <option value="{{ m.value }}" {% if selected_month == m.value %}selected{% endif %}>
@@ -77,7 +77,7 @@
             </button>
             {% if selected_group or selected_era or selected_month %}
                 <a href="{% url 'analytics_dashboard' %}"
-                   class="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition flex items-center justify-center"
+                   class="ui-btn ui-btn-ghost"
                    title="Limpar todos os filtros">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                 </a>

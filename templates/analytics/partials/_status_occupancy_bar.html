@@ -1,14 +1,14 @@
 <!-- BARRA DE OCUPAÇÃO GLOBAL & BANNER DE FILTRO ATIVO -->
 <div x-show="selectedCategory === 'all' || selectedCategory === 'ceg'" class="space-y-3">
     <!-- Barra de Ocupação Global -->
-    <div class="bg-white dark:bg-[#14121B] px-5 py-3 rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="ui-card px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div class="flex items-center gap-2.5 text-xs">
             <span class="p-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center">
                 <i data-lucide="target" class="w-4 h-4"></i>
             </span>
             <div>
                 <span class="font-bold text-slate-800 dark:text-slate-200">Ocupação Global dos Sets:</span>
-                <span class="text-slate-500 dark:text-slate-400 ml-1">{{ summary.reserved_slots }}/{{ summary.total_slots }} slots ocupados ({{ summary.available_slots }} livres para claim)</span>
+                <span class="ui-muted ml-1">{{ summary.reserved_slots }}/{{ summary.total_slots }} slots ocupados ({{ summary.available_slots }} livres para claim)</span>
             </div>
         </div>
         <div class="flex items-center gap-3 w-full sm:w-80">
@@ -26,7 +26,7 @@
         <div class="flex items-center gap-2.5 text-xs text-slate-800 dark:text-slate-200">
             <i data-lucide="filter" class="w-4 h-4 text-pink-600 dark:text-pink-400"></i>
             <span class="font-bold">Filtro rápido dos cards ativo:</span>
-            <span class="px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider shadow-2xs"
+            <span class="ui-label"
                   :class="{
                       'bg-purple-600 text-white': activeCardFilter === 'active_cegs',
                       'bg-pink-600 text-white': activeCardFilter === 'incomplete',
@@ -39,7 +39,7 @@
         </div>
         <button type="button"
                 @click="setCardFilter('all')"
-                class="px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl border border-slate-300 dark:border-white/10 text-xs transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-2xs">
+                class="ui-btn ui-btn-ghost cursor-pointer self-start">
             <i data-lucide="x" class="w-3.5 h-3.5"></i>
             <span>Limpar filtro dos cards (Mostrar tudo)</span>
         </button>

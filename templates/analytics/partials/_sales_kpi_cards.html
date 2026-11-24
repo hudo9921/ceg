@@ -1,15 +1,15 @@
 <!-- 4 Cards de Métricas Financeiras Principais (KPIs) -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <!-- Faturamento Total das Vendas -->
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span class="text-xs font-bold uppercase tracking-wider">Faturamento Total</span>
+    <div class="ui-card p-5 flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between ui-muted">
+            <span class="ui-label">Faturamento Total</span>
             <span class="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
                 <i data-lucide="dollar-sign" class="w-5 h-5"></i>
             </span>
         </div>
         <div>
-            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+            <div class="text-2xl sm:text-3xl font-black">
                 R$ {{ summary.total_sales|floatformat:2 }}
             </div>
             <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
@@ -20,9 +20,9 @@
     </div>
 
     <!-- Recebido (Pago) vs A Receber (Pendente) -->
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span class="text-xs font-bold uppercase tracking-wider">Recebido / Pendente</span>
+    <div class="ui-card p-5 flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between ui-muted">
+            <span class="ui-label">Recebido / Pendente</span>
             <span class="p-2 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl">
                 <i data-lucide="credit-card" class="w-5 h-5"></i>
             </span>
@@ -38,9 +38,9 @@
     </div>
 
     <!-- Volume de Vendas (Quantidade de Claims) -->
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span class="text-xs font-bold uppercase tracking-wider">Volume de Claims</span>
+    <div class="ui-card p-5 flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between ui-muted">
+            <span class="ui-label">Volume de Claims</span>
             <span class="p-2 bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 rounded-xl">
                 <i data-lucide="flame" class="w-5 h-5"></i>
             </span>
@@ -56,9 +56,9 @@
     </div>
 
     <!-- Ticket Médio por Venda -->
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between space-y-2">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-            <span class="text-xs font-bold uppercase tracking-wider">Ticket Médio</span>
+    <div class="ui-card p-5 flex flex-col justify-between space-y-2">
+        <div class="flex items-center justify-between ui-muted">
+            <span class="ui-label">Ticket Médio</span>
             <span class="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
                 <i data-lucide="tag" class="w-5 h-5"></i>
             </span>

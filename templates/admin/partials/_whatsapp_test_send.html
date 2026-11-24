@@ -1,13 +1,13 @@
 <!-- Coluna Direita: Teste de Envio e Configurações -->
 <div class="space-y-6">
     <!-- Formulário de Teste de Disparo -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <div class="ui-card p-6 space-y-4">
         <div>
-            <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-bold flex items-center gap-2 mb-1">
                 <i data-lucide="message-square" class="w-5 h-5 text-pink-500 stroke-[2]"></i>
                 <span>Testar Envio de Mensagem</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Envie uma mensagem instantânea para o seu próprio WhatsApp para validar que a integração está funcionando perfeitamente.
             </p>
         </div>
@@ -17,23 +17,23 @@
             <input type="hidden" name="action" value="send_test">
 
             <div class="space-y-1.5">
-                <label for="phone" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <label for="phone" class="ui-label block">
                     Número de WhatsApp (com DDI e DDD)
                 </label>
                 <input type="text" id="phone" name="phone" placeholder="Ex: 5511999998888" required
-                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 outline-none transition" />
-                <span class="text-[11px] text-slate-400 dark:text-slate-500 block">Apenas números (DDI Brasil = 55 + DDD + 9 dígitos).</span>
+                    class="ui-input w-full" />
+                <span class="text-[11px] ui-muted block">Apenas números (DDI Brasil = 55 + DDD + 9 dígitos).</span>
             </div>
 
             <div class="space-y-1.5">
-                <label for="message" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <label for="message" class="ui-label block">
                     Texto da Mensagem
                 </label>
                 <textarea id="message" name="message" rows="3" required
-                    class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 outline-none transition">Olá! Este é um teste oficial de mensagem via Bot WhatsApp do CEG Manager. ✨</textarea>
+                    class="ui-input w-full !py-3">Olá! Este é um teste oficial de mensagem via Bot WhatsApp do CEG Manager. ✨</textarea>
             </div>
 
-            <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 shadow-md hover:shadow-pink-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer">
+            <button type="submit" class="ui-btn ui-btn-primary w-full cursor-pointer">
                 <i data-lucide="send" class="w-4 h-4 stroke-[2]"></i>
                 <span>Enviar Mensagem de Teste</span>
             </button>
@@ -42,7 +42,7 @@
 
     <!-- Card de Informações Técnicas -->
     <div class="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-4">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <h3 class="ui-label">
             Ambiente & Conexões
         </h3>
         <dl class="grid grid-cols-2 gap-3 text-xs">

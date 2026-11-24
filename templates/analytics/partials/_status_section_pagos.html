@@ -1,14 +1,14 @@
 <!-- SEÇÃO 3: SETS 100% PAGOS (FRETE INTER, TAXAS E SETS TERMINADOS) -->
 <div x-show="(selectedCategory === 'all' || selectedCategory === 'ceg') && (activeCardFilter === 'all' || activeCardFilter === 'pagos' || activeCardFilter === 'terminados')"
      x-transition
-     class="bg-white dark:bg-[#14121B] rounded-2xl border border-emerald-200 dark:border-emerald-800/40 shadow-sm overflow-hidden space-y-4 p-6">
+     class="ui-card overflow-hidden space-y-4 p-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-white/5 pb-4">
         <div>
-            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 class="ui-disp text-xl flex items-center gap-2">
                 <i data-lucide="banknote" class="w-5 h-5 text-emerald-600"></i>
                 <span>Sets 100% Pagos — Frete Inter, Taxas e Sets Terminados</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Sets onde 100% dos valores dos itens já foram recebidos. Acompanhe quais estão com frete inter pago, taxas pagas e quais estão terminados (tudo pago).
             </p>
         </div>
@@ -19,7 +19,7 @@
 
     <!-- Subfiltros de Sets Pagos -->
     <div class="flex items-center gap-2 flex-wrap text-xs">
-        <span class="font-bold text-slate-400 dark:text-slate-500 text-[11px] uppercase tracking-wider">Filtrar em Pagos:</span>
+        <span class="ui-label">Filtrar em Pagos:</span>
         <button type="button"
                 @click="pagosSubFilter = 'all'"
                 class="px-3 py-1.5 rounded-xl font-bold transition cursor-pointer"
@@ -68,7 +68,7 @@
          x-cloak
          class="flex items-center justify-between p-2.5 px-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs">
         <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-500 dark:text-slate-400">Filtrando por:</span>
+            <span class="font-bold ui-muted">Filtrando por:</span>
             <span class="font-black px-2 py-0.5 rounded-lg text-[11px]"
                   :class="{
                       'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300': pagosSubFilter === 'frete_pago',
@@ -82,7 +82,7 @@
         </div>
         <button type="button"
                 @click="pagosSubFilter = 'all'"
-                class="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer flex items-center gap-1">
+                class="text-[11px] font-bold ui-muted hover:text-slate-900 dark:hover:text-white cursor-pointer flex items-center gap-1">
             <i data-lucide="x" class="w-3 h-3"></i>
             <span>Mostrar todos os 100% pagos</span>
         </button>

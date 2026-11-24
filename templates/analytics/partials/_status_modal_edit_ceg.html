@@ -3,7 +3,7 @@
      class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-sm"
      style="z-index: 99999;"
      @keydown.escape.window="closeEditCegModal()">
-    <div class="bg-white dark:bg-[#14121B] rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 dark:border-white/10 overflow-hidden"
+    <div class="ui-card max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden"
          @click.away="closeEditCegModal()">
         <form id="edit_ceg_status_form"
               :action="'/ceg/' + (editingCeg.slug || '') + '/edit/'"
@@ -21,10 +21,10 @@
                         <i data-lucide="edit-3" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h3 class="font-black text-slate-900 dark:text-white text-sm sm:text-base leading-tight">
+                        <h3 class="ui-disp text-lg">
                             Editar CEG: <span class="text-purple-600 dark:text-purple-400 font-extrabold" x-text="editingCeg.clean_title || editingCeg.title"></span>
                         </h3>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Altere informações, prazos, banner e status da CEG</p>
+                        <p class="text-[11px] ui-muted">Altere informações, prazos, banner e status da CEG</p>
                     </div>
                 </div>
                 <button type="button" @click="closeEditCegModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl font-bold cursor-pointer">
@@ -39,22 +39,22 @@
 
                 <!-- 2. Identificação e Vínculos -->
                 <div class="p-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl space-y-3">
-                    <label class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <label class="ui-label flex items-center gap-1.5">
                         <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                         <span>Identificação & Vínculos</span>
                     </label>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Título da CEG *</label>
+                        <label class="ui-label block mb-1">Título da CEG *</label>
                         <input type="text" name="title" x-model="editingCeg.title" required
-                               class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                               class="ui-input w-full">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Grupo & Era</label>
+                            <label class="ui-label block mb-1">Grupo & Era</label>
                             <select name="era_id" x-model="editingCeg.era_id"
-                                    class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                    class="ui-input w-full">
                                 {% for e in filter_options.eras %}
                                 <option value="{{ e.id }}" :selected="String(editingCeg.era_id) === '{{ e.id }}'">
                                     {{ e.group_name }} — {{ e.name }}
@@ -64,9 +64,9 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Caixa Vinculada</label>
+                            <label class="ui-label block mb-1">Caixa Vinculada</label>
                             <select name="caixa_id" x-model="editingCeg.caixa_id"
-                                    class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                    class="ui-input w-full">
                                 <option value="">Sem Caixa</option>
                                 {% for cx in caixas %}
                                 <option value="{{ cx.id }}" :selected="String(editingCeg.caixa_id) === '{{ cx.id }}'">
@@ -77,9 +77,9 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Status da CEG</label>
+                            <label class="ui-label block mb-1">Status da CEG</label>
                             <select name="status" x-model="editingCeg.status"
-                                    class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                    class="ui-input w-full font-black">
                                 {% for st_val, st_lbl in ceg_statuses %}
                                 <option value="{{ st_val }}" :selected="editingCeg.status === '{{ st_val }}'">
                                     {{ st_lbl }}
@@ -92,69 +92,69 @@
 
                 <!-- 3. Prazos e Datas -->
                 <div class="p-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl space-y-3">
-                    <label class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <label class="ui-label flex items-center gap-1.5">
                         <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                         <span>Prazos e Agendamentos</span>
                     </label>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Abertura / Standby</label>
+                            <label class="ui-label block mb-1">Abertura / Standby</label>
                             <input type="datetime-local" name="opens_at" x-model="editingCeg.opens_at_iso"
-                                   class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                   class="ui-input w-full">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Encerramento</label>
+                            <label class="ui-label block mb-1">Encerramento</label>
                             <input type="datetime-local" name="closes_at" x-model="editingCeg.closes_at_iso"
-                                   class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                   class="ui-input w-full">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Prazo Pagto Item</label>
+                            <label class="ui-label block mb-1">Prazo Pagto Item</label>
                             <input type="datetime-local" name="prazo_pagamento_item" x-model="editingCeg.prazo_item_iso"
-                                   class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                   class="ui-input w-full">
                         </div>
                     </div>
                 </div>
 
                 <!-- 4. Chave Pix & Instruções -->
                 <div class="p-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl space-y-3">
-                    <label class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <label class="ui-label flex items-center gap-1.5">
                         <i data-lucide="banknote" class="w-3.5 h-3.5"></i>
                         <span>Chave Pix & Pagamentos</span>
                     </label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Chave Pix</label>
+                            <label class="ui-label block mb-1">Chave Pix</label>
                             <input type="text" name="pix_key" x-model="editingCeg.pix_key" placeholder="CPF, e-mail, telefone..."
-                                   class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                   class="ui-input w-full">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Instruções de Pagamento</label>
+                            <label class="ui-label block mb-1">Instruções de Pagamento</label>
                             <input type="text" name="pix_instructions" x-model="editingCeg.pix_instructions" placeholder="Ex: Enviar comprovante no grupo..."
-                                   class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500">
+                                   class="ui-input w-full">
                         </div>
                     </div>
                 </div>
 
                 <!-- 5. Regras & Observações -->
                 <div class="p-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl space-y-2">
-                    <label class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <label class="ui-label flex items-center gap-1.5">
                         <i data-lucide="list" class="w-3.5 h-3.5"></i>
                         <span>Regras & Informações Gerais</span>
                     </label>
                     <textarea name="description" rows="3" x-model="editingCeg.description"
                               placeholder="Regras de prioridade, descarte, prazos e políticas da CEG..."
-                              class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500"></textarea>
+                              class="ui-input w-full !py-3"></textarea>
                 </div>
             </div>
 
             <!-- Footer Fixo -->
             <div class="flex-shrink-0 p-4 sm:px-6 border-t border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-900 flex items-center justify-end gap-3">
                 <button type="button" @click="closeEditCegModal()"
-                        class="px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer">
+                        class="ui-btn ui-btn-ghost cursor-pointer">
                     Cancelar
                 </button>
                 <button type="submit"
-                        class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer flex items-center gap-1.5">
+                        class="ui-btn ui-btn-primary cursor-pointer">
                     <i data-lucide="save" class="w-3.5 h-3.5"></i>
                     <span>Salvar CEG</span>
                 </button>

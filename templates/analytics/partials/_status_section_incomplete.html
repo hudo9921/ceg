@@ -1,14 +1,14 @@
 <!-- SEÇÃO 1: SETS INCOMPLETOS E O QUE FALTA PARA COMPLETÁ-LOS -->
 <div x-show="(selectedCategory === 'all' || selectedCategory === 'ceg') && (activeCardFilter === 'all' || activeCardFilter === 'incomplete' || activeCardFilter === 'active_cegs')"
      x-transition
-     class="bg-white dark:bg-[#14121B] rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden space-y-4 p-6">
+     class="ui-card overflow-hidden space-y-4 p-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-4">
         <div>
-            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 class="ui-disp text-xl flex items-center gap-2">
                 <i data-lucide="zap" class="w-5 h-5 text-pink-600"></i>
                 <span>Sets Incompletos — O que falta para fechar?</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Sets ativos que ainda têm slots disponíveis, detalhando exatamente quais photocards e valores faltam.
             </p>
         </div>
@@ -22,7 +22,7 @@
             {% for s in sets_incomplete %}
                 <div x-show="matchItem('{{ s.ceg_title|escapejs }} {{ s.ceg_clean_title|escapejs }} {{ s.group_name|escapejs }} {{ s.era_name|escapejs }} {% for item in s.missing_items %}{{ item.item_name|escapejs }} {{ item.member_name|escapejs }} {% endfor %}', '{{ s.group_id }}', '{{ s.era_id }}')"
                      x-transition
-                     class="border border-slate-200 dark:border-white/10 hover:border-pink-300 dark:hover:border-pink-500/40 rounded-2xl p-4 transition bg-white dark:bg-slate-900/40 shadow-2xs flex flex-col justify-between space-y-3">
+                     class="ui-card p-4 transition flex flex-col justify-between space-y-3">
                     <!-- Header do Card -->
                     <div class="flex justify-between items-start gap-3">
                         <div class="flex items-start gap-3 min-w-0">
@@ -42,14 +42,14 @@
                                     <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300">
                                         {{ s.group_name }}
                                     </span>
-                                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                    <span class="text-[10px] font-bold ui-muted">
                                         {{ s.era_name }}
                                     </span>
                                     <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
                                         Set #{{ s.set_number }}
                                     </span>
                                 </div>
-                                <h3 class="text-sm font-black text-slate-900 dark:text-white mt-1 leading-snug">
+                                <h3 class="ui-disp text-lg">
                                     {{ s.ceg_clean_title|default:s.ceg_title }}
                                 </h3>
                             </div>
@@ -72,7 +72,7 @@
                             </button>
                             <button type="button"
                                     @click="openEditCegModalById('{{ s.ceg_id }}')"
-                                    class="px-2 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-lg text-xs border border-slate-200 dark:border-white/10 transition flex items-center gap-1 cursor-pointer"
+                                    class="ui-btn ui-btn-ghost cursor-pointer"
                                     title="Editar Informações da CEG">
                                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                             </button>
@@ -87,7 +87,7 @@
                     <!-- Barra de Progresso do Set -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-bold">
-                            <span class="text-slate-600 dark:text-slate-400">
+                            <span class="ui-muted">
                                 {{ s.reserved_slots }}/{{ s.total_slots }} slots preenchidos
                             </span>
                             <span class="text-pink-600 dark:text-pink-400 font-black">
@@ -98,7 +98,7 @@
                             <div class="bg-gradient-to-r from-pink-500 to-purple-600 h-2 rounded-full transition-all duration-300"
                                  style="width: {{ s.fill_percentage }}%"></div>
                         </div>
-                        <div class="flex justify-between text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
+                        <div class="flex justify-between text-[11px] ui-muted font-semibold">
                             <span>{{ s.remaining_slots }} vaga(s) restante(s)</span>
                             <span>Falta arrecadar: <strong class="text-slate-800 dark:text-slate-200">R$ {{ s.missing_value|floatformat:2 }}</strong></span>
                         </div>
@@ -106,7 +106,7 @@
 
                     <!-- Lista Exata de Photocards que Faltam -->
                     <div class="pt-2 border-t border-slate-100 dark:border-white/5 space-y-1.5">
-                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <span class="ui-label flex items-center gap-1">
                             <i data-lucide="target" class="w-3 h-3 text-pink-500"></i>
                             <span>Itens disponíveis para fechar este set:</span>
                         </span>
@@ -129,7 +129,7 @@
                  class="col-span-full p-8 text-center bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2">
                 <i data-lucide="search" class="w-8 h-8 mx-auto text-slate-400"></i>
                 <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum set incompleto encontrado para este filtro!</h3>
-                <p class="text-xs text-slate-400 dark:text-slate-500">Todos os sets estão 100% preenchidos ou não há CEGs correspondentes aos filtros selecionados.</p>
+                <p class="text-xs ui-muted">Todos os sets estão 100% preenchidos ou não há CEGs correspondentes aos filtros selecionados.</p>
                 <button type="button" @click="clearFilters()" class="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline cursor-pointer">✕ Limpar Filtros</button>
             </div>
         </div>
@@ -137,7 +137,7 @@
         <div class="p-8 text-center bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2">
             <i data-lucide="party-popper" class="w-8 h-8 mx-auto text-purple-500"></i>
             <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum set incompleto no momento!</h3>
-            <p class="text-xs text-slate-400 dark:text-slate-500">Todos os sets ativos estão 100% preenchidos ou não há CEGs abertas com esses filtros.</p>
+            <p class="text-xs ui-muted">Todos os sets ativos estão 100% preenchidos ou não há CEGs abertas com esses filtros.</p>
         </div>
     {% endif %}
 </div>

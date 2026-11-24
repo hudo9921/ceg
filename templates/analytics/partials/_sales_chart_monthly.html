@@ -1,13 +1,13 @@
 <!-- GRÁFICO PRINCIPAL: Série Temporal de Vendas (# Vendas) e Faturamento (R$) por Mês -->
 <div class="space-y-4">
     <!-- Top Bar com Título e Seletor de Visualização -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="ui-card p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h2 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 class="ui-disp text-xl flex items-center gap-2">
                 <i data-lucide="trending-up" class="w-5 h-5 text-emerald-500"></i>
                 <span>Série Temporal — Vendas e Faturamento por Mês</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p class="text-xs ui-muted mt-0.5">
                 Acompanhe a evolução histórica da quantidade de vendas (# claims) e do valor faturado (R$) mês a mês.
             </p>
         </div>
@@ -51,7 +51,7 @@
 
         <!-- Card 1: Faturamento Mensal (R$) -->
         <div x-show="chartViewMode === 'side_by_side' || chartViewMode === 'revenue' || chartViewMode === 'combined'"
-             class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 sm:p-7 space-y-4 flex flex-col justify-between"
+             class="ui-card p-6 sm:p-7 space-y-4 flex flex-col justify-between"
              :class="(chartViewMode === 'revenue' || chartViewMode === 'combined') ? 'col-span-full' : ''">
 
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
@@ -60,15 +60,15 @@
                         <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
                             <i data-lucide="coins" class="w-4 h-4"></i>
                         </span>
-                        <h3 class="text-base font-black text-slate-900 dark:text-white">
+                        <h3 class="ui-disp text-lg">
                             <span x-show="chartViewMode !== 'combined'">Faturamento Mensal (R$)</span>
                             <span x-show="chartViewMode === 'combined'">Faturamento (R$) & Volume de Vendas (# Claims)</span>
                         </h3>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-show="chartViewMode !== 'combined'">
+                    <p class="text-xs ui-muted mt-1" x-show="chartViewMode !== 'combined'">
                         Evolução da receita total faturada por mês em reais.
                     </p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-show="chartViewMode === 'combined'">
+                    <p class="text-xs ui-muted mt-1" x-show="chartViewMode === 'combined'">
                         Barras de faturamento em R$ (eixo esquerdo) e linha de volume de claims (eixo direito).
                     </p>
                 </div>
@@ -85,7 +85,7 @@
             </div>
 
             <!-- Legenda do Gráfico -->
-            <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-white/10 gap-2">
+            <div class="flex flex-wrap items-center justify-between text-xs ui-muted pt-3 border-t border-slate-100 dark:border-white/10 gap-2">
                 <div class="flex items-center gap-3 font-semibold">
                     <span class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
                         <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Faturamento Total (R$)
@@ -103,7 +103,7 @@
 
         <!-- Card 2: Volume de Vendas (# de Vendas / Claims) -->
         <div x-show="chartViewMode === 'side_by_side' || chartViewMode === 'volume'"
-             class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 sm:p-7 space-y-4 flex flex-col justify-between"
+             class="ui-card p-6 sm:p-7 space-y-4 flex flex-col justify-between"
              :class="chartViewMode === 'volume' ? 'col-span-full' : ''">
 
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
@@ -112,11 +112,11 @@
                         <span class="p-1.5 rounded-lg bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400">
                             <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                         </span>
-                        <h3 class="text-base font-black text-slate-900 dark:text-white">
+                        <h3 class="ui-disp text-lg">
                             Volume de Vendas (# Claims por Mês)
                         </h3>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <p class="text-xs ui-muted mt-1">
                         Quantidade de claims e vendas fechadas ao longo do tempo.
                     </p>
                 </div>
@@ -133,7 +133,7 @@
             </div>
 
             <!-- Legenda do Gráfico de Volume -->
-            <div class="flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-white/10 gap-2">
+            <div class="flex flex-wrap items-center justify-between text-xs ui-muted pt-3 border-t border-slate-100 dark:border-white/10 gap-2">
                 <div class="flex items-center gap-3 font-semibold">
                     <span class="flex items-center gap-1.5 text-pink-600 dark:text-pink-400">
                         <span class="w-3 h-3 rounded-full bg-pink-500"></span> Quantidade de Vendas

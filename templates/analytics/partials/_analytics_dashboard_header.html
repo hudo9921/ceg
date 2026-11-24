@@ -1,8 +1,8 @@
 <!-- Top Header do Dashboard de Analytics -->
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="ui-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6">
     <div class="space-y-1">
         <div class="flex flex-wrap items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-100 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400 border border-pink-200 dark:border-pink-500/20">
+            <span class="ui-label">
                 Inteligência de Vendas & Inventário
             </span>
             {% if selected_group_name or selected_era_name or selected_month %}
@@ -15,13 +15,13 @@
                 </span>
             {% endif %}
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
+        <h1 class="ui-disp text-3xl sm:text-4xl flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-xl bg-pink-50 dark:bg-pink-500/10 border border-pink-200 dark:border-pink-500/20 text-pink-600 dark:text-pink-400 flex items-center justify-center shadow-2xs">
                 <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
             </div>
             <span>Métricas do Organizador</span>
         </h1>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+        <p class="text-xs sm:text-sm ui-muted">
             Acompanhe o faturamento realizado, pendente, inventário para vender, fluxo mensal e fechamento de Sets.
         </p>
     </div>
@@ -29,13 +29,13 @@
     <div class="flex items-center gap-2.5">
         {% if selected_group or selected_era or selected_month %}
             <a href="{% url 'analytics_dashboard' %}"
-               class="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+               class="ui-btn ui-btn-ghost">
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
                 <span>Limpar Filtros</span>
             </a>
         {% endif %}
         <a href="/admin/" target="_blank"
-           class="px-4 py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5 border border-slate-700/50">
+           class="ui-btn ui-btn-ghost">
             <span>Painel Admin</span>
             <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
         </a>

@@ -1,36 +1,36 @@
 <!-- ABA 1: COLAR EM LOTE (EXCEL / SHEETS / TEXTO) -->
 <div x-show="activeTab === 'paste'" x-transition class="space-y-6">
 
-    <div class="bg-white dark:bg-slate-900/90 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+    <div class="ui-card p-6 space-y-6">
 
         <!-- Instruções Rápidas e DDI Padrão -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start pb-6 border-b border-slate-100 dark:border-slate-800">
             <div class="space-y-2 lg:col-span-2">
-                <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <h2 class="text-base font-bold flex items-center gap-2">
                     <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
                     <span>1. Cole as linhas abaixo</span>
                 </h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p class="text-xs ui-muted leading-relaxed">
                     Você pode copiar diretamente de uma coluna do Excel/Sheets ou digitar livremente.
                     Cada linha pode ter os campos separados por <b>tabulação (Ctrl+V do Excel)</b>, <b>vírgula (,)</b>, <b>ponto e vírgula (;)</b> ou <b>barra vertical (|)</b>.
                 </p>
-                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-[11px] font-mono text-slate-700 dark:text-slate-300 space-y-1">
-                    <div class="text-slate-400 dark:text-slate-500 uppercase text-[9px] font-sans font-bold">Exemplos válidos aceitos automaticamente:</div>
-                    <div>Maria Silva, 11 98888-7777, @mariasilva <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(Brasil com DDD)</span></div>
-                    <div>John Doe	+1 202 555 0199	@johndoe <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(EUA / Canadá)</span></div>
-                    <div>Kim Minji | +82 10 1234 5678 | @minjikim <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(Coreia do Sul)</span></div>
-                    <div>Pedro Santos, 55998765432, @pedrokpop <span class="text-slate-400 dark:text-slate-500 font-sans font-normal">(Brasil com DDD 55 RS)</span></div>
+                <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-[11px] font-mono space-y-1">
+                    <div class="ui-muted uppercase text-[9px] font-sans font-bold">Exemplos válidos aceitos automaticamente:</div>
+                    <div>Maria Silva, 11 98888-7777, @mariasilva <span class="ui-muted font-sans font-normal">(Brasil com DDD)</span></div>
+                    <div>John Doe	+1 202 555 0199	@johndoe <span class="ui-muted font-sans font-normal">(EUA / Canadá)</span></div>
+                    <div>Kim Minji | +82 10 1234 5678 | @minjikim <span class="ui-muted font-sans font-normal">(Coreia do Sul)</span></div>
+                    <div>Pedro Santos, 55998765432, @pedrokpop <span class="ui-muted font-sans font-normal">(Brasil com DDD 55 RS)</span></div>
                 </div>
             </div>
 
             <!-- Seletor de DDI Padrão para números sem prefixo '+' -->
             <div class="bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-500/20 p-4 rounded-xl space-y-3">
-                <label class="block text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                <label class="ui-label block flex items-center gap-1.5">
                     <i data-lucide="globe" class="w-3.5 h-3.5 text-indigo-500"></i>
                     <span>DDI Padrão (sem +)</span>
                 </label>
                 <select x-model="defaultDDI" @change="parsePastedText()"
-                        class="w-full text-xs font-semibold bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-500/30 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        class="ui-input w-full">
                     <option value="55">🇧🇷 Brasil (+55) — Adiciona 55 em números estilo DDD 9XXXX-XXXX</option>
                     <option value="1">🇺🇸 EUA / Canadá (+1)</option>
                     <option value="82">🇰🇷 Coreia do Sul (+82)</option>
@@ -51,7 +51,7 @@
         <!-- Área de Colagem (Textarea) -->
         <div class="space-y-2">
             <div class="flex items-center justify-between">
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <label class="ui-label block flex items-center gap-1.5">
                     <i data-lucide="align-left" class="w-3.5 h-3.5 text-slate-400"></i>
                     <span>Área de Texto (Cole aqui)</span>
                 </label>
@@ -73,7 +73,7 @@ Exemplo:
 Beatriz Lima	11 98888-7777	@bialima
 John Walker	+1 202 555 0199	@jwalker
 Park Jihyo	+82 10 9999 8888	@jihyofan"
-                      class="w-full text-xs font-mono p-4 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"></textarea>
+                      class="ui-input w-full !py-3 font-mono p-4"></textarea>
         </div>
 
         <!-- Ações e Pré-Visualização Instantânea -->

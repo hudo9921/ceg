@@ -1,7 +1,7 @@
 <!-- SEÇÃO 5: GESTÃO OPERACIONAL DE ITENS INDIVIDUAIS (MERCARI / JAPÃO) - PIPELINE -->
 <div x-show="selectedCategory === 'all' || selectedCategory === 'mercari'"
      x-transition
-     class="bg-white dark:bg-[#14121B] rounded-2xl border border-amber-200 dark:border-amber-800/40 shadow-sm overflow-hidden space-y-6 p-6">
+     class="ui-card overflow-hidden space-y-6 p-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-100 dark:border-white/5 pb-4">
         <div>
             <div class="flex items-center gap-2">
@@ -9,11 +9,11 @@
                     <span class="text-[10px] font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400">JP</span>
                     <span>Japão / Mercari</span>
                 </span>
-                <h2 class="text-lg font-black text-slate-900 dark:text-white">
+                <h2 class="ui-disp text-xl">
                     Itens Individuais & Remessas Mercari
                 </h2>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p class="text-xs ui-muted mt-1">
                 Acompanhamento do status físico e financeiro (frete internacional e taxa) de cada item individual comprado.
             </p>
         </div>
@@ -35,8 +35,8 @@
         <!-- Pipeline de Status dos Itens Mercari -->
         <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
             <div class="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-center">
-                <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Comprado</div>
-                <div class="text-base font-black text-slate-900 dark:text-white">{{ mercari_status.by_status.COMPRADO|default:0 }}</div>
+                <div class="text-[10px] font-bold ui-muted uppercase">Comprado</div>
+                <div class="text-base font-black">{{ mercari_status.by_status.COMPRADO|default:0 }}</div>
             </div>
             <div class="p-2.5 rounded-xl border border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-950/20 text-center">
                 <div class="text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase">Warehouse</div>
@@ -76,27 +76,27 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="p-4 rounded-xl border {% if mercari_status.frete_unpaid_count > 0 %}border-blue-300 dark:border-blue-700/60 bg-blue-50/60 dark:bg-blue-950/20{% else %}border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/5{% endif %} flex justify-between items-center">
                 <div>
-                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Fretes Internacionais Pendentes</span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Aguardando pagamento de compradores</span>
+                    <span class="text-xs font-bold block">Fretes Internacionais Pendentes</span>
+                    <span class="text-xs ui-muted font-medium">Aguardando pagamento de compradores</span>
                 </div>
                 <div class="text-right">
                     <span class="text-base font-black {% if mercari_status.frete_unpaid_count > 0 %}text-blue-700 dark:text-blue-300{% else %}text-slate-400{% endif %}">
                         {{ mercari_status.frete_unpaid_count }} pendente(s)
                     </span>
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold">R$ {{ mercari_status.frete_unpaid_amount|floatformat:2 }}</div>
+                    <div class="text-[11px] ui-muted font-bold">R$ {{ mercari_status.frete_unpaid_amount|floatformat:2 }}</div>
                 </div>
             </div>
 
             <div class="p-4 rounded-xl border {% if mercari_status.taxa_unpaid_count > 0 %}border-purple-300 dark:border-purple-700/60 bg-purple-50/60 dark:bg-purple-950/20{% else %}border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/5{% endif %} flex justify-between items-center">
                 <div>
-                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Taxas Aduaneiras Pendentes</span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Aguardando pagamento de compradores</span>
+                    <span class="text-xs font-bold block">Taxas Aduaneiras Pendentes</span>
+                    <span class="text-xs ui-muted font-medium">Aguardando pagamento de compradores</span>
                 </div>
                 <div class="text-right">
                     <span class="text-base font-black {% if mercari_status.taxa_unpaid_count > 0 %}text-purple-700 dark:text-purple-300{% else %}text-slate-400{% endif %}">
                         {{ mercari_status.taxa_unpaid_count }} pendente(s)
                     </span>
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-bold">R$ {{ mercari_status.taxa_unpaid_amount|floatformat:2 }}</div>
+                    <div class="text-[11px] ui-muted font-bold">R$ {{ mercari_status.taxa_unpaid_amount|floatformat:2 }}</div>
                 </div>
             </div>
         </div>
@@ -107,7 +107,7 @@
         <div class="p-8 text-center bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl border border-amber-200 dark:border-amber-800/40 space-y-2">
             <span class="text-3xl">🇯🇵</span>
             <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Nenhum item individual Mercari cadastrado ainda.</h3>
-            <p class="text-xs text-slate-400 dark:text-slate-500">Cadastre compras avulsas para acompanhar remessas e cobranças de frete e taxa.</p>
+            <p class="text-xs ui-muted">Cadastre compras avulsas para acompanhar remessas e cobranças de frete e taxa.</p>
             <div class="pt-2">
                 <a href="{% url 'creations_hub' %}?category=mercari"
                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition">
