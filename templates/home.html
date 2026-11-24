@@ -4,6 +4,7 @@
 {% block title %}ValCegs — Reservas e Compras em Grupo{% endblock %}
 
 {% block content %}
+{% include 'components/ui_rail_script.html' %}
 {% if is_gom_staff %}
 {{ ceg_share_map|default:"{}"|json_script:"ceg-share-map-data" }}
 {% endif %}

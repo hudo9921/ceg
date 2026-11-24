@@ -1,0 +1,60 @@
+{% comment %}
+uiRail(): trilho horizontal suave (DESIGN_SYSTEM §7.7). Toque usa o rolar nativo com snap; mouse arrasta com
+impulso e encaixa no card mais próximo; setas andam exatamente um card. A roda do mouse não é sequestrada
+(a página continua rolando na vertical). Uso: x-data="uiRail()" no contêiner, x-ref="track" + class="ui-rail-track"
+no trilho, @click.capture="guardClick($event)" no trilho e @click="go(±1)" nas setas.
+{% endcomment %}
+<script>
+window.uiRail = window.uiRail || function () {
+    const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+        drag: null,
+        moved: false,
+        step() {
+            const el = this.$refs.track;
+            const card = Array.from(el.children).find((c) => c.offsetParent !== null);
+            const gap = parseFloat(getComputedStyle(el).columnGap) || 16;
+            return card ? card.getBoundingClientRect().width + gap : el.clientWidth * 0.8;
+        },
+        go(dir) {
+            const el = this.$refs.track, s = this.step();
+            const target = Math.round(el.scrollLeft / s) * s + dir * s;
+            el.scrollTo({ left: target, behavior: reduced() ? 'auto' : 'smooth' });
+        },
+        down(e) {
+            if (e.pointerType !== 'mouse' || e.button !== 0) return;
+            const el = this.$refs.track;
+            this.drag = { x: e.clientX, left: el.scrollLeft, lastX: e.clientX, t: performance.now(), v: 0 };
+            this.moved = false;
+        },
+        move(e) {
+            if (!this.drag) return;
+            const el = this.$refs.track, dx = e.clientX - this.drag.x;
+            if (!this.moved && Math.abs(dx) < 5) return;
+            if (!this.moved) { this.moved = true; el.classList.add('is-dragging'); }
+            el.scrollLeft = this.drag.left - dx;
+            const now = performance.now();
+            this.drag.v = (e.clientX - this.drag.lastX) / Math.max(now - this.drag.t, 8);
+            this.drag.lastX = e.clientX;
+            this.drag.t = now;
+        },
+        up() {
+            if (!this.drag) return;
+            const el = this.$refs.track, v = this.drag.v;
+            this.drag = null;
+            if (!this.moved) return;
+            const s = this.step();
+            const max = el.scrollWidth - el.clientWidth;
+            const target = Math.max(0, Math.min(max, Math.round((el.scrollLeft - v * 260) / s) * s));
+            el.scrollTo({ left: target, behavior: reduced() ? 'auto' : 'smooth' });
+            // devolve o snap só depois que a animação termina (senão o navegador pula)
+            const done = () => el.classList.remove('is-dragging');
+            if ('onscrollend' in window) el.addEventListener('scrollend', done, { once: true });
+            else setTimeout(done, 450);
+        },
+        guardClick(e) {
+            if (this.moved) { e.preventDefault(); e.stopPropagation(); this.moved = false; }
+        },
+    };
+};
+</script>
