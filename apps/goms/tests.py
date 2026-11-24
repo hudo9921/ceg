@@ -124,9 +124,8 @@ class TeamRulesTests(TestCase):
         self.owner.save()
         res = self.client.post(reverse('backoffice_login'), {'username': 'dono', 'password': 'Senha-Forte-123'})
         self.assertRedirects(res, reverse('backoffice_home'), fetch_redirect_response=False)
-        # Dono tem tudo: cai na primeira tela de gestão (Hub de Criações).
-        self.assertRedirects(self.client.get(reverse('backoffice_home')), reverse('creations_hub'),
-                             fetch_redirect_response=False)
+        # Depois do login: o Início do painel.
+        self.assertContains(self.client.get(reverse('backoffice_home')), 'Olá, dono')
 
 
 @override_settings(STAFF_2FA_REQUIRED=True)

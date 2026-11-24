@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Início — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}Início do painel do GOM (P5): tarefas de hoje, números do mês, próximas aberturas e atividade (apps/goms/dashboard.py).{% endcomment %}
+<div class="max-w-[1120px] mx-auto space-y-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-1.5">
+            <p class="ui-label">{{ today|date:"l, j \d\e F" }}</p>
+            <h1 class="ui-disp text-4xl">Olá, {{ request.user.get_username }}</h1>
+        </div>
+        {% include 'goms/partials/_gom_switcher.html' %}
+    </header>
+
+    {% if tasks %}
+    <section class="grid gap-4 md:grid-cols-3" aria-label="Para fazer hoje">
+        {% for t in tasks %}
+            <article class="ui-card p-5 flex flex-col gap-2.5">
+                <p class="ui-status {{ t.cls }}">{{ t.tag }}</p>
+                <p class="ui-disp text-3xl"><span class="ui-mono">{{ t.n }}</span> {{ t.what }}</p>
+                <p class="ui-muted text-sm flex-1">{{ t.hint }}</p>
+                <a href="{{ t.url }}" class="ui-btn ui-btn-ghost ui-btn-sm self-start">{{ t.cta }}</a>
+            </article>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if kpis %}
+    <section class="grid gap-4 grid-cols-2 lg:grid-cols-4" aria-label="Números">
+        {% for k in kpis %}
+            <div class="ui-card p-4">
+                <p class="ui-label">{{ k.label }}</p>
+                <p class="ui-mono text-2xl font-bold mt-1.5">{{ k.value }}</p>
+                <p class="ui-muted text-[13px]">{{ k.sub }}</p>
+            </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <div class="grid gap-4 md:grid-cols-2">
+        {% if upcoming %}
+        <section class="ui-card overflow-hidden" aria-labelledby="aberturas-title">
+            <h2 id="aberturas-title" class="ui-disp text-xl p-5 pb-3">Próximas aberturas</h2>
+            {% for c in upcoming %}
+                <a href="{% url 'ceg_detail' slug=c.slug %}" class="flex items-center gap-3 px-5 py-3 border-t hover:opacity-90" style="border-color: var(--ui-line)">
+                    <span class="w-11 h-11 flex-none overflow-hidden rounded-ui-ctl ui-well">{% if c.display_image_url %}<img src="{{ c.display_image_url|thumb }}" data-full="{{ c.display_image_url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">{% endif %}</span>
+                    <span class="flex-1 min-w-0"><span class="block font-bold truncate">{{ c.title }}</span><span class="block ui-muted text-[13px]">{{ c.era.group.name }}</span></span>
+                    <span class="ui-mono font-bold text-sm">{{ c.opens_at|date:"d/m H:i" }}</span>
+                </a>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% if activity %}
+        <section class="ui-card overflow-hidden" aria-labelledby="atividade-title">
+            <h2 id="atividade-title" class="ui-disp text-xl p-5 pb-3">Agora há pouco</h2>
+            {% for a in activity %}
+                <div class="flex items-start gap-3 px-5 py-3 border-t" style="border-color: var(--ui-line)">
+                    <span class="flex-1 text-sm">{{ a.text }}</span>
+                    <span class="ui-label flex-none">{{ a.when }}</span>
+                </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+    </div>
+
+    <nav class="lg:hidden grid grid-cols-2 gap-2" aria-label="Atalhos do painel">
+        {% for item in gom_menu %}{% if item.key != 'inicio' %}
+            <a href="{{ item.url }}" class="ui-card p-4 flex items-center gap-2.5 font-semibold">
+                <i data-lucide="{{ item.icon }}" class="w-5 h-5" stroke-width="1.75"></i>{{ item.label }}
+            </a>
+        {% endif %}{% endfor %}
+    </nav>
+</div>
+{% endblock %}

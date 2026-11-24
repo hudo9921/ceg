@@ -6,6 +6,7 @@ from django.contrib.auth.views import LoginView
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -38,29 +39,26 @@ class BackofficeLoginView(LoginView):
         return reverse('backoffice_home')
 
 
-FIRST_SCREENS = [
-    ('creations_hub', ['ceg.editar']),
-    ('caixas_dashboard', ['caixas.editar', 'caixas.valores', 'caixas.etapa']),
-    ('consulta_joiner', ['pedidos.ver']),
-    ('envios_nacionais', ['envios.pacotes', 'gom.envio']),
-    ('cegs_status', ['analytics.ver']),
-    ('gom_profile', ['gom.perfil', 'pix.alterar']),
-]
-
-
 @never_cache
 def backoffice_home(request):
-    """Primeira tela depois do login, conforme o papel."""
+    """Início do painel (P5): tarefas de hoje e números do mês, conforme as permissões do admin."""
+    from apps.core.permissions import check_staff
+
+    from .access import gom_permissions
+    from .dashboard import build_dashboard
+    from .permissions import ANY
+
     user = request.user
     if not user.is_authenticated:
         return redirect('backoffice_login')
-    if user.is_staff or user.is_superuser or is_gom_member(user):
-        # Primeira tela que a pessoa pode usar (permissões do admin: apps.goms.permissions).
-        for url_name, perms in FIRST_SCREENS:
-            if has_gom_perm(request, *perms):
-                return redirect(url_name)
-        return redirect('gom_team')
-    raise PermissionDenied('Esta conta não faz parte da equipe de nenhum GOM.')
+    if not (user.is_superuser or is_gom_member(user)):
+        raise PermissionDenied('Esta conta não faz parte da equipe de nenhum GOM.')
+    denied = check_staff(request, ANY)
+    if denied is not None:
+        return denied
+    context = build_dashboard(request, gom_permissions(request))
+    context['today'] = timezone.localtime()
+    return render(request, 'goms/inicio.html', context)
 
 
 @never_cache
