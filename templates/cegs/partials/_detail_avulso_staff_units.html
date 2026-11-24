@@ -6,9 +6,7 @@
 {% if is_gom_staff %}
 <div class="pt-2 border-t border-slate-100 dark:border-white/5" x-data="{ staffUnitsOpen: false }">
     <button type="button" @click.stop="staffUnitsOpen = !staffUnitsOpen"
-        class="w-full py-1.5 px-2 rounded-xl text-[10px] font-bold transition flex items-center justify-between border cursor-pointer select-none
-               bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border-slate-200/80 hover:border-purple-300
-               dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:text-slate-300 dark:hover:text-cyber-neon dark:border-white/10 shadow-2xs">
+        class="ui-btn ui-btn-ghost w-full cursor-pointer">
         <span class="flex items-center gap-1.5 truncate">
             <i data-lucide="shield" class="w-3 h-3 text-purple-500" stroke-width="1.75"></i>
             <span class="truncate">Unidades Físicas</span>
@@ -58,7 +56,7 @@
              }">
             <div class="flex items-center justify-between text-[10px] gap-1">
                 <div class="flex items-center gap-1.5 min-w-0">
-                    <span class="font-black text-slate-700 dark:text-slate-300 font-mono">
+                    <span class="font-black font-mono">
                         #{{ slot.unit_number }}
                     </span>
                     {% if slot.claimed_by %}

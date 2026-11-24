@@ -5,13 +5,13 @@
      ========================================== -->
 <div class="space-y-6">
     <!-- Header informativo da enquete -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 dark:bg-white/[0.03] backdrop-blur-xl p-5 rounded-3xl border border-purple-100/80 dark:border-white/10 shadow-soft">
+    <div class="ui-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5">
         <div>
-            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 class="ui-disp text-xl flex items-center gap-2">
                 <i data-lucide="vote" class="w-5 h-5 text-purple-600 dark:text-cyber-neon" stroke-width="1.75"></i>
                 <span>Integrantes & Itens da Enquete</span>
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p class="text-xs ui-muted mt-0.5">
                 <span x-show="!isStandby">Selecione todos os integrantes que você deseja. A votação múltipla permite votar em quantos membros quiser!</span>
                 <span x-show="isStandby" x-cloak class="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1">
                     <i data-lucide="lock" class="w-3.5 h-3.5 inline" stroke-width="1.75"></i>
@@ -36,7 +36,7 @@
         {% for item_def in polling_item_definitions|default:ceg.item_definitions.all %}
             {% include "cegs/partials/_detail_polling_card.html" %}
         {% empty %}
-        <div class="col-span-full py-12 text-center text-slate-400 dark:text-slate-500 text-sm bg-white dark:bg-white/[0.02] rounded-3xl border border-slate-200/80 dark:border-white/10">
+        <div class="ui-card col-span-full py-12 text-center ui-muted text-sm">
             Nenhum integrante cadastrado nesta enquete.
         </div>
         {% endfor %}
