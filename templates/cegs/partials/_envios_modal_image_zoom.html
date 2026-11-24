@@ -4,7 +4,7 @@
      @keydown.escape.window="closeZoom()"
      role="dialog" aria-modal="true">
     
-    <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl space-y-0"
+    <div class="ui-card relative max-w-xl w-full overflow-hidden space-y-0"
          @click.outside="closeZoom()">
         
         <!-- Header do Modal de Zoom -->
@@ -30,7 +30,7 @@
         </div>
 
         <!-- Rodapé do Modal com Botão de Fechar -->
-        <div class="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-850">
+        <div class="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs ui-muted bg-slate-50/50 dark:bg-slate-850">
             <span class="text-[11px]">Conferência visual de envio pela GOM</span>
             <button type="button" @click="closeZoom()"
                     class="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition cursor-pointer">
