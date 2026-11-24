@@ -225,3 +225,10 @@
   - `templates/admin/base_site.html`: adiciona o link "Segurança (2FA)" na barra do Django Admin.
 - **Identificação por WhatsApp (`login_otp.html` — 145 linhas):**
   - Tela compacta de autenticação OTP com detecção de DDI internacional e 100% Lucide Icons.
+
+### Telas de entrada no visual novo (P5a)
+- `participants/login_otp.html` + `partials/_login_phone.html` / `_login_code.html`: entrar com WhatsApp (número → código).
+- `core/two_factor/_layout.html`: moldura de login da equipe, convite e 2FA (`ui-card`); `_token_field.html`: campo do código.
+- `goms/login.html`, `goms/invite_accept.html`, `core/two_factor/setup|verify|backup_codes|manage.html`.
+- `goms/public_page.html` + `partials/_public_cegs.html`: página pública do GOM. `participants/privacidade.html`: política.
+- Campos dos formulários de GOM usam `ui-input` (`apps/goms/forms.py: INPUT_CLASS`).

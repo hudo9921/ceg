@@ -1,35 +1,25 @@
 {% extends 'core/two_factor/_layout.html' %}
 
 {% block title %}Ativar verificação em duas etapas — ValCegs{% endblock %}
-{% block icon %}smartphone{% endblock %}
 {% block heading %}Proteja sua conta{% endblock %}
-{% block lead %}Contas da organização exigem um segundo fator. Configure uma vez; depois, cada login pede o código do celular.{% endblock %}
+{% block lead %}Contas da equipe usam um segundo fator. Configure uma vez; depois, cada login pede o código do celular.{% endblock %}
 
 {% block body %}
-<ol class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+<ol class="space-y-4 text-[15px]">
+    <li class="flex gap-3"><span class="ui-num">1</span><span>Instale um aplicativo autenticador: Google Authenticator, Microsoft Authenticator, Authy ou 1Password.</span></li>
     <li class="flex gap-3">
-        <span class="w-6 h-6 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black flex items-center justify-center">1</span>
-        <span>Instale um aplicativo autenticador: Google Authenticator, Microsoft Authenticator, Authy ou 1Password.</span>
-    </li>
-    <li class="flex gap-3">
-        <span class="w-6 h-6 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black flex items-center justify-center">2</span>
-        <div class="space-y-3 flex-1">
+        <span class="ui-num">2</span>
+        <div class="space-y-3 flex-1 min-w-0">
             <span>No aplicativo, adicione uma conta lendo este QR code:</span>
-            <div class="bg-white p-3 rounded-2xl border border-slate-200 dark:border-slate-700 w-fit mx-auto">
-                <img src="{{ qr_data_uri }}" alt="QR code para o aplicativo autenticador" class="w-44 h-44">
-            </div>
-            <details class="text-[11px] text-slate-500 dark:text-slate-400">
-                <summary class="cursor-pointer font-bold">Não consegue ler? Digite a chave</summary>
-                <code class="block mt-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono break-all text-slate-800 dark:text-slate-100 select-all">{{ secret }}</code>
+            <div class="bg-white p-3 rounded-ui-card w-fit mx-auto"><img src="{{ qr_data_uri }}" alt="QR code para o aplicativo autenticador" class="w-44 h-44"></div>
+            <details class="text-sm">
+                <summary class="cursor-pointer font-semibold">Não consegue ler? Digite a chave</summary>
+                <code class="ui-well block mt-2 p-2.5 ui-mono break-all select-all">{{ secret }}</code>
             </details>
         </div>
     </li>
-    <li class="flex gap-3">
-        <span class="w-6 h-6 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black flex items-center justify-center">3</span>
-        <span>Digite o código de 6 dígitos que aparece no aplicativo.</span>
-    </li>
+    <li class="flex gap-3"><span class="ui-num">3</span><span>Digite o código de 6 dígitos que aparece no aplicativo.</span></li>
 </ol>
-
 <form method="post" class="space-y-4">
     {% csrf_token %}
     {% include 'core/two_factor/_token_field.html' with allow_backup=False submit_label="Ativar verificação" %}

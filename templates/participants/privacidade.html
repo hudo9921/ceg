@@ -1,21 +1,18 @@
 {% extends 'base.html' %}
 
-{% block title %}Política de Privacidade — K-pop CEG Manager{% endblock %}
+{% block title %}Política de privacidade — ValCegs{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto py-8">
-    <article class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+    <article class="ui-card p-6 sm:p-8 space-y-6 text-[15px] leading-relaxed">
 
         <header class="space-y-2">
-            <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center border border-emerald-200 dark:border-emerald-900/40">
-                <i data-lucide="shield-check" class="w-6 h-6" stroke-width="1.75"></i>
-            </div>
-            <h1 class="text-2xl font-black text-slate-900 dark:text-white">Política de Privacidade</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Versão de 23/11/2026 · Lei Geral de Proteção de Dados (Lei 13.709/2018)</p>
+            <h1 class="ui-disp text-3xl">Política de privacidade</h1>
+            <p class="ui-label">Versão de 23/11/2026 · Lei Geral de Proteção de Dados (Lei 13.709/2018)</p>
         </header>
 
         <section class="space-y-2">
-            <h2 class="text-base font-black text-slate-900 dark:text-white">Quais dados guardamos</h2>
+            <h2 class="text-lg font-bold">Quais dados guardamos</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li><strong>Identificação:</strong> nome, apelido, número de WhatsApp e @ de rede social (opcional).</li>
                 <li><strong>Compras:</strong> reservas, compras avulsas, valores, prazos e status de pagamento.</li>
@@ -25,14 +22,14 @@
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-base font-black text-slate-900 dark:text-white">Para que usamos</h2>
+            <h2 class="text-lg font-bold">Para que usamos</h2>
             <p>Somente para organizar as compras em grupo: confirmar sua identidade, registrar reservas e pagamentos,
                avisar sobre prazos e status, e enviar seus itens. Não vendemos nem usamos seus dados para publicidade.</p>
             <p>Seu nome ou @ aparece para outros participantes nas listas de reservas e enquetes; o WhatsApp aparece apenas mascarado (ex.: ****-1234).</p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-base font-black text-slate-900 dark:text-white">Com quem compartilhamos</h2>
+            <h2 class="text-lg font-bold">Com quem compartilhamos</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Transportadoras (ex.: Correios) — nome e endereço, apenas para a entrega.</li>
                 <li>Provedor de mensagens do WhatsApp — seu número, para enviar códigos e avisos.</li>
@@ -41,13 +38,13 @@
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-base font-black text-slate-900 dark:text-white">Como protegemos</h2>
+            <h2 class="text-lg font-bold">Como protegemos</h2>
             <p>Endereços e CEPs ficam criptografados no banco de dados. O acesso administrativo é restrito à organização,
                protegido contra tentativas de invasão e cada visualização de endereço fica registrada.</p>
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-base font-black text-slate-900 dark:text-white">Por quanto tempo</h2>
+            <h2 class="text-lg font-bold">Por quanto tempo</h2>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Endereço de entrega: apagado {{ settings_pii_days|default:"180" }} dias após a entrega do pacote.</li>
                 <li>Códigos de acesso por WhatsApp: apagados após 30 dias.</li>
@@ -56,8 +53,8 @@
         </section>
 
         <section class="space-y-2">
-            <h2 class="text-base font-black text-slate-900 dark:text-white">Seus direitos</h2>
-            <p>No seu painel (<a href="{% url 'my_claims' %}" class="font-bold text-pink-600 dark:text-pink-400 hover:underline">Minhas Reservas</a> → Perfil → Privacidade) você pode
+            <h2 class="text-lg font-bold">Seus direitos</h2>
+            <p>No seu painel (<a href="{% url 'my_claims' %}" class="font-semibold underline">Sua conta</a> → Editar perfil → Privacidade) você pode
                <strong>baixar todos os seus dados</strong> e <strong>pedir a exclusão da conta</strong>. Para corrigir dados ou tirar dúvidas, fale com a organização pelo WhatsApp oficial.</p>
         </section>
     </article>

@@ -108,7 +108,7 @@ class ParticipantProfileTests(TestCase):
     def test_profile_update_redirects_if_unauthenticated(self):
         response = self.client.post('/me/profile/', data={'name': 'Anonimo'}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Consulta Sem Senha')
+        self.assertContains(response, 'Entrar com WhatsApp')
 
     def test_my_claims_view_metrics_and_filters(self):
         from apps.groups.models import KpopGroup, Era

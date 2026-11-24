@@ -1,30 +1,23 @@
 {% extends 'base.html' %}
-{% comment %}Moldura comum das telas de verificação em duas etapas do backoffice.{% endcomment %}
+{% comment %}Moldura das telas de acesso da equipe (login, convite e 2FA) no visual novo (P5a).{% endcomment %}
 
 {% block content %}
-<div class="max-w-md mx-auto py-8">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
-        <div class="text-center space-y-2.5">
-            <div class="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-900/40">
-                <i data-lucide="{% block icon %}shield-check{% endblock %}" class="w-7 h-7" stroke-width="1.75"></i>
-            </div>
-            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{% block heading %}{% endblock %}</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">{% block lead %}{% endblock %}</p>
-        </div>
+<div class="max-w-md mx-auto py-6 sm:py-10 space-y-5">
+    <header class="space-y-2">
+        <p class="ui-label">Painel dos GOMs</p>
+        <h1 class="ui-disp text-3xl sm:text-4xl">{% block heading %}{% endblock %}</h1>
+        <p class="ui-muted text-[15px]">{% block lead %}{% endblock %}</p>
+    </header>
 
+    <section class="ui-card p-5 sm:p-6 space-y-5">
         {% block body %}{% endblock %}
+    </section>
 
-        {% if request.user.is_authenticated %}
-        <div class="border-t border-slate-100 dark:border-slate-800 pt-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
-            <form method="post" action="{% url 'admin:logout' %}" class="inline">
-                {% csrf_token %}
-                <button type="submit" class="inline-flex items-center gap-1.5 hover:text-rose-500 transition cursor-pointer">
-                    <i data-lucide="log-out" class="w-3.5 h-3.5" stroke-width="1.75"></i>
-                    <span>Sair da conta {{ request.user.get_username }}</span>
-                </button>
-            </form>
-        </div>
-        {% endif %}
-    </div>
+    {% if request.user.is_authenticated %}
+        <form method="post" action="{% url 'admin:logout' %}" class="text-center">
+            {% csrf_token %}
+            <button type="submit" class="ui-muted text-sm hover:underline cursor-pointer">Sair da conta {{ request.user.get_username }}</button>
+        </form>
+    {% endif %}
 </div>
 {% endblock %}
