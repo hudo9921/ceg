@@ -60,8 +60,9 @@ class AdminPermissionTests(TestCase):
 
     def test_sidebar_and_first_screen_follow_permissions(self):
         self.client.force_login(self.admin)
-        self.assertRedirects(self.client.get(reverse('backoffice_home')), reverse('caixas_dashboard'),
-                             fetch_redirect_response=False)
+        home = self.client.get(reverse('backoffice_home')).content.decode()
+        self.assertIn('pedidos de envio', home)       # logística vê a tarefa de envios
+        self.assertNotIn('Vendido no mês', home)      # sem analytics.ver, sem números de venda
         page = self.client.get(reverse('caixas_dashboard')).content.decode()
         self.assertIn(reverse('envios_nacionais'), page)
         self.assertNotIn(reverse('creations_hub'), page)

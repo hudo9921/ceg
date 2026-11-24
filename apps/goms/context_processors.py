@@ -1,4 +1,5 @@
 from .access import accessible_goms, get_active_gom, gom_permissions, gom_role, is_platform_admin
+from .menu import build_gom_menu, build_platform_menu
 from .models import GomMembership
 
 
@@ -20,4 +21,7 @@ def gom_context(request):
         'switchable_goms': accessible_goms(user),
         # Permissões no GOM ativo: {% if 'ceg.editar' in gom_perms %} (apps.goms.permissions).
         'gom_perms': gom_permissions(request),
+        # Menu do painel (apps/goms/menu.py), já filtrado pelas permissões.
+        'gom_menu': build_gom_menu(request, gom_permissions(request)) if role else [],
+        'platform_menu': build_platform_menu(request) if is_platform_admin(user) else [],
     }

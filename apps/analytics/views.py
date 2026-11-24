@@ -13,7 +13,7 @@ class CEGStatusView(StaffRequiredMixin, View):
     Foco em status de CEGs, completude de sets (o que falta para fechar),
     sets completos porém pendentes (frete, taxa, pagamentos), valores das CEGs e fluxo Mercari.
     """
-    gom_permission = 'analytics.ver'
+    gom_permission = ('ceg.editar', 'analytics.ver', 'pag.confirmar')  # gestão operacional das CEGs
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None
@@ -161,7 +161,7 @@ class SalesReportView(StaffRequiredMixin, View):
 
 
 class CEGStatusApiView(StaffRequiredMixin, View):
-    gom_permission = 'analytics.ver'
+    gom_permission = ('ceg.editar', 'analytics.ver', 'pag.confirmar')  # gestão operacional das CEGs
     def get(self, request):
         category = request.GET.get('category') or 'all'
         group_id = request.GET.get('group') or None

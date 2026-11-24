@@ -232,3 +232,7 @@
 - `goms/login.html`, `goms/invite_accept.html`, `core/two_factor/setup|verify|backup_codes|manage.html`.
 - `goms/public_page.html` + `partials/_public_cegs.html`: página pública do GOM. `participants/privacidade.html`: política.
 - Campos dos formulários de GOM usam `ui-input` (`apps/goms/forms.py: INPUT_CLASS`).
+
+### Painel do GOM (P5)
+- `goms/inicio.html` (`/painel/`, view `backoffice_home`): Início com tarefas de hoje (pagamentos, pedidos de envio, aberturas), números do mês, próximas aberturas e atividade. Dados: `apps/goms/dashboard.py`, só com o que a pessoa pode ver. No celular, atalhos do menu.
+- `components/_sidebar_gom_menu.html`: menu do painel montado em `apps/goms/menu.py` (`GOM_MENU`) e filtrado pelas permissões; seção Plataforma para o superusuário.
