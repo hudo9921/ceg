@@ -1,22 +1,9 @@
-<!-- Banner Principal -->
-<div class="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 rounded-3xl p-6 sm:p-8 text-white shadow-lg shadow-purple-600/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-    <div class="space-y-2">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider backdrop-blur-xs">
-            <i data-lucide="package" class="w-3.5 h-3.5 stroke-[2]"></i>
-            <span>{{ caixa.nome }}</span>
-            <span>&bull;</span>
-            <span>{{ caixa.get_status_display }}</span>
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
-            Transferir Itens para a Vitrine
-        </h1>
-        <p class="text-xs sm:text-sm text-pink-100/90 max-w-xl">
-            Esta remessa já chegou na sua casa! Selecione abaixo os itens das CEGs vinculadas que não foram claimados para colocá-los à venda a pronta entrega na Vitrine.
-        </p>
+{% comment %}Topo da transferência de sobras da caixa para a Vitrine (P5e).{% endcomment %}
+<header class="flex flex-wrap items-end justify-between gap-4">
+    <div class="space-y-2 max-w-2xl">
+        <p class="ui-label">{{ caixa.nome }} · {{ caixa.get_status_display }}</p>
+        <h1 class="ui-disp text-3xl sm:text-4xl">Sobras para a Vitrine</h1>
+        <p class="ui-muted text-[15px]">Itens das CEGs desta caixa que ninguém pegou. Escolha os que vão para a Vitrine de pronta entrega e defina o preço.</p>
     </div>
-
-    <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-center shrink-0">
-        <span class="text-3xl font-black block leading-none">{{ unclaimed_count }}</span>
-        <span class="text-[11px] font-bold text-pink-200 uppercase tracking-wider">Itens Disponíveis</span>
-    </div>
-</div>
+    <p class="ui-card px-5 py-3 text-center"><span class="block ui-mono text-2xl font-bold">{{ unclaimed_count }}</span><span class="ui-label">sobra{{ unclaimed_count|pluralize }}</span></p>
+</header>
