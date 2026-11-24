@@ -111,6 +111,7 @@
   - `_caixas_quick_modal.html`: Criação rápida de nova caixa com modal translúcido.
   - `_caixas_unlinked_cegs.html`: Alerta inteligente de CEGs sem caixa associada.
   - `_caixas_app_script.html`: Lógica reativa Alpine.js (`caixasApp`).
+- **Caixa — visão do joiner no visual novo (P4):** `_caixa_detail_header.html` (etapas `caixa_steps`), `_caixa_detail_joiner_summary.html` ("Sua parte nesta caixa": frete e taxa com a chave Pix da caixa, `parte_rows`), `_caixa_detail_prazos_card.html` (prazos + valor por tipo de item) e `_caixa_detail_joiner_cegs.html`/`_joiner_mercari.html` (seus itens). O joiner não vê outras CEGs da caixa nem o rastreio internacional. Abas de gestão da equipe seguem no estilo antigo até a fase de backoffice.
 - **Detalhes da Caixa (`caixa_detail.html` — 59 linhas):**
   - `_caixa_detail_header.html`: Header com status da remessa, frete/taxa e rastreio.
   - `_caixa_detail_cascade_panel.html`: Painel de propagação em cascata com 1 clique.
