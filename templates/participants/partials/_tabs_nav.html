@@ -1,41 +1,15 @@
-    <!-- TABS DE NAVEGAÇÃO PRINCIPAL -->
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 dark:border-white/10 pb-3">
-        <div class="flex items-center gap-2 sm:gap-3">
-            <button type="button" @click="activeMainTab = 'reservas'"
-                    class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 border shadow-xs cursor-pointer select-none"
-                    :class="activeMainTab === 'reservas' 
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-md' 
-                        : 'bg-white text-slate-600 dark:bg-cyber-surface dark:text-cyber-silver border-slate-200/80 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5'">
-                <i data-lucide="folder" class="w-4 h-4"></i>
-                <span>Minhas Reservas / CEGs</span>
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold"
-                      :class="activeMainTab === 'reservas' ? 'bg-white/20 text-white dark:bg-slate-950/20 dark:text-slate-950' : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-cyber-silver'">
-                    {{ total_claims_count|add:itens_individuais_count }}
-                </span>
-            </button>
-
-            <button type="button" @click="activeMainTab = 'caixinha'"
-                    class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center gap-2 border shadow-xs cursor-pointer select-none relative"
-                    :class="activeMainTab === 'caixinha' 
-                        ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-500 shadow-md shadow-pink-500/20' 
-                        : 'bg-white text-slate-700 dark:bg-cyber-surface dark:text-cyber-silver border-slate-200/80 dark:border-white/10 hover:bg-pink-50/50 dark:hover:bg-pink-950/20'">
-                <i data-lucide="package" class="w-4 h-4"></i>
-                <span>Minha Caixinha / Pedir Envio</span>
-                {% if total_caixinha_disponivel > 0 %}
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-black animate-pulse"
-                      :class="activeMainTab === 'caixinha' ? 'bg-white text-pink-600' : 'bg-pink-500 text-white'">
-                    {{ total_caixinha_disponivel }} pronto(s)
-                </span>
-                {% elif pacotes_em_andamento %}
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-cyber-silver">
-                    {{ pacotes_em_andamento|length }} envio(s)
-                </span>
-                {% endif %}
-            </button>
-        </div>
-
-        <div class="text-xs text-slate-500 dark:text-cyber-silver font-medium">
-            <span x-show="activeMainTab === 'reservas'">Acompanhe suas reservas, claims e pagamentos</span>
-            <span x-show="activeMainTab === 'caixinha'">Itens prontos com o organizador e pedidos de envio nacional</span>
-        </div>
-    </div>
+{% comment %}Navegação do painel do joiner (P3): Pagar · Meus itens · Envios. IDs internos: pagar/reservas/caixinha.{% endcomment %}
+<nav class="ui-toggle max-w-xl" aria-label="Seções da sua conta">
+    <button type="button" @click="activeMainTab = 'pagar'" :class="activeMainTab === 'pagar' && 'is-on'"
+            :aria-current="activeMainTab === 'pagar' ? 'page' : 'false'" class="flex items-center justify-center gap-1.5">
+        Pagar{% if charges.count %} <span class="ui-mono text-[12px]">{{ charges.count }}</span>{% endif %}
+    </button>
+    <button type="button" @click="activeMainTab = 'reservas'" :class="activeMainTab === 'reservas' && 'is-on'"
+            :aria-current="activeMainTab === 'reservas' ? 'page' : 'false'" class="flex items-center justify-center gap-1.5">
+        Meus itens <span class="ui-mono text-[12px]">{{ total_claims_count|add:itens_individuais_count }}</span>
+    </button>
+    <button type="button" @click="activeMainTab = 'caixinha'" :class="activeMainTab === 'caixinha' && 'is-on'"
+            :aria-current="activeMainTab === 'caixinha' ? 'page' : 'false'" class="flex items-center justify-center gap-1.5">
+        Envios{% if total_caixinha_disponivel > 0 %} <span class="ui-mono text-[12px]">{{ total_caixinha_disponivel }}</span>{% endif %}
+    </button>
+</nav>

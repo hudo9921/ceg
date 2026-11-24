@@ -1,0 +1,49 @@
+{% comment %}Um GOM na seção Pagar: total e cada cobrança (item, frete, taxa, frete nacional) com o Pix dela.{% endcomment %}
+<section class="ui-card overflow-hidden" aria-label="Cobranças de {{ group.gom.name }}">
+    <div class="flex items-center gap-3 p-4 sm:p-5">
+        {% if group.gom.logo_url %}
+            <img src="{{ group.gom.logo_url }}" alt="" class="w-10 h-10 flex-none rounded-ui-pill object-cover" loading="lazy" decoding="async">
+        {% else %}
+            <span class="w-10 h-10 flex-none flex items-center justify-center rounded-ui-pill bg-ui-accent text-white font-bold" aria-hidden="true">{{ group.gom.name|slice:":1"|upper }}</span>
+        {% endif %}
+        <div class="flex-1 min-w-0">
+            <h2 class="ui-disp text-xl truncate">{{ group.gom.name }}</h2>
+            <p class="ui-muted text-sm">{{ group.count }} cobrança{{ group.count|pluralize }}</p>
+        </div>
+        <span class="ui-mono text-xl font-bold">R$ {{ group.total|floatformat:2 }}</span>
+    </div>
+
+    {% for line in group.lines %}
+        <div class="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-4 border-t" style="border-color: var(--ui-line)">
+            <div class="flex-[1_1_240px] min-w-0 space-y-1">
+                <p class="ui-label">{{ line.kind_label }}{% if line.count > 1 %} · {{ line.count }} itens{% endif %}</p>
+                {% if line.url %}
+                    <a href="{{ line.url }}" class="block text-base font-semibold hover:underline">{{ line.title }}</a>
+                {% else %}
+                    <p class="text-base font-semibold">{{ line.title }}</p>
+                {% endif %}
+                <p class="ui-status {% if line.urgency == 'VENCIDO' or line.urgency == 'HOJE' %}ui-danger{% elif line.urgency == 'EM_BREVE' %}ui-warn{% else %}ui-muted{% endif %}">{{ line.due_label }}</p>
+            </div>
+            <div class="ui-well flex-[1_1_260px] min-w-0 flex items-center gap-3 py-2 pl-3.5 pr-2">
+                <span class="flex-1 min-w-0">
+                    <span class="block ui-mono text-[17px] font-bold">R$ {{ line.amount|floatformat:2 }}</span>
+                    {% if line.pix_key %}
+                        <span class="block ui-mono ui-muted text-xs truncate select-all" title="{{ line.pix_key }}">Pix: {{ line.pix_key }}</span>
+                    {% else %}
+                        <span class="block ui-muted text-xs">Chave Pix ainda não cadastrada. A GOM vai te passar.</span>
+                    {% endif %}
+                </span>
+                {% if line.pix_key %}
+                    <button type="button" class="ui-btn ui-btn-sm flex-none" style="background: var(--ui-surface); color: var(--ui-text)"
+                            data-pix="{{ line.pix_key }}"
+                            @click="copyPix($el.dataset.pix, 'charge-{{ forloop.parentloop.counter }}-{{ forloop.counter }}')"
+                            aria-label="Copiar chave Pix: {{ line.kind_label }}"
+                            x-text="copiedPixCegId === 'charge-{{ forloop.parentloop.counter }}-{{ forloop.counter }}' ? 'Copiado!' : 'Copiar Pix'">Copiar Pix</button>
+                {% endif %}
+            </div>
+            {% if line.pix_instructions %}
+                <p class="basis-full ui-muted text-[13px] whitespace-pre-line">{{ line.pix_instructions }}</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+</section>

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.urls import reverse
 
 # Seções do joiner (DESIGN_SYSTEM §7.4): CEGs e Vitrine separados; Pagar, Meus itens e Envios.
-# Até a fase P3 criar telas próprias, Pagar/Meus itens/Envios apontam para partes do /me/.
+# Pagar, Meus itens e Envios são abas do /me/ (P3); o painel mantém ?tab= e o destaque do menu em sincronia.
 JOINER_SECTIONS = (
     ('cegs', 'CEGs', 'sparkles'),
     ('vitrine', 'Vitrine', 'store'),
@@ -21,7 +21,8 @@ def _active_section(request):
         return 'vitrine'
     if name == 'my_claims':
         tab = request.GET.get('tab', '')
-        return {'pagar': 'pagar', 'caixinha': 'envios'}.get(tab, 'itens')
+        return {'pagar': 'pagar', 'caixinha': 'envios', 'envios': 'envios', 'itens': 'itens',
+                'reservas': 'itens'}.get(tab, 'pagar')
     return ''
 
 
@@ -31,9 +32,9 @@ def frontend(request):
     urls = {
         'cegs': reverse('home'),
         'vitrine': reverse('vitrine_list'),
-        'pagar': f'{me}?tab=pagar#pagar',
-        'itens': me,
-        'envios': f'{me}?tab=caixinha',
+        'pagar': f'{me}?tab=pagar',
+        'itens': f'{me}?tab=itens',
+        'envios': f'{me}?tab=envios',
     }
     active = _active_section(request)
     return {

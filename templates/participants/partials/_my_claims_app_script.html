@@ -3,7 +3,7 @@
      Gestão de Abas, Filtros, Quick Pix, Caixinha, Notificações e Modais
      ======================================================================= -->
 <script>
-    function myClaimsApp() {
+    function myClaimsApp(chargesCount = 0) {
         let allCegs = [];
         try {
             const el = document.getElementById('cegs-filter-data');
@@ -36,8 +36,10 @@
             console.error('Erro ao ler claims-preview-data:', e);
         }
 
+        // Abas (P3): pagar · reservas (Meus itens) · caixinha (Envios). Sem ?tab=, abre Pagar se houver cobrança.
         const urlParams = new URLSearchParams(window.location.search);
-        const initialTab = urlParams.get('tab') === 'caixinha' ? 'caixinha' : 'reservas';
+        const TAB_ALIASES = { pagar: 'pagar', itens: 'reservas', reservas: 'reservas', envios: 'caixinha', caixinha: 'caixinha' };
+        const initialTab = TAB_ALIASES[urlParams.get('tab')] || (window.location.hash === '#pagar' || chargesCount > 0 ? 'pagar' : 'reservas');
 
         return {
             activeMainTab: initialTab,
@@ -184,7 +186,9 @@
                     map[c.id] = false;
                 });
                 this.expandedCegs = map;
-                this.$watch('activeMainTab', () => {
+                this.syncTabNav(this.activeMainTab);
+                this.$watch('activeMainTab', (tab) => {
+                    this.syncTabNav(tab);
                     this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
                 });
                 this.$watch('viewMode', () => {
@@ -192,6 +196,21 @@
                 });
                 this.$watch('galleryDisplayMode', () => {
                     this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+                });
+            },
+            // Mantém ?tab= na URL e o destaque da barra lateral/abas iguais à aba aberta (P3).
+            syncTabNav(tab) {
+                const alias = { pagar: 'pagar', reservas: 'itens', caixinha: 'envios' }[tab] || 'itens';
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', alias);
+                url.hash = '';
+                window.history.replaceState(null, '', url);
+                document.querySelectorAll('.ui-nav-item, .ui-tab').forEach((a) => {
+                    const href = a.getAttribute('href') || '';
+                    if (!href.includes('/me/')) return;
+                    const on = href.includes('tab=' + alias);
+                    a.classList.toggle('is-on', on);
+                    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
                 });
             },
             toggleCeg(cegId) {
