@@ -79,7 +79,16 @@ function myClaimsApp(chargesCount = 0) {
             this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
         },
         closePreview() { this.previewModalOpen = false; this.previewItem = null; },
+        // Mesmas 5 etapas de Meus itens (apps/participants/items_panel.py: CODE_STAGE).
+        stageNames: ['A pagar', 'A caminho', 'No Brasil', 'Na caixinha', 'Enviado'],
+        get previewStage() {
+            const CODE_STAGE = { PENDING_PAYMENT: 1, ITEM_PAID: 2, COMPRADO: 2, WAREHOUSE: 2, CONSOLIDATION: 2, IN_TRANSIT: 2,
+                CUSTOMS_PENDING: 3, CUSTOMS_CLEARING: 3, READY_CAIXINHA: 4, PACKAGING: 5, SHIPPED: 5, DELIVERED: 5 };
+            const life = (this.previewItem && this.previewItem.lifecycle) || {};
+            return CODE_STAGE[life.code] || life.stage || 0;
+        },
 
+        brl(v) { return String(v || '0.00').replace('.', ','); },
         copiedPixCegId: null,
         copyPix(key, id = null) {
             const done = () => {

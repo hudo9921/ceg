@@ -80,7 +80,7 @@
   - `_caixinha_pacotes.html`: pacotes nacionais:
     - `_caixinha_pacotes_andamento.html`: "Pacotes a caminho" com etapas Solicitado → Embalando → Enviado → Entregue (`_pacote_header.html`, `PacoteNacional.step_number`), itens (`_pacote_itens.html`), Pix do frete nacional e ações.
     - `_caixinha_pacotes_recebidos.html`: "Pacotes recebidos" com rastreio, itens e avaliação.
-- `_modais.html`: Orquestrador de modais (Perfil, Zoom de photocard, Confirmação e Cancelamento de pacotes).
+- `_modais.html`: modais no visual novo (`ui-scrim` + `ui-sheet`, sobem de baixo no celular): perfil + privacidade (`_modal_perfil*.html`), prévia do item com as mesmas 5 etapas de Meus itens (`_modal_preview_item.html`) e cancelar/confirmar pacote (`_modal_pacote_acoes.html`).
   - `_modal_perfil_privacidade.html`: Seção LGPD do perfil (baixar meus dados em JSON, pedir exclusão com confirmação `EXCLUIR`, link da política).
 - **Página pública `privacidade.html`** (`/privacidade/`): Política de privacidade (dados coletados, finalidade, compartilhamento, retenção e direitos).
 - `_my_claims_app_script.html`: `myClaimsApp` enxuto (~120 linhas): abas com `?tab=` e destaque do menu, seleção da caixinha, modais de pacote, prévia, copiar Pix e avisos.
