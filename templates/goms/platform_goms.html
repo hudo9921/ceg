@@ -3,61 +3,54 @@
 {% block title %}GOMs da plataforma — ValCegs{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto py-6 space-y-5">
-    <header>
-        <span class="text-xs font-black text-pink-600 dark:text-pink-400 uppercase tracking-wider">Plataforma</span>
-        <h1 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <i data-lucide="building-2" class="w-6 h-6 text-pink-500" stroke-width="1.75"></i>GOMs
-        </h1>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Crie um GOM e envie o link de convite ao GOM principal. Ele define a senha e ativa o 2FA.</p>
+{% comment %}GOMs da plataforma (P5b, só superusuário): criar GOM, convite do dono, ativar/desativar.{% endcomment %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <header class="space-y-2">
+        <p class="ui-label">Plataforma</p>
+        <h1 class="ui-disp text-4xl">GOMs</h1>
+        <p class="ui-muted text-[15px]">Crie um GOM e envie o link de convite ao dono. Ele define a senha e ativa o 2FA.</p>
     </header>
 
     {% include 'goms/partials/_invite_link.html' %}
 
-    <form method="post" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+    <form method="post" class="ui-card p-5 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end" aria-label="Criar GOM">
         {% csrf_token %}
         <input type="hidden" name="action" value="create">
         {% for field in form %}
-            <div class="space-y-1">
-                <label for="{{ field.id_for_label }}" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ field.label }}</label>
+            <label for="{{ field.id_for_label }}" class="block space-y-1.5">
+                <span class="ui-label">{{ field.label }}</span>
                 {{ field }}
-                {% if field.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400">{{ field.errors|join:" " }}</p>{% endif %}
-            </div>
+                {% if field.errors %}<span class="block text-[13px] ui-danger">{{ field.errors|join:" " }}</span>{% endif %}
+            </label>
         {% endfor %}
-        <button type="submit" class="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer">
-            <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i>Criar GOM
-        </button>
+        <button type="submit" class="ui-btn ui-btn-primary">Criar GOM</button>
     </form>
 
-    <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+    <section class="ui-card overflow-hidden" aria-label="GOMs">
         {% for g in goms %}
-            <div class="p-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <p class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <div class="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 {% if not forloop.first %}border-t{% endif %}" style="border-color: var(--ui-line)">
+                <div class="min-w-0 space-y-0.5">
+                    <p class="text-base font-bold flex flex-wrap items-center gap-2">
                         {{ g.name }}
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if g.is_active %}bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">{% if g.is_active %}Ativo{% else %}Inativo{% endif %}</span>
+                        <span class="ui-status {% if g.is_active %}ui-ok{% else %}ui-muted{% endif %}">{% if g.is_active %}Ativo{% else %}Inativo{% endif %}</span>
                     </p>
-                    <p class="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                        {{ g.cegs_total }} CEG{{ g.cegs_total|pluralize }} ({{ g.cegs_abertas }} aberta{{ g.cegs_abertas|pluralize }}) · {{ g.membros }} na equipe ·
-                        <a href="{% url 'gom_public' g.slug %}" target="_blank" rel="noopener" class="text-pink-600 dark:text-pink-400 hover:underline">página pública</a>
-                    </p>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                        /gom/{{ g.slug }}/ ·
-                        {% for m in g.memberships.all %}{% if m.is_active %}{{ m.user.get_username }}{% if m.is_owner %} (principal){% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}sem equipe ainda{% endfor %}
-                    </p>
+                    <p class="text-sm">{{ g.cegs_total }} CEG{{ g.cegs_total|pluralize }} ({{ g.cegs_abertas }} aberta{{ g.cegs_abertas|pluralize }}) · {{ g.membros }} na equipe ·
+                        <a href="{% url 'gom_public' g.slug %}" target="_blank" rel="noopener" class="underline">página pública</a></p>
+                    <p class="ui-muted text-[13px] ui-mono">/gom/{{ g.slug }}/ ·
+                        {% for m in g.memberships.all %}{% if m.is_active %}{{ m.user.get_username }}{% if m.is_owner %} (dono){% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}sem equipe ainda{% endfor %}</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="owner_invite">
                         <input type="hidden" name="gom_id" value="{{ g.id }}">
-                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/15 cursor-pointer">Convite de dono</button>
+                        <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm">Convite de dono</button>
                     </form>
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="toggle">
                         <input type="hidden" name="gom_id" value="{{ g.id }}">
-                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold {% if g.is_active %}text-rose-600 dark:text-rose-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %} hover:underline cursor-pointer">{% if g.is_active %}Desativar{% else %}Ativar{% endif %}</button>
+                        <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm {% if g.is_active %}ui-danger{% else %}ui-ok{% endif %}">{% if g.is_active %}Desativar{% else %}Ativar{% endif %}</button>
                     </form>
                 </div>
             </div>

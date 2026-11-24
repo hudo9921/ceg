@@ -1,18 +1,13 @@
 {% comment %}Chaves Pix padrão do GOM por tipo de cobrança (hierarquia: docs/BUSINESS_RULES.md §1).{% endcomment %}
-<section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
-    <div>
-        <h2 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <i data-lucide="qr-code" class="w-4 h-4 text-emerald-500" stroke-width="1.75"></i>Chaves Pix padrão
-        </h2>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400">
-            Usadas quando a CEG ou a caixa não têm chave própria para aquela cobrança. Em branco, frete, taxa e frete
-            nacional usam a chave de itens. Elas nunca aparecem para dívidas de outros GOMs.
-        </p>
+<section class="ui-card p-5 space-y-4" aria-labelledby="pix-padrao-title">
+    <div class="space-y-1">
+        <h2 id="pix-padrao-title" class="ui-disp text-xl">Chaves Pix padrão</h2>
+        <p class="ui-muted text-sm">Usadas quando a CEG ou a caixa não tem chave própria para aquela cobrança. Em branco, frete, taxa e frete nacional usam a chave de itens. Nunca aparecem para dívidas de outros GOMs.</p>
     </div>
     <div class="grid sm:grid-cols-2 gap-4">
-        {% include 'goms/partials/_profile_pix_kind.html' with icon="package" title="Itens" hint="Pagamento dos itens das CEGs sem chave própria." key=form.default_pix_key instructions=form.default_pix_instructions %}
-        {% include 'goms/partials/_profile_pix_kind.html' with icon="plane" title="Frete internacional" hint="Rateio do frete Coreia/Japão → Brasil." key=form.default_pix_key_frete instructions=form.default_pix_instructions_frete %}
-        {% include 'goms/partials/_profile_pix_kind.html' with icon="landmark" title="Taxa aduaneira" hint="Imposto de importação da remessa." key=form.default_pix_key_taxa instructions=form.default_pix_instructions_taxa %}
-        {% include 'goms/partials/_profile_pix_kind.html' with icon="truck" title="Frete nacional" hint="Envio do pacote para o joiner." key=form.default_pix_key_frete_nacional instructions=form.default_pix_instructions_frete_nacional %}
+        {% include 'goms/partials/_profile_pix_kind.html' with title="Itens" hint="Pagamento dos itens das CEGs sem chave própria." key=form.default_pix_key instructions=form.default_pix_instructions %}
+        {% include 'goms/partials/_profile_pix_kind.html' with title="Frete internacional" hint="Rateio do frete Coreia/Japão → Brasil." key=form.default_pix_key_frete instructions=form.default_pix_instructions_frete %}
+        {% include 'goms/partials/_profile_pix_kind.html' with title="Taxa aduaneira" hint="Imposto de importação da remessa." key=form.default_pix_key_taxa instructions=form.default_pix_instructions_taxa %}
+        {% include 'goms/partials/_profile_pix_kind.html' with title="Frete nacional" hint="Envio do pacote para o joiner." key=form.default_pix_key_frete_nacional instructions=form.default_pix_instructions_frete_nacional %}
     </div>
 </section>

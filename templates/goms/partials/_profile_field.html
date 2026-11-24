@@ -1,6 +1,6 @@
-{% comment %}Campo do formulário de perfil do GOM (label, input, erro).{% endcomment %}
-<div class="space-y-1">
-    <label for="{{ field.id_for_label }}" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ field.label }}</label>
+{% comment %}Campo do formulário de perfil do GOM (rótulo, campo, erro).{% endcomment %}
+<label for="{{ field.id_for_label }}" class="block space-y-1.5">
+    <span class="ui-label">{{ field.label }}</span>
     {{ field }}
-    {% if field.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400">{{ field.errors|join:" " }}</p>{% endif %}
-</div>
+    {% if field.errors %}<span class="block text-[13px] ui-danger">{{ field.errors|join:" " }}</span>{% endif %}
+</label>
