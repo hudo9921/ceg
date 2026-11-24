@@ -8,19 +8,24 @@
 {{ ceg_share_map|default:"{}"|json_script:"ceg-share-map-data" }}
 {% endif %}
 
-<div class="space-y-6 sm:space-y-8" x-data="homeApp()">
+<div class="space-y-8 sm:space-y-10 max-w-[1120px] mx-auto" x-data="homeApp()">
 
     <!-- 1. Hero Spotlight Flutuante (Destaque Principal) -->
     {% include 'cegs/partials/_home_hero_spotlight.html' %}
 
-    <!-- 2. Barra de Chips / Pílulas de Navegação por Artista -->
+    <!-- 2. Abrindo em breve (CEGs agendadas com contagem) -->
+    {% include 'cegs/partials/_home_soon_rail.html' %}
+
+    <!-- 3. Abertas agora: busca, filtros, chips de grupo e trilhos por grupo -->
+    <section aria-labelledby="open-title" class="space-y-5">
+    <div class="flex items-end justify-between gap-3">
+        <h2 id="open-title" class="ui-disp text-2xl m-0">Abertas agora</h2>
+        <span class="ui-status ui-ok text-sm">{{ active_cegs|length }} CEG{{ active_cegs|length|pluralize }}</span>
+    </div>
+    {% include 'cegs/partials/_home_filter_bar.html' %}
     {% include 'cegs/partials/_home_chips_bar.html' %}
 
-    <!-- 3. Barra de Busca Inteligente e Filtros (Grupo, Era, Membro/Bias, Tipo) -->
-    {% include 'cegs/partials/_home_filter_bar.html' %}
-
-    <!-- 4. SEÇÃO: VITRINE DE CARROSSÉIS HORIZONTAIS POR GRUPO (Permanece Ativa Mesmo Filtrando!) -->
-    <div class="space-y-8">
+    <div class="space-y-10">
         {% if active_cegs %}
             {% for group in open_groups %}
                 {% include 'cegs/partials/_home_group_carousel.html' %}
@@ -30,31 +35,32 @@
             <div x-show="hasActiveFilters() && totalVisibleCount() === 0"
                  x-cloak
                  x-transition
-                 class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-xl border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 shadow-glass dark:shadow-cyber space-y-3">
-                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
+                 class="ui-card ui-hud p-8 sm:p-12 text-center space-y-3">
+                <div class="w-12 h-12 mx-auto ui-well flex items-center justify-center text-ui-accent-text">
                     <i data-lucide="search-x" class="w-6 h-6" stroke-width="1.75"></i>
                 </div>
-                <h3 class="text-base font-black text-slate-800 dark:text-cyber-silver">Nenhuma CEG encontrada</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Tente ajustar os filtros ou buscar por outro termo.</p>
+                <h3 class="ui-disp text-lg m-0">Nenhuma CEG encontrada</h3>
+                <p class="text-sm ui-muted max-w-sm mx-auto m-0">Tente ajustar os filtros ou buscar por outro termo.</p>
                 <div class="pt-2">
                     <button type="button"
                             @click="clearFilters()"
-                            class="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 font-bold text-xs shadow-sm active:scale-95 transition-all cursor-pointer">
+                            class="ui-btn ui-btn-primary">
                         Limpar todos os filtros
                     </button>
                 </div>
             </div>
         {% else %}
             <!-- Estado Vazio: Nenhuma CEG Aberta no Momento -->
-            <div class="p-8 sm:p-12 text-center rounded-3xl bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-xl border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 shadow-glass dark:shadow-cyber space-y-3">
-                <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-100 dark:bg-cyber-elevated border border-purple-200/60 dark:border-white/10 flex items-center justify-center text-pink-600 dark:text-cyber-neon shadow-xs">
+            <div class="ui-card ui-hud p-8 sm:p-12 text-center space-y-3">
+                <div class="w-12 h-12 mx-auto ui-well flex items-center justify-center text-ui-accent-text">
                     <i data-lucide="inbox" class="w-6 h-6" stroke-width="1.75"></i>
                 </div>
-                <h3 class="text-base font-black text-slate-800 dark:text-cyber-silver">Nenhuma CEG aberta no momento</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Novas compras em grupo serão abertas em breve. Fique de olho nos anúncios!</p>
+                <h3 class="ui-disp text-lg m-0">Nenhuma CEG aberta no momento</h3>
+                <p class="text-sm ui-muted max-w-sm mx-auto m-0">Novas compras em grupo serão abertas em breve. Fique de olho nos anúncios!</p>
             </div>
         {% endif %}
     </div>
+    </section>
 
     <!-- 6. Bottom Sheet Mobile (Gaveta de Ações do Polegar) -->
     {% include 'cegs/partials/_home_bottom_sheet.html' %}

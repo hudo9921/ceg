@@ -1,0 +1,53 @@
+{% comment %}
+"Como funciona o pagamento" (DESIGN_SYSTEM §7.7): as 3 etapas com valores e prazos, e a chave Pix do item.
+Recolhido por padrão; quem precisa abre. Substitui o antigo painel roxo de fases e o card de Pix.
+{% endcomment %}
+<details class="ui-card ui-hud ui-details">
+    <summary>
+        <span class="flex flex-col gap-1">
+            <span class="ui-disp text-xl">Como funciona o pagamento</span>
+            <span class="ui-muted text-sm">3 etapas · item, frete internacional e taxa aduaneira</span>
+        </span>
+        <i data-lucide="chevron-down" class="ui-chevron w-5 h-5" stroke-width="1.75"></i>
+    </summary>
+    <div class="px-5 pb-5 space-y-4">
+        <div class="ui-steps">
+            <div class="ui-well p-4 flex flex-col gap-1.5">
+                <span class="flex items-center gap-2"><span class="ui-num">1</span><span class="font-bold">Item</span></span>
+                <span class="ui-muted text-sm">Pago ao garantir a vaga.</span>
+                <span class="text-sm font-semibold">{% if ceg.prazo_pagamento_item %}Até {{ ceg.prazo_pagamento_item|date:"d/m/Y \à\s H:i" }}{% else %}Sem prazo definido{% endif %}</span>
+            </div>
+            <div class="ui-well p-4 flex flex-col gap-1.5">
+                <span class="flex items-center gap-2"><span class="ui-num">2</span><span class="font-bold">Frete internacional</span></span>
+                <span class="ui-mono text-sm font-semibold">
+                    {% if ceg.has_multiple_frete_rates %}R$ {{ ceg.min_frete_inter|floatformat:2 }} a R$ {{ ceg.max_frete_inter|floatformat:2 }}
+                    {% elif ceg.frete_inter is not None and ceg.frete_inter > 0 or ceg.frete_inter is not None and not ceg.caixa %}R$ {{ ceg.frete_inter|floatformat:2 }}
+                    {% else %}<span class="ui-muted font-normal" style="font-family: var(--ui-font-body)">Dividido depois da pesagem da caixa</span>{% endif %}
+                </span>
+                <span class="text-sm font-semibold">{% if ceg.prazo_pagamento_frete_inter %}Até {{ ceg.prazo_pagamento_frete_inter|date:"d/m/Y \à\s H:i" }}{% else %}Prazo a definir{% endif %}</span>
+            </div>
+            <div class="ui-well p-4 flex flex-col gap-1.5">
+                <span class="flex items-center gap-2"><span class="ui-num">3</span><span class="font-bold">Taxa aduaneira</span></span>
+                <span class="ui-mono text-sm font-semibold">
+                    {% if ceg.has_multiple_taxa_rates %}R$ {{ ceg.min_taxa_aduaneira|floatformat:2 }} a R$ {{ ceg.max_taxa_aduaneira|floatformat:2 }}
+                    {% elif ceg.taxa_aduaneira is not None and ceg.taxa_aduaneira > 0 or ceg.taxa_aduaneira is not None and not ceg.caixa %}R$ {{ ceg.taxa_aduaneira|floatformat:2 }}
+                    {% else %}<span class="ui-muted font-normal" style="font-family: var(--ui-font-body)">Cobrada quando a caixa chega ao Brasil</span>{% endif %}
+                </span>
+                <span class="text-sm font-semibold">{% if ceg.prazo_pagamento_taxa_aduaneira %}Até {{ ceg.prazo_pagamento_taxa_aduaneira|date:"d/m/Y \à\s H:i" }}{% else %}Prazo a definir{% endif %}</span>
+            </div>
+        </div>
+
+        {% if ceg.get_pix_key_item %}
+        <div class="space-y-2">
+            <p class="ui-label m-0">Chave Pix do item</p>
+            <div class="ui-well p-3 flex items-center gap-2">
+                <span class="ui-mono text-sm flex-1 min-w-0 truncate select-all">{{ ceg.get_pix_key_item }}</span>
+                <button type="button" @click="copyPix('{{ ceg.get_pix_key_item|escapejs }}')" class="ui-btn ui-btn-sm bg-ui-surface text-ui-text">
+                    <i data-lucide="copy" class="w-4 h-4" stroke-width="1.75"></i><span>Copiar</span>
+                </button>
+            </div>
+            {% if ceg.pix_instructions %}<p class="m-0 text-sm ui-muted">{{ ceg.pix_instructions }}</p>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</details>

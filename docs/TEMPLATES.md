@@ -24,31 +24,34 @@
 ## 🗺️ 2. Inventário Completo das 21 Telas Modulares
 
 ### 2.1. Vitrine da Home (`home.html` — 72 linhas)
-- `_home_chips_bar.html`: Pílulas roláveis com avatares de artistas e contadores dinâmicos.
-- `_home_hero_spotlight.html`: Card de destaque com suporte dinâmico a banners bipolares (Soft Y2K para Modo Claro e Cyber-Luxury para Modo Escuro) e gatilho de edição para staff.
+- `_home_soon_rail.html`: "Abrindo em breve": trilho de CEGs agendadas com contagem ao vivo por horário-alvo.
+- `_home_chips_bar.html`: Chips `ui-chip` de grupo (com avatar e contagem) que filtram os trilhos.
+- `_home_hero_spotlight.html`: Título "CEGs" e banner da plataforma (claro/escuro; edição só para a plataforma).
 - `_home_banner_edit_modal.html`: Modal de personalização dos banners da Home exclusivo para staff, com upload direto de arquivos e URLs externas para ambos os modos.
-- `_home_filter_bar.html`: Filtro cirúrgico com busca por bias/integrante, era, grupo, tipo e ordenação.
-- `_home_group_carousel.html`: Trilhos horizontais snap com efeito *peek-a-boo* no mobile e 3 modos desktop (setas, `@wheel`, *drag-to-scroll*).
-- `_home_ceg_card.html`: Card toploader de vitrine com badges translúcidos, preço mono tabular e cascata de imagens.
+- `_home_filter_bar.html`: Busca sempre visível; GOM, grupo, era, integrante, tipo e ordenação recolhidos em "Filtros" (abrem sozinhos com filtro ativo).
+- `_home_group_carousel.html`: Trilho horizontal por grupo (toque, roda do mouse, arrastar e setas `ui-icon-btn` no desktop).
+- `_home_ceg_card.html`: Card `ui-card` de CEG aberta: imagem 16:10, grupo · era, título, integrantes, preço e barra de reservas. Mantém os `data-*` dos filtros.
 - `_home_bottom_sheet.html`: Gaveta ergonômica móvel que sobe do rodapé ao tocar no card no celular.
 - `_home_share_modal.html`: Modal de divulgação para redes sociais.
 - `_home_app_script.html`: Lógica reativa Alpine.js (`homeApp`) para filtragem in-place sem interromper carrosséis.
 
 ### 2.2. Detalhe da CEG & Claims (`detail.html` — 104 linhas)
 - `_detail_header.html`: Orquestrador da capa panorâmica com ambient blur e dados gerais:
-  - `_detail_header_banner.html`: Capa panorâmica imersiva, sleeve glass gradient e botão de edição.
-  - `_detail_header_info.html`: Títulos, badges de status, botões de ação staff e cartão Pix com 1-clique cópia.
-  - `_detail_header_shipping.html`: Cartão de remessa internacional vinculada e atalhos de rastreio.
-  - `_detail_header_phases.html`: Painel interativo das 3 fases financeiras (Item, Frete Inter, Taxa Aduaneira).
-  - `_detail_header_countdown.html`: Contagens regressivas de abertura, banner de enquete e abertura no Segundo Zero.
-- `_detail_tabs_bar.html`: Abas dinâmicas de cada Set e controle de vagas abertas com badges translúcidos.
-- `_detail_sets_grid.html`: Orquestrador de sets e progresso de ocupação:
-  - `_detail_slot_card.html`: Toploaders 2:3 com efeito acrílico, zoom e seleção interativa.
-  - `_detail_slot_shipping_box.html`: Mini painel tabular de status e rateio de Frete Inter e Taxa.
-  - `_detail_slot_action.html`: Botão de compra/reserva com estado de seleção e badges de quitação.
-  - `_detail_slot_payment_status.html`: Toggles de quitação para staff e visualizador de histórico de claims.
-- `_detail_avulsos_grid.html`: Orquestrador de itens avulsos e exclusivos:
-  - `_detail_avulso_card.html`: Card toploader 2:3 colecionável com seletor de quantidade e alocação atômica FIFO.
+  - `_detail_header_banner.html`: Hero `ui-hero` (imagem inteira sobre fundo desfocado), tags, título e `_detail_countdown_card.html`.
+  - `_detail_header_info.html`: Status, caixa, "Divulgar vagas", descrição e a linha de ferramentas da equipe.
+  - `_detail_header_shipping.html`: Linha compacta da remessa internacional com rastreio.
+  - `_detail_header_facts.html`: Fatos rápidos (preço, vagas livres, prazo do item).
+  - `_detail_countdown_card.html`: Contagem "Abre em" (pulsa nos últimos 10 s) ou "Aberta agora".
+  - `_detail_header_countdown.html`: Só para enquetes: contagem e painel da sondagem de demanda.
+- `_detail_tabs_bar.html`: Linha fixa de chips (Tudo / Set N / Avulsos) e o interruptor "Só disponíveis".
+- `_detail_how_to_pay.html`: "Como funciona o pagamento" recolhível: 3 etapas com valores/prazos e a chave Pix do item.
+- `_detail_sets_grid.html`: Uma seção por set com barra `ui-seg` de reservas e grade de photocards:
+  - `_detail_slot_card.html`: Photocard `ui-pick` 2:3: tocar põe/tira da lista; vaga tomada fica cinza com carimbo.
+  - `_detail_slot_shipping_box.html`: Equipe: frete inter e taxa da vaga.
+  - `_detail_slot_action.html`: "Adicionar à lista"/"Na lista", "Entrar para reservar" ou quem reservou.
+  - `_detail_slot_payment_status.html`: Equipe: chips de pagamento e histórico; joiner: linha do que já foi pago.
+- `_detail_avulsos_grid.html`: Seção de itens avulsos (estoque fixo):
+  - `_detail_avulso_card.html`: Photocard `ui-pick` com estoque e seletor de quantidade.
   - `_detail_avulso_staff_units.html`: Gaveta retrátil staff com gestão de cada unidade física e toggles de pagamento.
 - `_detail_polling_grid.html`: Orquestrador da grade de enquete de demanda:
   - `_detail_polling_card.html`: Card toploader de candidato da enquete com acordeão de auditoria de votos.
