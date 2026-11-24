@@ -1,16 +1,15 @@
-    <!-- ABA 2: MINHA CAIXINHA / PEDIR ENVIO -->
-    <div x-show="activeMainTab === 'caixinha'" class="space-y-6">
-        <template x-if="activeMainTab === 'caixinha'">
-            <div class="space-y-6">
-                <!-- 1. Header, Google Forms Banner e Itens Prontos com Formulário de Envio -->
-                {% include 'participants/partials/_caixinha_prontos.html' %}
-
-                <!-- 2. Itens Aguardando Liberação / Bloqueados -->
-                {% include 'participants/partials/_caixinha_bloqueados.html' %}
-
-                <!-- 3. Pacotes em Andamento e Histórico de Entregas -->
-                {% include 'participants/partials/_caixinha_pacotes.html' %}
-            </div>
-        </template>
-    </div>
-    <!-- FIM ABA 2 (CAIXINHA) -->
+{% comment %}Envios (P3c): caixinha (itens prontos e pedido de envio), itens retidos e pacotes nacionais.{% endcomment %}
+<section x-show="activeMainTab === 'caixinha'" class="space-y-6" aria-labelledby="envios-title">
+    <template x-if="activeMainTab === 'caixinha'">
+        <div class="space-y-6">
+            <header class="space-y-1.5">
+                <p class="ui-label">Envios</p>
+                <h1 id="envios-title" class="ui-disp text-3xl sm:text-4xl">Sua caixinha</h1>
+                <p class="ui-muted text-[15px] max-w-2xl">Itens que já chegaram na casa da GOM e estão quitados. Escolha o que quer receber e peça o envio.</p>
+            </header>
+            {% include 'participants/partials/_caixinha_prontos.html' %}
+            {% include 'participants/partials/_caixinha_bloqueados.html' %}
+            {% include 'participants/partials/_caixinha_pacotes.html' %}
+        </div>
+    </template>
+</section>

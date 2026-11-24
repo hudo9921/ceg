@@ -32,7 +32,7 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(self.participant.display_name, 'Hudo')
         self.assertEqual(self.participant.social_handle, '@hudokpop')
         self.assertEqual(self.participant.whatsapp, '5581994222104')
-        self.assertContains(response, 'Olá, Hudo! 👋')
+        self.assertContains(response, 'Olá, Hudo!')
         self.assertContains(response, 'Hudo Silva')
         self.assertContains(response, '@hudokpop')
 
@@ -55,7 +55,7 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(self.participant.name, 'Beatriz Lima da Silva')
         self.assertEqual(self.participant.username, '')
         self.assertEqual(self.participant.display_name, 'Beatriz Lima da Silva')
-        self.assertContains(response, 'Olá, Beatriz Lima da Silva! 👋')
+        self.assertContains(response, 'Olá, Beatriz Lima da Silva!')
 
     def test_display_name_property_fallback(self):
         p = Participant(name='Lucas Ferreira', username='Luke', whatsapp='5511988887777')

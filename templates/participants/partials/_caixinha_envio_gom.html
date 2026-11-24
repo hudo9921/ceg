@@ -1,43 +1,20 @@
-{% comment %}Formulário/instruções de envio de UM GOM (cada GOM envia o próprio pacote). Usa `ev` de envio_por_gom.{% endcomment %}
-    <div class="bg-gradient-to-r from-pink-50/90 via-rose-50/60 to-purple-50/90 dark:from-cyber-surface dark:via-cyber-surface dark:to-cyber-surface rounded-2xl border-2 border-pink-300/80 dark:border-pink-500/40 p-5 sm:p-6 shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-start gap-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
-                    <i data-lucide="clipboard-list" class="w-5 h-5"></i>
-                </div>
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-base font-black text-slate-900 dark:text-white">Envio Nacional{% if envio_por_gom|length > 1 %} — {{ ev.gom.name }}{% endif %}</h3>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
-                            Etapa Obrigatória
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-600 dark:text-cyber-silver max-w-xl leading-relaxed">
-                        Não coletamos dados de endereço nesta plataforma. Para que o organizador possa cotar seu frete e enviar sua encomenda com segurança, acesse o formulário oficial de {{ ev.gom.name }}{% if envio_por_gom|length > 1 %} ({{ ev.items_count }} ite{{ ev.items_count|pluralize:"m,ns" }} pronto{{ ev.items_count|pluralize }} deste GOM){% endif %}:
-                    </p>
-                    {% if ev.config.instrucoes_envio %}
-                    <p class="text-[11px] text-slate-500 dark:text-cyber-silver bg-white/70 dark:bg-white/[0.04] p-2.5 rounded-xl border border-pink-200/50 dark:border-white/10 font-medium leading-relaxed flex items-start gap-1.5">
-                        <i data-lucide="info" class="w-3.5 h-3.5 text-pink-500 flex-shrink-0 mt-0.5"></i>
-                        <span><strong>Instruções do Organizador:</strong> {{ ev.config.instrucoes_envio }}</span>
-                    </p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="w-full sm:w-auto flex-shrink-0">
-                {% if ev.config.link_formulario_google %}
-                <a href="{{ ev.config.link_formulario_google }}" target="_blank" rel="noopener noreferrer"
-                   class="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-xs hover:shadow-md transition flex items-center justify-center gap-2 group cursor-pointer select-none">
-                    <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                    <span>Preencher Formulário de Envio (Google Forms)</span>
-                    <i data-lucide="external-link" class="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
-                </a>
-                {% else %}
-                <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 text-center flex items-center gap-1.5">
-                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-500"></i>
-                    <span>Link do formulário ainda não cadastrado pelo organizador.</span>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+{% comment %}Formulário de envio de UM GOM (cada GOM envia o próprio pacote; o endereço vai pelo formulário dele). Usa `ev`.{% endcomment %}
+<section class="ui-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4" aria-label="Formulário de envio de {{ ev.gom.name }}">
+    <div class="flex-1 min-w-0 space-y-1">
+        <p class="ui-label">Antes de pedir{% if envio_por_gom|length > 1 %} · {{ ev.gom.name }}{% endif %}</p>
+        <h2 class="text-base font-bold">Preencha o formulário de envio de {{ ev.gom.name }}</h2>
+        <p class="ui-muted text-sm">
+            A GOM precisa dele para cotar o frete e enviar seu pacote.{% if envio_por_gom|length > 1 %} {{ ev.items_count }} ite{{ ev.items_count|pluralize:"m,ns" }} pronto{{ ev.items_count|pluralize }} deste GOM.{% endif %}
+        </p>
+        {% if ev.config.instrucoes_envio %}
+            <p class="ui-well text-sm p-3 mt-2 whitespace-pre-line">{{ ev.config.instrucoes_envio }}</p>
+        {% endif %}
     </div>
+    {% if ev.config.link_formulario_google %}
+        <a href="{{ ev.config.link_formulario_google }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost w-full sm:w-auto flex-none">
+            Abrir formulário <i data-lucide="external-link" class="w-4 h-4" stroke-width="1.75"></i>
+        </a>
+    {% else %}
+        <p class="ui-status ui-warn flex-none">A GOM ainda não cadastrou o formulário</p>
+    {% endif %}
+</section>

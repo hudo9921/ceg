@@ -1280,6 +1280,14 @@ class PacoteNacional(models.Model):
         """Chave/instruções para pagar o frete nacional: padrão do GOM (frete nacional → itens)."""
         return self.gom.pix_for('frete_nacional')
 
+    # Etapas mostradas ao joiner (painel Envios): Solicitado → Embalando → Enviado → Entregue.
+    JOINER_STEPS = [('SOLICITADO', 'Solicitado'), ('EM_PREPARACAO', 'Embalando'), ('ENVIADO', 'Enviado'), ('ENTREGUE', 'Entregue')]
+
+    @property
+    def step_number(self) -> int:
+        """Posição (1 a 4) do status nas etapas do joiner."""
+        return next((i for i, (code, _label) in enumerate(self.JOINER_STEPS, 1) if code == self.status), 1)
+
     @property
     def pix_key_frete_nacional(self) -> str:
         return self.get_pix_frete_nacional()[0] or ''

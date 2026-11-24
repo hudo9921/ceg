@@ -1,0 +1,23 @@
+{% comment %}Fileira de itens de um pacote (photocards de CEG e avulsos). Toque abre a prévia. Usa `pacote`.{% endcomment %}
+<div class="flex gap-2 overflow-x-auto pb-1" role="list" aria-label="Itens do pacote">
+    {% for slot in pacote.slots.all %}
+        {% with item_img=slot.item_definition.image_url|default:slot.set.ceg.banner_url %}
+        <button type="button" role="listitem" class="w-14 flex-none text-left" title="{{ slot.item_definition.name }} · {{ slot.set.ceg.title }}"
+                data-title="{{ slot.item_definition.name }}" data-image="{{ item_img }}" data-ceg="{{ slot.set.ceg.title }}" data-set="{{ slot.set.set_number }}"
+                @click="$el.dataset.image && openPreview({ title: $el.dataset.title, image: $el.dataset.image, ceg: $el.dataset.ceg, set: $el.dataset.set })">
+            <span class="ui-pc block !rounded-[8px]">
+                {% if item_img %}<img src="{{ item_img|thumb }}" data-full="{{ item_img }}" alt="{{ slot.item_definition.name }}" loading="lazy" decoding="async">{% else %}<span class="ui-pc-empty"></span>{% endif %}
+            </span>
+        </button>
+        {% endwith %}
+    {% endfor %}
+    {% for item in pacote.itens_individuais.all %}
+        <button type="button" role="listitem" class="w-14 flex-none text-left" title="{{ item.nome }}"
+                data-title="{{ item.nome }}" data-image="{{ item.image_display_url|default:'' }}"
+                @click="$el.dataset.image && openPreview({ title: $el.dataset.title, image: $el.dataset.image, ceg: 'Item avulso' })">
+            <span class="ui-pc block !rounded-[8px]">
+                {% if item.image_display_url %}<img src="{{ item.image_display_url|thumb }}" data-full="{{ item.image_display_url }}" alt="{{ item.nome }}" loading="lazy" decoding="async">{% else %}<span class="ui-pc-empty"></span>{% endif %}
+            </span>
+        </button>
+    {% endfor %}
+</div>
