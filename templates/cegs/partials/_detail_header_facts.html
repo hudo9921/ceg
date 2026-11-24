@@ -1,0 +1,25 @@
+{% comment %}Fatos rápidos da CEG: preço, vagas e prazo do item. Ficam entre o hero e a grade.{% endcomment %}
+<div class="ui-facts">
+    <div class="ui-fact">
+        <span class="ui-label">Preço</span>
+        {% if ceg.has_single_price and ceg.single_price is not None %}
+            <span class="ui-mono text-xl font-bold">R$ {{ ceg.single_price|floatformat:2 }}<span class="ui-muted text-[13px] font-medium"> / item</span></span>
+        {% else %}
+            <span class="text-base font-semibold">Varia por item</span>
+        {% endif %}
+    </div>
+    {% if not ceg.is_polling %}
+    <div class="ui-fact">
+        <span class="ui-label">Vagas</span>
+        <span class="ui-mono text-xl font-bold">{{ ceg.available_slots_count }}<span class="ui-muted text-[13px] font-medium"> de {{ ceg.total_slots_count }} livres</span></span>
+    </div>
+    {% endif %}
+    <div class="ui-fact">
+        <span class="ui-label">Pagamento do item</span>
+        {% if ceg.prazo_pagamento_item %}
+            <span class="text-base font-semibold">Até {{ ceg.prazo_pagamento_item|date:"d/m \à\s H:i" }}</span>
+        {% else %}
+            <span class="text-base font-semibold">Sem prazo definido</span>
+        {% endif %}
+    </div>
+</div>

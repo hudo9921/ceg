@@ -1,23 +1,17 @@
-<!-- ==========================================
-     HEADER DA CEG (ÁLBUM / BANNER DESTAQUE)
-     Estilo Deezer / Godly com Ambient Blur & Lucide Icons
-     Estrutura Modularizada (< 200 linhas)
-     ========================================== -->
-<div class="bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-xl rounded-3xl border border-purple-100/80 dark:border-white/10 p-5 sm:p-7 shadow-soft space-y-6 overflow-hidden transition-colors">
-
-    <!-- 1. Foto / Banner de Capa da CEG com Ambient Blur -->
+{% comment %}
+Cabeçalho da CEG (DESIGN_SYSTEM §7.7): hero com banner, título e contagem; abaixo, status, ações e remessa.
+Os fatos rápidos vêm logo depois; as etapas de pagamento e o Pix ficam em _detail_how_to_pay (fim da página).
+{% endcomment %}
+<section class="ui-card ui-hud overflow-hidden" aria-labelledby="ceg-title">
     {% include 'cegs/partials/_detail_header_banner.html' %}
+    <div class="p-4 sm:p-6 space-y-4">
+        {% include 'cegs/partials/_detail_header_info.html' %}
+        {% include 'cegs/partials/_detail_header_shipping.html' %}
+    </div>
+</section>
 
-    <!-- 2. Badges, Título, Ações Principais & Card Pix -->
-    {% include 'cegs/partials/_detail_header_info.html' %}
+{% include 'cegs/partials/_detail_header_facts.html' %}
 
-    <!-- 3. Logística Internacional / Remessa Vinculada -->
-    {% include 'cegs/partials/_detail_header_shipping.html' %}
-
-    <!-- 4. Painel das 3 Fases de Pagamento da CEG (Item, Frete, Taxa) -->
-    {% include 'cegs/partials/_detail_header_phases.html' %}
-
-    <!-- 5. Banners de Enquete de Demanda ou Standby Countdown -->
+{% if ceg.is_polling %}
     {% include 'cegs/partials/_detail_header_countdown.html' %}
-
-</div>
+{% endif %}

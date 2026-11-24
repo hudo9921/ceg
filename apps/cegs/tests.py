@@ -2406,7 +2406,7 @@ class CEGShareGeneratorTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
 
-        self.assertIn('Copiar Vagas Abertas', content)
+        self.assertIn('Divulgar vagas', content)
         self.assertIn('openShareModal()', content)
         self.assertIn('shareModalOpen', content)
         self.assertIn('shareEmoji', content)

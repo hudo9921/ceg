@@ -243,7 +243,7 @@ Até a fase P3, Pagar, Meus itens e Envios abrem as partes correspondentes do `/
 | Fase | Escopo |
 | :--- | :--- |
 | P1 | Fundação: tokens, fontes, componentes, navegação (**entregue**) |
-| P2 | CEGs e página da CEG. P2a, compra competitiva (§7.6): **entregue**. P2b, visual da página e da home: pendente |
+| P2 | CEGs e página da CEG. P2a, compra competitiva (§7.6), e P2b, visual da página e da home (§7.7): **entregues** |
 | P3 | Pagar, Meus itens, Envios, login e 2FA |
 | P4 | Vitrine e páginas de GOM |
 | P5 | Backoffice |
@@ -262,3 +262,14 @@ Detalhes:
 - **Visitante sem login:** vê "Entrar para reservar" com `?next=` da CEG.
 - **Staff:** continua com a barra e o modal antigos (`_detail_claim_bar.html`), que permitem reservar para outra pessoa.
 - **Arquivos:** `_detail_buybar.html`, `_detail_result_sheet.html` e `_detail_buy_script.html` (`cegBuyMixin()`, misturado em `cegDetailApp()`). Testes em `apps/cegs/tests_buying_flow.py`.
+
+### 7.7. Página da CEG e home (P2b)
+Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
+- **Hero da CEG (`ui-hero`):** a imagem aparece inteira (contida) sobre um fundo desfocado dela mesma; tags (grupo, era, GOM), título e a contagem (`ui-count`) ficam por cima. A contagem pulsa nos últimos 10 s e respeita "reduzir movimento".
+- **Fatos rápidos (`ui-facts`):** preço, vagas livres e prazo do item, logo abaixo do hero.
+- **Filtros (`ui-filters`):** uma linha de chips fixa ao rolar (abaixo da topbar no celular) e o interruptor `ui-switch` "Só disponíveis".
+- **Photocards (`ui-pick` + `ui-pc`):** a foto é o elemento principal. Selecionado = contorno na cor de destaque + `ui-tick`; tomado = cinza + `ui-stamp` ("Reservado"/"Pago"/"Esgotado"). O texto do status sempre acompanha a cor. Frete e taxa saem do card do joiner (ficam em "Como funciona o pagamento"); a equipe continua vendo valores e os chips de pagamento.
+- **Informação de referência recolhida:** etapas de pagamento e Pix do item ficam no `<details class="ui-details">` "Como funciona o pagamento".
+- **Ferramentas da equipe:** todas numa linha `ui-well` ("Equipe do GOM") abaixo do hero, em vez de espalhadas.
+- **Home:** título "CEGs" + banner da plataforma → "Abrindo em breve" (`ui-rail`, contagem por card) → "Abertas agora" (busca, "Filtros" recolhidos, chips de grupo e um trilho por grupo com cards `ui-card` 16:10 e barra de reservas).
+- **Acessibilidade:** alvos de toque ≥ 44 px, `aria-pressed` nos chips e cards, `role="switch"` no interruptor, `role="timer"` nas contagens, rótulos em botões só com ícone.

@@ -1,0 +1,30 @@
+{% comment %}
+Contagem no hero da CEG (DESIGN_SYSTEM §7.7). Antes de abrir: "Abre em" com dias/horas/min/seg e pulso suave
+nos últimos 10 s; depois: "Aberta agora". Encerrada/cancelada mostram só o status.
+{% endcomment %}
+{% if ceg.status == 'CLOSED' or ceg.status == 'CANCELLED' %}
+<div class="ui-count">
+    <p class="ui-label m-0">Status</p>
+    <p class="ui-status ui-muted text-lg m-0 mt-2">{{ ceg.get_status_display }}</p>
+</div>
+{% else %}
+<div class="ui-count" :class="{ 'is-pulse': isStandby && secondsLeft <= 10 }" role="timer" aria-live="off">
+    <div x-show="isStandby" {% if not ceg.is_standby %}x-cloak{% endif %}>
+        <p class="ui-label m-0">Abre em</p>
+        <div class="ui-count-digits" aria-label="Tempo para abrir">
+            <template x-if="formatCountdown().d > 0">
+                <span class="contents"><b x-text="formatCountdown().d"></b><small>d</small></span>
+            </template>
+            <b x-text="formatCountdown().h">00</b><i>:</i><b x-text="formatCountdown().m">00</b><i>:</i><b x-text="formatCountdown().s">00</b>
+        </div>
+        {% if ceg.opens_at %}
+            <p class="m-0 mt-2 text-[13px] opacity-75">{{ ceg.opens_at|date:"d/m \à\s H:i" }} · {% if is_gom_staff %}reservas destravam no zero{% else %}monte sua lista agora{% endif %}</p>
+        {% endif %}
+    </div>
+    <div x-show="!isStandby" {% if ceg.is_standby %}x-cloak{% endif %}>
+        <p class="ui-label m-0">Status</p>
+        <p class="ui-status ui-ok text-lg m-0 mt-2">Aberta agora</p>
+        <p class="m-0 mt-2 text-[13px] opacity-75">Cada vaga é de uma pessoa: quem pega primeiro leva.</p>
+    </div>
+</div>
+{% endif %}

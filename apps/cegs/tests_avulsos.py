@@ -281,8 +281,8 @@ class ItensAvulsosTestCase(TestCase):
         self.assertEqual(len(res.context['avulso_definitions']), 1)
         self.assertEqual(len(res.context['avulso_slots']), 1)
         content = res.content.decode('utf-8')
-        self.assertIn('Apenas Itens Avulsos', content)
-        self.assertIn('Itens Avulsos & Exclusivos', content)
+        self.assertIn('id="avulsos-title"', content)  # seção de itens avulsos
+        self.assertIn("activeSetTab = 'AVULSOS'", content)  # chip de filtro "Avulsos"
 
     def test_claim_avulso_by_quantity_allocates_first_units(self):
         """Testa que comprar 2 unidades de 3 aloca exatamente as duas primeiras (unit_number 1 e 2)"""
