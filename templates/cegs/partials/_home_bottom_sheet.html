@@ -27,7 +27,7 @@
          x-transition:leave="transition ease-in duration-200 transform"
          x-transition:leave-start="translate-y-0 sm:scale-100 sm:opacity-100"
          x-transition:leave-end="translate-y-full sm:translate-y-0 sm:scale-95 sm:opacity-0"
-         class="relative z-10 w-full sm:max-w-lg bg-white dark:bg-[#14121B] rounded-t-[32px] sm:rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[88vh] flex flex-col overflow-hidden">
+         class="ui-card relative z-10 w-full sm:max-w-lg rounded-t-[32px] p-5 sm:p-6 space-y-4 max-h-[88vh] flex flex-col overflow-hidden">
         
         <!-- Puxador Superior no Mobile com Acento da Era -->
         <div class="sm:hidden flex justify-center -mt-2 pb-1">
@@ -42,10 +42,10 @@
                          class="w-12 h-12 rounded-2xl object-cover shrink-0 border border-slate-200/80 dark:border-white/10 shadow-2xs">
                 </template>
                 <div class="min-w-0 flex-1">
-                    <span class="text-[10px] font-black uppercase tracking-wider block truncate"
+                    <span class="ui-label block"
                           :style="'color: var(--era-title-color, var(--era-accent));'"
                           x-text="activeSheetCeg?.group_era"></span>
-                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-snug line-clamp-2"
+                    <h3 class="ui-disp text-lg"
                         x-text="activeSheetCeg?.title"></h3>
                 </div>
             </div>
@@ -59,13 +59,13 @@
         <!-- Indicadores de Preço e Total de Vagas -->
         <div class="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/10">
             <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">A partir de</span>
+                <span class="text-[10px] uppercase font-bold ui-muted block">A partir de</span>
                 <span class="text-sm sm:text-base font-black font-mono tabular-nums"
                       :style="'color: var(--era-price-color, var(--era-accent));'"
                       x-text="'R$ ' + (activeSheetCeg?.price || '0.00')"></span>
             </div>
             <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Vagas Livres</span>
+                <span class="text-[10px] uppercase font-bold ui-muted block">Vagas Livres</span>
                 <span class="text-sm sm:text-base font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                     <i data-lucide="layers" class="w-4 h-4" stroke-width="1.75"></i>
                     <span x-text="activeSheetCeg?.vagas + ' disponíveis'"></span>
@@ -75,26 +75,26 @@
 
         <!-- Lista Completa de Vagas por Integrante -->
         <div class="flex-1 overflow-hidden flex flex-col min-h-0 space-y-2">
-            <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 px-0.5">
+            <div class="flex items-center justify-between text-xs font-bold px-0.5">
                 <span class="flex items-center gap-1.5">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-500"></i>
                     <span>Itens Disponíveis para Reserva</span>
                 </span>
-                <span class="text-[11px] font-mono tabular-nums text-slate-400 dark:text-slate-500 font-normal"
+                <span class="text-[11px] font-mono tabular-nums ui-muted font-normal"
                       x-text="(activeSheetCeg?.items || []).length + ' opções'"></span>
             </div>
 
             <!-- Grade Scrollável de Vagas -->
             <div class="overflow-y-auto max-h-[38vh] sm:max-h-[44vh] pr-1 space-y-2 no-scrollbar">
                 <template x-for="(item, idx) in (activeSheetCeg?.items || [])" :key="idx">
-                    <div class="p-2.5 rounded-2xl bg-white dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-2.5 shadow-2xs hover:border-pink-300 dark:hover:border-pink-500/40 transition">
+                    <div class="ui-card p-2.5 flex items-center justify-between gap-2.5 transition">
                         <div class="flex items-center gap-2.5 min-w-0">
                             <div class="w-8 h-8 rounded-xl bg-pink-50 dark:bg-pink-950/70 text-pink-700 dark:text-pink-300 font-black text-xs flex items-center justify-center shrink-0 border border-pink-200/60 dark:border-pink-800/40 shadow-2xs">
                                 <span x-text="item.name ? item.name.slice(0, 1) : '★'"></span>
                             </div>
                             <div class="min-w-0">
-                                <div class="text-xs font-black text-slate-900 dark:text-white truncate" x-text="item.name"></div>
-                                <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                                <div class="text-xs font-black truncate" x-text="item.name"></div>
+                                <div class="text-[10px] ui-muted flex items-center gap-1.5 flex-wrap">
                                     <span x-text="item.item_name"></span>
                                     <span class="text-slate-300 dark:text-white/20">&bull;</span>
                                     <span class="text-emerald-600 dark:text-emerald-400 font-bold" x-text="item.sets"></span>

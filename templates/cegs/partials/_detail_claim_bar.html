@@ -38,7 +38,7 @@
             </button>
             <button type="button" @click="$store.claimSelection.openModal(); $dispatch('sync-claim-selection')"
                 :disabled="$store.claimSelection.slots.length === 0"
-                class="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-sm font-black rounded-xl transition shadow-lg shadow-pink-600/25 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95">
+                class="ui-btn ui-btn-primary cursor-pointer">
                 <i data-lucide="shopping-bag" class="w-4 h-4" stroke-width="1.75"></i>
                 <span
                     x-text="'Finalizar Compra (' + $store.claimSelection.slots.reduce((acc, s) => acc + (s.isAvulso ? s.quantity : 1), 0) + ')'"></span>
