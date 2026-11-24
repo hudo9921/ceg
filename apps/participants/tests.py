@@ -150,14 +150,14 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(len(response.context['cegs_filter_list']), 1)
         self.assertEqual(response.context['cegs_filter_list'][0]['title'], 'CEG POB Withmuu')
 
-        # Template content assertions
-        self.assertContains(response, 'Grupo:')
-        self.assertContains(response, 'CEG:')
-        self.assertContains(response, 'Todos os Grupos')
-        self.assertContains(response, 'Todas as CEGs')
-        self.assertContains(response, 'Filtrar por Status:')
-        self.assertContains(response, 'Faltam Pagar')
-        self.assertContains(response, 'Confirmados')
+        # Meus itens (P3b): os dois itens na lista, agrupáveis por GOM/CEG/caixa e filtráveis por etapa.
+        items = response.context['items_panel']
+        self.assertEqual(len(items), 2)
+        self.assertEqual({it['ceg'] for it in items}, {'CEG POB Withmuu'})
+        self.assertEqual([it['stage'] for it in items].count(1), 1)  # só o pendente fica em 'A pagar'
+        self.assertContains(response, 'Por GOM')
+        self.assertContains(response, 'Por caixa')
+        self.assertContains(response, 'Filtrar por etapa')
 
     def test_my_claims_frete_and_taxa_not_shown_as_pending_when_zero_or_none(self):
         from decimal import Decimal
@@ -236,12 +236,11 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(response.context['inter_unpaid_count'], 1)
         self.assertEqual(response.context['taxa_unpaid_count'], 1)
 
-        # Cabeçalhos com os valores
+        # Seção Pagar: frete e taxa aparecem como cobranças com os valores
         self.assertContains(response, 'R$ 12,50')
         self.assertContains(response, 'R$ 6,00')
-        # Filtros pills
-        self.assertContains(response, 'Inter Não Pago')
-        self.assertContains(response, 'Taxa Não Paga')
+        kinds = {l['kind'] for g in response.context['charges']['goms'] for l in g['lines']}
+        self.assertTrue({'frete', 'taxa'} <= kinds)
 
     def test_my_claims_rates_accordion_and_totals_by_item_type(self):
         from decimal import Decimal
@@ -324,14 +323,11 @@ class ParticipantProfileTests(TestCase):
         self.assertTrue(ceg_data['has_multiple_fretes'])
         self.assertTrue(ceg_data['has_multiple_taxas'])
 
-        # HTML deve conter totais no cabeçalho da CEG e valores individuais na tabela
-        self.assertContains(response, 'Frete a Pagar:')
+        # Seção Pagar: frete 55, taxa 30 e total 245 desta CEG
         self.assertContains(response, 'R$ 55,00')
-        self.assertContains(response, 'Taxa a Pagar:')
         self.assertContains(response, 'R$ 30,00')
-        self.assertContains(response, 'Total a Pagar nesta CEG:')
         self.assertContains(response, 'R$ 245,00')
-        self.assertNotContains(response, 'Valores de Frete')
+        self.assertEqual(response.context['charges']['total'], Decimal('245.00'))
 
 
 class ParticipantNotificationTests(TestCase):
@@ -573,9 +569,8 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertIn('search_text', res.context['cegs_filter_list'][0])
         self.assertIn('chaewon', res.context['cegs_filter_list'][0]['search_text'])
 
-        # View mode toggle buttons present
-        self.assertContains(res, 'Galeria')
-        self.assertContains(res, 'Tabela')
+        # Meus itens: o item aparece na lista com a CEG
+        self.assertEqual(res.context['items_panel'][0]['ceg'], 'LE SSERAFIM - CRAZY POB')
 
     def test_my_claims_caixa_filter_and_unpaid_rates_counting(self):
         from decimal import Decimal
@@ -627,13 +622,9 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
         self.assertEqual(res.context['total_geral_pendente_todas_cegs'], Decimal('24.00'))
 
-        # Template contains interactive filters and clear filter button
-        self.assertContains(res, 'filterByCegPayment')
-        self.assertContains(res, 'filteredCounts.pending')
-        self.assertContains(res, 'visibleCegsCount')
-        self.assertContains(res, 'Limpar Filtros')
-        self.assertContains(res, 'clearFilters()')
-        self.assertContains(res, 'hasActiveFilters')
+        # Meus itens: item pago com frete/taxa em aberto não conta como "A pagar"; Pagar mostra os 24,00
+        self.assertNotEqual(res.context['items_panel'][0]['stage'], 1)
+        self.assertEqual(res.context['charges']['total'], Decimal('24.00'))
 
     def test_quick_pix_caixa_and_mercari_consolidation(self):
         from decimal import Decimal
@@ -701,7 +692,7 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(len(charges['goms']), 1)
         self.assertEqual({l['kind'] for l in charges['goms'][0]['lines']}, {'item', 'frete', 'taxa'})
         self.assertContains(res, 'Photobar Mercari Sakura')
-        self.assertContains(res, 'Caixa Japão #01')
+        self.assertIn('Caixa Japão #01', {it['caixa'] for it in res.context['items_panel']})
 
     def test_distinct_pix_keys_for_item_frete_taxa(self):
         from decimal import Decimal

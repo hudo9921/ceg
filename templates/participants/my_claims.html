@@ -11,23 +11,10 @@
     <!-- PAGAR (P3): cobranças por GOM com o Pix de cada uma -->
     {% include 'participants/partials/_pagar_section.html' %}
 
-    <!-- MEUS ITENS -->
-    <div x-show="activeMainTab === 'reservas'" class="space-y-8">
-        {% include 'participants/partials/_header_metrics.html' %}
-        {% include 'participants/partials/_filtro_goms.html' %}
-        {% include 'participants/partials/_filtro_caixas.html' %}
+    <!-- MEUS ITENS (P3b): lista única agrupada por GOM/CEG/caixa -->
+    {% include 'participants/partials/_itens_section.html' %}
 
-        <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->
-        <div x-show="categoryFilter === 'ALL'" class="space-y-6">
-            {% include 'participants/partials/_filtros_painel.html' %}
-            {% include 'participants/partials/_cegs_list.html' %}
-        </div>
-
-        {% include 'participants/partials/_mercari_section.html' %}
-    </div>
-    <!-- FIM ABA 1 (RESERVAS) -->
-
-    <!-- ABA 2: MINHA CAIXINHA / PEDIR ENVIO -->
+    <!-- ENVIOS: caixinha e pacotes -->
     {% include 'participants/partials/_caixinha_tab.html' %}
 
     <!-- MODAIS DO PARTICIPANTE -->

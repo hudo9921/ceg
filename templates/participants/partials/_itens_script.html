@@ -1,0 +1,42 @@
+{% comment %}itemsPanel(): Meus itens (P3b). Agrupa por GOM/CEG/caixa, filtra por etapa e busca. Dados em #items-data.{% endcomment %}
+<script>
+window.itemsPanel = window.itemsPanel || function () {
+    const read = (id) => { try { return JSON.parse(document.getElementById(id).textContent || '[]'); } catch (e) { return []; } };
+    const GROUP_KEY = { gom: 'gom', ceg: 'ceg', caixa: 'caixa' };
+    const STAGE_CLS = { 1: 'ui-danger', 2: 'ui-muted', 3: 'ui-warn', 4: 'ui-ok', 5: 'ui-ok' };
+    let saved = 'gom';
+    try { saved = localStorage.getItem('me-items-group') || 'gom'; } catch (e) { /* sem storage */ }
+    return {
+        items: read('items-data'), stages: read('item-stages-data'),
+        groupBy: GROUP_KEY[saved] ? saved : 'gom', stage: 0, query: '',
+        setGroup(mode) { this.groupBy = mode; try { localStorage.setItem('me-items-group', mode); } catch (e) { /* ok */ } },
+        countFor(stage) { return this.items.filter((it) => it.stage === stage).length; },
+        get filtered() {
+            const q = this.query.trim().toLowerCase();
+            return this.items.filter((it) => (!this.stage || it.stage === this.stage)
+                && (!q || [it.name, it.ceg, it.group, it.caixa, it.gom].join(' ').toLowerCase().includes(q)));
+        },
+        get groups() {
+            const key = GROUP_KEY[this.groupBy];
+            const map = new Map();
+            this.filtered.forEach((it) => {
+                const title = it[key] || '—';
+                if (!map.has(title)) map.set(title, []);
+                map.get(title).push(it);
+            });
+            return [...map.entries()].map(([title, list]) => ({
+                title, items: list, sub: `${list.length} ${list.length === 1 ? 'item' : 'itens'}`,
+                url: this.groupBy === 'gom' ? list[0].gom_url : (this.groupBy === 'ceg' ? list[0].ceg_url : ''),
+            }));
+        },
+        where(it) {
+            if (this.groupBy === 'ceg') return [it.caixa, it.gom].join(' · ');
+            if (this.groupBy === 'caixa') return [it.ceg, it.gom].join(' · ');
+            return [it.ceg, it.caixa].join(' · ');
+        },
+        stageCls(it) { return STAGE_CLS[it.stage] || 'ui-muted'; },
+        stageName(n) { const s = this.stages.find((x) => x.stage === n); return s ? s.label : ''; },
+        open(it) { if (it.preview && typeof this.openPreview === 'function') this.openPreview(it.preview); },
+    };
+};
+</script>
