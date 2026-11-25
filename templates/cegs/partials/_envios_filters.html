@@ -1,6 +1,7 @@
 <!-- BARRA DE FILTROS E BUSCA -->
 <div class="ui-card p-5 space-y-4">
     <form method="get" action="{% url 'envios_nacionais' %}" class="space-y-4">
+        <input type="hidden" name="view" value="{{ view_mode }}">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div class="flex items-center gap-2">
                 <span class="text-base font-bold text-slate-800 dark:text-slate-200">Filtrar Envios Nacionais</span>

@@ -10,6 +10,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from apps.core.permissions import StaffRequiredMixin
 from apps.participants.models import Participant, ParticipantNotification
+from apps.participants.session_auth import safe_next_url
+
 from .models import PacoteNacional, ItemSlot, ItemIndividual, Caixa, ConfiguracaoEnvio
 from apps.groups.models import KpopGroup, Era
 
@@ -471,6 +473,8 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
 
         return render(request, 'cegs/envios_nacionais.html', {
             'pacotes': pacotes,
+            'view_mode': 'lista' if request.GET.get('view') == 'lista' else 'quadro',
+            'lanes': _envios_lanes(pacotes),
             'stats': stats,
             'all_participants': all_participants,
             'status_filter': status_filter,
@@ -479,6 +483,31 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
             'search_query': search_query,
             'configuracao_envio': ConfiguracaoEnvio.get_for_gom(request.active_gom),
         })
+
+
+ENTREGUES_NO_QUADRO = 12
+
+
+def _envios_lanes(pacotes):
+    """Colunas do quadro de Envios: uma por etapa, na ordem do trabalho. Entregues: só os mais recentes."""
+    S = PacoteNacional.Status
+    lanes = [
+        {'status': S.SOLICITADO, 'label': 'Pedidos', 'hint': 'Cote o frete', 'tone': 'ui-warn'},
+        {'status': S.EM_PREPARACAO, 'label': 'Em preparação', 'hint': 'Embale e despache', 'tone': 'ui-warn'},
+        {'status': S.ENVIADO, 'label': 'Enviados', 'hint': 'A caminho do joiner', 'tone': 'ui-ok'},
+        {'status': S.ENTREGUE, 'label': 'Entregues', 'hint': 'Recentes', 'tone': 'ui-muted'},
+    ]
+    for p in pacotes:
+        thumbs = [(s.item_definition.image_url or s.set.ceg.banner_url, s.item_definition.name, s.set.ceg.title)
+                  for s in p.slots.all()]
+        thumbs += [(i.image_display_url, i.nome, 'Pedido individual') for i in p.itens_individuais.all()]
+        p.board_thumbs, p.board_more = thumbs[:5], max(0, len(thumbs) - 5)
+    for lane in lanes:
+        items = [p for p in pacotes if p.status == lane['status']]
+        lane['count'] = len(items)
+        lane['pacotes'] = items[:ENTREGUES_NO_QUADRO] if lane['status'] == S.ENTREGUE else items
+        lane['hidden'] = lane['count'] - len(lane['pacotes'])
+    return lanes
 
 
 class EmpacotarItensView(StaffRequiredMixin, View):
@@ -491,7 +520,7 @@ class EmpacotarItensView(StaffRequiredMixin, View):
     def post(self, request):
         participant_id = request.POST.get('participant_id', '').strip()
         participant = get_object_or_404(Participant.objects.for_gom(request.active_gom), id=participant_id)
-        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant.id}")
+        next_url = safe_next_url(request, request.POST.get('next'), f"/consulta-joiner/?participant_id={participant.id}")
 
         action_type = request.POST.get('action_type', 'novo_pacote').strip()
         selected_uids = [u.strip() for u in request.POST.get('selected_uids', '').split(',') if u.strip()]
@@ -594,7 +623,7 @@ class MarcarPacoteEnviadoView(StaffRequiredMixin, View):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
         codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
         transportadora = request.POST.get('transportadora', '').strip()
-        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={pacote.participant_id}")
+        next_url = safe_next_url(request, request.POST.get('next'), f"/consulta-joiner/?participant_id={pacote.participant_id}")
 
         pacote.marcar_como_enviado(codigo_rastreio=codigo_rastreio, transportadora=transportadora, actor=request.user)
 
@@ -614,7 +643,7 @@ class MarcarPacoteEntregueAdminView(StaffRequiredMixin, View):
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
-        next_url = request.POST.get('next', f"/envios/")
+        next_url = safe_next_url(request, request.POST.get('next'), f"/envios/")
 
         pacote.marcar_como_entregue(by='ADMIN', actor=request.user)
 
@@ -633,7 +662,7 @@ class AtualizarPacoteView(StaffRequiredMixin, View):
 
     def post(self, request, pacote_id):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
-        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={pacote.participant_id}")
+        next_url = safe_next_url(request, request.POST.get('next'), f"/consulta-joiner/?participant_id={pacote.participant_id}")
 
         status = request.POST.get('status', pacote.status).strip()
         codigo_rastreio = request.POST.get('codigo_rastreio', '').strip().upper()
@@ -669,7 +698,7 @@ class DesempacotarItemView(StaffRequiredMixin, View):
     def post(self, request):
         item_uid = request.POST.get('item_uid', '').strip()
         participant_id = request.POST.get('participant_id', '').strip()
-        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant_id}")
+        next_url = safe_next_url(request, request.POST.get('next'), f"/consulta-joiner/?participant_id={participant_id}")
 
         if item_uid.startswith('slot_'):
             slot_id = item_uid.replace('slot_', '')
@@ -703,7 +732,7 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
         pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom), id=pacote_id)
         participant_id = pacote.participant_id
         identificador = pacote.identificador
-        next_url = request.POST.get('next', f"/consulta-joiner/?participant_id={participant_id}")
+        next_url = safe_next_url(request, request.POST.get('next'), f"/consulta-joiner/?participant_id={participant_id}")
 
         if pacote.status in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
             messages.error(request, "Não é possível excluir um pacote que já foi enviado nacionalmente ou entregue.")

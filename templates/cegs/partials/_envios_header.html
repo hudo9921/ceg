@@ -5,5 +5,11 @@
         <h1 class="ui-disp text-4xl">Pacotes</h1>
         <p class="ui-muted text-[15px]">Pedidos dos joiners, cotação de frete, despacho com rastreio, entregas e avaliações.</p>
     </div>
-    <a href="{% url 'consulta_joiner' %}" class="ui-btn ui-btn-ghost">Empacotar pelo joiner</a>
+    <div class="flex flex-wrap items-center gap-2">
+        <div class="ui-toggle" role="group" aria-label="Como mostrar os pacotes">
+            <a href="?view=quadro{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if participant_filter %}&participant_id={{ participant_filter }}{% endif %}" class="px-4 no-underline {% if view_mode != 'lista' %}is-on{% endif %}"{% if view_mode != 'lista' %} aria-current="page"{% endif %}>Quadro</a>
+            <a href="?view=lista{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if participant_filter %}&participant_id={{ participant_filter }}{% endif %}" class="px-4 no-underline {% if view_mode == 'lista' %}is-on{% endif %}"{% if view_mode == 'lista' %} aria-current="page"{% endif %}>Lista</a>
+        </div>
+        <a href="{% url 'consulta_joiner' %}" class="ui-btn ui-btn-ghost">Empacotar pelo joiner</a>
+    </div>
 </header>

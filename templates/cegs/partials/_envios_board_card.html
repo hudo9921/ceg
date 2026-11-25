@@ -1,0 +1,52 @@
+{% comment %}Cartão compacto de um pacote no quadro de Envios: quem, quantos itens, forma, frete e a próxima ação.{% endcomment %}
+<article class="ui-card p-3.5 space-y-2.5" aria-label="Pacote {{ pacote.identificador }}">
+    <div class="flex items-center justify-between gap-2">
+        <b class="ui-mono text-sm">{{ pacote.identificador }}</b>
+        <span class="ui-label">{% if pacote.status == 'ENTREGUE' and pacote.data_entrega %}{{ pacote.data_entrega|date:"d/m" }}{% elif pacote.status == 'ENVIADO' and pacote.data_envio %}{{ pacote.data_envio|date:"d/m" }}{% else %}{{ pacote.solicitado_em|default:pacote.created_at|date:"d/m" }}{% endif %}</span>
+    </div>
+    <p class="text-[15px] font-semibold leading-snug">
+        <a href="{% url 'consulta_joiner' %}?participant_id={{ pacote.participant_id }}" class="text-ui-text hover:underline">{{ pacote.participant.display_name }}</a>
+        <span class="ui-muted font-normal">· {{ pacote.total_itens }} ite{{ pacote.total_itens|pluralize:"m,ns" }}</span>
+    </p>
+    <div class="flex gap-1.5" aria-label="Itens do pacote">
+        {% for img, name, origem in pacote.board_thumbs %}
+            <button type="button" class="w-9 h-12 flex-none rounded-md overflow-hidden bg-ui-surface-2" title="{{ name }} · {{ origem }}"
+                    {% if img %}@click="openZoom('{{ img|escapejs }}', '{{ name|escapejs }} · {{ origem|escapejs }}')"{% endif %}>
+                {% if img %}<img src="{{ img|thumb }}" data-full="{{ img }}" alt="{{ name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">{% endif %}
+            </button>
+        {% endfor %}
+        {% if pacote.board_more %}<span class="w-9 h-12 flex-none rounded-md bg-ui-surface-2 flex items-center justify-center text-[12px] font-bold">+{{ pacote.board_more }}</span>{% endif %}
+    </div>
+    <div class="flex flex-wrap gap-1.5 text-[12px]">
+        {% if pacote.metodo_nome %}<span class="ui-chip !h-7 !px-2.5 !text-[12px]">{{ pacote.metodo_nome }}</span>{% endif %}
+        {% if pacote.valor_frete_nacional %}
+            <span class="ui-status {% if pacote.is_frete_pago %}ui-ok{% else %}ui-warn{% endif %} !text-[12px]">Frete R$ {{ pacote.valor_frete_nacional|floatformat:2 }} · {% if pacote.is_frete_pago %}pago{% else %}a pagar{% endif %}</span>
+        {% elif pacote.status == 'SOLICITADO' or pacote.status == 'EM_PREPARACAO' %}
+            <span class="ui-status ui-warn !text-[12px]">Frete a cotar</span>
+        {% endif %}
+        {% if pacote.feedback_rating %}<span class="ui-status ui-ok !text-[12px]">{{ pacote.feedback_rating }}/5</span>{% endif %}
+    </div>
+    {% if pacote.codigo_rastreio and pacote.status != 'SOLICITADO' %}<p class="ui-mono text-[12px] ui-muted truncate">{{ pacote.transportadora|default:"Rastreio" }} · {{ pacote.codigo_rastreio }}</p>{% endif %}
+    {% if pacote.observacoes_joiner %}<p class="ui-muted text-[13px] line-clamp-2" title="{{ pacote.observacoes_joiner }}">"{{ pacote.observacoes_joiner }}"</p>{% endif %}
+
+    <div class="flex flex-wrap gap-2 pt-1">
+        {% if pacote.status == 'SOLICITADO' %}
+            <button type="button" class="ui-btn ui-btn-primary ui-btn-sm flex-1"
+                    @click="openEditPacoteModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora|escapejs }}', '{{ pacote.codigo_rastreio|escapejs }}', '{{ pacote.valor_frete_nacional|default:'' }}', {{ pacote.is_frete_pago|yesno:'true,false' }}, '{{ pacote.status }}', '{{ pacote.observacoes|escapejs }}')">Cotar frete</button>
+        {% elif pacote.status == 'EM_PREPARACAO' %}
+            <button type="button" class="ui-btn ui-btn-primary ui-btn-sm flex-1"
+                    @click="openDispatchModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora|escapejs }}', '{{ pacote.codigo_rastreio|escapejs }}')">Despachar</button>
+        {% elif pacote.status == 'ENVIADO' %}
+            <form method="post" action="{% url 'marcar_pacote_entregue' pacote.id %}" class="flex-1"
+                  onsubmit="return confirm('Marcar o pacote {{ pacote.identificador }} como entregue?')">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm w-full">Marcar entregue</button>
+            </form>
+        {% endif %}
+        {% if pacote.status != 'SOLICITADO' %}
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" aria-label="Editar pacote {{ pacote.identificador }}"
+                    @click="openEditPacoteModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora|escapejs }}', '{{ pacote.codigo_rastreio|escapejs }}', '{{ pacote.valor_frete_nacional|default:'' }}', {{ pacote.is_frete_pago|yesno:'true,false' }}, '{{ pacote.status }}', '{{ pacote.observacoes|escapejs }}')">
+                <i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i>{% if pacote.status == 'ENTREGUE' %}Detalhes{% endif %}</button>
+        {% endif %}
+    </div>
+</article>
