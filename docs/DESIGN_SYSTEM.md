@@ -291,3 +291,13 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
 - Superfícies dentro dos cards também ganharam contraste: `--ui-surface-2: #EDE8F5` (caixas e botões fantasma,
   ≥ 4,5:1 para texto comum, muted, destaque, ok e perigo), `--ui-line` 14% e o novo `--ui-line-strong` (`#8A8398` no
   claro, `#6B7080` no escuro) na borda dos campos, ≥ 3:1 no branco e no `--ui-surface-2` (WCAG 1.4.11).
+
+## Modo claro "velado" (2026-11-25, substitui os valores acima)
+
+- Pedido do dono: o claro estava branco demais; o visual certo é o de um véu cinza-lavanda (como o escurecido de um
+  print). Tokens: página `--ui-bg #D6D1E0` (degradês `#E2CDDA`/`#CCD1EA`), cards `--ui-surface #F1EEF6`, caixas
+  `--ui-surface-2 #DCD7E3`, bordas de campo `--ui-line-strong #776F86`.
+- Texto escurecido para seguir AA (≥ 4,5:1) em card, caixa, página e degradês: muted `#4F4A5E`, destaque
+  `#92195A`, ok `#035C43`, perigo `#A0163C`, aviso `#7A4404`.
+- `bg-white` das telas antigas segue o card no claro (override em ui.css). O QR do Pix usa `.keep-white`.
+- O fundo do `<body>` no claro vinha de um estilo antigo no `base.html` com `!important`; agora usa `var(--ui-page)`.
