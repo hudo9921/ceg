@@ -36,6 +36,7 @@ PARTICIPANT_ROUTES = {
     'my_claims', 'update_profile', 'mark_notification_read', 'mark_all_notifications_read',
     'confirmar_entrega_pacote', 'cancelar_solicitacao_envio', 'solicitar_envio_nacional',
     'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion', 'gom_rules_accept',
+    'pix_gerar', 'pix_ver', 'pix_paguei', 'pix_cancelar',
 }
 LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
 LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')
@@ -112,7 +113,8 @@ class RouteFixtures:
         return {
             'slot_id': self.slot.id, 'set_id': self.cset.id, 'item_def_id': self.item_def.id,
             'item_id': self.item_individual.id, 'ceg_id': self.ceg.id,
-            'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido', 'tab': 'perfil',
+            'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido', 'tab': 'perfil', 'ref': 'VC-XXXXX',
+            'participant_id': self.joiner.id,
         }[name]
 
     def _build(self, route):

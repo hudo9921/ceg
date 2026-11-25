@@ -18,6 +18,10 @@ etapas como filtro. Os números vêm de `statsData` (recalculados ao marcar paga
         <div class="flex flex-wrap gap-2">
             <a href="https://wa.me/{{ selected_participant.whatsapp }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost ui-btn-sm">
                 <i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i>WhatsApp</a>
+            {% if 'pag.confirmar' in gom_perms %}
+                <a href="{% url 'pix_cobrar' selected_participant.id %}" class="ui-btn ui-btn-ghost ui-btn-sm" title="Gerar o Pix do que deve e mandar pelo seu WhatsApp">
+                    <i data-lucide="qr-code" class="w-4 h-4" stroke-width="1.75"></i>Cobrar no WhatsApp</a>
+            {% endif %}
             <button type="button" class="ui-btn ui-btn-primary ui-btn-sm" :disabled="!statsData.ready_to_pack_count" @click="packReady()">
                 <i data-lucide="package" class="w-4 h-4" stroke-width="1.75"></i>
                 <span x-text="'Empacotar prontos (' + (statsData.ready_to_pack_count || 0) + ')'">Empacotar prontos</span>

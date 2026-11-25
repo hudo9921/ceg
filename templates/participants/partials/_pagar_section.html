@@ -21,7 +21,8 @@ Seção Pagar (P3): tudo o que o joiner deve, agrupado por GOM, cada cobrança c
             {% include 'participants/partials/_pagar_gom.html' %}
         {% endfor %}
 
-        <p class="ui-muted text-sm">Pagou? A GOM confirma pelo comprovante e a cobrança sai daqui. Cada chave Pix já vem do GOM certo.</p>
+        <p class="ui-muted text-sm">Marque o que quer pagar e gere o Pix com o valor exato. Depois de pagar, toque em "Já paguei": o GOM confere e a cobrança sai daqui.</p>
+        {% include 'participants/partials/_pagar_pix_script.html' %}
     {% else %}
         <div class="ui-card p-8 text-center space-y-3">
             <h1 id="pagar-title" class="ui-disp text-2xl">Tudo pago</h1>

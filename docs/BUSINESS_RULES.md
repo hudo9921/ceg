@@ -165,3 +165,15 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   é recusada). O pacote guarda a forma e uma cópia do nome. Forma sem endereço (retirada) esconde o formulário.
 - `Gom.caixinha_prazo_dias`: a caixinha mostra "Chegou em dd/mm · peça o envio até dd/mm" (chegada mais antiga =
   `Caixa.data_recebimento`). Só aviso; nada é cobrado sozinho.
+
+## Cobranças Pix (pagar pelo site)
+
+- O GOM liga em **Configurações → Pix** com nome de quem recebe e cidade (o BR Code exige). As chaves padrão passam a
+  ser validadas (CPF/CNPJ com dígito, e-mail, celular, aleatória).
+- O joiner marca em **Pagar** o que quer pagar → `Cobranca` por chave Pix (um QR só paga uma chave), com referência
+  `VC-XXXXX` no txid e o valor exato. Linhas numa cobrança aberta ficam "Pagamento em análise".
+- **Já paguei** (comprovante opcional, guardado no banco, apagado 90 dias depois) → fila **Pagamentos** do GOM
+  (`pag.confirmar`). **Recebi** marca as linhas como pagas pelos mesmos métodos dos chips (auditoria e status do claim)
+  e avisa o joiner; **Não recebi** devolve com recado. Pix gerado e não avisado em 7 dias é cancelado.
+- Joiner fora do site: **Cobrar no WhatsApp** (Consulta 360° ou fila) gera o Pix em nome dele e abre o WhatsApp do
+  próprio GOM (`wa.me`) com o copia e cola; a confirmação é a mesma (Recebi).

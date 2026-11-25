@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Pagamentos — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Fila de Pagamentos do GOM (S1, docs/SITE_ONLY_PLAN.md): Pix gerados pelos joiners (ou pela equipe em "Cobrar no
+WhatsApp"). "Recebi" marca tudo como pago e avisa o joiner; "Não recebi" devolve com um recado.
+{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-2 max-w-2xl">
+            <p class="ui-label">GOM {{ active_gom.name }}</p>
+            <h1 class="ui-disp text-4xl">Pagamentos</h1>
+            <p class="ui-muted text-[15px]">Confira o Pix no app do banco (valor e referência) e toque em <b>Recebi</b>. Os itens ficam pagos e o joiner é avisado.</p>
+        </div>
+        <div class="ui-toggle whitespace-nowrap" role="group" aria-label="Fila">
+            <a href="?tab=confirmar" class="px-4 no-underline {% if tab == 'confirmar' %}is-on{% endif %}"{% if tab == 'confirmar' %} aria-current="page"{% endif %}>Para confirmar</a>
+            <a href="?tab=recebidos" class="px-4 no-underline {% if tab == 'recebidos' %}is-on{% endif %}"{% if tab == 'recebidos' %} aria-current="page"{% endif %}>Recebidos</a>
+        </div>
+    </header>
+
+    {% if not active_gom.pix_nome_recebedor or not active_gom.pix_cidade %}
+        <p class="ui-card p-4 text-sm"><span class="ui-status ui-warn">Pix com QR desligado.</span> Preencha o nome de quem recebe e a cidade em
+            <a href="{% url 'gom_settings_tab' 'pix' %}" class="underline">Configurações → Pix</a> para os joiners gerarem o Pix com valor exato.</p>
+    {% endif %}
+
+    {% if items %}
+        <div class="grid lg:grid-cols-[minmax(300px,400px)_1fr] gap-5 items-start">
+            {% include 'pagamentos/partials/_fila_lista.html' %}
+            {% if cur %}{% include 'pagamentos/partials/_fila_detalhe.html' %}{% endif %}
+        </div>
+    {% else %}
+        <div class="ui-card p-10 text-center space-y-2">
+            <h2 class="ui-disp text-2xl">{% if tab == 'confirmar' %}Nada para confirmar{% else %}Nenhum Pix recebido ainda{% endif %}</h2>
+            <p class="ui-muted text-[15px]">Quando um joiner gerar um Pix ou avisar que pagou, ele aparece aqui.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

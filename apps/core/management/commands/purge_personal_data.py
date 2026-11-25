@@ -36,9 +36,13 @@ class Command(BaseCommand):
             ~Q(endereco_destinatario='') | ~Q(cep_destinatario='') | ~Q(observacoes_joiner='')
         )
         otps = WhatsAppOTP.objects.filter(created_at__lt=otp_cutoff)
+        # Comprovantes de Pix: 90 dias depois de a cobrança ser resolvida (dado financeiro do joiner).
+        from apps.pagamentos.models import Comprovante
+        proofs = Comprovante.objects.filter(cobranca__resolvida_em__lt=now - timedelta(days=90))
 
-        n_pacotes, n_otps = pacotes.count(), otps.count()
+        n_pacotes, n_otps, n_proofs = pacotes.count(), otps.count(), proofs.count()
         if not dry_run:
+            proofs.delete()
             # update() não chama save(): passamos '' (vazio não é criptografado), seguro.
             pacotes.update(endereco_destinatario='', cep_destinatario='', observacoes_joiner='')
             otps.delete()
@@ -46,5 +50,6 @@ class Command(BaseCommand):
         prefix = '[dry-run] ' if dry_run else ''
         self.stdout.write(self.style.SUCCESS(
             f"{prefix}Endereços apagados de {n_pacotes} pacote(s) entregue(s) há mais de "
-            f"{settings.PII_RETENTION_DAYS} dias; {n_otps} código(s) OTP antigo(s) removido(s)."
+            f"{settings.PII_RETENTION_DAYS} dias; {n_otps} código(s) OTP antigo(s) removido(s); "
+            f"{n_proofs} comprovante(s) de Pix apagado(s)."
         ))

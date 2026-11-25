@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
-from .charges import build_charges
+from .charges import attach_pix_state, build_charges
 from .items_panel import build_items, stage_options
 from .gom_panel import gom_pix_defaults, goms_summary, mercari_pix_by_gom, shipping_configs_by_gom
 from .services import BulkParticipantService
@@ -1059,7 +1059,7 @@ class MyClaimsView(View):
             'envio_por_gom': shipping_configs_by_gom(itens_caixinha_prontos, goms_by_id),
             'prazos_proximos': prazos_proximos,
             # Seção Pagar (P3): cobranças em aberto agrupadas por GOM, com a chave Pix de cada uma.
-            'charges': build_charges(list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais),
+            'charges': attach_pix_state(build_charges(list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais), participant),
             # Seção Meus itens (P3b): claims + avulsos numa lista, com etapa para agrupar e filtrar.
             'items_panel': build_items(claims_list, itens_individuais_list),
             'item_stages': stage_options(),

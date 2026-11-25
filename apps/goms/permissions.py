@@ -53,6 +53,7 @@ DEFAULT_PRESET = 'completo'
 MENU = [
     ('Hub de Criações', ['ceg.editar']),
     ('Status das CEGs', ['analytics.ver']),
+    ('Pagamentos', ['pag.confirmar']),
     ('Caixas', ['caixas.editar', 'caixas.valores', 'caixas.etapa']),
     ('Consulta Joiner', ['pedidos.ver']),
     ('Envios Nacionais', ['envios.pacotes']),

@@ -35,7 +35,16 @@ def _tasks(request, granted, pending, upcoming, now):
     from apps.cegs.models import PacoteNacional
 
     tasks = []
-    if granted & {'pag.confirmar', 'pedidos.ver'}:
+    avisados = 0
+    if 'pag.confirmar' in granted:
+        from apps.pagamentos.models import Cobranca
+        avisados = Cobranca.objects.for_gom(request.active_gom).filter(status=Cobranca.Status.INFORMADA).count()
+    if avisados:
+        tasks.append({'tag': 'Pagamentos', 'cls': 'ui-danger', 'n': avisados,
+                      'what': 'Pix para confirmar',
+                      'hint': 'Joiners avisaram que pagaram. Confira no banco e toque em Recebi.',
+                      'cta': 'Ver pagamentos', 'url': reverse('pix_fila')})
+    elif granted & {'pag.confirmar', 'pedidos.ver'}:
         n = pending.count()
         tasks.append({'tag': 'Pagamentos', 'cls': 'ui-danger' if n else 'ui-ok', 'n': n,
                       'what': 'item a pagar' if n == 1 else 'itens a pagar',

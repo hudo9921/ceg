@@ -1,0 +1,19 @@
+{% comment %}Lista da fila de Pagamentos: quem, valor, referência e situação. "Já pagou" primeiro.{% endcomment %}
+<section class="ui-card overflow-hidden" aria-label="Pix">
+    {% if tab == 'confirmar' and informadas %}<p class="px-4 pt-4 ui-label">{{ informadas }} joiner{{ informadas|pluralize }} avis{{ informadas|pluralize:"ou,aram" }} que pag{{ informadas|pluralize:"ou,aram" }}</p>{% endif %}
+    {% for c in items %}
+        <a href="?tab={{ tab }}&ref={{ c.referencia }}" class="flex items-center gap-3 px-4 py-3.5 no-underline text-ui-text {% if not forloop.first or informadas %}border-t border-ui-line{% endif %} {% if cur and cur.id == c.id %}bg-ui-surface-2{% endif %}"
+           {% if cur and cur.id == c.id %}aria-current="true"{% endif %}>
+            <span class="flex-1 min-w-0">
+                <b class="block truncate">{{ c.participant.display_name }}</b>
+                <span class="ui-mono ui-muted text-[12px]">{{ c.referencia }} · {{ c.informada_em|default:c.criada_em|timesince }}</span>
+            </span>
+            <span class="text-right">
+                <b class="block ui-mono">R$ {{ c.valor_total|floatformat:2 }}</b>
+                <span class="ui-status {% if c.status == 'INFORMADA' %}ui-warn{% elif c.status == 'CONFIRMADA' %}ui-ok{% elif c.status == 'RECUSADA' %}ui-danger{% else %}ui-muted{% endif %} !text-[12px]">
+                    {% if c.status == 'INFORMADA' %}Já pagou{% elif c.status == 'CONFIRMADA' %}Recebido{% elif c.status == 'RECUSADA' %}Não recebido{% else %}Pix gerado{% endif %}
+                </span>
+            </span>
+        </a>
+    {% endfor %}
+</section>
