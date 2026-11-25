@@ -20,3 +20,6 @@ mysterious-fermi/
 *.pyc
 staticfiles/
 node_modules/
+
+# Cache local do build_catalog_seed (só no PC)
+.catalog_cache/

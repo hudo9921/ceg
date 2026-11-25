@@ -97,6 +97,7 @@
   - `_creations_modal_ceg_logistics.html`: Remessa/caixa internacional, prazos, taxas e dados Pix.
   - `_creations_modal_ceg_items.html`: Prateleira dinâmica de photocards, ações em lote e rodapé com totais.
   - `_creations_modal_ceg_item_row.html`: Card de cada photocard com estúdio de recorte e pré-reserva.
+  - `_catalogo_picker.html` + `_catalogo_picker_script.html` (`catalogoPicker()`): grupo e era "busca primeiro" no passo 1 (substitui os `<select>`); não achou → adiciona grupo/era na hora (`catalogo_grupo_novo`, `catalogo_era_nova`). O Hub pré-carrega só os grupos usados pelo GOM, os manuais e o top 24; o resto vem de `/creations/catalogo/buscar/`.
   - `_creations_fotos_capas.html` (passo 1), `_creations_fotos_itens.html` (passo 2) e `_creations_fotos_item_escolha.html` (em cada item): fotos já usadas na era escolhida, de CEGs publicadas por qualquer GOM. `Alpine.store('fotosEra')` em `_creations_fotos_script.html` busca `/creations/era/<id>/fotos/` (`catalogo_views.era_fotos`).
 - `_creations_modal_set.html`: Adição de novos Sets em CEGs existentes.
 - `_creations_modal_mercari.html`: Criação de itens avulsos do Mercari JP (dados, comprador, comprovante):

@@ -1,0 +1,126 @@
+{% comment %}
+Grupo e era da Nova CEG, "busca primeiro" (catalogoPicker em _catalogo_picker_script.html). Grava `era_id` no form.
+Não achou o grupo → adiciona ao catálogo na hora (sem duplicar). Não achou a era → adiciona a era.
+{% endcomment %}
+<div x-data="catalogoPicker()" class="space-y-3">
+    <input type="hidden" name="era_id" :value="selectedEraId">
+
+    {# 1. Grupo: busca #}
+    <div x-show="!grupoSel" class="relative" @click.outside="aberto = false">
+        <label for="catalogo-busca" class="ui-label block mb-1">Grupo ou solista *</label>
+        <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 ui-muted pointer-events-none" stroke-width="1.75"></i>
+            <input id="catalogo-busca" x-ref="busca" type="text" x-model="q" @input="digitar()" autocomplete="off"
+                   @keydown.arrow-down.prevent="mover(1)" @keydown.arrow-up.prevent="mover(-1)" @keydown.enter.prevent="confirmar()"
+                   @keydown.escape="aberto = false" placeholder="Ex.: aespa, 에스파, NCT 127, Jisoo…"
+                   role="combobox" aria-autocomplete="list" aria-controls="catalogo-lista" :aria-expanded="aberto"
+                   class="ui-input w-full pl-10">
+        </div>
+        <ul id="catalogo-lista" role="listbox" x-show="aberto" x-cloak
+            class="absolute z-20 mt-1.5 w-full ui-card p-1.5 max-h-80 overflow-y-auto shadow-xl">
+            <template x-for="(g, i) in resultados" :key="g.id">
+                <li role="option" :aria-selected="ativo === i">
+                    <button type="button" @click="escolher(g)" @mouseenter="ativo = i"
+                            :class="ativo === i ? 'bg-ui-accent-soft' : ''" class="w-full flex items-center gap-3 p-2 rounded-xl text-left">
+                        <span class="w-9 h-9 rounded-full overflow-hidden flex-none grid place-items-center text-white text-sm font-bold"
+                              :style="'background:' + (g.color_hex || 'var(--ui-accent)')">
+                            <template x-if="g.thumb || g.image_url"><img :src="g.thumb || g.image_url" :data-full="g.image_url" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover"></template>
+                            <template x-if="!(g.thumb || g.image_url)"><span x-text="g.name.slice(0, 1)"></span></template>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block font-semibold truncate"><span x-text="g.name"></span> <span class="ui-muted font-normal" x-text="g.name_native"></span></span>
+                            <span class="block text-[12px] ui-muted truncate"
+                                  x-text="[g.kind_display, g.parent_name ? 'de ' + g.parent_name : '', g.eras.length + (g.eras.length === 1 ? ' era' : ' eras')].filter(Boolean).join(' · ')"></span>
+                        </span>
+                    </button>
+                </li>
+            </template>
+            <li x-show="buscando && !resultados.length" class="p-3 text-sm ui-muted">Buscando…</li>
+            <li role="option" :aria-selected="ativo === resultados.length">
+                <button type="button" @click="criando = true; aberto = false" @mouseenter="ativo = resultados.length"
+                        :class="ativo === resultados.length ? 'bg-ui-accent-soft' : ''" class="w-full flex items-center gap-3 p-2 rounded-xl text-left">
+                    <span class="w-9 h-9 rounded-full grid place-items-center flex-none ui-well"><i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i></span>
+                    <span class="text-sm">Não achou? <strong>Adicionar “<span x-text="q.trim()"></span>”</strong></span>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    {# 1b. Adicionar grupo que não existe #}
+    <div x-show="criando && !grupoSel" x-cloak class="ui-well p-4 space-y-3">
+        <p class="font-semibold">Adicionar “<span x-text="q.trim()"></span>” ao catálogo</p>
+        <p class="ui-muted text-[13px]">Fica disponível para todos os GOMs. Se já existir com outro jeito de escrever, usamos o que existe.</p>
+        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo">
+            <template x-for="t in [['GRUPO', 'Grupo'], ['SOLISTA', 'Solista'], ['SUBUNIDADE', 'Subunidade']]" :key="t[0]">
+                <button type="button" role="radio" :aria-checked="novo.kind === t[0]" @click="novo.kind = t[0]"
+                        class="ui-chip" :class="novo.kind === t[0] && 'is-on'" x-text="t[1]"></button>
+            </template>
+        </div>
+        <div x-show="novo.kind !== 'SOLISTA'">
+            <label for="catalogo-membros" class="ui-label block mb-1">Integrantes (opcional, separados por vírgula)</label>
+            <input id="catalogo-membros" type="text" x-model="novo.members" class="ui-input w-full" placeholder="Ex.: Karina, Giselle, Winter, Ningning">
+        </div>
+        <div class="flex gap-2 justify-end">
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="criando = false">Cancelar</button>
+            <button type="button" class="ui-btn ui-btn-primary ui-btn-sm" @click="adicionarGrupo()" :disabled="!q.trim()">Adicionar</button>
+        </div>
+    </div>
+
+    {# 2. Grupo escolhido + eras #}
+    <template x-if="grupoSel">
+        <div class="space-y-3">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-full overflow-hidden flex-none grid place-items-center text-white font-bold" :style="'background:' + (grupoSel.color_hex || 'var(--ui-accent)')">
+                    <template x-if="grupoSel.image_url"><img :src="grupoSel.thumb || grupoSel.image_url" :data-full="grupoSel.image_url" alt="" class="w-full h-full object-cover"></template>
+                    <template x-if="!grupoSel.image_url"><span x-text="grupoSel.name.slice(0, 1)"></span></template>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p class="font-bold truncate"><span x-text="grupoSel.name"></span> <span class="ui-muted font-normal" x-text="grupoSel.name_native"></span></p>
+                    <p class="text-[12px] ui-muted" x-text="[grupoSel.kind_display, grupoSel.parent_name ? 'de ' + grupoSel.parent_name : ''].filter(Boolean).join(' · ')"></p>
+                </div>
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="trocar()">Trocar</button>
+            </div>
+            <div>
+                <p class="ui-label mb-1.5">Era / comeback *</p>
+                <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Era">
+                    <template x-for="e in erasSel" :key="e.id">
+                        <button type="button" role="radio" :aria-checked="String(selectedEraId) === String(e.id)" @click="selectedEraId = e.id"
+                                class="ui-chip" :class="String(selectedEraId) === String(e.id) && 'is-on'">
+                            <span x-text="e.name"></span>
+                            <span class="opacity-70 text-[11px]" x-text="[ano(e), e.kind === 'JAPONES' ? 'JP' : (e.kind === 'SINGLE' ? 'single' : '')].filter(Boolean).join(' · ')"></span>
+                        </button>
+                    </template>
+                    <button type="button" x-show="totalEras > 8 && !verTodas" class="ui-chip" @click="verTodas = true" x-text="'Ver todas (' + totalEras + ')'"></button>
+                    <button type="button" class="ui-chip" @click="eraAberta = !eraAberta" :aria-expanded="eraAberta">
+                        <i data-lucide="plus" class="w-3.5 h-3.5" stroke-width="1.75"></i>Nova era
+                    </button>
+                </div>
+            </div>
+            <div x-show="eraAberta" x-cloak class="ui-well p-4 space-y-3">
+                <p class="font-semibold" x-text="'Nova era de ' + grupoSel.name"></p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label for="era-nome" class="ui-label block mb-1">Nome do álbum / comeback</label>
+                        <input id="era-nome" type="text" x-model="eraNova.name" class="ui-input w-full" placeholder="Ex.: Rich Man" @keydown.enter.prevent="adicionarEra()">
+                    </div>
+                    <div>
+                        <label for="era-data" class="ui-label block mb-1">Lançamento</label>
+                        <input id="era-data" type="date" x-model="eraNova.release_date" class="ui-input w-full">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo de lançamento">
+                    <template x-for="t in [['MINI', 'Mini'], ['ALBUM', 'Álbum'], ['SINGLE', 'Single'], ['JAPONES', 'Japonês'], ['OUTRO', 'Outro']]" :key="t[0]">
+                        <button type="button" role="radio" :aria-checked="eraNova.kind === t[0]" @click="eraNova.kind = t[0]"
+                                class="ui-chip" :class="eraNova.kind === t[0] && 'is-on'" x-text="t[1]"></button>
+                    </template>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="eraAberta = false">Cancelar</button>
+                    <button type="button" class="ui-btn ui-btn-primary ui-btn-sm" @click="adicionarEra()" :disabled="!eraNova.name.trim()">Adicionar era</button>
+                </div>
+            </div>
+        </div>
+    </template>
+    <p x-show="aviso" x-text="aviso" class="text-sm ui-ok" role="status"></p>
+    <p x-show="erro" x-text="erro" class="text-sm ui-danger" role="alert"></p>
+</div>
