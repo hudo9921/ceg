@@ -33,13 +33,16 @@ Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "comp
 ## 3. Entregas
 
 ### C1 — Regras do GOM
-- `Gom.regras` (texto) e `Gom.regras_versao` (data). Ao salvar, o GOM marca **"Pedir novo aceite"** quando a
-  mudança é importante; só então a versão muda. Ajuste de vírgula não força todo mundo a aceitar de novo.
-- `AceiteRegras(participant, gom, versao, aceito_em)`.
+- `Gom.regras` (texto) e `Gom.regras_atualizadas_em`.
+- **Aceite só na primeira participação** (decisão de 2026-11-24): só quem nunca participou de uma CEG desse GOM
+  precisa aceitar. Quem já tem claim no GOM (inclusive os joiners antigos do ValCegs) não é barrado, nem quando
+  as regras mudam; para esses, a página mostra "Regras atualizadas em dd/mm" e pronto.
+- `AceiteRegras(participant, gom, aceito_em, texto_hash)` guarda o que foi aceito.
 - Onde aparece: página pública do GOM (seção "Regras"), página da CEG (bloco recolhível) e no painel `/me/`.
-- **Aceite antes do Segundo Zero:** claim é corrida. O joiner aceita na página da CEG **agendada** ("Aceite as regras
-  antes da abertura"). Se tentar o claim sem aceite, a API responde `needs_rules` e abre a folha de regras;
-  depois de aceitar, o claim segue sozinho. A checagem é uma consulta por índice fora do `select_for_update`.
+- **Aceite antes do Segundo Zero:** claim é corrida. O estreante aceita na página da CEG **agendada** ("Primeira
+  vez com este GOM? Aceite as regras antes da abertura"). Se tentar o claim sem aceite, a API responde `needs_rules`,
+  abre a folha de regras e, depois de aceitar, o claim segue sozinho. A checagem (tem claim no GOM ou aceite?) é
+  uma consulta por índice fora do `select_for_update`.
 - Auditoria: `RULES_ACCEPTED` no `AuditLog` do GOM.
 
 ### C2 — Padrões de CEG
@@ -49,10 +52,11 @@ Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "comp
 - Só **pré-preenche** o Criar. Nada muda em CEGs já criadas. Em branco = como hoje.
 
 ### C3 — Opções de envio
-- `MetodoEnvio(gom, nome, descricao, preco, a_cotar, pede_endereco, ativo, ordem)`. Exemplos: PAC, SEDEX,
-  Mini Envios, Retirada em mãos (`pede_endereco = False`).
-- No `Gom`: `taxa_embalagem` (somada ao frete do pacote) e `caixinha_prazo_dias` (vazio = sem limite).
-- Joiner, ao pedir envio: escolhe o método (cards com preço ou "a cotar"). O `PacoteNacional` guarda
+- `MetodoEnvio(gom, nome, descricao, pede_endereco, ativo, ordem)`. Exemplos: PAC, SEDEX, Mini Envios,
+  Retirada em mãos (`pede_endereco = False`). **Sem preço** (decisão de 2026-11-24): o frete nacional continua
+  cotado à mão pelo GOM em cada pacote, como hoje (embalagem entra na cotação).
+- No `Gom`: `caixinha_prazo_dias` (vazio = sem limite).
+- Joiner, ao pedir envio: escolhe o método (cards com nome e descrição). O `PacoteNacional` guarda
   `metodo_envio` (FK) + `metodo_nome` (cópia do nome, para histórico). Retirada não pede o Google Form.
 - Caixinha: com prazo, mostra "Chegou em dd/mm · peça o envio até dd/mm". Só avisa; nada é cobrado sozinho.
 - O form de Envios (`ConfiguracaoEnvio`) passa para a aba Envio.
@@ -89,8 +93,7 @@ Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "comp
 
 Cada entrega: branch a partir de `develop`, testes, merge em `develop`. Telas novas passam pelo protótipo antes.
 
-## 5. Decisões em aberto
-- C1: claim sem aceite → abre a folha (perde alguns segundos) **ou** bloqueia com aviso? (proposta: abre a folha)
-- C3: o frete nacional continua cotado à mão pelo GOM, ou o preço do método já vira o valor do frete?
-  (proposta: preço do método vira o valor sugerido; o GOM pode ajustar)
-- C5: limite diário por GOM (proposta: 300) e intervalo entre mensagens (proposta: 6–15 s).
+## 5. Decisões
+- ✅ C1: o aceite só é pedido na primeira participação do joiner naquele GOM (claim sem aceite abre a folha).
+- ✅ C3: métodos de envio sem preço; frete nacional cotado à mão.
+- ⏳ C5: ritmo do bot (limite diário por GOM, intervalo entre mensagens) — decidir antes de começar o C5.
