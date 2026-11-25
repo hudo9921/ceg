@@ -10,6 +10,8 @@ JOINER_SECTIONS = (
     ('itens', 'Meus itens', 'package'),
     ('envios', 'Envios', 'truck'),
 )
+# Só aparecem para o joiner logado (sem login, o menu mostra apenas CEGs e Vitrine).
+SECOES_COM_LOGIN = {'pagar', 'itens', 'envios'}
 
 
 def _active_section(request):
@@ -45,6 +47,7 @@ def frontend(request):
         'envios': f'{me}?tab=envios',
     }
     active = _active_section(request)
+    logado = bool(request.session.get('participant_id')) if hasattr(request, 'session') else False
     return {
         'frontend_build': settings.FRONTEND_MODE == 'build',
         # Desenvolvimento: ?v=<data do arquivo> no ui.css para o navegador não usar cópia antiga.
@@ -55,5 +58,6 @@ def frontend(request):
         'joiner_nav': [
             {'key': key, 'label': label, 'icon': icon, 'url': urls[key], 'active': key == active}
             for key, label, icon in JOINER_SECTIONS
+            if logado or key not in SECOES_COM_LOGIN
         ],
     }

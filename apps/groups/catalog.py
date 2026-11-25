@@ -55,6 +55,7 @@ class Loader:
         self.report = report or Report()
         self._copiadas = {}
         self._cores = {}
+        self._proximo_wm = 0.0
         self.cor = ''
 
     # --- imagens -------------------------------------------------------------------------------
@@ -68,7 +69,7 @@ class Loader:
         from apps.cegs.image_utils import _optimize_image_bytes, _saved_with_thumbnail
         from apps.core.net import fetch_public_url
         try:
-            raw = fetch_public_url(url, timeout=20, max_bytes=8 * 1024 * 1024)
+            raw = self._baixar(url, fetch_public_url)
             data, ext = _optimize_image_bytes(raw, max_dimension=1000)
             name = f'catalogo/{folder}/{uuid.uuid4().hex[:12]}{ext}'
             saved = default_storage.save(name, ContentFile(data))
@@ -82,6 +83,26 @@ class Loader:
             nossa = ''
         self._copiadas[url] = nossa
         return nossa
+
+    def _baixar(self, url, fetch):
+        """Wikimedia limita robôs: 1 download por segundo e, se vier 429, espera e tenta de novo (até 4 vezes)."""
+        import time
+        import urllib.error
+        from urllib.parse import urlparse
+
+        wikimedia = urlparse(url).hostname or ''
+        wikimedia = wikimedia.endswith('wikimedia.org') or wikimedia.endswith('wikipedia.org')
+        for tentativa in range(5):
+            if wikimedia:
+                time.sleep(max(0.0, self._proximo_wm - time.monotonic()))
+                self._proximo_wm = time.monotonic() + 1.0
+            try:
+                return fetch(url, timeout=20, max_bytes=8 * 1024 * 1024)
+            except urllib.error.HTTPError as exc:
+                if exc.code not in (429, 503) or tentativa == 4:
+                    raise
+                espera = exc.headers.get('Retry-After', '') if exc.headers else ''
+                time.sleep(min(120, int(espera)) if espera.isdigit() else 15 * (tentativa + 1))
 
     # --- grupos ------------------------------------------------------------------------------
     def encontrar(self, a):
@@ -194,6 +215,10 @@ class Loader:
                     and not Era.objects.filter(musicbrainz_id=e['musicbrainz_id']).exists():
                 achada.musicbrainz_id = e['musicbrainz_id']
                 mudou.append('musicbrainz_id')
+            if e.get('cover_url') and not achada.banner_url:  # capa que falhou numa carga anterior
+                achada.banner_url = self.imagem(e['cover_url'], 'eras')
+                if achada.banner_url:
+                    mudou.append('banner_url')
             if e.get('kind') and achada.kind == Era.Kind.OUTRO:
                 achada.kind = e['kind']
                 mudou.append('kind')
