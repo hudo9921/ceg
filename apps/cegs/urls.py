@@ -126,6 +126,7 @@ urlpatterns = [
 
     # 2. Envios Nacionais & Pacotes (Dashboard Global com todos os envios, filtros e feedbacks)
     path('envios/pacote/<int:pacote_id>/endereco/', envios_views.pacote_endereco, name='pacote_endereco'),
+    path('envios/imprimir/', envios_views.imprimir_pacotes, name='imprimir_pacotes'),
     path('envios/', EnviosNacionaisDashboardView.as_view(), name='envios_nacionais'),
     path('envios/empacotar/', EmpacotarItensView.as_view(), name='empacotar_itens'),
     path('envios/pacote/<int:pacote_id>/marcar-enviado/', MarcarPacoteEnviadoView.as_view(), name='marcar_pacote_enviado'),

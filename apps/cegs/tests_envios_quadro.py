@@ -39,3 +39,22 @@ class EnviosQuadroTests(TestCase):
         res = self.client.post(reverse('marcar_pacote_entregue', args=[self.pac['ENVIADO'].id]),
                                {'next': 'https://evil.example/'})
         self.assertNotIn('evil.example', res.url)
+
+
+class ImprimirPacotesTests(EnviosQuadroTests):
+    def test_print_selected_package_shows_address_and_logs(self):
+        from apps.cegs.models import AuditLog
+        pac = self.pac['EM_PREPARACAO']
+        pac.endereco_destinatario = 'Ana Souza\nRua A, 1\nCentro — SP/SP\nCEP 01001-000'
+        pac.save()
+        page = self.client.get(reverse('imprimir_pacotes') + f'?ids={pac.id}').content.decode()
+        self.assertIn('Rua A, 1', page)
+        self.assertIn(pac.identificador, page)
+        self.assertTrue(AuditLog.objects.filter(event_type=AuditLog.EventType.PII_ACCESS, pacote_nacional=pac).exists())
+
+    def test_print_whole_stage(self):
+        res = self.client.get(reverse('imprimir_pacotes') + '?status=EM_PREPARACAO')
+        self.assertEqual(len(res.context['pacotes']), 1)
+
+    def test_no_filter_prints_nothing(self):
+        self.assertEqual(len(self.client.get(reverse('imprimir_pacotes')).context['pacotes']), 0)

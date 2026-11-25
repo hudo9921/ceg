@@ -44,6 +44,10 @@
                 <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm w-full">Marcar entregue</button>
             </form>
         {% endif %}
+        {% if pacote.status != 'ENTREGUE' %}
+            <a href="{% url 'imprimir_pacotes' %}?ids={{ pacote.id }}" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost ui-btn-sm" aria-label="Imprimir lista do pacote {{ pacote.identificador }}">
+                <i data-lucide="printer" class="w-4 h-4" stroke-width="1.75"></i></a>
+        {% endif %}
         {% if pacote.status != 'SOLICITADO' %}
             <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" aria-label="Editar pacote {{ pacote.identificador }}"
                     @click="openEditPacoteModal('{{ pacote.id }}', '{{ pacote.identificador }}', '{{ pacote.transportadora|escapejs }}', '{{ pacote.codigo_rastreio|escapejs }}', '{{ pacote.valor_frete_nacional|default:'' }}', {{ pacote.is_frete_pago|yesno:'true,false' }}, '{{ pacote.status }}', '{{ pacote.observacoes|escapejs }}')">
