@@ -1,0 +1,21 @@
+{% comment %}Endereços dentro de Editar perfil: os mesmos de Envios; editar/adicionar abre a folha única (enderecoForm).{% endcomment %}
+<section class="space-y-2 pt-4 border-t border-ui-line" aria-labelledby="perfil-enderecos-title">
+    <div class="flex items-center justify-between gap-3">
+        <h3 id="perfil-enderecos-title" class="text-base font-bold">Seus endereços</h3>
+        <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="$dispatch('endereco-novo')">
+            <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i>Adicionar</button>
+    </div>
+    {% for e in enderecos %}
+        <div class="ui-well p-3 flex items-start gap-3">
+            <span class="flex-1 min-w-0">
+                <b class="block text-[15px]">{{ e.apelido|default:"Endereço" }}{% if e.padrao %} <span class="ui-status ui-ok !text-[12px]">principal</span>{% endif %}</b>
+                <span class="block ui-muted text-[13px]">{{ e.linha_curta }} · CEP {{ e.cep_formatado }}</span>
+            </span>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm flex-none"
+                    data-endereco="{{ e.id }}|{{ e.apelido }}|{{ e.nome_destinatario }}|{{ e.cep_formatado }}|{{ e.logradouro }}|{{ e.numero }}|{{ e.complemento }}|{{ e.bairro }}|{{ e.cidade }}|{{ e.uf }}|{{ e.padrao|yesno:'1,' }}"
+                    @click="$dispatch('endereco-editar', $el.dataset.endereco)">Editar</button>
+        </div>
+    {% empty %}
+        <p class="ui-muted text-sm">Nenhum endereço ainda. Os GOMs usam para mandar seus pacotes.</p>
+    {% endfor %}
+</section>
