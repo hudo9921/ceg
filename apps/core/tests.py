@@ -114,7 +114,7 @@ class RouteFixtures:
             return self.joiner_notif.id if route.startswith('me/') else self.gom_notif.id
         return {
             'slot_id': self.slot.id, 'set_id': self.cset.id, 'item_def_id': self.item_def.id,
-            'item_id': self.item_individual.id, 'ceg_id': self.ceg.id,
+            'item_id': self.item_individual.id, 'ceg_id': self.ceg.id, 'era_id': self.ceg.era_id,
             'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido', 'tab': 'perfil', 'ref': 'VC-XXXXX',
             'participant_id': self.joiner.id, 'endereco_id': 1, 'cep': '01001000', 'conversa_id': 1, 'reserva_id': 1, 'acao': 'paga',
         }[name]
