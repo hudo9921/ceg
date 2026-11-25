@@ -71,14 +71,31 @@ def goms_summary(cegs_data, itens, pacotes, mercari_pending):
 
 
 def shipping_configs_by_gom(prontos, goms_by_id):
-    """Instruções/formulário de envio de cada GOM que tem itens prontos na Caixinha."""
-    counts = {}
+    """
+    Envio de cada GOM que tem itens prontos na Caixinha: formulário/instruções, formas de envio ativas (C3)
+    e o prazo da caixinha (chegada mais antiga + `Gom.caixinha_prazo_dias`).
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.cegs.models import MetodoEnvio
+
+    counts, chegadas = {}, {}
     for item in prontos:
         counts[item['gom_id']] = counts.get(item['gom_id'], 0) + 1
+        if item.get('chegou_em'):
+            chegadas.setdefault(item['gom_id'], []).append(item['chegou_em'])
     configs = []
     for gom_id, count in counts.items():
         gom = goms_by_id.get(gom_id)
         if gom is None:
             continue
-        configs.append({'gom': gom, 'config': ConfiguracaoEnvio.get_for_gom(gom), 'items_count': count})
+        chegou = min(chegadas[gom_id]) if gom_id in chegadas else None
+        prazo = chegou + timedelta(days=gom.caixinha_prazo_dias) if chegou and gom.caixinha_prazo_dias else None
+        configs.append({
+            'gom': gom, 'config': ConfiguracaoEnvio.get_for_gom(gom), 'items_count': count,
+            'metodos': list(MetodoEnvio.objects.for_gom(gom).filter(ativo=True)),
+            'chegou_em': chegou, 'prazo': prazo, 'prazo_vencido': bool(prazo and prazo < timezone.localdate()),
+        })
     return sorted(configs, key=lambda c: c['gom'].name)

@@ -52,28 +52,80 @@ def _perfil(request, gom):
                     setattr(profile, f'{field}_url', process_image_upload(file_obj=upload, folder=folder))
         except ImageSizeError as exc:
             messages.error(request, str(exc))
-            return form, False
+            return form, False, {}
         profile.save()
-        return form, True
-    return form, False
+        return form, True, {}
+    return form, False, {}
 
 
 def _pix(request, gom):
     form = GomProfileForm(request.POST or None, instance=gom, can_edit_profile=False, can_edit_pix=True)
     if request.method == 'POST' and form.is_valid():
         form.save()
-        return form, True
-    return form, False
+        return form, True, {}
+    return form, False, {}
+
+
+class CaixinhaPrazoForm(forms.ModelForm):
+    class Meta:
+        from .models import Gom
+        model = Gom
+        fields = ['caixinha_prazo_dias']
+        widgets = {'caixinha_prazo_dias': forms.NumberInput(attrs={'min': 1, 'max': 365})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style(self)
+
+
+def metodos_formset(data, gom):
+    from apps.cegs.models import MetodoEnvio
+
+    FormSet = forms.modelformset_factory(
+        MetodoEnvio, fields=['nome', 'descricao', 'pede_endereco', 'ativo', 'ordem'], extra=1, can_delete=True,
+        widgets={'ordem': forms.HiddenInput()})
+    formset = FormSet(data, queryset=MetodoEnvio.objects.for_gom(gom), prefix='metodos')
+    for f in formset.forms:
+        for name in ('nome', 'descricao'):
+            f.fields[name].widget.attrs['class'] = 'ui-input w-full'
+        f.fields['nome'].widget.attrs['placeholder'] = 'Ex.: Correios PAC'
+        f.fields['descricao'].widget.attrs['placeholder'] = 'Ex.: 5 a 10 dias úteis'
+        f.fields['nome'].required = False  # linha extra em branco é ignorada
+        f.fields['ordem'].required = False  # recalculada na ordem da tela
+        for name in ('ativo', 'pede_endereco', 'DELETE'):
+            if name in f.fields:
+                f.fields[name].widget.attrs['class'] = 'w-5 h-5 accent-[var(--ui-accent)]'
+        if f.instance.pk is None:
+            f.initial.setdefault('ativo', True)
+            f.initial.setdefault('pede_endereco', True)
+    return formset
 
 
 def _envio(request, gom):
     from apps.cegs.models import ConfiguracaoEnvio
 
-    form = EnvioConfigForm(request.POST or None, instance=ConfiguracaoEnvio.get_for_gom(gom))
-    if request.method == 'POST' and form.is_valid():
+    data = request.POST or None
+    form = EnvioConfigForm(data, instance=ConfiguracaoEnvio.get_for_gom(gom))
+    prazo = CaixinhaPrazoForm(data, instance=gom)
+    # Só mexe nas formas quando o formset veio no POST (o formulário da aba sempre manda).
+    metodos = metodos_formset(data if data is None or 'metodos-TOTAL_FORMS' in data else None, gom)
+    extra = {'prazo_form': prazo, 'metodos': metodos}
+    if request.method == 'POST' and form.is_valid() and prazo.is_valid() and (not metodos.is_bound or metodos.is_valid()):
         form.save()
-        return form, True
-    return form, False
+        prazo.save()
+        for i, f in enumerate(metodos.forms if metodos.is_bound else []):
+            if f in metodos.deleted_forms:
+                if f.instance.pk:
+                    f.instance.delete()
+                continue
+            if not f.cleaned_data.get('nome'):
+                continue  # linha em branco
+            metodo = f.save(commit=False)
+            metodo.gom = gom
+            metodo.ordem = i
+            metodo.save()
+        return form, True, extra
+    return form, False, extra
 
 
 class RegrasForm(forms.ModelForm):
@@ -99,8 +151,8 @@ def _regras(request, gom):
         if gom.regras.strip() != (before or '').strip():
             gom.regras_atualizadas_em = timezone.now()
         gom.save(update_fields=['regras', 'regras_atualizadas_em'])
-        return form, True
-    return form, False
+        return form, True, {}
+    return form, False, {}
 
 
 class PadroesForm(forms.ModelForm):
@@ -122,8 +174,8 @@ def _padroes(request, gom):
     form = PadroesForm(request.POST or None, instance=gom)
     if request.method == 'POST' and form.is_valid():
         form.save()
-        return form, True
-    return form, False
+        return form, True, {}
+    return form, False, {}
 
 
 HANDLERS = {'perfil': _perfil, 'pix': _pix, 'regras': _regras, 'padroes': _padroes, 'envio': _envio}
@@ -141,15 +193,16 @@ def gom_settings(request, tab):
     if not has_gom_perm(request, perm):
         raise PermissionDenied(DENIED)
     gom = request.active_gom
-    form, saved = HANDLERS[tab](request, gom)
+    form, saved, extra = HANDLERS[tab](request, gom)
     if saved:
         messages.success(request, SAVED[tab])
         return redirect('gom_settings_tab', tab=tab)
     tabs = visible_tabs(request, current=tab)
-    extra = _regras_stats(gom) if tab == 'regras' else {}
+    if tab == 'regras':
+        extra.update(_regras_stats(gom))
     if tab == 'padroes':
         from .ceg_defaults import newest_open_caixa
-        extra = {'caixa_aberta': newest_open_caixa(gom)}
+        extra['caixa_aberta'] = newest_open_caixa(gom)
     return render(request, 'goms/settings.html', {
         'gom': gom, 'form': form, 'tab': tab, 'tabs': tabs,
         'current_tab': next(t for t in tabs if t['active']), **extra,

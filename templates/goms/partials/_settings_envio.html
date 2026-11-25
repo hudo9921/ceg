@@ -1,8 +1,28 @@
-{% comment %}Aba Envio das Configurações do GOM: formulário de endereço e instruções (ConfiguracaoEnvio).{% endcomment %}
+{% comment %}Aba Envio das Configurações do GOM: formas de envio (C3), tempo na caixinha e formulário de endereço.{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="formas-title">
+    <div class="space-y-1">
+        <h2 id="formas-title" class="ui-disp text-xl">Formas de envio</h2>
+        <p class="ui-muted text-sm">O joiner escolhe uma ao pedir o envio. O frete continua cotado por você em cada pacote. Sem nenhuma forma ativa, o pedido funciona como hoje.</p>
+    </div>
+    {{ metodos.management_form }}
+    {% if metodos.non_form_errors %}<p class="text-sm ui-danger" role="alert">{{ metodos.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="divide-y divide-ui-line">
+        {% for f in metodos.forms %}{% include 'goms/partials/_settings_envio_metodo.html' %}{% endfor %}
+    </div>
+</section>
+
+<section class="ui-card p-5 space-y-4" aria-labelledby="caixinha-title">
+    <div class="space-y-1">
+        <h2 id="caixinha-title" class="ui-disp text-xl">Caixinha</h2>
+        <p class="ui-muted text-sm">Só um aviso para o joiner ("peça o envio até dd/mm"). Nada é cobrado sozinho.</p>
+    </div>
+    <div class="sm:w-1/2">{% include 'goms/partials/_profile_field.html' with field=prazo_form.caixinha_prazo_dias %}</div>
+</section>
+
 <section class="ui-card p-5 space-y-4" aria-labelledby="envio-title">
     <div class="space-y-1">
-        <h2 id="envio-title" class="ui-disp text-xl">Envio nacional</h2>
-        <p class="ui-muted text-sm">O joiner vê o link e as instruções na caixinha, no botão <b>Preencher formulário de envio</b>. Pode ser Google Forms, Typeform ou Tally.</p>
+        <h2 id="envio-title" class="ui-disp text-xl">Formulário de endereço</h2>
+        <p class="ui-muted text-sm">O joiner vê o link e as instruções na caixinha, no botão <b>Abrir formulário</b>. Pode ser Google Forms, Typeform ou Tally. Retirada em mãos não pede o formulário.</p>
     </div>
     {% include 'goms/partials/_profile_field.html' with field=form.link_formulario_google %}
     {% include 'goms/partials/_profile_field.html' with field=form.instrucoes_envio %}
