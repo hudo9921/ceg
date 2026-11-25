@@ -1,0 +1,96 @@
+# Personalização por GOM — Plano
+
+> Status: **planejado, não iniciado** (2026-11-24). Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
+> Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
+
+## 1. O que já é do GOM hoje
+
+| Onde | O quê |
+| :--- | :--- |
+| Perfil do GOM (`gom.perfil`) | Nome, bio, logo, banner, WhatsApp de contato, Instagram |
+| Perfil do GOM (`pix.alterar`) | 4 chaves Pix padrão + instruções (itens, frete internacional, taxa, frete nacional) |
+| Envios (`ConfiguracaoEnvio`) | Link do Google Form de endereço + instruções de envio |
+
+**Continua da plataforma:** catálogo de grupos/eras, design system, bot e login por WhatsApp, 2FA, regras de LGPD.
+
+## 2. Nova tela: Configurações do GOM
+
+"Perfil do GOM" vira **Configurações do GOM** (`/gom/configuracoes/`, a URL antiga redireciona), com abas.
+Cada aba aparece só para quem tem a permissão dela (o dono do GOM escolhe na Equipe, como hoje).
+
+| Aba | Permissão | Entrega |
+| :--- | :--- | :--- |
+| Perfil (+ cor da marca) | `gom.perfil` | já existe + C4 |
+| Pix | `pix.alterar` | já existe |
+| Regras | `gom.regras` (nova) | C1 |
+| Padrões de CEG | `ceg.padroes` (nova) | C2 |
+| Envio | `envios.config` (nova; hoje o form fica em Envios com `envios.pacotes`) | C3 |
+| Mensagens | `gom.mensagens` (nova) | C5 |
+
+Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "completo". Admins com
+`permissions = None` (acesso total) já ganham tudo.
+
+## 3. Entregas
+
+### C1 — Regras do GOM
+- `Gom.regras` (texto) e `Gom.regras_versao` (data). Ao salvar, o GOM marca **"Pedir novo aceite"** quando a
+  mudança é importante; só então a versão muda. Ajuste de vírgula não força todo mundo a aceitar de novo.
+- `AceiteRegras(participant, gom, versao, aceito_em)`.
+- Onde aparece: página pública do GOM (seção "Regras"), página da CEG (bloco recolhível) e no painel `/me/`.
+- **Aceite antes do Segundo Zero:** claim é corrida. O joiner aceita na página da CEG **agendada** ("Aceite as regras
+  antes da abertura"). Se tentar o claim sem aceite, a API responde `needs_rules` e abre a folha de regras;
+  depois de aceitar, o claim segue sozinho. A checagem é uma consulta por índice fora do `select_for_update`.
+- Auditoria: `RULES_ACCEPTED` no `AuditLog` do GOM.
+
+### C2 — Padrões de CEG
+- Campos no `Gom`: `padrao_prazo_item_dias` (dias depois do fechamento), `padrao_prazo_frete_dias`,
+  `padrao_prazo_taxa_dias`, `padrao_descricao` (modelo de texto com `{grupo}`, `{era}`), `padrao_caixa_aberta`
+  (vincular à caixa mais recente em aberto, sim/não).
+- Só **pré-preenche** o Criar. Nada muda em CEGs já criadas. Em branco = como hoje.
+
+### C3 — Opções de envio
+- `MetodoEnvio(gom, nome, descricao, preco, a_cotar, pede_endereco, ativo, ordem)`. Exemplos: PAC, SEDEX,
+  Mini Envios, Retirada em mãos (`pede_endereco = False`).
+- No `Gom`: `taxa_embalagem` (somada ao frete do pacote) e `caixinha_prazo_dias` (vazio = sem limite).
+- Joiner, ao pedir envio: escolhe o método (cards com preço ou "a cotar"). O `PacoteNacional` guarda
+  `metodo_envio` (FK) + `metodo_nome` (cópia do nome, para histórico). Retirada não pede o Google Form.
+- Caixinha: com prazo, mostra "Chegou em dd/mm · peça o envio até dd/mm". Só avisa; nada é cobrado sozinho.
+- O form de Envios (`ConfiguracaoEnvio`) passa para a aba Envio.
+
+### C4 — Cor da marca
+- `Gom.cor_marca` com **6 opções prontas** (Rosa = padrão da plataforma, Lilás, Azul, Verde-água, Laranja,
+  Vermelho). Cada uma tem os tokens claro **e** escuro (`--ui-accent`, `--ui-accent-text`, `--ui-accent-soft`,
+  `--ui-focus`) validados para contraste AA (texto branco no botão; texto de destaque na superfície).
+  Sem seletor livre: cor livre quebra contraste e o modo escuro.
+- Aplicada só onde a página é de **um** GOM: página pública, páginas de CEG/caixa desse GOM e o painel do GOM.
+  Home, Vitrine geral e `/me/` misturam GOMs e ficam com a cor da plataforma.
+- Implementação: `<style>` com os tokens no `{% block extra_head %}` (CSP já permite estilo inline).
+
+### C5 — Mensagens do bot
+- Hoje o bot manda WhatsApp só no cancelamento de set e na conversão de enquete. Os outros avisos ficam só no site.
+- `MensagemModelo(gom, evento, ativo, texto)` com eventos:
+  `cobranca_lancada` (frete/taxa da caixa), `caixa_no_brasil`, `pacote_enviado`, `pacote_entregue`,
+  `set_cancelado` (substitui o texto fixo), `lembrete_pagamento` (botão manual).
+  Variáveis: `{nome}`, `{gom}`, `{ceg}`, `{caixa}`, `{valor}`, `{prazo}`, `{rastreio}`, `{link}`.
+  Todas começam **desligadas**, com um texto sugerido. A aba mostra a prévia com dados de exemplo.
+- **Fila (`MensagemFila`) em vez de envio na hora:** o comando `enviar_mensagens_fila`, chamado pelo cron a
+  cada minuto, manda poucas por vez, com intervalo aleatório de alguns segundos e limite diário por GOM.
+  Motivo: o número é um só (Evolution, não oficial) e rajada de mensagens é o jeito mais rápido de o WhatsApp
+  bloquear o número — e aí ninguém consegue logar.
+- O joiner pode desligar os avisos por WhatsApp em "Privacidade" (`Participant.aceita_avisos_whatsapp`).
+  O código de login continua chegando sempre.
+- O texto termina com "— {gom}" fixo, para o joiner saber de qual GOM é.
+
+## 4. Ordem
+
+1. **C0** Tela Configurações com abas (Perfil, Pix, Envio movido) + novas chaves de permissão.
+2. **C1** Regras. 3. **C2** Padrões de CEG. 4. **C3** Envio. 5. **C4** Cor. 6. **C5** Mensagens (por último:
+   precisa de cron no servidor e é o de maior risco).
+
+Cada entrega: branch a partir de `develop`, testes, merge em `develop`. Telas novas passam pelo protótipo antes.
+
+## 5. Decisões em aberto
+- C1: claim sem aceite → abre a folha (perde alguns segundos) **ou** bloqueia com aviso? (proposta: abre a folha)
+- C3: o frete nacional continua cotado à mão pelo GOM, ou o preço do método já vira o valor do frete?
+  (proposta: preço do método vira o valor sugerido; o GOM pode ajustar)
+- C5: limite diário por GOM (proposta: 300) e intervalo entre mensagens (proposta: 6–15 s).

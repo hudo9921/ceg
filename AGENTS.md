@@ -82,6 +82,7 @@ Para detalhes aprofundados sem poluir o contexto de desenvolvimento, consulte os
 5. **[docs/IDEAS_BACKLOG.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/IDEAS_BACKLOG.md):** Roadmap de melhorias e ideias de inovação em espera.
 6. **[docs/MULTI_GOM_DESIGN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/MULTI_GOM_DESIGN.md):** Desenho da plataforma com vários GOMs (dono, admins, isolamento de dados, entregas M1–M4).
 7. **[docs/CATALOG_IMPORT_PLAN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/CATALOG_IMPORT_PLAN.md):** Plano (não iniciado) de importação do catálogo: top 500 grupos/100 solistas via Wikidata + MusicBrainz, seed revisável e manutenção de eras.
+8. **[docs/GOM_CUSTOMIZATION_PLAN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/GOM_CUSTOMIZATION_PLAN.md):** Plano da personalização por GOM: regras, padrões de CEG, opções de envio, cor da marca e mensagens do bot (C0–C5).
 
 ---
 
