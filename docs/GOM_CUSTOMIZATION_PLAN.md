@@ -1,6 +1,6 @@
 # Personalização por GOM — Plano
 
-> Status: **C0 e C1 entregues** (2026-11-25); próximo: C2. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
+> Status: **C0, C1 e C2 entregues** (2026-11-25); próximo: C3. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
 > Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
 
 ## 1. O que já é do GOM hoje
@@ -49,7 +49,10 @@ aba Regras (`gom.regras`), bloco `goms/partials/_gom_rules.html` na CEG e na pá
   uma consulta por índice fora do `select_for_update`.
 - Auditoria: `RULES_ACCEPTED` no `AuditLog` do GOM.
 
-### C2 — Padrões de CEG
+### C2 — Padrões de CEG ✅
+Feito: aba Padrões de CEG (`ceg.padroes`), `apps/goms/ceg_defaults.py` (`creations_defaults` no Criar;
+`render_description` e `default_prazo_item` no `CreateCEGView`).
+
 - Campos no `Gom`: `padrao_prazo_item_dias` (dias depois do fechamento), `padrao_horario_abertura`,
   `padrao_descricao` (modelo de texto com `{grupo}`, `{era}`), `padrao_caixa_aberta` (vincular à caixa mais
   recente em aberto, sim/não). Prazos de frete e taxa ficam fora: já vêm da caixa em cascata.

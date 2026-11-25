@@ -103,9 +103,32 @@ def _regras(request, gom):
     return form, False
 
 
-HANDLERS = {'perfil': _perfil, 'pix': _pix, 'regras': _regras, 'envio': _envio}
+class PadroesForm(forms.ModelForm):
+    class Meta:
+        from .models import Gom
+        model = Gom
+        fields = ['padrao_prazo_item_dias', 'padrao_horario_abertura', 'padrao_descricao', 'padrao_caixa_aberta']
+        widgets = {'padrao_horario_abertura': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+                   'padrao_descricao': forms.Textarea(attrs={'rows': 5}),
+                   'padrao_prazo_item_dias': forms.NumberInput(attrs={'min': 0, 'max': 60})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style(self)
+        self.fields['padrao_caixa_aberta'].widget.attrs['class'] = 'w-5 h-5 accent-[var(--ui-accent)]'
+
+
+def _padroes(request, gom):
+    form = PadroesForm(request.POST or None, instance=gom)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return form, True
+    return form, False
+
+
+HANDLERS = {'perfil': _perfil, 'pix': _pix, 'regras': _regras, 'padroes': _padroes, 'envio': _envio}
 SAVED = {'perfil': 'Perfil do GOM atualizado.', 'pix': 'Chaves Pix atualizadas.', 'regras': 'Regras salvas.',
-         'envio': 'Configuração de envio atualizada.'}
+         'padroes': 'Padrões de CEG salvos.', 'envio': 'Configuração de envio atualizada.'}
 
 
 @never_cache
@@ -124,6 +147,9 @@ def gom_settings(request, tab):
         return redirect('gom_settings_tab', tab=tab)
     tabs = visible_tabs(request, current=tab)
     extra = _regras_stats(gom) if tab == 'regras' else {}
+    if tab == 'padroes':
+        from .ceg_defaults import newest_open_caixa
+        extra = {'caixa_aberta': newest_open_caixa(gom)}
     return render(request, 'goms/settings.html', {
         'gom': gom, 'form': form, 'tab': tab, 'tabs': tabs,
         'current_tab': next(t for t in tabs if t['active']), **extra,

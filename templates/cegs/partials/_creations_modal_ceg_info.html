@@ -111,7 +111,7 @@
 
         <div>
             <label class="ui-label block mb-1">Hora de Abertura (Standby / Countdown)</label>
-            <input type="datetime-local" name="opens_at"
+            <input type="datetime-local" name="opens_at" value="{{ ceg_defaults.opens_at }}"
                    class="ui-input w-full">
             <span class="text-[10px] text-pink-600 dark:text-pink-400 font-semibold block mt-0.5"
                   x-text="cegStatus === 'POLLING' ? 'Opcional na Enquete: Deixe em branco para abrir votação imediata, ou defina um horário para contagem regressiva!' : 'Exibe cronômetro regressivo na página pública até a abertura!'">

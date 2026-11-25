@@ -15,6 +15,7 @@ ANY = '*'
 # (chave, área, rótulo, ajuda, sensível)
 CATALOG = [
     ('ceg.editar', 'CEGs', 'Criar e editar CEGs', 'Itens, sets, preços, fotos, recortes, enquetes, grupos e eras', False),
+    ('ceg.padroes', 'CEGs', 'Editar os padrões de CEG', 'Prazo, horário, descrição e caixa que já vêm no Criar', False),
     ('ceg.excluir', 'CEGs', 'Excluir CEGs e sets', 'Apaga a CEG ou o set inteiro', False),
     ('ceg.espera', 'CEGs', 'Ver disputas e lista de espera', 'Tentativas no segundo zero e fila por item', False),
     ('pedidos.ver', 'Pedidos e pagamentos', 'Ver pedidos e joiners', 'Consulta Joiner 360º e busca de participantes', False),
@@ -57,7 +58,7 @@ MENU = [
     ('Envios Nacionais', ['envios.pacotes']),
     ('Auditoria', ['analytics.ver']),
     ('Relatório de Vendas', ['analytics.ver']),
-    ('Configurações', ['gom.perfil', 'pix.alterar', 'gom.regras', 'gom.envio']),
+    ('Configurações', ['gom.perfil', 'pix.alterar', 'gom.regras', 'ceg.padroes', 'gom.envio']),
 ]
 
 

@@ -105,6 +105,8 @@ class CreationsHubView(StaffRequiredMixin, View):
         tipos_item = list(TipoItem.objects.all().order_by('nome'))
         tipos_item_data = [{'id': t.id, 'nome': t.nome} for t in tipos_item]
 
+        from apps.goms.ceg_defaults import creations_defaults
+
         context = {
             'groups': groups,
             'eras': eras,
@@ -123,6 +125,7 @@ class CreationsHubView(StaffRequiredMixin, View):
             'category_filter': category_filter,
             'category': category_filter,
             'preselected_caixa_id': int(request.GET.get('caixa_id')) if request.GET.get('caixa_id', '').isdigit() else '',
+            'ceg_defaults': creations_defaults(gom),
             'auto_open_modal': request.GET.get('open', ''),
             'total_groups': groups.count(),
             'total_eras': eras.count(),
@@ -564,6 +567,12 @@ class CreateCEGView(StaffRequiredMixin, View):
 
         frete_inter = parse_optional_decimal(frete_inter_str)
         taxa_aduaneira = parse_optional_decimal(taxa_aduaneira_str)
+
+        # Padrões de CEG do GOM (C2): {grupo}/{era} na descrição e prazo do item a partir do fechamento.
+        from apps.goms.ceg_defaults import default_prazo_item, render_description
+        description = render_description(description, era)
+        if prazo_pagamento_item is None:
+            prazo_pagamento_item = default_prazo_item(request.active_gom, closes_at)
 
         # Se tiver opens_at no futuro e status for OPEN, ajusta para SCHEDULED
         if opens_at and timezone.now() < opens_at and status == CEG.Status.OPEN:
