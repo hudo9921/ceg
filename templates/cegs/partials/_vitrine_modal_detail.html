@@ -29,6 +29,11 @@
 
         <p x-show="activeItem.descricao" class="text-[15px] whitespace-pre-line" x-text="activeItem.descricao"></p>
 
+        <a x-show="activeItem.gomUrl" :href="activeItem.gomUrl" class="ui-well p-3 flex items-center justify-between gap-3 no-underline text-ui-text">
+            <span class="text-sm">Vendido por <b x-text="activeItem.gom"></b></span>
+            <span class="text-sm font-bold text-ui-accent-text flex items-center gap-1">Ver página <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.75"></i></span>
+        </a>
+
         <template x-if="activeItem.status === 'DISPONIVEL'">
             <div class="space-y-2">
                 <a :href="whatsappUrl" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-primary w-full">Tenho interesse · falar no WhatsApp</a>

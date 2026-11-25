@@ -212,6 +212,8 @@
 - **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
 - **Configurações do GOM:** `goms/settings.html` (abas de `apps/goms/settings_tabs.py`) + uma parcial por aba `goms/partials/_settings_<aba>.html` (perfil + `_settings_cor.html`, pix, regras, padroes, envio + `_settings_envio_metodo.html`), reaproveitando `_profile_field.html`, `_profile_image.html` e `_profile_pix.html` (`/gom/configuracoes/<aba>/`; `/gom/perfil/` redireciona). Classe `.settings-tab` em `static/css/ui.css`.
 - **Regras do GOM:** `goms/partials/_gom_rules.html` (faixa do estreante, linha "ver regras" e folha de aceite; componente `gomRules`), incluída em `cegs/detail.html` e `goms/public_page.html`.
+- **GOM dono visível:** `components/_gom_avatar.html` (logo ou inicial); "por {GOM}" nos cards da home (`_home_ceg_card.html`), na Vitrine (card e ficha com "Ver página") e no trilho "Abrindo em breve"; card "Organizado por" na CEG (`cegs/partials/_detail_gom_card.html`); links para a página do GOM na caixa e em Pagar.
+- **Lista pública de GOMs:** `goms/directory.html` (`/goms/`, `gom_directory`), no menu lateral ("GOMs") e no link "Quem organiza?" da home.
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).

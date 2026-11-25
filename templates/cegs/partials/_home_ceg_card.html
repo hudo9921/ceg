@@ -25,14 +25,14 @@ Os data-* alimentam os filtros de homeApp(); no celular o toque abre a gaveta de
         <button type="button" @click.stop="openBottomSheet({{ ceg.id }})" class="ui-tag absolute top-2 right-2 z-[3]" title="Ver quais vagas estão livres">
             <span class="ui-mono">{{ ceg.available_slots_count }}</span> vaga{{ ceg.available_slots_count|pluralize }}
         </button>
-        {% if multi_gom %}
-            <a href="{% url 'gom_public' ceg.gom.slug %}" @click.stop class="ui-tag absolute top-2 left-2 z-[3]" title="Página de {{ ceg.gom.name }}">{{ ceg.gom.name }}</a>
-        {% endif %}
     </div>
 
     <div class="p-4 flex-1 flex flex-col gap-1.5">
         <p class="ui-label m-0 truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</p>
         <h3 class="m-0 text-[17px] font-bold leading-snug line-clamp-2" title="{{ ceg.title }}">{{ ceg.title }}</h3>
+        <a href="{% url 'gom_public' ceg.gom.slug %}" @click.stop class="self-start flex items-center gap-1.5 text-[13px] font-semibold text-ui-muted hover:text-ui-text no-underline" title="Ver a página de {{ ceg.gom.name }}">
+            {% include 'components/_gom_avatar.html' with g=ceg.gom size="w-5 h-5" %}<span class="truncate">por {{ ceg.gom.name }}</span>
+        </a>
         {% if ceg.preview_chips %}
             <p class="m-0 text-[13px] ui-muted truncate">
                 {% for item in ceg.preview_chips %}{{ item.display_name|default:item.member_name|default:item.item_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if ceg.preview_remaining_count > 0 %} e +{{ ceg.preview_remaining_count }}{% endif %}

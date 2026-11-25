@@ -33,7 +33,7 @@ A contagem usa um horário-alvo (não atrasa com a aba em segundo plano). Some q
             <div class="p-4 flex flex-col gap-1">
                 <p class="ui-label m-0 truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</p>
                 <p class="m-0 text-[17px] font-bold leading-snug line-clamp-2">{{ ceg.title }}</p>
-                <p class="m-0 text-sm ui-muted">{{ ceg.gom.name }} · abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}</p>
+                <p class="m-0 text-sm ui-muted">por <b class="text-ui-text">{{ ceg.gom.name }}</b> · abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}</p>
             </div>
         </a>
         {% endfor %}

@@ -12,6 +12,11 @@ menu de gestão do GOM, conta e tema. DESIGN_SYSTEM.md §7.
             <span>{{ item.label }}</span>
         </a>
     {% endfor %}
+    {% url 'gom_directory' as goms_url %}
+    <a href="{{ goms_url }}" class="ui-nav-item{% if nav_goms %} is-on{% endif %}"{% if nav_goms %} aria-current="page"{% endif %}>
+        <i data-lucide="building-2" class="w-5 h-5" stroke-width="1.75"></i>
+        <span>GOMs</span>
+    </a>
 
     {% if is_gom_member or is_platform_admin %}
         <div class="mt-4 pt-4 border-t border-ui-line">

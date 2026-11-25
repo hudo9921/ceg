@@ -21,7 +21,10 @@
     <section aria-labelledby="open-title" class="space-y-5">
     <div class="flex items-end justify-between gap-3">
         <h2 id="open-title" class="ui-disp text-2xl m-0">Abertas agora</h2>
-        <span class="ui-status ui-ok text-sm">{{ active_cegs|length }} CEG{{ active_cegs|length|pluralize }}</span>
+        <span class="flex items-center gap-3">
+            <a href="{% url 'gom_directory' %}" class="text-sm font-semibold text-ui-accent-text no-underline hover:underline">Quem organiza?</a>
+            <span class="ui-status ui-ok text-sm">{{ active_cegs|length }} CEG{{ active_cegs|length|pluralize }}</span>
+        </span>
     </div>
     {% include 'cegs/partials/_home_filter_bar.html' %}
     {% include 'cegs/partials/_home_chips_bar.html' %}
