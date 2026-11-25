@@ -14,8 +14,9 @@
                radial-gradient(900px 480px at 100% -5%, #D2D8F6 0%, rgba(210, 216, 246, 0) 60%),
                #E6E1F1;
     --ui-surface: #FFFFFF;
-    --ui-surface-2: #F3F0F9;
-    --ui-line: rgba(30, 27, 38, 0.11);
+    --ui-surface-2: #EDE8F5;
+    --ui-line: rgba(30, 27, 38, 0.14);
+    --ui-line-strong: #8A8398; /* borda de campos: >= 3:1 no branco e no --ui-surface-2 (WCAG 1.4.11) */
     --ui-text: #1E1B26;
     --ui-muted: #625C70;
     --ui-accent: #C8307A;
@@ -36,7 +37,7 @@
     --ui-chrome: linear-gradient(180deg, #6D28D9 0%, #C8307A 100%);
     --ui-seg-gap: 0px;
     --ui-seg-on: linear-gradient(90deg, #F9A8D4, #C4B5FD, #A5F3FC);
-    --ui-seg-off: #ECE8F3;
+    --ui-seg-off: #E2DCEC;
     --ui-bar: rgba(255, 255, 255, 0.82);
     --ui-focus: #C8307A;
 }
@@ -65,6 +66,7 @@ html.dark {
     --ui-chrome: linear-gradient(180deg, #FFFFFF 0%, #B4BCC9 52%, #EEF1F6 66%, #7D8696 100%);
     --ui-seg-gap: 2px;
     --ui-seg-on: #2A62F5;
+    --ui-line-strong: #6B7080;
     --ui-seg-off: #26262E;
     --ui-bar: rgba(12, 12, 16, 0.88);
     --ui-focus: #8FB2FF;
@@ -105,7 +107,7 @@ html.dark .ui-hud::after { bottom: -1px; right: -1px; border-left: 0; border-top
 html.dark .ui-btn-primary { font-family: 'Chakra Petch', var(--ui-font-body); text-transform: uppercase; letter-spacing: .06em; box-shadow: 0 0 0 1px rgba(143, 178, 255, .45), 0 0 24px -8px rgba(42, 98, 245, .9); }
 :root .ui-btn-primary:disabled, :root .ui-btn-primary[aria-disabled="true"] { cursor: default; background: var(--ui-surface-2); color: var(--ui-muted); box-shadow: none; }
 .ui-btn-ghost { background: var(--ui-surface-2); color: var(--ui-text); }
-.ui-btn-ghost:hover { background: var(--ui-line); }
+.ui-btn-ghost:hover { background: color-mix(in srgb, var(--ui-surface-2) 88%, var(--ui-text)); }
 .ui-btn-sm { min-height: 36px; padding: 0 12px; font-size: 13px; }
 .ui-icon-btn { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--ui-r-pill); background: transparent; border: 0; color: var(--ui-text); cursor: pointer; }
 .ui-icon-btn:hover { background: var(--ui-surface-2); }
@@ -164,7 +166,7 @@ html.dark .ui-sheet { border-radius: 0; border-top-color: #B4BCC9; }
 .ui-scrim { position: fixed; inset: 0; z-index: 50; background: rgba(10, 10, 12, .45); }
 
 /* ------------------------------------------------------------- formulário */
-.ui-input { min-height: 44px; padding: 0 14px; border-radius: var(--ui-r-ctl); border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-text); font-family: var(--ui-font-body); font-size: 15px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.ui-input { min-height: 44px; padding: 0 14px; border-radius: var(--ui-r-ctl); border: 1px solid var(--ui-line-strong); background: var(--ui-surface); color: var(--ui-text); font-family: var(--ui-font-body); font-size: 15px; outline: none; transition: border-color .2s, box-shadow .2s; }
 .ui-input::placeholder { color: var(--ui-muted); opacity: .8; }
 .ui-input:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 3px var(--ui-accent-soft); }
 select.ui-input { cursor: pointer; padding-right: 32px; }
