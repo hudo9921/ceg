@@ -301,3 +301,6 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
   `#92195A`, ok `#035C43`, perigo `#A0163C`, aviso `#7A4404`.
 - `bg-white` das telas antigas segue o card no claro (override em ui.css). O QR do Pix usa `.keep-white`.
 - O fundo do `<body>` no claro vinha de um estilo antigo no `base.html` com `!important`; agora usa `var(--ui-page)`.
+- Barra lateral no claro (desktop): painel flutuante (`inset 12px`, cantos do card, `--ui-surface` + sombra), item
+  ativo em pílula `--ui-accent-soft` com texto `--ui-accent-text` e ícone `--ui-accent`, rótulos de seção em versalete.
+  O escuro não muda.
