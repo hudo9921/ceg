@@ -28,7 +28,7 @@ class GomProfileForm(forms.ModelForm):
 
     class Meta:
         model = Gom
-        fields = ['name', 'bio', 'whatsapp_contato', 'instagram', 'logo_url', 'banner_url',
+        fields = ['name', 'bio', 'whatsapp_contato', 'instagram', 'logo_url', 'banner_url', 'cor_marca',
                   'default_pix_key', 'default_pix_instructions',
                   'default_pix_key_frete', 'default_pix_instructions_frete',
                   'default_pix_key_taxa', 'default_pix_instructions_taxa',
@@ -37,7 +37,7 @@ class GomProfileForm(forms.ModelForm):
                    **{f'default_pix_instructions{s}': forms.Textarea(attrs={'rows': 2})
                       for s in ('', '_frete', '_taxa', '_frete_nacional')}}
 
-    PROFILE_FIELDS = ('name', 'bio', 'whatsapp_contato', 'instagram', 'logo_url', 'banner_url')
+    PROFILE_FIELDS = ('name', 'bio', 'whatsapp_contato', 'instagram', 'logo_url', 'banner_url', 'cor_marca')
 
     def __init__(self, *args, can_edit_profile=True, can_edit_pix=True, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,7 +46,12 @@ class GomProfileForm(forms.ModelForm):
             is_pix = name.startswith('default_pix_')
             if (is_pix and not can_edit_pix) or (not is_pix and not can_edit_profile):
                 del self.fields[name]
+        if 'cor_marca' in self.fields:
+            self.fields['cor_marca'].required = False  # sem a cor no POST, mantém a atual
         _style(self)
+
+    def clean_cor_marca(self):
+        return self.cleaned_data.get('cor_marca') or self.instance.cor_marca or 'padrao'
 
 
 class InviteForm(forms.Form):

@@ -1,0 +1,25 @@
+{% comment %}Cor da marca (C4) na aba Perfil: 6 opções prontas, com prévia ao vivo. `swatches` de apps/goms/branding.py.{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="cor-title"
+         x-data="{ cor: '{{ form.cor_marca.value|default:'padrao' }}', dark: document.documentElement.classList.contains('dark'),
+                   sw: {% for s in swatches %}{% if forloop.first %}{ {% endif %}'{{ s.key }}': ['{{ s.light }}', '{{ s.dark }}', '{{ s.light_text }}', '{{ s.dark_text }}']{% if forloop.last %} }{% else %}, {% endif %}{% endfor %},
+                   get tone() { return this.sw[this.cor][this.dark ? 1 : 0]; }, get toneText() { return this.sw[this.cor][this.dark ? 3 : 2]; } }">
+    <div class="space-y-1">
+        <h2 id="cor-title" class="ui-disp text-xl">Cor da marca</h2>
+        <p class="ui-muted text-sm">Usada na sua página, nas suas CEGs e caixas e no seu painel. Home, Vitrine geral e o painel do joiner ficam com a cor da plataforma.</p>
+    </div>
+    <fieldset class="flex flex-wrap gap-2.5">
+        <legend class="sr-only">Escolha a cor</legend>
+        {% for s in swatches %}
+            <label class="ui-chip !h-11 !pl-1.5 cursor-pointer" :class="cor === '{{ s.key }}' && '!border-ui-text !border-2'">
+                <input type="radio" name="cor_marca" value="{{ s.key }}" x-model="cor" class="sr-only">
+                <span class="w-8 h-8 rounded-full dark:rounded-sm" :style="'background:' + sw['{{ s.key }}'][dark ? 1 : 0]"></span>{{ s.label }}
+            </label>
+        {% endfor %}
+    </fieldset>
+    <div class="ui-well p-4 flex flex-wrap items-center gap-3">
+        <span class="ui-label">Prévia</span>
+        <span class="ui-btn ui-btn-sm text-white" :style="'background:' + tone">Pegar este item</span>
+        <span class="text-sm font-bold" :style="'color:' + toneText">Ver regras do GOM</span>
+    </div>
+    <p class="ui-muted text-[13px]">Cada cor tem versão clara e escura, testadas para leitura (texto branco no botão e texto colorido no fundo).</p>
+</section>

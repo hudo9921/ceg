@@ -229,7 +229,7 @@ class UpdateHomeBannerView(PlatformAdminRequiredMixin, View):
 class CEGDetailView(View):
     def get(self, request, slug):
         ceg = get_object_or_404(
-            CEG.objects.select_related('era__group', 'caixa'),
+            CEG.objects.select_related('era__group', 'caixa', 'gom'),
             slug=slug
         )
         # Controles de gestão só para a equipe do GOM dono desta CEG.
@@ -460,6 +460,7 @@ class CEGDetailView(View):
 
         return render(request, 'cegs/detail.html', {
             **rules_context(request, ceg.gom),
+            'brand_gom': ceg.gom,
             'ceg': ceg,
             'is_gom_staff': manage,
             'sets': regular_sets,

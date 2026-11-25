@@ -257,7 +257,7 @@ def gom_public_page(request, slug):
     from .rules import rules_context
 
     return render(request, 'goms/public_page.html', {
-        'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine,
+        'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine, 'brand_gom': gom,
         **rules_context(request, gom),
     })
 

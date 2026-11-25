@@ -1,6 +1,6 @@
 # Personalização por GOM — Plano
 
-> Status: **C0–C3 entregues** (2026-11-25); próximo: C4. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
+> Status: **C0–C4 entregues** (2026-11-25); C5 espera a decisão do ritmo do bot. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
 > Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
 
 ## 1. O que já é do GOM hoje
@@ -72,7 +72,12 @@ rádios com `form="pedir-envio-form"`); `SolicitarEnvioNacionalView` valida a fo
 - Caixinha: com prazo, mostra "Chegou em dd/mm · peça o envio até dd/mm". Só avisa; nada é cobrado sozinho.
 - O form de Envios (`ConfiguracaoEnvio`) passa para a aba Envio.
 
-### C4 — Cor da marca
+### C4 — Cor da marca ✅
+Feito: `apps/goms/branding.py` (6 opções, contraste AA conferido: o menor é 4,56), `Gom.cor_marca`, escolha na aba
+Perfil (`_settings_cor.html`), `components/_brand_style.html` incluído pelo `base.html` quando há `brand_gom`
+(página pública, CEG, caixa e telas do menu do GOM). No ui.css, chip/toggle/aba ativos do escuro passaram a usar
+tokens (`--ui-accent`, `--ui-accent-soft`, novo `--ui-accent-on-soft`).
+
 - `Gom.cor_marca` com **6 opções prontas** (Rosa = padrão da plataforma, Lilás, Azul, Verde-água, Laranja,
   Vermelho). Cada uma tem os tokens claro **e** escuro (`--ui-accent`, `--ui-accent-text`, `--ui-accent-soft`,
   `--ui-focus`) validados para contraste AA (texto branco no botão; texto de destaque na superfície).

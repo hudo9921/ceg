@@ -10,6 +10,7 @@ def gom_context(request):
         return {}
     gom = get_active_gom(request)
     role = gom_role(user, gom)
+    gom_menu = build_gom_menu(request, gom_permissions(request)) if role else []
     return {
         'active_gom': gom,
         'gom_role': role,
@@ -22,6 +23,8 @@ def gom_context(request):
         # Permissões no GOM ativo: {% if 'ceg.editar' in gom_perms %} (apps.goms.permissions).
         'gom_perms': gom_permissions(request),
         # Menu do painel (apps/goms/menu.py), já filtrado pelas permissões.
-        'gom_menu': build_gom_menu(request, gom_permissions(request)) if role else [],
+        'gom_menu': gom_menu,
+        # Cor da marca (C4) nas telas do painel; páginas de um GOM (pública, CEG, caixa) passam o próprio.
+        'brand_gom': gom if any(item['active'] for item in gom_menu) else None,
         'platform_menu': build_platform_menu(request) if is_platform_admin(user) else [],
     }
