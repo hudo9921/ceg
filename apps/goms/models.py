@@ -24,6 +24,9 @@ class Gom(models.Model):
     logo_url = models.URLField('Logo', max_length=500, blank=True)
     banner_url = models.URLField('Banner', max_length=500, blank=True)
     bio = models.TextField('Apresentação', blank=True)
+    cor_marca = models.CharField('Cor da marca', max_length=20, default='padrao',
+                                 choices=[('padrao', 'Padrão ValCegs'), ('lilas', 'Lilás'), ('azul', 'Azul'),
+                                          ('verde', 'Verde-água'), ('laranja', 'Laranja'), ('vermelho', 'Vermelho')])
     whatsapp_contato = models.CharField('WhatsApp de contato', max_length=30, blank=True)
     instagram = models.CharField('Instagram / X', max_length=60, blank=True)
     # Chaves Pix padrão por tipo de cobrança. Usadas quando a CEG/caixa não tem chave própria
@@ -69,6 +72,12 @@ class Gom(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)[:60] or 'gom'
         super().save(*args, **kwargs)
+
+    @property
+    def brand(self):
+        """Tokens da cor da marca (apps.goms.branding) ou None no padrão da plataforma."""
+        from .branding import brand_tokens
+        return brand_tokens(self.cor_marca)
 
     PIX_KINDS = ('item', 'frete', 'taxa', 'frete_nacional')
 

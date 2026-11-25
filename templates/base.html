@@ -625,6 +625,7 @@
             scrollbar-width: none;
         }
     </style>
+    {% if brand_gom.brand %}{% include 'components/_brand_style.html' with b=brand_gom.brand %}{% endif %}
     {% block extra_head %}{% endblock %}
 </head>
 <body class="ui-page min-h-screen flex flex-col antialiased overflow-x-hidden">

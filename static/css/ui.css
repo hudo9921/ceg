@@ -67,6 +67,7 @@ html.dark {
     --ui-seg-off: #26262E;
     --ui-bar: rgba(12, 12, 16, 0.88);
     --ui-focus: #8FB2FF;
+    --ui-accent-on-soft: #BFD2FF; /* texto sobre --ui-accent-soft (chip/aba ativos no escuro) */
 }
 
 /* ------------------------------------------------------------- page/base */
@@ -111,11 +112,11 @@ html.dark .ui-btn-primary { font-family: 'Chakra Petch', var(--ui-font-body); te
 /* ------------------------------------------------------------- chips/abas */
 .ui-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--ui-r-pill); border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-text); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
 :root:not(.dark) .ui-chip.is-on { background: var(--ui-holo); border-color: transparent; color: #1E1B26; font-weight: 600; }
-html.dark .ui-chip.is-on { border-color: #2A62F5; color: #BFD2FF; background: rgba(42, 98, 245, .14); }
+html.dark .ui-chip.is-on { border-color: var(--ui-accent); color: var(--ui-accent-on-soft); background: var(--ui-accent-soft); }
 .ui-toggle { display: flex; padding: 3px; gap: 2px; border-radius: var(--ui-r-pill); background: var(--ui-surface-2); }
 .ui-toggle > * { flex: 1; text-align: center; height: 34px; line-height: 34px; border-radius: var(--ui-r-pill); font-size: 13px; font-weight: 600; color: var(--ui-muted); cursor: pointer; }
 .ui-toggle > .is-on { background: var(--ui-surface); color: var(--ui-text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
-html.dark .ui-toggle > .is-on { background: #2A62F5; color: #fff; box-shadow: none; }
+html.dark .ui-toggle > .is-on { background: var(--ui-accent); color: #fff; box-shadow: none; }
 
 /* ------------------------------------------------------------- dados */
 .ui-seg { display: flex; gap: var(--ui-seg-gap); height: 6px; width: 100%; }
@@ -146,7 +147,7 @@ html.dark .ui-pc:hover::after, html.dark *:hover > .ui-pc::after { transform: tr
 .settings-tab.is-on { color: var(--ui-text); border-bottom-color: var(--ui-accent); }
 .settings-tab:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; border-radius: var(--ui-r-ctl); }
 .ui-nav-item.is-on { color: var(--ui-text); background: var(--ui-surface); box-shadow: var(--ui-shadow); }
-html.dark .ui-nav-item.is-on { background: rgba(42, 98, 245, .14); color: #BFD2FF; box-shadow: inset 2px 0 0 #2A62F5; }
+html.dark .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--ui-accent-on-soft); box-shadow: inset 2px 0 0 var(--ui-accent); }
 .ui-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
 .ui-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; font-size: 11px; font-weight: 600; color: var(--ui-muted); text-decoration: none; }
 .ui-tab.is-on { color: var(--ui-accent-text); }

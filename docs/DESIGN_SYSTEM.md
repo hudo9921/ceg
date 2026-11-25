@@ -273,3 +273,12 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
 - **Ferramentas da equipe:** todas numa linha `ui-well` ("Equipe do GOM") abaixo do hero, em vez de espalhadas.
 - **Home:** título "CEGs" + banner da plataforma → "Abrindo em breve" (`ui-rail`, contagem por card) → "Abertas agora" (busca, "Filtros" recolhidos, chips de grupo e um trilho por grupo com cards `ui-card` 16:10 e barra de reservas).
 - **Acessibilidade:** alvos de toque ≥ 44 px, `aria-pressed` nos chips e cards, `role="switch"` no interruptor, `role="timer"` nas contagens, rótulos em botões só com ícone.
+
+## Cor da marca do GOM (C4)
+
+- O GOM escolhe 1 de 6 cores prontas (`apps/goms/branding.py`); o padrão é a cor da plataforma.
+- Só vale em páginas de **um** GOM: página pública, CEG, caixa e o painel do GOM. Home, Vitrine geral e `/me/`
+  misturam GOMs e ficam com a cor da plataforma.
+- `components/_brand_style.html` redefine `--ui-accent`, `--ui-accent-text`, `--ui-accent-soft`, `--ui-focus`,
+  `--ui-accent-on-soft`, `--ui-seg-on` e, no escuro, `--ui-holo`. Componentes novos devem usar esses tokens
+  (nunca o hex do rosa/azul) para acompanhar a cor do GOM.

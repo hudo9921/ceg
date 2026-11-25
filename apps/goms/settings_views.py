@@ -198,6 +198,9 @@ def gom_settings(request, tab):
         messages.success(request, SAVED[tab])
         return redirect('gom_settings_tab', tab=tab)
     tabs = visible_tabs(request, current=tab)
+    if tab == 'perfil':
+        from .branding import swatches
+        extra['swatches'] = swatches()
     if tab == 'regras':
         extra.update(_regras_stats(gom))
     if tab == 'padroes':

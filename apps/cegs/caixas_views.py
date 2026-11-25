@@ -465,6 +465,7 @@ class CaixaDetailView(View):
                 ('frete', 'Frete internacional', participant_frete_pendente_total, participant_frete_pago_total, caixa.get_pix_key_frete()),
                 ('taxa', 'Taxa aduaneira', participant_taxa_pendente_total, participant_taxa_paga_total, caixa.get_pix_key_taxa()),
             ) if participant and (row[2] > 0 or row[3] > 0)],
+            'brand_gom': caixa.gom,  # cor da marca do GOM dono da caixa (C4)
         }
         return render(request, 'cegs/caixa_detail.html', context)
 
