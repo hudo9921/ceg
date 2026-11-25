@@ -215,6 +215,7 @@
 - **GOM dono visível:** `components/_gom_avatar.html` (logo ou inicial); "por {GOM}" nos cards da home (`_home_ceg_card.html`), na Vitrine (card e ficha com "Ver página") e no trilho "Abrindo em breve"; card "Organizado por" na CEG (`cegs/partials/_detail_gom_card.html`); links para a página do GOM na caixa e em Pagar.
 - **Lista pública de GOMs:** `goms/directory.html` (`/goms/`, `gom_directory`), no menu lateral ("GOMs") e no link "Quem organiza?" da home.
 - **CEG fixada na página pública:** `goms/partials/_public_destaque.html` (Configurações → Perfil → "O que aparece na sua página").
+- **Quadro de Envios:** `cegs/partials/_envios_board.html` + `_envios_board_card.html` (padrão em `/envios/`; colunas Pedidos → Em preparação → Enviados → Entregues, com a próxima ação; `?view=lista` mostra os cartões antigos e as métricas). Colunas montadas em `envios_views._envios_lanes`.
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).

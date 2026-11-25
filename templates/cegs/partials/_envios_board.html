@@ -1,0 +1,27 @@
+{% comment %}
+Quadro de Envios (P5, BackofficeV2): uma coluna por etapa (Pedidos → Em preparação → Enviados → Entregues), com a
+próxima ação em cada cartão. `lanes` vem de envios_views._envios_lanes. No celular as colunas rolam de lado.
+{% endcomment %}
+{% if not pacotes %}
+    {% include 'cegs/partials/_envios_grid.html' %}
+{% else %}
+<div class="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 xl:grid xl:grid-cols-4 xl:overflow-visible" role="list" aria-label="Pacotes por etapa">
+    {% for lane in lanes %}
+        <section class="snap-start flex-none w-[82vw] sm:w-[320px] xl:w-auto ui-well p-3 space-y-3 self-start" role="listitem" aria-labelledby="lane-{{ lane.status }}">
+            <header class="flex items-baseline justify-between gap-2 px-1">
+                <h2 id="lane-{{ lane.status }}" class="text-base font-bold">{{ lane.label }}</h2>
+                <span class="ui-mono text-sm font-bold">{{ lane.count }}</span>
+            </header>
+            <p class="ui-muted text-[13px] px-1 -mt-2">{{ lane.hint }}</p>
+            {% for pacote in lane.pacotes %}
+                {% include 'cegs/partials/_envios_board_card.html' %}
+            {% empty %}
+                <p class="ui-muted text-sm px-1 py-4 text-center">Nada aqui.</p>
+            {% endfor %}
+            {% if lane.hidden %}
+                <a href="?status={{ lane.status }}&view=lista" class="block text-center text-sm font-semibold text-ui-accent-text hover:underline py-1">Ver mais {{ lane.hidden }}</a>
+            {% endif %}
+        </section>
+    {% endfor %}
+</div>
+{% endif %}
