@@ -57,3 +57,30 @@ class Mensagem(models.Model):
 
     def __str__(self):
         return f'{self.get_autor_display()}: {self.texto[:40]}'
+
+
+class ReservaVitrine(models.Model):
+    """
+    Reserva de uma unidade da Vitrine por um joiner (S5b): substitui o "Tenho interesse" no WhatsApp.
+    O joiner paga pelo Pix em Pagar; o GOM cancela ou marca como pago na conversa da reserva. Nada é automático.
+    """
+
+    class Status(models.TextChoices):
+        RESERVADA = 'RESERVADA', 'Reservada (falta pagar)'
+        PAGA = 'PAGA', 'Paga'
+        CANCELADA = 'CANCELADA', 'Cancelada'
+
+    item = models.ForeignKey('cegs.ItemVitrine', on_delete=models.CASCADE, related_name='reservas')
+    participant = models.ForeignKey('participants.Participant', on_delete=models.CASCADE, related_name='reservas_vitrine')
+    preco = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.RESERVADA, db_index=True)
+    criada_em = models.DateTimeField(auto_now_add=True)
+    resolvida_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Reserva da Vitrine'
+        verbose_name_plural = 'Reservas da Vitrine'
+        ordering = ['-criada_em']
+
+    def __str__(self):
+        return f'{self.item} · {self.participant} · {self.get_status_display()}'

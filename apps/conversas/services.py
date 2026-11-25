@@ -44,6 +44,13 @@ def enviar(conversa, autor, texto, user=None):
     if len(texto) > MAX_TEXTO:
         raise ConversaError(f'Mensagem longa demais (máx. {MAX_TEXTO} caracteres).')
     msg = Mensagem.objects.create(conversa=conversa, autor=autor, texto=texto, autor_user=user)
+    # Aviso do sistema (ex.: reserva na Vitrine) conta como novidade para os dois lados.
+    if autor == Mensagem.Autor.SISTEMA:
+        Conversa.objects.filter(pk=conversa.pk).update(atualizada_em=timezone.now(), nao_lidas_gom=F('nao_lidas_gom') + 1,
+                                                        nao_lidas_joiner=F('nao_lidas_joiner') + 1)
+        conversa.refresh_from_db()
+        _avisar(conversa, Mensagem.Autor.JOINER, texto)
+        return msg
     other = 'nao_lidas_gom' if autor == Mensagem.Autor.JOINER else 'nao_lidas_joiner'
     era_zero = getattr(conversa, other) == 0
     Conversa.objects.filter(pk=conversa.pk).update(atualizada_em=timezone.now(), **{other: F(other) + 1})

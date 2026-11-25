@@ -98,7 +98,13 @@ def _pacote_lines(pacote, now):
                   pix=(pacote.pix_key_frete_nacional, pacote.pix_instructions_frete_nacional))]
 
 
-def build_charges(cegs_data, mercari_pending, pacotes, now=None):
+def _vitrine_lines(reserva, now):
+    item = reserva.item
+    return [_line(group=f'item:vitrine:{reserva.id}', kind='item', gom=item.gom, title=f'{item.titulo} (Vitrine)',
+                  amount=reserva.preco, due=None, now=now, pix=item.gom.pix_for('item'))]
+
+
+def build_charges(cegs_data, mercari_pending, pacotes, now=None, vitrine=()):
     """
     {'total', 'count', 'urgent_count', 'goms': [{'gom', 'total', 'count', 'lines': [...]}]}.
     `cegs_data`: valores do cegs_dict do MyClaimsView; `mercari_pending`: mercari_pendencias['items'].
@@ -111,6 +117,8 @@ def build_charges(cegs_data, mercari_pending, pacotes, now=None):
         lines += _mercari_lines(m, now)
     for p in pacotes:
         lines += _pacote_lines(p, now)
+    for r in vitrine:
+        lines += _vitrine_lines(r, now)
 
     groups = {}
     for line in lines:

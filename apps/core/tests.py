@@ -38,6 +38,7 @@ PARTICIPANT_ROUTES = {
     'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion', 'gom_rules_accept',
     'pix_gerar', 'pix_ver', 'pix_paguei', 'pix_cancelar', 'endereco_salvar', 'endereco_excluir', 'endereco_cep',
     'joiner_mensagens', 'joiner_mensagem_nova', 'joiner_mensagem_enviar', 'joiner_mensagens_novas',
+    'vitrine_reservar', 'joiner_reserva_cancelar',
 }
 LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
 LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')
@@ -115,7 +116,7 @@ class RouteFixtures:
             'slot_id': self.slot.id, 'set_id': self.cset.id, 'item_def_id': self.item_def.id,
             'item_id': self.item_individual.id, 'ceg_id': self.ceg.id,
             'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido', 'tab': 'perfil', 'ref': 'VC-XXXXX',
-            'participant_id': self.joiner.id, 'endereco_id': 1, 'cep': '01001000', 'conversa_id': 1,
+            'participant_id': self.joiner.id, 'endereco_id': 1, 'cep': '01001000', 'conversa_id': 1, 'reserva_id': 1, 'acao': 'paga',
         }[name]
 
     def _build(self, route):

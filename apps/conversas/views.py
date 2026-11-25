@@ -31,8 +31,12 @@ def _alvo(gom, tipo, alvo_id):
 
 
 def _page(request, conversas, cur, lado, template, extra=None):
+    extra = dict(extra or {})
     if cur is not None:
         services.marcar_lida(cur, lado)
+        if cur.tipo == Conversa.Tipo.VITRINE and cur.item_vitrine_id:
+            from .models import ReservaVitrine
+            extra['reservas'] = list(ReservaVitrine.objects.filter(item_id=cur.item_vitrine_id, participant=cur.participant))
     return render(request, template, {'conversas': conversas, 'cur': cur, 'lado': lado,
                                       'msgs': services.mensagens_json(cur, lado=lado) if cur else [], **(extra or {})})
 
@@ -144,3 +148,52 @@ def gom_novas(request, conversa_id):
     conversa = get_object_or_404(Conversa.objects.for_gom(request.active_gom), pk=conversa_id)
     services.marcar_lida(conversa, 'gom')
     return JsonResponse({'mensagens': services.mensagens_json(conversa, int(request.GET.get('depois') or 0), 'gom')})
+
+
+# ----------------------------------------------------------------------------------------------- Vitrine (S5b)
+@require_POST
+def vitrine_reservar(request, slug):
+    from apps.cegs.models import ItemVitrine
+
+    from .reservas import ReservaError, reservar
+    participant, deny = _joiner(request)
+    if deny:
+        return deny
+    item = get_object_or_404(ItemVitrine.objects.select_related('gom'), slug=slug)
+    try:
+        _reserva, conversa = reservar(item, participant)
+    except ReservaError as exc:
+        messages.error(request, str(exc))
+        return redirect('vitrine_list')
+    messages.success(request, f'Reservado! Pague em Pagar (Pix com o valor exato) ou combine aqui com {item.gom.name}.')
+    return redirect(f"{reverse('joiner_mensagens')}?c={conversa.id}")
+
+
+@require_POST
+def joiner_reserva_cancelar(request, reserva_id):
+    from .models import ReservaVitrine
+    from .reservas import ReservaError, cancelar
+    participant, deny = _joiner(request)
+    if deny:
+        return deny
+    reserva = get_object_or_404(ReservaVitrine.objects.select_related('item__gom'), pk=reserva_id, participant=participant)
+    try:
+        cancelar(reserva, por='joiner')
+    except ReservaError as exc:
+        messages.error(request, str(exc))
+    return redirect(request.POST.get('next') or 'joiner_mensagens')
+
+
+@staff_required('vitrine.reservar')
+@require_POST
+def gom_reserva_acao(request, reserva_id, acao):
+    from .models import ReservaVitrine
+    from .reservas import ReservaError, cancelar, marcar_paga
+    reserva = get_object_or_404(ReservaVitrine.objects.select_related('item__gom', 'participant'),
+                                pk=reserva_id, item__gom=request.active_gom)
+    try:
+        (marcar_paga if acao == 'paga' else cancelar)(reserva)
+    except ReservaError as exc:
+        messages.error(request, str(exc))
+    conversa = services.abrir(reserva.participant, request.active_gom, Conversa.Tipo.VITRINE, reserva.item)
+    return redirect(f"{reverse('gom_mensagens')}?c={conversa.id}")
