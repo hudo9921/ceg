@@ -2,7 +2,7 @@
 Photocard de uma vaga (DESIGN_SYSTEM §7.7). Tocar no card (ou no botão) põe/tira da lista; vaga tomada fica cinza
 com carimbo. Equipe: caixa de seleção em lote, editar, histórico e marcação de pagamentos (_detail_slot_payment_status).
 {% endcomment %}
-<div class="ui-pick"
+<div class="ui-pick" data-item-def="{{ slot.item_definition_id }}" data-slot-status="{{ slot.status }}"
      x-show="!onlyAvailableSlots || status === 'AVAILABLE'"
      x-data="{
              slotId: {{ slot.id }},

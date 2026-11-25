@@ -1,0 +1,16 @@
+{% comment %}Item à pronta entrega (Vitrine) na loja do GOM. Abre a ficha do item na Vitrine (?item=<slug>).{% endcomment %}
+<a href="{% url 'vitrine_list' %}?item={{ item.slug }}" class="ui-pick is-free no-underline text-ui-text">
+    <span class="ui-pc block">
+        {% if item.display_image_url %}
+            <img src="{{ item.display_image_url|thumb }}" data-full="{{ item.display_image_url }}" alt="{{ item.titulo }}" loading="lazy" decoding="async">
+        {% else %}
+            <span class="ui-pc-empty font-bold px-2 text-center">{{ item.titulo }}</span>
+        {% endif %}
+        {% if item.destaque %}<span class="ui-tag absolute top-2 left-2 z-[2]">Destaque</span>{% endif %}
+    </span>
+    <span class="block px-1 space-y-0.5">
+        <span class="block text-[15px] font-bold leading-snug line-clamp-2">{{ item.titulo }}</span>
+        <span class="block ui-mono font-bold">R$ {{ item.preco|floatformat:2 }}</span>
+        {% if item.group %}<span class="block ui-label truncate">{{ item.group.name }}{% if item.era %} · {{ item.era.name }}{% endif %}</span>{% endif %}
+    </span>
+</a>

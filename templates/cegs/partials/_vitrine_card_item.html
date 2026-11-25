@@ -2,7 +2,7 @@
 Card de um item da Vitrine (P4). Tocar abre a ficha (_vitrine_modal_detail). Os data-* alimentam a filtragem e a
 ordenação no navegador (vitrineMethods). A equipe do GOM dono vê editar e vender/disponibilizar.
 {% endcomment %}
-<div class="product-card ui-pick flex flex-col"
+<div class="product-card ui-pick flex flex-col" id="vitrine-{{ item.slug }}"
      data-price="{{ item.preco }}" data-date="{{ item.created_at|date:'U' }}" data-destaque="{% if item.destaque %}1{% else %}0{% endif %}"
      data-title="{{ item.titulo }}" data-group-id="{{ item.group_id|default:'' }}" data-era-id="{{ item.era_id|default:'' }}"
      data-member="{{ item.integrante|default:'' }}" data-tipo-id="{{ item.tipo_item_id|default:'' }}"

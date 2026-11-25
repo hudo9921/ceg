@@ -1,0 +1,20 @@
+{% comment %}
+Link para um item da CEG (?item=<id da definição>, usado pela loja do GOM): rola até a primeira vaga livre desse item
+e a destaca por alguns segundos. Não seleciona nada: a escolha continua com o joiner.
+{% endcomment %}
+<script>
+(function () {
+    const id = new URLSearchParams(window.location.search).get('item');
+    if (!id || !/^\d+$/.test(id)) return;
+    function destacar() {
+        const cards = document.querySelectorAll('[data-item-def="' + id + '"]');
+        const alvo = Array.from(cards).find((el) => el.dataset.slotStatus === 'AVAILABLE') || cards[0];
+        if (!alvo) return;
+        alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alvo.style.outline = '2px solid var(--ui-accent)';
+        alvo.style.outlineOffset = '2px';
+        setTimeout(() => { alvo.style.outline = ''; alvo.style.outlineOffset = ''; }, 4000);
+    }
+    window.addEventListener('load', () => setTimeout(destacar, 150));
+})();
+</script>

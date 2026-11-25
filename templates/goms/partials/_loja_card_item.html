@@ -1,0 +1,22 @@
+{% comment %}
+Item com vaga livre como produto (vista "Itens"). Abre a CEG já rolada até a primeira vaga livre do item (?item=).
+`it` vem de apps/goms/loja.py:listar_itens (dict).
+{% endcomment %}
+<a href="{% url 'ceg_detail' it.set__ceg__slug %}?item={{ it.item_definition_id }}" class="ui-pick is-free no-underline text-ui-text">
+    <span class="ui-pc block">
+        {% if it.foto %}
+            <img src="{{ it.foto|thumb }}" data-full="{{ it.foto }}" alt="{{ it.titulo }}" loading="lazy" decoding="async">
+        {% else %}
+            <span class="ui-pc-empty font-bold px-2 text-center">{{ it.titulo }}</span>
+        {% endif %}
+        <span class="ui-tag absolute top-2 right-2 z-[2]"><span class="ui-mono">{{ it.vagas }}</span> livre{{ it.vagas|pluralize }}</span>
+    </span>
+    <span class="block px-1 space-y-0.5">
+        <span class="block text-[15px] font-bold leading-snug line-clamp-1">{{ it.titulo }}</span>
+        {% if it.item_definition__member_name and it.item_definition__name != it.item_definition__member_name %}
+            <span class="block text-[13px] ui-muted line-clamp-1">{{ it.item_definition__name }}</span>
+        {% endif %}
+        <span class="block ui-mono font-bold">R$ {{ it.preco|floatformat:2 }}</span>
+        <span class="block ui-label truncate" title="{{ it.set__ceg__title }}">{{ it.set__ceg__era__group__name }} · {{ it.set__ceg__title }}</span>
+    </span>
+</a>

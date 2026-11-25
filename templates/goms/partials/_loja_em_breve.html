@@ -1,0 +1,22 @@
+{% comment %}"Abrindo em breve" da página do GOM: trilho horizontal com as CEGs agendadas (até 12).{% endcomment %}
+<section class="space-y-2" aria-labelledby="loja-breve-title">
+    <h2 id="loja-breve-title" class="ui-disp text-xl flex items-center gap-2">
+        <i data-lucide="calendar-clock" class="w-5 h-5" stroke-width="1.75"></i>Abrindo em breve
+    </h2>
+    <div class="ui-rail-track">
+        {% for ceg in agendadas %}
+            <a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-lift overflow-hidden w-[240px] no-underline text-ui-text">
+                {% if ceg.display_image_url %}
+                    <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt="" loading="lazy" decoding="async" class="w-full aspect-[16/9] object-cover">
+                {% else %}
+                    <span class="block w-full aspect-[16/9]" style="background: var(--ui-holo)"></span>
+                {% endif %}
+                <span class="block p-3 space-y-1">
+                    <span class="block ui-label truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</span>
+                    <span class="block text-[15px] font-bold leading-snug line-clamp-2">{{ ceg.title }}</span>
+                    <span class="ui-status ui-warn">Abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}</span>
+                </span>
+            </a>
+        {% endfor %}
+    </div>
+</section>

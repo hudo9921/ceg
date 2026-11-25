@@ -238,33 +238,35 @@ def platform_goms(request):
 
 
 def gom_public_page(request, slug):
-    """Página pública do GOM (/gom/<slug>/): perfil, CEGs abertas/agendadas e pronta entrega."""
-    from django.db.models import Q
+    """Página pública do GOM (/gom/<slug>/): perfil e loja com busca, filtros e paginação (apps/goms/loja.py)."""
     from django.utils import timezone
 
-    from apps.cegs.models import CEG, ItemVitrine
+    from apps.cegs.models import CEG
     from apps.cegs.services import enrich_cegs_with_availability
 
-    gom = get_object_or_404(Gom, slug=slug, is_active=True)
-    now = timezone.now()
-    base = CEG.objects.for_gom(gom).select_related('era__group')
-    abertas = list(base.filter(Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now))
-                   .order_by('-created_at'))
-    agendadas = list(base.filter(status=CEG.Status.SCHEDULED, opens_at__gt=now).order_by('opens_at'))
-    # Opções da página (Configurações → Perfil): CEG fixada no topo e seções visíveis.
-    destaque = next((c for c in abertas + agendadas if c.id == gom.pagina_ceg_destaque_id), None)
-    if destaque is not None:
-        abertas = [c for c in abertas if c.id != destaque.id]
-        agendadas = [c for c in agendadas if c.id != destaque.id]
-    if not gom.pagina_mostrar_agendadas:
-        agendadas = []
-    enrich_cegs_with_availability(abertas + agendadas + ([destaque] if destaque else []))
-    vitrine = list(ItemVitrine.objects.for_gom(gom).filter(status=ItemVitrine.Status.DISPONIVEL)
-                   .order_by('-destaque', '-created_at')[:12]) if gom.pagina_mostrar_vitrine else []
+    from .loja import contexto_loja
     from .rules import rules_context
 
+    gom = get_object_or_404(Gom, slug=slug, is_active=True)
+    loja = contexto_loja(gom, request.GET)
+    parcial = request.GET.get('parcial')
+    if parcial:
+        # Troca de filtro sem recarregar a página (corpo da loja) e "Carregar mais" (só os novos cards).
+        modelo = 'goms/partials/_loja_cards.html' if parcial == 'mais' else 'goms/partials/_loja_corpo.html'
+        return render(request, modelo, {'gom': gom, **loja})
+
+    now = timezone.now()
+    agendadas = []
+    if gom.pagina_mostrar_agendadas:
+        agendadas = list(CEG.objects.for_gom(gom).filter(status=CEG.Status.SCHEDULED, opens_at__gt=now)
+                         .select_related('era__group').order_by('opens_at')[:12])
+    destaque = None
+    if gom.pagina_ceg_destaque_id and not loja['f'].ativos and loja['f'].aba == 'cegs':
+        destaque = (CEG.objects.for_gom(gom).select_related('era__group')
+                    .filter(pk=gom.pagina_ceg_destaque_id, status__in=[CEG.Status.OPEN, CEG.Status.SCHEDULED]).first())
+    enrich_cegs_with_availability(agendadas + ([destaque] if destaque else []))
     return render(request, 'goms/public_page.html', {
-        'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine, 'brand_gom': gom, 'destaque': destaque,
+        'gom': gom, 'agendadas': agendadas, 'destaque': destaque, 'brand_gom': gom, **loja,
         **rules_context(request, gom),
     })
 
