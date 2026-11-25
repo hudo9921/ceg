@@ -24,7 +24,7 @@ Mais de uma chave Pix na seleção = mais de um Pix (abas). O QR vem do servidor
             <div class="space-y-4">
                 <div x-show="!done[cur().ref]">
                     <div class="space-y-4">
-                        <img :src="cur().qr" :alt="'QR code do Pix ' + cur().ref" class="w-56 h-56 mx-auto p-2 bg-white rounded-xl">
+                        <img :src="cur().qr" :alt="'QR code do Pix ' + cur().ref" class="w-56 h-56 mx-auto p-2 keep-white rounded-xl">
                         <div class="text-center">
                             <p class="ui-mono text-3xl font-bold" x-text="'R$ ' + brl(cur().total)"></p>
                             <p class="ui-muted text-sm">para a chave (<span x-text="cur().key_label"></span>) <b class="ui-mono" x-text="cur().key"></b></p>
