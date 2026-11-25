@@ -598,8 +598,8 @@ class EnviosNacionaisTests(TestCase):
         self.assertEqual(stats['total_pago_historico'], 174.50)
 
         # Confirma presença no HTML renderizado
-        self.assertContains(resp, 'Quanto Deve Atualmente')
-        self.assertContains(resp, 'Quanto Já Pagou Historicamente')
+        self.assertContains(resp, 'A receber')
+        self.assertContains(resp, 'Já pago')
         self.assertContains(resp, 'R$ 65,00')
         self.assertContains(resp, 'R$ 174,50')
 

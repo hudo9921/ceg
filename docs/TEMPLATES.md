@@ -174,9 +174,8 @@
 
 ### 2.8. Logística Nacional & Consulta Joiner
 - **Consulta Joiner 360º (`consulta_joiner.html` — 49 linhas):**
-  - `_joiner_selector.html`: Busca e seletor com autocomplete de participantes.
-  - `_joiner_participant_card.html`: Perfil completo do joiner (WhatsApp, arrobas, endereço).
-  - `_joiner_financial_panel.html`: Balanço financeiro (Pago vs Pendente em Itens, Frete e Taxa).
+  - `_joiner_selector.html`: Uma caixa de busca com sugestões na hora; sem joiner escolhido, atalhos para quem tem itens para empacotar.
+  - `_joiner_summary.html`: Resumo 360º (P5): quem é, WhatsApp, "Empacotar prontos (N)" (`packReady()`), 4 números (a receber, já pago, prontos, enviados) e as etapas como filtro (`joiner_stage_chips`).
   - `_joiner_items_table.html`: Tabela completa de itens com botões rápidos de quitação de pagamento.
   - `_joiner_packages_section.html`: Histórico de envios e pacotes nacionais gerados.
 - **Central de Envios Nacionais (`envios_nacionais.html` — 30 linhas):**
