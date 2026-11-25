@@ -1,6 +1,6 @@
 # Tudo no site — Plano (sem Google Forms e sem WhatsApp)
 
-> Status: **planejado** (2026-11-25). Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
+> Status: **S1 entregue** (2026-11-25); próximo: S2 (endereços). Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
 > confirmação do GOM); login com **Google, passkey e código por e-mail**; **uma conta só** para joiner e equipe.
 > Primeiro passo: protótipo de Pagar → Gerar Pix → QR e da fila "Recebi" do GOM (board **PagamentosV2** do canvas).
 
@@ -14,7 +14,12 @@
 | Avisos pelo bot (set cancelado, enquete) e o C5 planejado | Notificações no site + push no navegador | S4 |
 | "Tenho interesse" da Vitrine e "combina a retirada" | Mensagens por pedido/pacote + "Reservar" na Vitrine | S5 |
 
-## 2. S1 — Cobranças com Pix (modelo A)
+## 2. S1 — Cobranças com Pix (modelo A) ✅
+Feito: app `apps/pagamentos` (`Cobranca`, `CobrancaLinha`, `Comprovante`; `pix.py` com BR Code + CRC16 conferido no
+exemplo do BC e validação de chave; `services.py`; telas do joiner em `joiner_views.py` e do GOM em `gom_views.py`).
+Linha com chave em texto livre continua com "Copiar Pix"; Pix esquecido por 7 dias expira sozinho ao recarregar.
+QR vai como `data:image/svg+xml` em `<img>` (sem `|safe`). O QR usa a biblioteca `qrcode` (já no projeto).
+
 
 **Não há confirmação automática no modelo A:** só o banco sabe que o Pix caiu. O site gera o Pix certo (valor e
 referência) e o GOM confirma com um toque. Confirmação automática (conta do próprio GOM num provedor, com taxa
@@ -37,7 +42,15 @@ referência) e o GOM confirma com um toque. Confirmação automática (conta do 
 - **Recebi** (permissão `pag.confirmar`): marca todas as linhas como pagas, registra na auditoria e avisa o joiner.
   **Não recebi**: volta para Aguardando com um recado.
 - Cobrança aguardando há mais de 7 dias sem "Já paguei" é cancelada sozinha e as linhas voltam a ficar livres.
-- Comprovante é **opcional** (imagem/PDF até 5 MB), visto só pela equipe do GOM.
+- Comprovante é **opcional** (imagem ou PDF), visto só pela equipe do GOM. Fica **no banco de dados** (imagem
+  comprimida; PDF até 2 MB), servido por uma view com permissão: a mídia pública (R2) não serve para dado financeiro.
+  Apagado 90 dias depois da confirmação (`purge_personal_data`).
+
+### Joiners que ainda não usam o site (decisão de 2026-11-25)
+- O GOM continua trabalhando com quem não entra no site. Na Consulta 360° e na fila de Pagamentos, **Cobrar no
+  WhatsApp** gera a cobrança em nome do joiner e abre o WhatsApp **do próprio GOM** (link `wa.me`, sem bot) com a
+  mensagem pronta: o que deve, o total e o Pix copia e cola do valor exato. A cobrança entra na fila e o GOM confirma
+  com **Recebi** quando o dinheiro cai. Marcar pago à mão (chips Item/Inter/Taxa) continua existindo.
 
 ### Telas
 - **Joiner, Pagar:** por GOM, caixas de seleção em cada cobrança → total → **Gerar Pix** → folha com QR, "copia e cola",
@@ -60,9 +73,10 @@ referência) e o GOM confirma com um toque. Confirmação automática (conta do 
 - Equipe do GOM: segundo fator obrigatório (passkey ou app autenticador), como o 2FA de hoje.
 - Biblioteca: `django-allauth` (Google, login por código e passkeys), tudo no nosso servidor.
 - **Telefone vira opcional** (contato), não identidade.
-- **Transição dos joiners atuais** (identificados pelo WhatsApp): por um período curto, o código no WhatsApp continua
-  funcionando só para entrar uma vez e **vincular** Google, passkey ou e-mail. Depois, o login por WhatsApp é desligado
-  e o bot sai da plataforma.
+- **Transição dos joiners atuais** (identificados pelo WhatsApp): o código no WhatsApp **continua como opção de
+  login** durante a transição; quem entra por ele é convidado a vincular e-mail (ou Google/passkey). Só quando a maioria
+  tiver migrado o login por WhatsApp é desligado e o bot sai da plataforma.
+- O WhatsApp do joiner continua guardado como contato: o GOM precisa dele para o **Cobrar no WhatsApp**.
 
 ## 5. S4 — Notificações sem WhatsApp
 - Central de avisos do site (já existe) para tudo o que hoje vai pelo bot e para os eventos do C5 (cobrança lançada,

@@ -216,6 +216,8 @@
 - **CEG fixada na página pública:** `goms/partials/_public_destaque.html` (Configurações → Perfil → "O que aparece na sua página").
 - **Quadro de Envios:** `cegs/partials/_envios_board.html` + `_envios_board_card.html` (padrão em `/envios/`; colunas Pedidos → Em preparação → Enviados → Entregues, com a próxima ação; `?view=lista` mostra os cartões antigos e as métricas). Colunas montadas em `envios_views._envios_lanes`.
 - **Nova CEG em 3 passos:** `cegs/partials/_creations_modal_ceg.html` com o componente `cegWizard()` (`_creations_ceg_wizard_script.html`, aninhado no `creationsHubApp`): 1. Grupo e era (`_creations_modal_ceg_info` seção 1) · 2. Itens e sets (`_creations_modal_ceg_items` + `_creations_modal_ceg_sets`) · 3. Abertura, prazos e Pix (seção 2 do info + `_creations_modal_ceg_logistics`). Tudo no mesmo `<form>`; Continuar confere era/título e ao menos um item; Enter não publica antes do passo 3.
+- **Pagar com Pix (joiner):** `participants/partials/_pagar_gom.html` (seleção por linha), `_pagar_pix_andamento.html`, `_pagar_pix_sheet.html` (QR, copia e cola, Já paguei) e `_pagar_pix_script.html` (componente `pixPay`).
+- **Pagamentos (GOM):** `pagamentos/fila.html` + `pagamentos/partials/_fila_lista.html` e `_fila_detalhe.html` (Recebi / Não recebi, comprovante); `pagamentos/cobrar.html` + `_cobrar_pix.html` (Cobrar no WhatsApp).
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).

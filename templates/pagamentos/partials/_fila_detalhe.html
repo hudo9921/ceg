@@ -1,0 +1,43 @@
+{% comment %}Detalhe de um Pix na fila: o que paga, comprovante e Recebi / Não recebi (cur).{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="pix-cur-title">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+            <h2 id="pix-cur-title" class="ui-disp text-2xl truncate">{{ cur.participant.display_name }}</h2>
+            <p class="ui-muted text-sm ui-mono">{{ cur.referencia }} · chave {{ cur.chave_pix }}</p>
+            <p class="ui-muted text-sm">Gerado {{ cur.criada_em|date:"d/m \à\s H:i" }}{% if cur.criada_por %} pela equipe{% endif %}{% if cur.informada_em %} · avisou que pagou {{ cur.informada_em|date:"d/m \à\s H:i" }}{% endif %}</p>
+        </div>
+        <b class="ui-mono text-3xl">R$ {{ cur.valor_total|floatformat:2 }}</b>
+    </div>
+
+    <ul class="ui-well p-4 space-y-1.5 text-sm">
+        {% for ln in cur.linhas.all %}<li class="flex justify-between gap-3"><span>{{ ln.descricao }}</span><span class="ui-mono">R$ {{ ln.valor|floatformat:2 }}</span></li>{% endfor %}
+    </ul>
+
+    {% if cur.comprovante %}
+        <a href="{% url 'pix_comprovante' cur.referencia %}" target="_blank" rel="noopener" class="ui-well p-3 flex items-center gap-3 no-underline text-ui-text">
+            <i data-lucide="receipt" class="w-5 h-5" stroke-width="1.75"></i>
+            <span class="flex-1 text-sm">Comprovante enviado pelo joiner</span>
+            <span class="text-sm font-semibold text-ui-accent-text">Abrir</span>
+        </a>
+    {% endif %}
+    {% if cur.status == 'RECUSADA' and cur.recado %}<p class="text-sm"><span class="ui-status ui-danger">Não recebido</span> · {{ cur.recado }}</p>{% endif %}
+
+    {% if cur.is_open %}
+        <form method="post" class="space-y-3">
+            {% csrf_token %}
+            <input type="hidden" name="ref" value="{{ cur.referencia }}">
+            <button type="submit" name="action" value="recebi" class="ui-btn ui-btn-primary w-full">Recebi R$ {{ cur.valor_total|floatformat:2 }}</button>
+            <details class="ui-well p-3">
+                <summary class="cursor-pointer text-sm font-semibold">Não recebi</summary>
+                <div class="mt-3 space-y-2">
+                    <input type="text" name="recado" maxlength="255" class="ui-input w-full" placeholder="Recado para o joiner (opcional), ex.: não caiu, confere o valor">
+                    <button type="submit" name="action" value="nao_recebi" class="ui-btn ui-btn-ghost ui-btn-sm">Marcar como não recebido</button>
+                </div>
+            </details>
+        </form>
+        <a href="{% url 'pix_cobrar' cur.participant_id %}" class="text-sm font-semibold text-ui-accent-text hover:underline">Cobrar no WhatsApp</a>
+    {% else %}
+        <p class="ui-status ui-ok">Recebido {{ cur.resolvida_em|date:"d/m \à\s H:i" }}{% if cur.resolvida_por %} por {{ cur.resolvida_por.get_username }}{% endif %}</p>
+    {% endif %}
+    <p class="ui-muted text-[13px]">Recebi marca as {{ cur.linhas.count }} cobrança{{ cur.linhas.count|pluralize }} como paga{{ cur.linhas.count|pluralize }}, registra na Auditoria e avisa o joiner.</p>
+</section>

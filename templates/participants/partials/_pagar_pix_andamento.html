@@ -1,0 +1,19 @@
+{% comment %}Pix em andamento deste GOM (cobranças abertas): rever o QR, avisar que pagou ou cancelar.{% endcomment %}
+<div class="px-4 sm:px-5 pb-4 space-y-2" aria-label="Pix em andamento">
+    <p class="ui-label">Pix em andamento</p>
+    {% for cob in group.cobrancas %}
+        <div class="ui-well p-3 flex flex-wrap items-center gap-3">
+            <span class="flex-1 min-w-[180px]">
+                <span class="block ui-mono font-bold">R$ {{ cob.valor_total|floatformat:2 }} <span class="ui-muted font-normal text-[13px]">· {{ cob.referencia }}</span></span>
+                <span class="ui-status {% if cob.status == 'INFORMADA' %}ui-warn{% elif cob.status == 'RECUSADA' %}ui-danger{% else %}ui-muted{% endif %} !text-[13px]">
+                    {% if cob.status == 'INFORMADA' %}Você avisou que pagou · {{ group.gom.name }} vai conferir{% elif cob.status == 'RECUSADA' %}{{ group.gom.name }} não encontrou este Pix{% else %}Pix gerado, falta pagar{% endif %}
+                </span>
+                {% if cob.status == 'RECUSADA' and cob.recado %}<span class="block ui-muted text-[13px]">Recado: {{ cob.recado }}</span>{% endif %}
+            </span>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="abrir('{{ cob.referencia }}')">{% if cob.status == 'INFORMADA' %}Ver Pix{% else %}Pagar este Pix{% endif %}</button>
+            {% if cob.status != 'INFORMADA' %}
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm ui-danger" @click="cancelar('{{ cob.referencia }}')">Cancelar</button>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>

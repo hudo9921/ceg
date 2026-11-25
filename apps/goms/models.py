@@ -39,6 +39,10 @@ class Gom(models.Model):
     default_pix_key = models.CharField('Chave Pix padrão — itens', max_length=255, blank=True,
                                        help_text='Pagamento dos itens das CEGs sem chave própria.')
     default_pix_instructions = models.TextField('Instruções — itens', blank=True)
+    # Pix com QR (S1): o código do Pix leva o nome de quem recebe e a cidade.
+    pix_nome_recebedor = models.CharField('Nome de quem recebe', max_length=60, blank=True,
+                                          help_text='Como aparece no banco do joiner (até 25 letras).')
+    pix_cidade = models.CharField('Cidade', max_length=40, blank=True)
     default_pix_key_frete = models.CharField('Chave Pix padrão — frete internacional', max_length=255, blank=True)
     default_pix_instructions_frete = models.TextField('Instruções — frete internacional', blank=True)
     default_pix_key_taxa = models.CharField('Chave Pix padrão — taxa aduaneira', max_length=255, blank=True)

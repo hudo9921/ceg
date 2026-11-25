@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'apps.analytics',
     'apps.core',
     'apps.goms',
+    'apps.pagamentos',
 ]
 
 MIDDLEWARE = [

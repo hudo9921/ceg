@@ -32,7 +32,8 @@ class GomProfileForm(forms.ModelForm):
                   'default_pix_key', 'default_pix_instructions',
                   'default_pix_key_frete', 'default_pix_instructions_frete',
                   'default_pix_key_taxa', 'default_pix_instructions_taxa',
-                  'default_pix_key_frete_nacional', 'default_pix_instructions_frete_nacional']
+                  'default_pix_key_frete_nacional', 'default_pix_instructions_frete_nacional',
+                  'pix_nome_recebedor', 'pix_cidade']
         widgets = {'bio': forms.Textarea(attrs={'rows': 3}),
                    **{f'default_pix_instructions{s}': forms.Textarea(attrs={'rows': 2})
                       for s in ('', '_frete', '_taxa', '_frete_nacional')}}
@@ -43,12 +44,25 @@ class GomProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Permissões do admin (apps.goms.permissions): campos sem permissão nem entram no form.
         for name in list(self.fields):
-            is_pix = name.startswith('default_pix_')
+            is_pix = name.startswith('default_pix_') or name.startswith('pix_')
             if (is_pix and not can_edit_pix) or (not is_pix and not can_edit_profile):
                 del self.fields[name]
         if 'cor_marca' in self.fields:
             self.fields['cor_marca'].required = False  # sem a cor no POST, mantém a atual
         _style(self)
+
+    def clean(self):
+        """Chaves Pix precisam ser só a chave (o QR do Pix não funciona com texto livre)."""
+        from apps.pagamentos.pix import normalize_key
+
+        data = super().clean()
+        for suffix in ('', '_frete', '_taxa', '_frete_nacional'):
+            name = f'default_pix_key{suffix}'
+            value = (data.get(name) or '').strip()
+            if name in self.fields and value and normalize_key(value)[0] is None:
+                self.add_error(name, 'Isso não parece uma chave Pix. Use só a chave (CPF, CNPJ, e-mail, celular com DDD '
+                                     'ou chave aleatória); explicações vão em Instruções.')
+        return data
 
     def clean_cor_marca(self):
         return self.cleaned_data.get('cor_marca') or self.instance.cor_marca or 'padrao'
