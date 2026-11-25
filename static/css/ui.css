@@ -118,7 +118,7 @@ html.dark .ui-btn-primary { font-family: 'Chakra Petch', var(--ui-font-body); te
 
 /* ------------------------------------------------------------- chips/abas */
 .ui-chip { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--ui-r-pill); border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-text); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
-:root:not(.dark) .ui-chip.is-on { background: var(--ui-holo); border-color: transparent; color: #1E1B26; font-weight: 600; }
+:root:not(.dark) .ui-chip.is-on { background: var(--ui-accent-soft); border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent); color: var(--ui-accent-text); font-weight: 700; }
 html.dark .ui-chip.is-on { border-color: var(--ui-accent); color: var(--ui-accent-on-soft); background: var(--ui-accent-soft); }
 .ui-toggle { display: flex; padding: 3px; gap: 2px; border-radius: var(--ui-r-pill); background: var(--ui-surface-2); }
 .ui-toggle > * { flex: 1; text-align: center; height: 34px; line-height: 34px; border-radius: var(--ui-r-pill); font-size: 13px; font-weight: 600; color: var(--ui-muted); cursor: pointer; }
