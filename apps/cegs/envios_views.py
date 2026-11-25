@@ -391,6 +391,12 @@ class ConsultaJoinerView(StaffRequiredMixin, View):
             'caixas_list': caixas_list,
             'stats': stats,
             'search_q': q,
+            # Etapas do resumo do joiner (filtro `filterPacote` + contador em statsData).
+            'joiner_stage_chips': [
+                ('ALL', 'Todos', 'total_items'), ('READY_TO_PACK', 'Prontos', 'ready_to_pack_count'),
+                ('UNPACKED', 'Sem pacote', 'unpacked_count'), ('PACKED', 'Embalando', 'packed_count'),
+                ('ENVIADO', 'Enviados', 'enviados_count'), ('ENTREGUE', 'Entregues', 'entregues_count'),
+            ],
         })
 
 

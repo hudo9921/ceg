@@ -38,6 +38,14 @@ window.joinerModalMethods = {
         this.searchQuery = '';
     },
 
+    packReady() {
+        // "Empacotar prontos": mostra só os prontos, seleciona todos e abre o empacotamento.
+        this.resetFilters();
+        this.filterPacote = 'READY_TO_PACK';
+        this.selectedUids = this.items.filter(it => it.pode_empacotar).map(it => it.uid);
+        this.openPackagingModal();
+    },
+
     openPackagingModal() {
         if (!this.selectedUids.length) return;
         this.packagingModalOpen = true;

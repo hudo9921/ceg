@@ -1,0 +1,58 @@
+{% comment %}
+Resumo do joiner na Consulta 360° (P5, BackofficeV2): quem é, ações (WhatsApp, Empacotar prontos), 4 números e as
+etapas como filtro. Os números vêm de `statsData` (recalculados ao marcar pagamentos: _joiner_app_payments.html).
+{% endcomment %}
+<section class="ui-card p-5 sm:p-6 space-y-5" aria-labelledby="joiner-name">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0 space-y-1">
+            <h2 id="joiner-name" class="ui-disp text-3xl">{{ selected_participant.name }}</h2>
+            <p class="ui-muted text-sm flex flex-wrap gap-x-2 gap-y-1">
+                {% if selected_participant.username %}<span>@{{ selected_participant.username }}</span><span aria-hidden="true">·</span>{% endif %}
+                <span class="ui-mono">{{ selected_participant.formatted_phone }}</span>
+                {% if selected_participant.social_handle %}<span aria-hidden="true">·</span><span>{{ selected_participant.social_handle }}</span>{% endif %}
+                <span aria-hidden="true">·</span><span><span x-text="statsData.total_items">{{ stats.total_items }}</span> itens</span>
+                <span aria-hidden="true">·</span><span>desde {{ selected_participant.created_at|date:"m/Y" }}</span>
+            </p>
+            {% if selected_participant.notes %}<p class="ui-well p-3 text-sm mt-2 whitespace-pre-line"><b>Anotações:</b> {{ selected_participant.notes }}</p>{% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="https://wa.me/{{ selected_participant.whatsapp }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost ui-btn-sm">
+                <i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i>WhatsApp</a>
+            <button type="button" class="ui-btn ui-btn-primary ui-btn-sm" :disabled="!statsData.ready_to_pack_count" @click="packReady()">
+                <i data-lucide="package" class="w-4 h-4" stroke-width="1.75"></i>
+                <span x-text="'Empacotar prontos (' + (statsData.ready_to_pack_count || 0) + ')'">Empacotar prontos</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="ui-well p-3.5 space-y-1">
+            <p class="ui-label">A receber</p>
+            <p class="ui-mono text-2xl font-bold" :class="statsData.total_devido > 0 ? 'ui-warn' : 'ui-ok'" x-text="statsData.total_devido > 0 ? formatMoney(statsData.total_devido) : 'Quitado'">{% if stats.total_devido %}R$ {{ stats.total_devido|floatformat:2 }}{% else %}Quitado{% endif %}</p>
+            <p class="ui-muted text-[12px] leading-snug" x-text="'Itens ' + formatMoney(statsData.deve_itens) + ' · frete ' + formatMoney(statsData.deve_frete) + ' · taxa ' + formatMoney(statsData.deve_taxa) + (parseFloat(statsData.deve_frete_nacional || 0) > 0 ? ' · nacional ' + formatMoney(statsData.deve_frete_nacional) : '')"></p>
+        </div>
+        <div class="ui-well p-3.5 space-y-1">
+            <p class="ui-label">Já pago</p>
+            <p class="ui-mono text-2xl font-bold" x-text="formatMoney(statsData.total_pago_historico)">R$ {{ stats.total_pago_historico|floatformat:2 }}</p>
+            <p class="ui-muted text-[12px]" x-text="statsData.item_paid_count + ' itens pagos'"></p>
+        </div>
+        <button type="button" class="ui-well p-3.5 space-y-1 text-left" @click="filterPacote = 'READY_TO_PACK'" title="Mostrar só os prontos">
+            <p class="ui-label">Prontos para enviar</p>
+            <p class="ui-mono text-2xl font-bold ui-ok" x-text="statsData.ready_to_pack_count">{{ stats.ready_to_pack_count|default:0 }}</p>
+            <p class="ui-muted text-[12px]">Quitados e na casa da GOM</p>
+        </button>
+        <div class="ui-well p-3.5 space-y-1">
+            <p class="ui-label">Itens enviados</p>
+            <p class="ui-mono text-2xl font-bold" x-text="statsData.enviados_count">{{ stats.enviados_count }}</p>
+            <p class="ui-muted text-[12px]"><span x-text="statsData.entregues_count">{{ stats.entregues_count|default:0 }}</span> já entregues</p>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar itens por etapa">
+        {% for key, label, count in joiner_stage_chips %}
+            <button type="button" class="ui-chip" :class="filterPacote === '{{ key }}' && 'is-on'" :aria-pressed="(filterPacote === '{{ key }}').toString()" @click="filterPacote = '{{ key }}'">
+                {{ label }} <span class="ui-mono text-[12px] opacity-70" x-text="statsData.{{ count }}"></span>
+            </button>
+        {% endfor %}
+    </div>
+</section>

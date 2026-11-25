@@ -16,12 +16,8 @@
         <!-- Tabela Geral de Joiners quando nenhum está selecionado -->
         {% include 'cegs/partials/_joiner_general_table.html' %}
     {% else %}
-        <!-- Painel 360º do Joiner Selecionado -->
-        <div class="ui-card p-6 space-y-6">
-            {% include 'cegs/partials/_joiner_participant_card.html' %}
-            {% include 'cegs/partials/_joiner_financial_panel.html' %}
-            {% include 'cegs/partials/_joiner_operational_cards.html' %}
-        </div>
+        <!-- Resumo 360º do joiner: quem é, ações, números e etapas -->
+        {% include 'cegs/partials/_joiner_summary.html' %}
 
         <!-- Seção de Pacotes Nacionais Existentes -->
         {% include 'cegs/partials/_joiner_packages_section.html' %}
