@@ -200,3 +200,5 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 - **Reservar** na Vitrine guarda uma unidade para o joiner (respeitando `quantidade`) e abre a conversa da reserva.
   O joiner paga pelo Pix em Pagar; o GOM pode **Marcar como pago** (em mãos) ou **Cancelar reserva** a qualquer momento.
   O item vira Reservado quando todas as unidades estão reservadas e Vendido quando todas foram pagas. Nada expira sozinho.
+- **Comprar agora** (Vitrine): reserva a unidade e já gera o Pix dela, abrindo a folha do Pix em Pagar (`?pix=<ref>`).
+  Se o GOM ainda não tem Pix com QR, fica só a reserva e o pagamento é combinado na conversa.

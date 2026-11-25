@@ -61,6 +61,8 @@ function pixPay(gomId) {
         fechar() {
             const changed = Object.keys(this.done).length || this.pix.length;
             this.sheet = false;
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('pix')) { url.searchParams.delete('pix'); history.replaceState(null, '', url); }
             if (changed) window.location.reload();  // atualiza "Pagamento em análise" e o "Pix em andamento"
         },
     };

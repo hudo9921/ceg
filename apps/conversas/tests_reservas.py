@@ -99,3 +99,24 @@ class ReservaTests(TestCase):
         self.assertContains(res, reverse('vitrine_reservar', args=[self.item.slug]))
         self.client.post(reverse('vitrine_reservar', args=[self.item.slug]))
         self.assertIn('R$ 45,00', Conversa.objects.get().mensagens.get().texto)
+
+    def test_comprar_agora_creates_pix_and_opens_it(self):
+        from apps.pagamentos.models import Cobranca
+        self._as(self.ana)
+        res = self.client.post(reverse('vitrine_comprar', args=[self.item.slug]))
+        cob = Cobranca.objects.get()
+        self.assertRedirects(res, reverse('my_claims') + f'?tab=pagar&pix={cob.referencia}', fetch_redirect_response=False)
+        self.assertEqual(cob.valor_total, Decimal('45'))
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.status, 'RESERVADO')
+        page = self.client.get(reverse('my_claims') + f'?tab=pagar&pix={cob.referencia}').content.decode()
+        self.assertIn(f'data-refs="{cob.referencia} "', page)
+
+    def test_comprar_without_pix_setup_falls_back_to_reservation(self):
+        self.gom.pix_cidade = ''
+        self.gom.save()
+        self._as(self.ana)
+        res = self.client.post(reverse('vitrine_comprar', args=[self.item.slug]))
+        c = Conversa.objects.get()
+        self.assertRedirects(res, reverse('joiner_mensagens') + f'?c={c.id}', fetch_redirect_response=False)
+        self.assertEqual(ReservaVitrine.objects.get().status, 'RESERVADA')

@@ -10,7 +10,7 @@ ordenação no navegador (vitrineMethods). A equipe do GOM dono vê editar e ven
      data-searchable="{{ item.titulo }} {{ item.integrante|default:'' }} {{ item.group.name|default:'' }} {{ item.era.name|default:'' }} {{ item.sub_category|default:'' }} {{ item.descricao|default:'' }}"
      data-image="{{ item.display_image_url|default:'' }}" data-group="{{ item.group.name|default:'' }}" data-era="{{ item.era.name|default:'' }}"
      data-preco="{{ item.preco|floatformat:2 }}" data-descricao="{{ item.descricao|default:'' }}" data-tipo="{{ item.tipo_item.nome|default:'Item' }}"
-     data-gom="{{ item.gom.name }}" data-gom-url="{% url 'gom_public' item.gom.slug %}" data-reservar="{% url 'vitrine_reservar' item.slug %}" data-whatsapp="{{ item.gom.whatsapp_contato|default:'' }}"
+     data-gom="{{ item.gom.name }}" data-gom-url="{% url 'gom_public' item.gom.slug %}" data-reservar="{% url 'vitrine_reservar' item.slug %}" data-comprar="{% url 'vitrine_comprar' item.slug %}" data-whatsapp="{{ item.gom.whatsapp_contato|default:'' }}"
      x-show="checkItem($el.dataset.searchable, $el.dataset.groupId, $el.dataset.eraId, $el.dataset.member, $el.dataset.tipoId, $el.dataset.subCategory, $el.dataset.status)">
     <button type="button" class="text-left flex flex-col gap-2.5 cursor-pointer {% if item.status != 'DISPONIVEL' %}opacity-60{% endif %}"
             @click="openCard($el.closest('.product-card'))" aria-label="Ver {{ item.titulo }}">

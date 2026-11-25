@@ -37,11 +37,15 @@
         <template x-if="activeItem.status === 'DISPONIVEL'">
             <div class="space-y-2">
                 {% if logged_participant %}
+                    <form method="post" :action="activeItem.comprarUrl">
+                        {% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary w-full">Comprar agora · Pix</button>
+                    </form>
                     <form method="post" :action="activeItem.reservarUrl">
                         {% csrf_token %}
-                        <button type="submit" class="ui-btn ui-btn-primary w-full">Reservar</button>
+                        <button type="submit" class="ui-btn ui-btn-ghost w-full">Reservar e pagar depois</button>
                     </form>
-                    <p class="ui-muted text-[13px] text-center">O item fica guardado para você. Você paga pelo Pix em Pagar e combina o resto com <span x-text="activeItem.gom || 'o GOM'"></span> em Mensagens.</p>
+                    <p class="ui-muted text-[13px] text-center">Comprar já abre o Pix com o valor exato. Reservar guarda o item para você e abre a conversa com <span x-text="activeItem.gom || 'o GOM'"></span>.</p>
                 {% else %}
                     <a href="{% url 'login_otp' %}?next={% url 'vitrine_list' %}" class="ui-btn ui-btn-primary w-full">Entrar para reservar</a>
                 {% endif %}

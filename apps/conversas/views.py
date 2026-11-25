@@ -197,3 +197,28 @@ def gom_reserva_acao(request, reserva_id, acao):
         messages.error(request, str(exc))
     conversa = services.abrir(reserva.participant, request.active_gom, Conversa.Tipo.VITRINE, reserva.item)
     return redirect(f"{reverse('gom_mensagens')}?c={conversa.id}")
+
+
+@require_POST
+def vitrine_comprar(request, slug):
+    """Comprar agora: reserva a unidade, gera o Pix na hora e abre a folha do Pix em Pagar (sem passar pelo WhatsApp)."""
+    from apps.cegs.models import ItemVitrine
+    from apps.pagamentos import services as pix
+
+    from .reservas import ReservaError, reservar
+    participant, deny = _joiner(request)
+    if deny:
+        return deny
+    item = get_object_or_404(ItemVitrine.objects.select_related('gom'), slug=slug)
+    try:
+        reserva, conversa = reservar(item, participant)
+    except ReservaError as exc:
+        messages.error(request, str(exc))
+        return redirect('vitrine_list')
+    try:
+        cobranca = pix.create_cobrancas(participant, item.gom, [f'item:vitrine:{reserva.id}'])[0]
+    except pix.CobrancaError:
+        # GOM ainda sem Pix com QR: fica reservado e o pagamento é combinado na conversa.
+        messages.success(request, f'Reservado! {item.gom.name} ainda combina o pagamento por aqui.')
+        return redirect(f"{reverse('joiner_mensagens')}?c={conversa.id}")
+    return redirect(f"{reverse('my_claims')}?tab=pagar&pix={cobranca.referencia}")
