@@ -210,7 +210,7 @@
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
 - **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
-- **Perfil do GOM:** `goms/profile.html` + `goms/partials/_profile_field.html` e `_profile_image.html` (`/gom/perfil/`).
+- **Configurações do GOM:** `goms/settings.html` (abas de `apps/goms/settings_tabs.py`) + uma parcial por aba `goms/partials/_settings_<aba>.html` (perfil, pix, envio), reaproveitando `_profile_field.html`, `_profile_image.html` e `_profile_pix.html` (`/gom/configuracoes/<aba>/`; `/gom/perfil/` redireciona). Classe `.settings-tab` em `static/css/ui.css`.
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).

@@ -257,34 +257,3 @@ def gom_public_page(request, slug):
     return render(request, 'goms/public_page.html', {
         'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine,
     })
-
-
-@never_cache
-@gom_member_required
-@require_http_methods(['GET', 'POST'])
-def gom_profile(request):
-    """Perfil do GOM ativo: página pública, contatos e chave Pix padrão (dono e admins)."""
-    from apps.cegs.image_utils import ImageSizeError, process_image_upload
-
-    from .forms import GomProfileForm
-
-    gom = request.active_gom
-    can_profile, can_pix = has_gom_perm(request, 'gom.perfil'), has_gom_perm(request, 'pix.alterar')
-    if not (can_profile or can_pix):
-        raise PermissionDenied('Sem permissão para isso. Fale com o dono do GOM.')
-    form = GomProfileForm(request.POST or None, instance=gom, can_edit_profile=can_profile, can_edit_pix=can_pix)
-    context = {'gom': gom, 'form': form, 'can_edit_profile': can_profile, 'can_edit_pix': can_pix}
-    if request.method == 'POST' and form.is_valid():
-        profile = form.save(commit=False)
-        try:
-            for field, folder in (('logo', 'goms/logos'), ('banner', 'goms/banners')):
-                upload = request.FILES.get(f'{field}_file')
-                if upload and can_profile:
-                    setattr(profile, f'{field}_url', process_image_upload(file_obj=upload, folder=folder))
-        except ImageSizeError as exc:
-            messages.error(request, str(exc))
-            return render(request, 'goms/profile.html', context)
-        profile.save()
-        messages.success(request, 'Perfil do GOM atualizado.')
-        return redirect('gom_profile')
-    return render(request, 'goms/profile.html', context)

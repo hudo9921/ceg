@@ -1,0 +1,13 @@
+{% comment %}Aba Perfil das Configurações do GOM: o que os joiners veem na página pública.{% endcomment %}
+<section class="ui-card p-5 grid sm:grid-cols-2 gap-4" aria-labelledby="perfil-publico-title">
+    <div class="sm:col-span-2 space-y-1">
+        <h2 id="perfil-publico-title" class="ui-disp text-xl">Página pública</h2>
+        <p class="ui-muted text-sm">Nome, contatos, logo e banner da sua página e das suas CEGs.</p>
+    </div>
+    {% include 'goms/partials/_profile_field.html' with field=form.name %}
+    {% include 'goms/partials/_profile_field.html' with field=form.instagram %}
+    {% include 'goms/partials/_profile_field.html' with field=form.whatsapp_contato %}
+    <div class="sm:col-span-2">{% include 'goms/partials/_profile_field.html' with field=form.bio %}</div>
+    {% include 'goms/partials/_profile_image.html' with field=form.logo_url current=gom.logo_url input_name="logo_file" label="Logo" %}
+    {% include 'goms/partials/_profile_image.html' with field=form.banner_url current=gom.banner_url input_name="banner_file" label="Banner" %}
+</section>

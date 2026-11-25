@@ -149,18 +149,19 @@ class GomProfileTests(TestCase):
         self.client.force_login(self.admin)
 
     def test_admin_edits_profile_and_default_pix_prefills_new_cegs(self):
-        res = self.client.post(reverse('gom_profile'), {
+        res = self.client.post(reverse('gom_settings_tab', args=['perfil']), {
             'name': 'Loja P Oficial', 'bio': 'Oi', 'whatsapp_contato': '', 'instagram': '@lojap',
-            'logo_url': '', 'banner_url': '', 'default_pix_key': 'pix@lojap.com', 'default_pix_instructions': 'Itaú',
+            'logo_url': '', 'banner_url': '',
         })
-        self.assertRedirects(res, reverse('gom_profile'), fetch_redirect_response=False)
+        self.assertRedirects(res, reverse('gom_settings_tab', args=['perfil']), fetch_redirect_response=False)
+        self.client.post(reverse('gom_settings_tab', args=['pix']), {'default_pix_key': 'pix@lojap.com', 'default_pix_instructions': 'Itaú'})
         self.gom.refresh_from_db()
         self.assertEqual((self.gom.name, self.gom.default_pix_key), ('Loja P Oficial', 'pix@lojap.com'))
         self.assertContains(self.client.get(reverse('gom_public', args=['loja-p'])), 'Loja P Oficial')
 
     def test_profile_cannot_change_slug_or_other_gom(self):
         other = Gom.objects.create(name='Outra', slug='outra')
-        self.client.post(reverse('gom_profile'), {'name': 'X', 'slug': 'hack', 'default_pix_key': 'k'})
+        self.client.post(reverse('gom_settings_tab', args=['perfil']), {'name': 'X', 'slug': 'hack', 'default_pix_key': 'k'})
         self.gom.refresh_from_db()
         other.refresh_from_db()
         self.assertEqual(self.gom.slug, 'loja-p')

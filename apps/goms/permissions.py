@@ -29,7 +29,7 @@ CATALOG = [
     ('analytics.ver', 'Relatórios', 'Ver faturamento, relatórios e auditoria', 'Status das CEGs, vendas e logs', False),
     ('gom.perfil', 'GOM', 'Editar perfil do GOM', 'Nome, logo, banner e contatos', False),
     ('pix.alterar', 'GOM', 'Alterar chaves Pix', 'Do GOM, das CEGs e das caixas: para onde vai o dinheiro', True),
-    ('gom.envio', 'GOM', 'Configuração de envio', 'Regras e prazos dos envios nacionais', False),
+    ('gom.envio', 'GOM', 'Configuração de envio', 'Formulário de endereço e instruções do envio nacional', False),
 ]
 
 ALL = frozenset(key for key, *_ in CATALOG)
@@ -53,10 +53,10 @@ MENU = [
     ('Status das CEGs', ['analytics.ver']),
     ('Caixas', ['caixas.editar', 'caixas.valores', 'caixas.etapa']),
     ('Consulta Joiner', ['pedidos.ver']),
-    ('Envios Nacionais', ['envios.pacotes', 'gom.envio']),
+    ('Envios Nacionais', ['envios.pacotes']),
     ('Auditoria', ['analytics.ver']),
     ('Relatório de Vendas', ['analytics.ver']),
-    ('Perfil do GOM', ['gom.perfil', 'pix.alterar']),
+    ('Configurações', ['gom.perfil', 'pix.alterar', 'gom.envio']),
 ]
 
 

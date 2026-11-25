@@ -1,6 +1,6 @@
 # Personalização por GOM — Plano
 
-> Status: **planejado, não iniciado** (2026-11-24). Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
+> Status: **C0 entregue** (2026-11-25); C1 em andamento. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
 > Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
 
 ## 1. O que já é do GOM hoje

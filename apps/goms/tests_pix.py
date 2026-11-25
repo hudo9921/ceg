@@ -67,11 +67,11 @@ class GomDefaultPixTests(TestCase):
         admin = get_user_model().objects.create_user('adm-pix', password='x')
         GomMembership.objects.create(user=admin, gom=self.gom, role='ADMIN')
         self.client.force_login(admin)
-        data = {'name': 'Loja Pix', 'bio': '', 'whatsapp_contato': '', 'instagram': '', 'logo_url': '', 'banner_url': ''}
+        data = {}
         for suffix, value in (('', 'k-item'), ('_frete', 'k-frete'), ('_taxa', 'k-taxa'), ('_frete_nacional', 'k-nac')):
             data[f'default_pix_key{suffix}'] = value
             data[f'default_pix_instructions{suffix}'] = f'inst{suffix}'
-        self.client.post(reverse('gom_profile'), data)
+        self.client.post(reverse('gom_settings_tab', args=['pix']), data)
         self.gom.refresh_from_db()
         self.assertEqual(
             [self.gom.pix_for(k)[0] for k in Gom.PIX_KINDS], ['k-item', 'k-frete', 'k-taxa', 'k-nac'])

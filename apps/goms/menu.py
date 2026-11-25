@@ -19,7 +19,7 @@ GOM_MENU = [
     ('avisos', 'Avisos', 'bell', 'gom_notifications', (ANY,), ('gom_notifications',)),
     ('auditoria', 'Auditoria', 'shield', 'auditoria_logs', ('analytics.ver',), ('auditoria_logs', 'auditoria_logs_alias')),
     ('equipe', 'Equipe', 'user-cog', 'gom_team', (ANY,), ('gom_team',)),
-    ('perfil', 'Perfil do GOM', 'store', 'gom_profile', ('gom.perfil', 'pix.alterar'), ('gom_profile',)),
+    ('config', 'Configurações', 'settings', 'gom_settings', ('gom.perfil', 'pix.alterar', 'gom.envio'), ('gom_settings', 'gom_settings_tab')),
 ]
 
 PLATFORM_MENU = [

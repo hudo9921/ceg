@@ -13,7 +13,7 @@ O sistema suporta três tipos de cobrança financeira por item:
 3. **Taxa Aduaneira (Receita Federal):** Imposto de importação quando a remessa chega ao Brasil (ex: R$ 15,00).
 
 ### 1.1. Hierarquia de Resolução de Chaves Pix:
-Cada GOM define em **Perfil do GOM** (`/gom/perfil/`) uma chave padrão por tipo de cobrança: itens, frete internacional, taxa aduaneira e frete nacional (`Gom.pix_for(tipo)`). A resolução acontece na hora; a CEG não guarda cópia, então mudar o padrão do GOM vale para todas as CEGs sem chave própria.
+Cada GOM define em **Configurações → Pix** (`/gom/configuracoes/pix/`) uma chave padrão por tipo de cobrança: itens, frete internacional, taxa aduaneira e frete nacional (`Gom.pix_for(tipo)`). A resolução acontece na hora; a CEG não guarda cópia, então mudar o padrão do GOM vale para todas as CEGs sem chave própria.
 - **Itens:** `ceg.pix_key` → padrão do GOM (itens). *(`ceg.get_pix_key_item()`)*
 - **Frete Internacional:**
   1. `caixa.pix_key_frete`
