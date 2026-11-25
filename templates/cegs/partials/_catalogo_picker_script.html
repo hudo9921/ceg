@@ -1,0 +1,89 @@
+{% comment %}
+Seletor "busca primeiro" de grupo e era (docs/CATALOG_IMPORT_PLAN.md §9). Aninhado no creationsHubApp: lê e escreve
+`groups`, `selectedGroupId`, `selectedEraId` e chama `populateItemsFromGroup`. Grupo/era que faltam são adicionados
+aqui mesmo (catalogo_grupo_novo / catalogo_era_nova), sem sair da Nova CEG.
+{% endcomment %}
+<script>
+function catalogoPicker() {
+    const norm = (s) => (s || '').toString().normalize('NFKD').replace(/æ/gi, 'ae').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    return {
+        q: '', resultados: [], buscando: false, aberto: false, ativo: -1, timer: null, erro: '', aviso: '',
+        criando: false, novo: { kind: 'GRUPO', members: '' }, verTodas: false,
+        eraAberta: false, eraNova: { name: '', release_date: '', kind: 'MINI' },
+        get grupoSel() { return (this.groups || []).find((g) => String(g.id) === String(this.selectedGroupId)) || null; },
+        get erasSel() {
+            const eras = [...((this.grupoSel && this.grupoSel.eras) || [])];
+            eras.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
+            return this.verTodas ? eras : eras.slice(0, 8);
+        },
+        get totalEras() { return ((this.grupoSel && this.grupoSel.eras) || []).length; },
+        digitar() {
+            clearTimeout(this.timer); this.erro = ''; this.aviso = '';
+            const k = norm(this.q);
+            this.aberto = !!k; this.ativo = -1;
+            if (!k) { this.resultados = []; return; }
+            // Primeiro o que já está na página (instantâneo); depois o catálogo inteiro.
+            this.resultados = (this.groups || []).filter((g) => norm(g.name).includes(k) || norm(g.name_native).includes(k)).slice(0, 8);
+            this.timer = setTimeout(() => this.buscar(k), 220);
+        },
+        async buscar(k) {
+            this.buscando = true;
+            try {
+                const res = await fetch('{% url "catalogo_buscar" %}?q=' + encodeURIComponent(this.q), { headers: { 'Accept': 'application/json' } });
+                const data = await res.json();
+                if (norm(this.q) === k) this.resultados = data.grupos || [];
+            } catch (e) { /* mantém os resultados locais */ }
+            finally { this.buscando = false; }
+        },
+        mover(d) {
+            const n = this.resultados.length + 1;  // +1: "Adicionar"
+            this.ativo = (this.ativo + d + n) % n;
+        },
+        confirmar() {
+            if (this.ativo >= 0 && this.ativo < this.resultados.length) this.escolher(this.resultados[this.ativo]);
+            else if (this.q.trim()) this.criando = true;
+        },
+        guardar(g) {
+            const i = this.groups.findIndex((x) => String(x.id) === String(g.id));
+            if (i >= 0) this.groups.splice(i, 1, g); else this.groups.push(g);
+        },
+        escolher(g) {
+            this.guardar(g);
+            this.selectedGroupId = g.id; this.selectedEraId = '';
+            this.populateItemsFromGroup(g.id);
+            this.q = ''; this.aberto = false; this.resultados = []; this.criando = false; this.verTodas = false;
+            this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+        },
+        trocar() { this.selectedGroupId = ''; this.selectedEraId = ''; this.$nextTick(() => this.$refs.busca?.focus()); },
+        async post(url, campos) {
+            const body = new FormData();
+            Object.entries(campos).forEach(([k, v]) => body.append(k, v));
+            const res = await fetch(url, { method: 'POST', body, headers: { 'X-CSRFToken': csrf(), 'Accept': 'application/json' } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) throw new Error(data.message || 'Não deu certo. Tente de novo.');
+            return data;
+        },
+        async adicionarGrupo() {
+            this.erro = '';
+            try {
+                const data = await this.post('{% url "catalogo_grupo_novo" %}', { name: this.q.trim(), kind: this.novo.kind, members: this.novo.members });
+                this.escolher(data.grupo);
+                this.aviso = data.existente ? `"${data.grupo.name}" já estava no catálogo: escolhemos ele.` : `"${data.grupo.name}" foi adicionado ao catálogo. Agora adicione a era.`;
+                if (!data.existente) this.eraAberta = true;
+                this.novo = { kind: 'GRUPO', members: '' };
+            } catch (e) { this.erro = e.message; }
+        },
+        async adicionarEra() {
+            this.erro = '';
+            try {
+                const data = await this.post('{% url "catalogo_era_nova" %}', { group_id: this.selectedGroupId, ...this.eraNova });
+                this.guardar(data.grupo);
+                this.selectedEraId = data.era_id;
+                this.eraAberta = false; this.eraNova = { name: '', release_date: '', kind: 'MINI' };
+            } catch (e) { this.erro = e.message; }
+        },
+        ano(e) { return (e.release_date || '').slice(0, 4); },
+    };
+}
+</script>

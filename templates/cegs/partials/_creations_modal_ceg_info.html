@@ -6,33 +6,7 @@
         <i data-lucide="disc" class="w-3.5 h-3.5"></i>
         <span>Era e Título da Compra em Grupo</span>
     </span>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-            <label class="ui-label block mb-1">Filtrar por Grupo</label>
-            <select x-model="selectedGroupId" @change="onCegGroupChange()"
-                    class="ui-input w-full">
-                <option value="">-- Selecione o Grupo --</option>
-                <template x-for="g in groups" :key="g.id">
-                    <option :value="g.id" x-text="g.name" :selected="g.id == selectedGroupId"></option>
-                </template>
-            </select>
-        </div>
-
-        <div>
-            <label class="ui-label block mb-1">Era / Comeback *</label>
-            <select name="era_id" required x-model="selectedEraId" @change="onCegEraChange()"
-                    class="ui-input w-full">
-                <option value="">-- Selecione a Era correspondente --</option>
-                {% for e in eras %}
-                    <option value="{{ e.id }}"
-                            data-group="{{ e.group.id }}"
-                            x-show="!selectedGroupId || selectedGroupId == '{{ e.group.id }}'">
-                        {{ e.group.name }} — {{ e.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
+    {% include 'cegs/partials/_catalogo_picker.html' %}
 
     <div>
         <label class="ui-label block mb-1">Título da CEG *</label>

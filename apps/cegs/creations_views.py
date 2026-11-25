@@ -38,43 +38,21 @@ class CreationsHubView(StaffRequiredMixin, View):
     gom_permission = 'ceg.editar'
 
     def get(self, request):
-        groups = KpopGroup.objects.prefetch_related('eras', 'members').order_by('name')
-        eras = Era.objects.select_related('group').order_by('group__name', 'name')
         gom = request.active_gom
         cegs = CEG.objects.for_gom(gom).select_related('era__group').prefetch_related('sets').order_by('-created_at')
         caixas = Caixa.objects.for_gom(gom).order_by('-created_at')
 
-        # Dicionário de grupos e eras para seleção em cascata e edição no Alpine.js
-        groups_data = []
-        for g in groups:
-            members_list = list(g.members.all())
-            groups_data.append({
-                'id': g.id,
-                'name': g.name,
-                'slug': g.slug,
-                'image_url': g.image_url,
-                'color_hex': g.color_hex or '',
-                'description': g.description or '',
-                'members_count': len(members_list),
-                'members': [
-                    {'id': m.id, 'name': m.name, 'order': m.order}
-                    for m in members_list
-                ],
-                'eras': [
-                    {
-                        'id': e.id,
-                        'name': e.name,
-                        'slug': e.slug,
-                        'release_date': e.release_date.strftime('%Y-%m-%d') if e.release_date else '',
-                        'banner_url': e.banner_url,
-                        'color_hex': e.color_hex or '',
-                        'description': e.description or '',
-                        'group_id': g.id,
-                        'group_name': g.name,
-                    }
-                    for e in g.eras.all()
-                ]
-            })
+        # Catálogo pode ter centenas de grupos: o Hub só pré-carrega os que este GOM usa, os cadastrados à mão e
+        # os mais populares. O resto vem pela busca (catalogo_views.catalogo_buscar), que adiciona em `groups`.
+        from django.db.models import Q
+        from apps.groups.models import Source
+        from .catalogo_views import grupo_json
+        populares = list(KpopGroup.objects.exclude(popularity_rank=None).order_by('popularity_rank')
+                         .values_list('id', flat=True)[:24])
+        groups = (KpopGroup.objects.filter(Q(eras__cegs__gom=gom) | Q(source=Source.MANUAL) | Q(id__in=populares))
+                  .distinct().select_related('parent').prefetch_related('eras', 'members').order_by('name'))
+        eras = Era.objects.filter(group__in=groups).select_related('group').order_by('group__name', 'name')
+        groups_data = [grupo_json(g) for g in groups]
 
         # Participantes cadastrados para pré-reserva de itens no cadastro da CEG
         participants = list(
@@ -127,8 +105,8 @@ class CreationsHubView(StaffRequiredMixin, View):
             'preselected_caixa_id': int(request.GET.get('caixa_id')) if request.GET.get('caixa_id', '').isdigit() else '',
             'ceg_defaults': creations_defaults(gom),
             'auto_open_modal': request.GET.get('open', ''),
-            'total_groups': groups.count(),
-            'total_eras': eras.count(),
+            'total_groups': KpopGroup.objects.count(),
+            'total_eras': Era.objects.count(),
             'total_cegs': cegs.count(),
             'open_cegs': sum(1 for c in cegs if c.status == CEG.Status.OPEN),
             'item_individual_statuses': ItemIndividual.Status.choices,
@@ -210,6 +188,11 @@ class CreateGroupView(StaffRequiredMixin, View):
         if not name:
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
+
+        existente = KpopGroup.objects.matching(name).first()
+        if existente:
+            messages.info(request, f"'{existente.name}' já está no catálogo. Use esse grupo para criar a era ou a CEG.")
+            return redirect('/creations/?tab=era')
 
         try:
             image_url = process_image_upload(

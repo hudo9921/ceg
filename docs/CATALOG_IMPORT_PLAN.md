@@ -1,6 +1,7 @@
 # Plano — Importação do Catálogo (Grupos, Solistas, Integrantes e Eras)
 
-> **Status:** decisões da §8 tomadas em 2026-11-25; em andamento.
+> **Status (2026-11-25):** I1 entregue (campos, `load_catalog_seed`, `build_catalog_seed`) e o seletor "busca primeiro" (§9).
+> Seed completo em `data/catalog_seed.json`. A carga em produção roda depois do merge na `main` (§11).
 > Criado em 2026-11-24.
 
 ## 1. Objetivo
@@ -116,3 +117,20 @@ Com ~600 artistas e ~2.500 eras, os `<select>` de grupo/era (e o JSON com todo o
 ## 10. Fotos reaproveitadas
 
 Entregue: ver docs/BUSINESS_RULES.md ("Reaproveitar fotos de CEGs anteriores").
+
+## 11. Como rodar
+
+```powershell
+# No PC (gera/atualiza o seed; cache em .catalog_cache/, ~1 h na primeira vez por causa do MusicBrainz)
+python manage.py build_catalog_seed                    # 500 grupos + 100 solistas -> data/catalog_seed.json
+python manage.py load_catalog_seed --dry-run           # relatório sem gravar
+```
+
+```bash
+# No servidor, depois do deploy (copia as imagens para o R2; em segundo plano)
+docker exec -d valcegs-web sh -c 'python manage.py load_catalog_seed data/catalog_seed.json >> /tmp/catalogo.log 2>&1'
+```
+
+Detalhes de qualidade tratados no build: grupos fictícios ficam de fora (ex.: grupos de filmes), integrantes usam o
+nome de palco em letras latinas (rótulo curto > pseudônimo > sem sobrenome > título da Wikipedia), lançamentos
+"Japanese ver." contam como japoneses e singles só entram com edição física (photocard).

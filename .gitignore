@@ -32,3 +32,6 @@ mysterious-fermi/
 /tests_envios_nacionais.py
 /urls.py
 /views.py
+
+# Cache das APIs usadas por build_catalog_seed
+.catalog_cache/
