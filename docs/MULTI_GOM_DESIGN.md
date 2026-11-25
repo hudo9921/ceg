@@ -50,7 +50,7 @@ A hierarquia atual não muda (item → `ceg.pix_key`; frete/taxa → caixa → C
 
 ## 3. Autorização
 
-- **`get_active_gom(request)`** (`apps/goms/access.py`): é o GOM em que o usuário está atuando, calculado uma vez por requisição. Se ele pertence a mais de um, aparece um seletor de GOM (guardado na sessão). O superusuário pode atuar em qualquer GOM.
+- **`get_active_gom(request)`** (`apps/goms/access.py`): é o GOM em que o usuário está atuando, calculado uma vez por requisição. Se ele pertence a mais de um, aparece um seletor de GOM (guardado na sessão). O superusuário pode atuar em qualquer GOM, mas **nunca entra em um sozinho**: sem escolha na sessão, `/painel/` leva para `/plataforma/goms/`, onde ele toca em **Abrir painel** (POST em `gom_switch`). Dentro do painel aparece a faixa `components/_platform_gom_banner.html` ("Você está no painel de X como plataforma", com Trocar GOM e Sair do painel). Sair = POST em `gom_switch` com `gom_id` vazio. Na Auditoria, ações de superusuário ganham a etiqueta "via plataforma". Nos testes, o runner (`apps/core/test_runner.py`) já abre o ValCegs ao logar um superusuário.
 - **Funções centrais** (`apps/core/permissions.py`), substituindo os ~40 `is_staff` em Python e os 46 templates:
   - `gom_role(user, gom)` → `OWNER` | `ADMIN` | `None` (superusuário conta como `OWNER`).
   - `GomMemberRequiredMixin`: substitui o `StaffRequiredMixin`, que vira um alias durante a migração.

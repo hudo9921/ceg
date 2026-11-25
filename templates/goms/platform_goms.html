@@ -8,7 +8,7 @@
     <header class="space-y-2">
         <p class="ui-label">Plataforma</p>
         <h1 class="ui-disp text-4xl">GOMs</h1>
-        <p class="ui-muted text-[15px]">Crie um GOM e envie o link de convite ao dono. Ele define a senha e ativa o 2FA.</p>
+        <p class="ui-muted text-[15px]">Escolha um GOM e toque em <b>Abrir painel</b> para atuar nele. Para um GOM novo, crie e envie o link de convite ao dono.</p>
     </header>
 
     {% include 'goms/partials/_invite_link.html' %}
@@ -34,12 +34,27 @@
                         {{ g.name }}
                         <span class="ui-status {% if g.is_active %}ui-ok{% else %}ui-muted{% endif %}">{% if g.is_active %}Ativo{% else %}Inativo{% endif %}</span>
                     </p>
-                    <p class="text-sm">{{ g.cegs_total }} CEG{{ g.cegs_total|pluralize }} ({{ g.cegs_abertas }} aberta{{ g.cegs_abertas|pluralize }}) · {{ g.membros }} na equipe ·
+                    <p class="text-sm">{{ g.cegs_total }} CEG{{ g.cegs_total|pluralize }} ({{ g.cegs_abertas }} aberta{{ g.cegs_abertas|pluralize }}) · {{ g.joiners }} joiner{{ g.joiners|pluralize }} ·
+                        {{ g.a_pagar }} ite{{ g.a_pagar|pluralize:"m,ns" }} a pagar · {{ g.membros }} na equipe ·
                         <a href="{% url 'gom_public' g.slug %}" target="_blank" rel="noopener" class="underline">página pública</a></p>
                     <p class="ui-muted text-[13px] ui-mono">/gom/{{ g.slug }}/ ·
                         {% for m in g.memberships.all %}{% if m.is_active %}{{ m.user.get_username }}{% if m.is_owner %} (dono){% endif %}{% if not forloop.last %}, {% endif %}{% endif %}{% empty %}sem equipe ainda{% endfor %}</p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if g.is_active %}
+                        {% if active_gom and active_gom.id == g.id %}
+                            <a href="{% url 'backoffice_home' %}" class="ui-btn ui-btn-primary ui-btn-sm">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4" stroke-width="1.75"></i>Voltar ao painel</a>
+                        {% else %}
+                            <form method="post" action="{% url 'gom_switch' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="gom_id" value="{{ g.id }}">
+                                <input type="hidden" name="next" value="{% url 'backoffice_home' %}">
+                                <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">
+                                    <i data-lucide="log-in" class="w-4 h-4" stroke-width="1.75"></i>Abrir painel</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
                     <form method="post">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="owner_invite">

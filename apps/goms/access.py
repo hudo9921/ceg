@@ -91,12 +91,19 @@ def accessible_goms(user):
 
 
 def get_active_gom(request):
-    """GOM em que o usuário está atuando (seletor da sessão), calculado uma vez por requisição."""
+    """GOM em que o usuário está atuando (seletor da sessão), calculado uma vez por requisição.
+
+    Membro de equipe cai no primeiro GOM dele. O administrador da plataforma não entra em GOM nenhum
+    sozinho: precisa escolher em "GOMs da plataforma" (Abrir painel), e sai com "Sair do painel".
+    """
     if not hasattr(request, '_active_gom'):
         user = getattr(request, 'user', None)
         goms = accessible_goms(user) if user and user.is_authenticated else []
         wanted = request.session.get(ACTIVE_GOM_SESSION_KEY) if goms else None
-        request._active_gom = next((g for g in goms if g.id == wanted), goms[0] if goms else None)
+        gom = next((g for g in goms if g.id == wanted), None)
+        if gom is None and goms and not is_platform_admin(user):
+            gom = goms[0]
+        request._active_gom = gom
     return request._active_gom
 
 
