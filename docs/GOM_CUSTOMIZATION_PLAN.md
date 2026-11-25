@@ -1,6 +1,6 @@
 # Personalização por GOM — Plano
 
-> Status: **C0, C1 e C2 entregues** (2026-11-25); próximo: C3. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
+> Status: **C0–C3 entregues** (2026-11-25); próximo: C4. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
 > Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
 
 ## 1. O que já é do GOM hoje
@@ -58,7 +58,11 @@ Feito: aba Padrões de CEG (`ceg.padroes`), `apps/goms/ceg_defaults.py` (`creati
   recente em aberto, sim/não). Prazos de frete e taxa ficam fora: já vêm da caixa em cascata.
 - Só **pré-preenche** o Criar. Nada muda em CEGs já criadas. Em branco = como hoje.
 
-### C3 — Opções de envio
+### C3 — Opções de envio ✅
+Feito: `MetodoEnvio` (cegs), `Gom.caixinha_prazo_dias`, `PacoteNacional.metodo_envio/metodo_nome`; aba Envio com
+formset de formas + prazo + formulário (a config saiu de Envios); escolha na caixinha (`_caixinha_envio_gom.html`,
+rádios com `form="pedir-envio-form"`); `SolicitarEnvioNacionalView` valida a forma por GOM antes de criar pacotes.
+
 - `MetodoEnvio(gom, nome, descricao, pede_endereco, ativo, ordem)`. Exemplos: PAC, SEDEX, Mini Envios,
   Retirada em mãos (`pede_endereco = False`). **Sem preço** (decisão de 2026-11-24): o frete nacional continua
   cotado à mão pelo GOM em cada pacote, como hoje (embalagem entra na cotação).

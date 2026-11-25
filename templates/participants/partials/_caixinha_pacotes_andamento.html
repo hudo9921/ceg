@@ -8,7 +8,7 @@
                 {% include 'participants/partials/_pacote_header.html' %}
 
                 {% if pacote.status == 'SOLICITADO' %}
-                    <p class="ui-well p-3 text-sm">A GOM vai cotar o frete. A cobrança aparece em Pagar.{% if pacote.observacoes_joiner %}<span class="block ui-muted mt-1">Suas observações: {{ pacote.observacoes_joiner }}</span>{% endif %}</p>
+                    <p class="ui-well p-3 text-sm">{% if pacote.metodo_nome %}<b>{{ pacote.metodo_nome }}</b> · {% endif %}A GOM vai cotar o frete. A cobrança aparece em Pagar.{% if pacote.observacoes_joiner %}<span class="block ui-muted mt-1">Suas observações: {{ pacote.observacoes_joiner }}</span>{% endif %}</p>
                 {% elif not pacote.codigo_rastreio %}
                     <p class="ui-well p-3 text-sm">A GOM está embalando. O código de rastreio aparece aqui quando for postado.</p>
                 {% endif %}

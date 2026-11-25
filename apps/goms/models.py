@@ -50,6 +50,10 @@ class Gom(models.Model):
     padrao_descricao = models.TextField('Modelo de descrição', blank=True,
                                         help_text='Use {grupo} e {era}: viram o grupo e a era escolhidos.')
     padrao_caixa_aberta = models.BooleanField('Vincular à caixa aberta mais recente', default=False)
+    # Envio (C3): quanto tempo o item pode ficar na caixinha depois de chegar. Só aviso; nada é cobrado sozinho.
+    caixinha_prazo_dias = models.PositiveSmallIntegerField(
+        'Tempo máximo na caixinha (dias depois de chegar)', null=True, blank=True,
+        help_text='Em branco: sem limite. O joiner vê "peça o envio até dd/mm".')
     is_active = models.BooleanField('Ativo', default=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 

@@ -156,3 +156,12 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 - Só pré-preenchem Criar → Nova CEG: abertura = amanhã no horário sugerido; descrição = modelo; caixa selecionada.
 - No salvamento (`CreateCEGView`): `{grupo}` e `{era}` viram os nomes; prazo do item vazio + encerramento
   informado = encerramento + N dias. Prazo informado à mão sempre vale. CEGs já criadas não mudam.
+
+## Formas de envio e prazo da caixinha
+
+- O GOM cadastra as formas em **Configurações → Envio** (`MetodoEnvio`: nome, descrição, pede endereço, ativa).
+  Sem preço: o frete nacional continua cotado à mão em cada pacote.
+- Ao pedir o envio, o joiner escolhe uma forma por GOM (obrigatório se o GOM tem formas ativas; forma de outro GOM
+  é recusada). O pacote guarda a forma e uma cópia do nome. Forma sem endereço (retirada) esconde o formulário.
+- `Gom.caixinha_prazo_dias`: a caixinha mostra "Chegou em dd/mm · peça o envio até dd/mm" (chegada mais antiga =
+  `Caixa.data_recebimento`). Só aviso; nada é cobrado sozinho.

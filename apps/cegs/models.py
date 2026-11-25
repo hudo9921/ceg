@@ -1216,6 +1216,10 @@ class PacoteNacional(models.Model):
     endereco_destinatario = EncryptedTextField('Endereço de Destino Informado', blank=True)
     cep_destinatario = EncryptedTextField('CEP de Destino', blank=True)
     observacoes_joiner = models.TextField('Observações / Preferências do Joiner', blank=True)
+    # Forma de envio escolhida pelo joiner (C3). O nome fica copiado para o histórico.
+    metodo_envio = models.ForeignKey('cegs.MetodoEnvio', on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='pacotes', verbose_name='Forma de envio')
+    metodo_nome = models.CharField('Forma de envio (nome)', max_length=60, blank=True)
     solicitado_em = models.DateTimeField('Data da Solicitação pelo Joiner', null=True, blank=True)
     codigo_rastreio = models.CharField(
         'Código de Rastreio',
@@ -2196,6 +2200,30 @@ class ConfiguracaoEnvio(models.Model):
         """Legado (telas do joiner até a M3): configuração do GOM padrão (ValCegs)."""
         config, _ = cls.objects.get_or_create(gom_id=default_gom_id())
         return config
+
+
+class MetodoEnvio(models.Model):
+    """
+    Forma de envio nacional oferecida pelo GOM (C3, docs/GOM_CUSTOMIZATION_PLAN.md). Sem preço: o frete
+    continua cotado à mão em cada pacote. `pede_endereco=False` (ex.: retirada) dispensa o formulário.
+    """
+    gom = models.ForeignKey('goms.Gom', on_delete=models.CASCADE, related_name='metodos_envio', verbose_name='GOM')
+    nome = models.CharField('Nome', max_length=60)
+    descricao = models.CharField('Descrição', max_length=160, blank=True,
+                                 help_text='Ex.: 5 a 10 dias úteis; só pacotes de até 300 g.')
+    pede_endereco = models.BooleanField('Pede endereço', default=True,
+                                        help_text='Desligue para retirada em mãos.')
+    ativo = models.BooleanField('Ativo', default=True)
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+    objects = scoped_manager('gom')
+
+    class Meta:
+        verbose_name = 'Forma de envio'
+        verbose_name_plural = 'Formas de envio'
+        ordering = ['ordem', 'id']
+
+    def __str__(self):
+        return f'{self.nome} ({self.gom})'
 
 
 class ItemVitrine(models.Model):

@@ -45,6 +45,9 @@
                     <strong>Endereço / Notas:</strong> {{ pacote.participant.notes }}
                 </p>
             {% endif %}
+            {% if pacote.metodo_nome %}
+                <p class="text-xs flex items-center gap-1.5"><i data-lucide="truck" class="w-3.5 h-3.5" stroke-width="1.75"></i>Forma de envio: <b>{{ pacote.metodo_nome }}</b></p>
+            {% endif %}
             {% if pacote.observacoes_joiner %}
                 <div class="p-2 bg-pink-50 dark:bg-pink-950/40 rounded-lg border border-pink-200/80 dark:border-pink-800/60 text-[11px] text-pink-900 dark:text-pink-200 mt-1">
                     <strong>Recado do Joiner:</strong> {{ pacote.observacoes_joiner }}

@@ -950,6 +950,7 @@ class MyClaimsView(View):
                 'pode_empacotar': pode,
                 'gom_id': ceg.gom_id,
                 'gom_name': ceg.gom.name,
+                'chegou_em': ceg.caixa.data_recebimento if ceg.caixa_id else None,
             }
             if pode:
                 itens_caixinha_prontos.append(item_data)
@@ -973,6 +974,7 @@ class MyClaimsView(View):
                 'pode_empacotar': pode,
                 'gom_id': item.gom_id,
                 'gom_name': item.gom.name,
+                'chegou_em': item.caixa.data_recebimento if item.caixa_id else None,
             }
             if pode:
                 itens_caixinha_prontos.append(item_data)
@@ -1208,14 +1210,30 @@ class SolicitarEnvioNacionalView(View):
             messages.error(request, "Nenhum dos itens selecionados pôde ser solicitado (itens já empacotados, com pendências financeiras ou em trânsito).")
             return redirect('my_claims')
 
+        # Forma de envio por GOM (C3): obrigatória quando o GOM tem formas ativas; validada antes de criar nada.
+        from apps.cegs.models import MetodoEnvio
+        metodos = {}
+        for gom_id in por_gom:
+            ativos = list(MetodoEnvio.objects.filter(gom_id=gom_id, ativo=True))
+            if not ativos:
+                continue
+            escolhido = next((m for m in ativos if str(m.id) == request.POST.get(f'metodo_{gom_id}', '')), None)
+            if escolhido is None:
+                messages.error(request, "Escolha como você quer receber antes de pedir o envio.")
+                return redirect('my_claims')
+            metodos[gom_id] = escolhido
+
         identificadores = []
         for gom_id, objs in por_gom.items():
+            metodo = metodos.get(gom_id)
             pacote = PacoteNacional.objects.create(
                 gom_id=gom_id,
                 participant=participant,
                 status=PacoteNacional.Status.SOLICITADO,
                 observacoes_joiner=observacoes,
-                solicitado_em=timezone.now()
+                solicitado_em=timezone.now(),
+                metodo_envio=metodo,
+                metodo_nome=metodo.nome if metodo else '',
             )
             for obj in objs:
                 obj.pacote_nacional = pacote

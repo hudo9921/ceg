@@ -4,7 +4,7 @@
         {% include 'participants/partials/_caixinha_envio_gom.html' %}
     {% endfor %}
 
-    <form method="post" action="{% url 'solicitar_envio_nacional' %}" class="ui-card p-4 sm:p-5 space-y-4" aria-labelledby="prontos-title">
+    <form id="pedir-envio-form" method="post" action="{% url 'solicitar_envio_nacional' %}" class="ui-card p-4 sm:p-5 space-y-4" aria-labelledby="prontos-title">
         {% csrf_token %}
         <input type="hidden" name="selected_uids" :value="selectedCaixinhaUids.join(',')">
         <div class="flex flex-wrap items-center justify-between gap-3">
