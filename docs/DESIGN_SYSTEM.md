@@ -288,3 +288,6 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
 - O fundo da página fica um tom de lavanda abaixo do branco (`--ui-bg: #E6E1F1`, degradês `#F2D0E4` e `#D2D8F6`), com
   borda (`--ui-line` 11%) e sombra um pouco mais marcadas: os cards brancos se destacam sem depender de um modal
   escurecer o fundo. Texto comum, `--ui-muted` e `--ui-accent-text` continuam ≥ 4,5:1 sobre o fundo.
+- Superfícies dentro dos cards também ganharam contraste: `--ui-surface-2: #EDE8F5` (caixas e botões fantasma,
+  ≥ 4,5:1 para texto comum, muted, destaque, ok e perigo), `--ui-line` 14% e o novo `--ui-line-strong` (`#8A8398` no
+  claro, `#6B7080` no escuro) na borda dos campos, ≥ 3:1 no branco e no `--ui-surface-2` (WCAG 1.4.11).
