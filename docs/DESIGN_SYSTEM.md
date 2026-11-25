@@ -304,3 +304,5 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
 - Barra lateral no claro (desktop): painel flutuante (`inset 12px`, cantos do card, `--ui-surface` + sombra), item
   ativo em pílula `--ui-accent-soft` com texto `--ui-accent-text` e ícone `--ui-accent`, rótulos de seção em versalete.
   O escuro não muda.
+- Chip selecionado no claro: mesma pílula do item ativo da barra lateral (`--ui-accent-soft`, borda rosa 45%,
+  texto `--ui-accent-text`). O degradê holográfico ficou só nas barras de progresso e enfeites.
