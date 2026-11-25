@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Lucro por CEG — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Relatórios → Lucro por CEG (apps/analytics/lucro_views.py): vendido/recebido dos itens contra o custo informado pelo GOM
+(moeda × câmbio + taxas). Frete e taxa da caixa ficam fora (são repassados ao joiner).
+{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-2 max-w-2xl">
+            <p class="ui-label"><a href="{% url 'sales_report' %}" class="hover:underline">Relatórios</a> · Lucro</p>
+            <h1 class="ui-disp text-4xl">Lucro por CEG</h1>
+            <p class="ui-muted text-[15px]">Quanto cada CEG vendeu em itens contra o que você pagou por eles. Frete internacional e taxa ficam de fora: vão para o joiner pela caixa.</p>
+        </div>
+    </header>
+
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Totais">
+        <div class="ui-card p-4"><p class="ui-label">Vendido</p><p class="ui-mono text-2xl font-bold">R$ {{ tot.vendido|floatformat:2 }}</p><p class="ui-muted text-[13px]">Recebido R$ {{ tot.recebido|floatformat:2 }}</p></div>
+        <div class="ui-card p-4"><p class="ui-label">Custo informado</p><p class="ui-mono text-2xl font-bold">R$ {{ tot.custo|floatformat:2 }}</p><p class="ui-muted text-[13px]">{% if tot.sem_custo %}{{ tot.sem_custo }} CEG{{ tot.sem_custo|pluralize }} sem custo{% else %}Todas com custo{% endif %}</p></div>
+        <div class="ui-card p-4"><p class="ui-label">Lucro</p><p class="ui-mono text-2xl font-bold {% if tot.lucro < 0 %}ui-danger{% else %}ui-ok{% endif %}">R$ {{ tot.lucro|floatformat:2 }}</p><p class="ui-muted text-[13px]">Só CEGs com custo</p></div>
+        <div class="ui-card p-4"><p class="ui-label">Margem</p><p class="ui-mono text-2xl font-bold">{% if tot.margem is not None %}{{ tot.margem }}%{% else %}—{% endif %}</p><p class="ui-muted text-[13px]">Lucro ÷ vendido</p></div>
+    </section>
+
+    <section class="ui-card overflow-hidden" aria-label="CEGs">
+        <div class="hidden md:grid grid-cols-[1.6fr_repeat(5,minmax(0,1fr))_auto] gap-3 px-5 py-3 ui-label border-b border-ui-line">
+            <span>CEG</span><span class="text-right">Vendido</span><span class="text-right">Recebido</span><span class="text-right">Custo</span><span class="text-right">Lucro</span><span class="text-right">Margem</span><span></span>
+        </div>
+        {% for r in rows %}
+            {% include 'analytics/partials/_lucro_row.html' %}
+        {% empty %}
+            <p class="p-8 text-center ui-muted">Nenhuma CEG ainda.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

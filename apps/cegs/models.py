@@ -576,6 +576,16 @@ class CEG(models.Model):
         blank=True,
         help_text='Data e hora limite para pagamento do frete internacional (opcional).'
     )
+    # Custo da CEG para o GOM (Relatórios → Lucro por CEG): o que pagou pelos itens, na moeda da compra.
+    CUSTO_MOEDAS = [('BRL', 'R$ (real)'), ('KRW', '₩ (won)'), ('JPY', '¥ (iene)'), ('USD', 'US$ (dólar)'), ('CNY', '¥ (yuan)')]
+    custo_moeda = models.CharField('Moeda da compra', max_length=3, choices=CUSTO_MOEDAS, default='BRL')
+    custo_valor = models.DecimalField('Valor pago pelos itens', max_digits=14, decimal_places=2, null=True, blank=True)
+    custo_cambio = models.DecimalField('Câmbio (R$ por 1 unidade)', max_digits=12, decimal_places=6, null=True, blank=True,
+                                       help_text='Ex.: 1 won = R$ 0,0041. Em reais, deixe em branco.')
+    custo_taxas_brl = models.DecimalField('Taxas extras (R$)', max_digits=10, decimal_places=2, null=True, blank=True,
+                                          help_text='Proxy, IOF, tarifa do cartão…')
+    custo_obs = models.CharField('Anotação do custo', max_length=200, blank=True)
+
     prazo_pagamento_taxa_aduaneira = models.DateTimeField(
         'Prazo de Pagamento da Taxa Aduaneira',
         null=True,
@@ -625,6 +635,17 @@ class CEG(models.Model):
     def display_title(self) -> str:
         """Título amigável para exibição em cards onde a tag do grupo já está presente."""
         return self.clean_title()
+
+    @property
+    def custo_brl(self):
+        """Custo dos itens em reais (valor × câmbio + taxas), ou None se o GOM não informou."""
+        from decimal import Decimal
+        if self.custo_valor is None:
+            return None
+        rate = Decimal('1') if self.custo_moeda == 'BRL' else self.custo_cambio
+        if rate is None:
+            return None
+        return (self.custo_valor * rate + (self.custo_taxas_brl or Decimal('0'))).quantize(Decimal('0.01'))
 
     def _resolve_pix(self, kind: str) -> tuple[str, str]:
         """

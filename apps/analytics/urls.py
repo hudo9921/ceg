@@ -1,4 +1,6 @@
 from django.urls import path
+
+from . import lucro_views
 from .views import (
     CEGStatusView,
     SalesReportView,
@@ -14,6 +16,7 @@ urlpatterns = [
     path('vendas/', SalesReportView.as_view(), name='sales_report'),
     path('sales/', SalesReportView.as_view(), name='sales_report_alias'),
     path('dashboard/', AnalyticsDashboardView.as_view(), name='analytics_dashboard'),
+    path('lucro/', lucro_views.lucro_cegs, name='lucro_cegs'),
     path('api/cegs/', CEGStatusApiView.as_view(), name='cegs_status_api'),
     path('api/sales/', SalesReportApiView.as_view(), name='sales_report_api'),
     path('api/', AnalyticsApiView.as_view(), name='analytics_api'),
