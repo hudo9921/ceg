@@ -10,6 +10,10 @@
             <a href="?view=quadro{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if participant_filter %}&participant_id={{ participant_filter }}{% endif %}" class="px-4 no-underline {% if view_mode != 'lista' %}is-on{% endif %}"{% if view_mode != 'lista' %} aria-current="page"{% endif %}>Quadro</a>
             <a href="?view=lista{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if participant_filter %}&participant_id={{ participant_filter }}{% endif %}" class="px-4 no-underline {% if view_mode == 'lista' %}is-on{% endif %}"{% if view_mode == 'lista' %} aria-current="page"{% endif %}>Lista</a>
         </div>
+        {% if stats.em_preparacao_count %}
+            <a href="{% url 'imprimir_pacotes' %}?status=EM_PREPARACAO" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost">
+                <i data-lucide="printer" class="w-4 h-4" stroke-width="1.75"></i>Imprimir em preparação ({{ stats.em_preparacao_count }})</a>
+        {% endif %}
         <a href="{% url 'consulta_joiner' %}" class="ui-btn ui-btn-ghost">Empacotar pelo joiner</a>
     </div>
 </header>

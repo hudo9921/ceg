@@ -765,3 +765,34 @@ def pacote_endereco(request, pacote_id):
         return JsonResponse({'success': False, 'message': 'Este pacote não tem endereço (retirada ou pedido antigo).'})
     log_pii_access(request, pacote.participant, 'endereço do pacote em Envios', pacote=pacote)
     return JsonResponse({'success': True, 'texto': pacote.endereco_destinatario})
+
+
+@staff_required('envios.pacotes')
+def imprimir_pacotes(request):
+    """
+    Lista de embalagem para imprimir (uma folha por pacote): etiqueta com destinatário e endereço, e os itens para
+    conferir. `?ids=1,2` imprime pacotes escolhidos; `?status=EM_PREPARACAO` imprime todos daquela etapa.
+    Cada endereço impresso vai para a Auditoria (log_pii_access), como o "Ver endereço".
+    """
+    from apps.core.privacy import log_pii_access
+
+    qs = (PacoteNacional.objects.for_gom(request.active_gom)
+          .select_related('participant', 'metodo_envio')
+          .prefetch_related('slots__item_definition', 'slots__set__ceg', 'itens_individuais'))
+    ids = [int(x) for x in request.GET.get('ids', '').split(',') if x.strip().isdigit()]
+    status = request.GET.get('status', '')
+    if ids:
+        qs = qs.filter(pk__in=ids)
+    elif status in PacoteNacional.Status.values:
+        qs = qs.filter(status=status)
+    else:
+        qs = qs.none()
+    pacotes = list(qs.order_by('created_at'))
+    for p in pacotes:
+        p.linhas_impressao = (
+            [{'img': s.item_definition.image_url or s.set.ceg.banner_url, 'nome': s.item_definition.name,
+              'origem': f'{s.set.ceg.title} · set {s.set.set_number}'} for s in p.slots.all()]
+            + [{'img': i.image_display_url, 'nome': i.nome, 'origem': 'Pedido individual'} for i in p.itens_individuais.all()])
+        if p.endereco_destinatario:
+            log_pii_access(request, p.participant, 'endereço impresso na lista de embalagem', pacote=p)
+    return render(request, 'cegs/imprimir_pacotes.html', {'pacotes': pacotes, 'gom': request.active_gom})

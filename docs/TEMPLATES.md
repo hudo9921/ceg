@@ -220,6 +220,7 @@
 - **Pagamentos (GOM):** `pagamentos/fila.html` + `pagamentos/partials/_fila_lista.html` e `_fila_detalhe.html` (Recebi / Não recebi, comprovante); `pagamentos/cobrar.html` + `_cobrar_pix.html` (Cobrar no WhatsApp).
 - **Endereços (joiner):** `participants/partials/_enderecos.html` (lista em Envios) e `_modal_perfil_enderecos.html` (em Editar perfil) disparam `endereco-novo`/`endereco-editar`; `_endereco_sheet.html` é a folha única da página (com CEP, incluída no `my_claims.html`, acima dos modais) e `_endereco_script.html` o componente `enderecoForm` e `_caixinha_endereco_escolha.html` ("Entregar em" no pedido de envio).
 - **Ver endereço (GOM):** `cegs/partials/_pacote_endereco.html`, nos cartões de pacote do Envios (quadro e lista).
+- **Lista de embalagem:** `cegs/imprimir_pacotes.html` (`/envios/imprimir/?ids=` ou `?status=`), página própria para imprimir: uma folha A4 por pacote com etiqueta (destinatário/endereço/forma) e itens com foto para conferir. Cada endereço impresso vai para a Auditoria. Botões no cartão do quadro e "Imprimir em preparação" no topo do Envios.
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).
