@@ -155,6 +155,13 @@ html.dark .ui-pc:hover::after, html.dark *:hover > .ui-pc::after { transform: tr
 .settings-tab:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: -2px; border-radius: var(--ui-r-ctl); }
 .ui-nav-item.is-on { color: var(--ui-text); background: var(--ui-surface); box-shadow: var(--ui-shadow); }
 html.dark .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--ui-accent-on-soft); box-shadow: inset 2px 0 0 var(--ui-accent); }
+/* Barra lateral no modo claro: painel flutuante (como os cards), item ativo em pílula rosa e rótulos de seção. */
+@media (min-width: 1024px) {
+    :root:not(.dark) .ui-sidebar { inset: 12px auto 12px 12px; width: 216px; border: 1px solid var(--ui-line); border-radius: var(--ui-r-card); background: var(--ui-surface); box-shadow: var(--ui-shadow); padding: 18px 12px; }
+}
+:root:not(.dark) .ui-sidebar .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--ui-accent-text); box-shadow: none; font-weight: 700; }
+:root:not(.dark) .ui-sidebar .ui-nav-item.is-on svg { color: var(--ui-accent); }
+:root:not(.dark) .ui-sidebar .ui-label { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
 .ui-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
 .ui-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; font-size: 11px; font-weight: 600; color: var(--ui-muted); text-decoration: none; }
 .ui-tab.is-on { color: var(--ui-accent-text); }
