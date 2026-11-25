@@ -1,0 +1,31 @@
+{% comment %}Uma CEG em Lucro por CEG: números e o formulário do custo (abre no lugar). `r`, `moedas`.{% endcomment %}
+<div id="ceg-{{ r.ceg.id }}" class="border-b border-ui-line last:border-0 scroll-mt-24" x-data="{ edit: false }">
+    <div class="grid grid-cols-2 md:grid-cols-[1.6fr_repeat(5,minmax(0,1fr))_auto] gap-x-3 gap-y-1 px-5 py-3.5 items-center">
+        <span class="col-span-2 md:col-span-1 min-w-0">
+            <a href="{% url 'ceg_detail' r.ceg.slug %}" class="block font-bold truncate hover:underline text-ui-text">{{ r.ceg.title }}</a>
+            <span class="ui-muted text-[13px]">{{ r.ceg.era.group.name }} · {{ r.itens }} ite{{ r.itens|pluralize:"m,ns" }}{% if r.ceg.custo_obs %} · {{ r.ceg.custo_obs }}{% endif %}</span>
+        </span>
+        <span class="md:text-right ui-mono"><span class="md:hidden ui-label">Vendido </span>R$ {{ r.vendido|floatformat:2 }}</span>
+        <span class="md:text-right ui-mono"><span class="md:hidden ui-label">Recebido </span>R$ {{ r.recebido|floatformat:2 }}</span>
+        <span class="md:text-right ui-mono"><span class="md:hidden ui-label">Custo </span>{% if r.custo is not None %}R$ {{ r.custo|floatformat:2 }}{% else %}<span class="ui-muted">—</span>{% endif %}</span>
+        <span class="md:text-right ui-mono font-bold {% if r.lucro is not None and r.lucro < 0 %}ui-danger{% elif r.lucro is not None %}ui-ok{% endif %}"><span class="md:hidden ui-label">Lucro </span>{% if r.lucro is not None %}R$ {{ r.lucro|floatformat:2 }}{% else %}<span class="ui-muted font-normal">—</span>{% endif %}</span>
+        <span class="md:text-right ui-mono"><span class="md:hidden ui-label">Margem </span>{% if r.margem is not None %}{{ r.margem }}%{% else %}<span class="ui-muted">—</span>{% endif %}</span>
+        <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm col-span-2 md:col-span-1 justify-self-start md:justify-self-end" @click="edit = !edit"
+                x-text="edit ? 'Fechar' : '{% if r.custo is not None %}Editar custo{% else %}Informar custo{% endif %}'">{% if r.custo is not None %}Editar custo{% else %}Informar custo{% endif %}</button>
+    </div>
+    <form x-show="edit" x-cloak method="post" class="px-5 pb-4 grid sm:grid-cols-[140px_1fr_1fr_1fr] gap-3 items-end">
+        {% csrf_token %}
+        <input type="hidden" name="ceg_id" value="{{ r.ceg.id }}">
+        <label class="block space-y-1.5"><span class="ui-label">Moeda</span>
+            <select name="custo_moeda" class="ui-input w-full">{% for v, l in moedas %}<option value="{{ v }}" {% if r.ceg.custo_moeda == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+        <label class="block space-y-1.5"><span class="ui-label">Valor pago pelos itens</span>
+            <input name="custo_valor" type="number" step="0.01" min="0" value="{{ r.ceg.custo_valor|default_if_none:''|stringformat:'s' }}" class="ui-input w-full" placeholder="Ex.: 186000"></label>
+        <label class="block space-y-1.5"><span class="ui-label">Câmbio (R$ por 1)</span>
+            <input name="custo_cambio" type="number" step="0.000001" min="0" value="{{ r.ceg.custo_cambio|default_if_none:''|stringformat:'s' }}" class="ui-input w-full" placeholder="Ex.: 0.0041"></label>
+        <label class="block space-y-1.5"><span class="ui-label">Taxas extras (R$)</span>
+            <input name="custo_taxas_brl" type="number" step="0.01" min="0" value="{{ r.ceg.custo_taxas_brl|default_if_none:''|stringformat:'s' }}" class="ui-input w-full" placeholder="Proxy, IOF…"></label>
+        <label class="block space-y-1.5 sm:col-span-3"><span class="ui-label">Anotação (opcional)</span>
+            <input name="custo_obs" maxlength="200" value="{{ r.ceg.custo_obs }}" class="ui-input w-full" placeholder="Ex.: 30 álbuns no Weverse, cartão Nubank"></label>
+        <button type="submit" class="ui-btn ui-btn-primary">Salvar custo</button>
+    </form>
+</div>

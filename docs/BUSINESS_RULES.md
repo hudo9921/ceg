@@ -185,3 +185,10 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 - Pedir envio exige escolher um endereço, a menos que todas as formas escolhidas sejam retirada. O pacote guarda uma
   cópia (`endereco_destinatario`, `cep_destinatario`), apagada pelo `purge_personal_data` depois da entrega.
 - A equipe vê o endereço só ao tocar em **Ver endereço** no Envios; cada visualização gera `PII_ACCESS` na Auditoria.
+
+## Lucro por CEG
+
+- O GOM informa o que pagou pelos itens da CEG: moeda (R$, won, iene, dólar, yuan), valor, câmbio digitado por ele
+  (R$ por 1 unidade) e taxas extras em R$. `CEG.custo_brl = valor × câmbio + taxas` (em reais, câmbio = 1).
+- Relatórios → Lucro por CEG: vendido (claims não cancelados) e recebido (pagos) dos itens contra o custo; lucro e margem
+  só para CEGs com custo. Frete internacional e taxa ficam de fora (repassados ao joiner pela caixa).

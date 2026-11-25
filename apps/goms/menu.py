@@ -16,7 +16,7 @@ GOM_MENU = [
      ('caixas_dashboard', 'caixa_create', 'caixa_update', 'caixa_transfer_unclaimed_vitrine')),
     ('envios', 'Envios', 'truck', 'envios_nacionais', ('envios.pacotes', 'gom.envio'), ('envios_nacionais',)),
     ('joiners', 'Joiners', 'users', 'consulta_joiner', ('pedidos.ver',), ('consulta_joiner',)),
-    ('relatorios', 'Relatórios', 'chart-column', 'sales_report', ('analytics.ver',), ('sales_report', 'sales_report_alias', 'analytics_dashboard')),
+    ('relatorios', 'Relatórios', 'chart-column', 'sales_report', ('analytics.ver',), ('sales_report', 'sales_report_alias', 'analytics_dashboard', 'lucro_cegs')),
     ('avisos', 'Avisos', 'bell', 'gom_notifications', (ANY,), ('gom_notifications',)),
     ('auditoria', 'Auditoria', 'shield', 'auditoria_logs', ('analytics.ver',), ('auditoria_logs', 'auditoria_logs_alias')),
     ('equipe', 'Equipe', 'user-cog', 'gom_team', (ANY,), ('gom_team',)),
