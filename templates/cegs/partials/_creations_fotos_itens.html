@@ -1,0 +1,14 @@
+{% comment %}
+Passo 2 da Nova CEG: fotos dos integrantes já usadas nesta era. "Preencher fotos vazias" usa, para cada item sem foto,
+a do mesmo integrante (preferindo a mesma subcategoria). Cada item também tem o seletor em _creations_fotos_item_escolha.
+{% endcomment %}
+<div x-show="$store.fotosEra.itens.length" x-cloak class="ui-well p-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
+    <i data-lucide="images" class="w-5 h-5 flex-none" stroke-width="1.75"></i>
+    <div class="flex-1 min-w-0">
+        <p class="font-semibold text-sm" x-text="$store.fotosEra.itens.length + ($store.fotosEra.itens.length === 1 ? ' foto' : ' fotos') + ' de integrantes em CEGs anteriores desta era'"></p>
+        <p class="ui-muted text-[13px]" x-text="$store.fotosEra.aviso || 'Use as mesmas fotos em vez de recortar de novo. Dá para trocar em cada item.'"></p>
+    </div>
+    <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm flex-none" @click="$store.fotosEra.preencher(items)">
+        <i data-lucide="wand-sparkles" class="w-4 h-4" stroke-width="1.75"></i>Preencher fotos vazias
+    </button>
+</div>

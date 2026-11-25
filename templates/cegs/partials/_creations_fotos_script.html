@@ -1,0 +1,48 @@
+{% comment %}
+Fotos já usadas na era escolhida (de CEGs publicadas por qualquer GOM), para a Nova CEG reaproveitar.
+Alpine.store('fotosEra'): `carregar(eraId)` busca uma vez por era; `doIntegrante(nome)` e `preencher(items)`.
+Usado por _creations_fotos_capas.html (passo 1) e _creations_fotos_itens.html (passo 2).
+{% endcomment %}
+<script>
+document.addEventListener('alpine:init', () => {
+    const norm = (s) => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+    Alpine.store('fotosEra', {
+        eraId: '', capas: [], itens: [], carregando: false, aviso: '',
+        async carregar(eraId) {
+            eraId = String(eraId || '');
+            if (eraId === this.eraId) return;
+            this.eraId = eraId; this.capas = []; this.itens = []; this.aviso = '';
+            if (!eraId) return;
+            this.carregando = true;
+            try {
+                const res = await fetch('{% url "era_fotos" 0 %}'.replace('/0/', '/' + eraId + '/'), { headers: { 'Accept': 'application/json' } });
+                const data = res.ok ? await res.json() : {};
+                if (this.eraId !== eraId) return;  // trocou de era no meio da busca
+                this.capas = data.capas || []; this.itens = data.itens || [];
+            } catch (e) { /* sem as sugestões, o envio manual continua funcionando */ }
+            finally { this.carregando = false; setTimeout(() => window.dispatchEvent(new Event('icons-refresh')), 50); }
+        },
+        doIntegrante(nome) {
+            const n = norm(nome);
+            return n ? this.itens.filter((f) => norm(f.integrante) === n) : [];
+        },
+        melhor(item) {
+            const opcoes = this.doIntegrante(item.member_name);
+            if (!opcoes.length) return null;
+            const sub = norm(item.sub_category), nome = norm(item.name);
+            return opcoes.find((f) => sub && norm(f.sub) === sub)
+                || opcoes.find((f) => nome && norm(f.nome) === nome)
+                || opcoes[0];
+        },
+        preencher(items) {
+            let n = 0;
+            for (const it of items) {
+                if (it.image_url || it.image_base64) continue;
+                const f = this.melhor(it);
+                if (f) { it.image_url = f.url; n++; }
+            }
+            this.aviso = n ? (n === 1 ? '1 foto preenchida.' : n + ' fotos preenchidas.') : 'Nenhum item vazio com foto anterior do mesmo integrante.';
+        },
+    });
+});
+</script>

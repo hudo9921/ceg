@@ -1,6 +1,6 @@
 # Plano — Importação do Catálogo (Grupos, Solistas, Integrantes e Eras)
 
-> **Status:** planejado, **não iniciado**. Decisões em aberto na §8 precisam de resposta antes da entrega I1.
+> **Status:** decisões da §8 tomadas em 2026-11-25; em andamento.
 > Criado em 2026-11-24.
 
 ## 1. Objetivo
@@ -96,11 +96,23 @@ Cada entrega em uma branch a partir do `develop`, mesclada no `develop`.
 - ~600 artistas, ~3.000 integrantes.
 - Eras: **~6.000–8.000** se importar tudo; **~1.500–2.500** com a janela recomendada (§8.1).
 
-## 8. Decisões em aberto
+## 8. Decisões (2026-11-25)
 
-1. **Profundidade das eras.** Recomendado: últimos 5 anos + os 3 lançamentos mais recentes de cada
-   artista; mais antigas sob demanda ("Buscar eras novas").
-2. **Lançamentos japoneses:** incluir? (vêm com photocards)
-3. **Subunidades** (NCT 127, unidades do tripleS etc.): grupos separados ligados ao grupo principal, ou pular?
-4. **Solistas que também são integrantes** (Jungkook, Jisoo...): listar como solista **e** ligar ao
-   integrante do grupo. Recomendado: sim.
+1. **Profundidade das eras:** últimos 5 anos + os 3 lançamentos mais recentes de cada artista; mais antigas
+   sob demanda ("Buscar eras").
+2. **Lançamentos japoneses:** sim, importados como eras com `kind = japonês`.
+3. **Subunidades:** grupos separados ligados ao grupo principal (`parent`).
+4. **Solistas que também são integrantes:** listados como solista e ligados ao integrante do grupo.
+
+## 9. Escolher e adicionar grupos (Hub de Criações)
+
+Com ~600 artistas e ~2.500 eras, os `<select>` de grupo/era (e o JSON com todo o catálogo no Hub) não escalam.
+- **Busca primeiro:** um campo "Grupo ou solista" busca no catálogo (`/creations/catalogo/buscar/?q=`), por nome,
+  nome em Hangul e apelidos, ignorando acento e maiúscula. As eras vêm do grupo escolhido.
+- **Não achou → "Adicionar":** o GOM cria o grupo na hora. Antes, o site confere nomes parecidos
+  ("aespa" × "Aespa" × "æspa") e mostra "Você quis dizer…?". O nome é único sem diferenciar maiúscula.
+- Depois da I4, "Adicionar" também oferece importar do Wikidata/MusicBrainz.
+
+## 10. Fotos reaproveitadas
+
+Entregue: ver docs/BUSINESS_RULES.md ("Reaproveitar fotos de CEGs anteriores").

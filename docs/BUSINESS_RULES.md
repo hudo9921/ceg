@@ -202,3 +202,12 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   O item vira Reservado quando todas as unidades estão reservadas e Vendido quando todas foram pagas. Nada expira sozinho.
 - **Comprar agora** (Vitrine): reserva a unidade e já gera o Pix dela, abrindo a folha do Pix em Pagar (`?pix=<ref>`).
   Se o GOM ainda não tem Pix com QR, fica só a reserva e o pagamento é combinado na conversa.
+
+## Reaproveitar fotos de CEGs anteriores
+
+- Na Nova CEG, ao escolher a era, o site oferece as capas e as fotos dos integrantes já usadas em CEGs **publicadas** dessa era,
+  **de qualquer GOM** (decisão de 2026-11-25: são imagens públicas no site). Rascunhos ficam de fora.
+- Escolher uma foto grava **o mesmo link** na CEG nova (sem novo upload). Excluir uma CEG não apaga arquivos do storage,
+  então o link continua válido.
+- "Preencher fotos vazias" usa, para cada item sem foto, a do mesmo integrante (nome sem acento/maiúscula), preferindo a mesma subcategoria.
+- Endpoint: `GET /creations/era/<era_id>/fotos/` (`ceg.editar`), em `apps/cegs/catalogo_views.py`.

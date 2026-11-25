@@ -1,0 +1,24 @@
+{% comment %}
+Passo 1 da Nova CEG: capas já usadas nesta era (qualquer GOM). Tocar usa o mesmo link como capa, sem novo upload.
+Lê `selectedEraId` e escreve `cegBannerUrl`/`cegBannerPreview`/`cegBannerBase64` do creationsHubApp.
+{% endcomment %}
+<div x-effect="$store.fotosEra.carregar(selectedEraId)" x-show="$store.fotosEra.capas.length" x-cloak class="space-y-2">
+    <div>
+        <p class="ui-label">Capas já usadas nesta era</p>
+        <p class="ui-muted text-[13px]">De CEGs publicadas (de qualquer GOM). Toque para usar a mesma imagem.</p>
+    </div>
+    <div class="flex gap-2 overflow-x-auto pb-1" role="list">
+        <template x-for="c in $store.fotosEra.capas" :key="c.url">
+            <button type="button" role="listitem"
+                    @click="cegBannerUrl = c.url; cegBannerPreview = c.url; cegBannerBase64 = ''"
+                    :aria-label="'Usar a capa de ' + c.origem + (c.gom ? ' (' + c.gom + ')' : '')"
+                    :aria-pressed="cegBannerUrl === c.url"
+                    :class="cegBannerUrl === c.url ? 'ring-2 ring-ui-accent' : 'ring-1 ring-ui-line'"
+                    class="flex-none w-36 text-left rounded-2xl overflow-hidden bg-ui-surface-2 transition hover:brightness-105">
+                <img :src="c.thumb" :data-full="c.url" alt="" loading="lazy" decoding="async" class="w-36 h-20 object-cover">
+                <span class="block px-2 pt-1 text-[12px] font-semibold truncate" x-text="c.origem"></span>
+                <span class="block px-2 pb-1.5 text-[11px] ui-muted truncate" x-text="c.gom ? 'por ' + c.gom : 'Catálogo'"></span>
+            </button>
+        </template>
+    </div>
+</div>

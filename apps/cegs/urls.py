@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import envios_views
+from . import catalogo_views, envios_views
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -120,6 +120,7 @@ urlpatterns = [
     path('creations/ceg/create/', CreateCEGView.as_view(), name='create_ceg'),
     path('creations/set/create/', CreateSetView.as_view(), name='create_set'),
     path('creations/item/create/', AddItemToCEGView.as_view(), name='add_item_to_ceg'),
+    path('creations/era/<int:era_id>/fotos/', catalogo_views.era_fotos, name='era_fotos'),
 
     # 1. Consulta Joiner (Visão 360º de itens, pagamentos e envios de cada participante)
     path('consulta-joiner/', ConsultaJoinerView.as_view(), name='consulta_joiner'),
