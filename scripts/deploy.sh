@@ -63,7 +63,7 @@ fi
 # --- 5. Sobe a nova versão e confere a saúde (app + banco) -------------------------
 docker compose up -d
 healthy=""
-for _ in $(seq 1 36); do
+for _ in $(seq 1 120); do
     if curl -fsS -o /dev/null --max-time 5 http://127.0.0.1:8000/health/; then
         healthy=1
         break
@@ -71,7 +71,7 @@ for _ in $(seq 1 36); do
     sleep 5
 done
 if [ -z "$healthy" ]; then
-    echo "ERRO: /health/ não respondeu após 3 minutos. Últimos logs do web:"
+    echo "ERRO: /health/ não respondeu após 10 minutos. Últimos logs do web:"
     docker compose logs --tail 80 ceg-web || true
     exit 1
 fi
