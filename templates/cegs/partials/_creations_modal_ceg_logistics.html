@@ -23,7 +23,7 @@
                 class="ui-input w-full">
             <option value="">-- Nenhuma (Deixar sem caixa / vincular posteriormente) --</option>
             {% for c in caixas %}
-                <option value="{{ c.id }}">
+                <option value="{{ c.id }}"{% if preselected_caixa_id and c.id == preselected_caixa_id or not preselected_caixa_id and c.id == ceg_defaults.caixa_id %} selected{% endif %}>
                     [{{ c.origem }}] {{ c.nome }} — {{ c.get_status_display }}{% if c.codigo_rastreio %} (Rastreio: {{ c.codigo_rastreio }}){% endif %}
                 </option>
             {% endfor %}
@@ -48,6 +48,7 @@
             <label class="ui-label block mb-1">Prazo Pagamento do Item</label>
             <input type="datetime-local" name="prazo_pagamento_item"
                    class="ui-input w-full">
+            {% if ceg_defaults.prazo_dias %}<span class="text-[11px] ui-muted block mt-0.5">Em branco: {{ ceg_defaults.prazo_dias }} dia{{ ceg_defaults.prazo_dias|pluralize }} depois do fechamento (padrão do GOM).</span>{% endif %}
         </div>
 
         <div>
@@ -104,6 +105,7 @@
         <label class="ui-label block mb-1">Regras e Informações da CEG</label>
         <textarea name="description" rows="2"
                   placeholder="Regras de frete (nacional/internacional), prazos de envio e avisos..."
-                  class="ui-input w-full !py-3 p-3"></textarea>
+                  class="ui-input w-full !py-3 p-3">{{ ceg_defaults.descricao }}</textarea>
+        {% if ceg_defaults.descricao %}<span class="text-[11px] ui-muted block mt-0.5">Modelo do GOM: {grupo} e {era} viram o grupo e a era escolhidos.</span>{% endif %}
     </div>
 </div>

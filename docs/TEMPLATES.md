@@ -210,7 +210,7 @@
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
 - **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
-- **Configurações do GOM:** `goms/settings.html` (abas de `apps/goms/settings_tabs.py`) + uma parcial por aba `goms/partials/_settings_<aba>.html` (perfil, pix, regras, envio), reaproveitando `_profile_field.html`, `_profile_image.html` e `_profile_pix.html` (`/gom/configuracoes/<aba>/`; `/gom/perfil/` redireciona). Classe `.settings-tab` em `static/css/ui.css`.
+- **Configurações do GOM:** `goms/settings.html` (abas de `apps/goms/settings_tabs.py`) + uma parcial por aba `goms/partials/_settings_<aba>.html` (perfil, pix, regras, padroes, envio), reaproveitando `_profile_field.html`, `_profile_image.html` e `_profile_pix.html` (`/gom/configuracoes/<aba>/`; `/gom/perfil/` redireciona). Classe `.settings-tab` em `static/css/ui.css`.
 - **Regras do GOM:** `goms/partials/_gom_rules.html` (faixa do estreante, linha "ver regras" e folha de aceite; componente `gomRules`), incluída em `cegs/detail.html` e `goms/public_page.html`.
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**

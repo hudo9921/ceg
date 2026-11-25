@@ -148,3 +148,11 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   respondem **409 `needs_rules`**; a folha de regras abre, e "Aceitar e pegar" refaz o claim sozinho.
   A checagem roda antes do `select_for_update` (`apps/goms/rules.py`). Staff reservando por alguém não passa por ela.
 - O aceite guarda o SHA-256 do texto e gera um registro na auditoria do GOM.
+
+## Padrões de CEG do GOM
+
+- Em **Configurações → Padrões de CEG** (`ceg.padroes`): prazo do item em dias, horário de abertura sugerido,
+  modelo de descrição e "vincular à caixa aberta mais recente" (caixa em consolidação).
+- Só pré-preenchem Criar → Nova CEG: abertura = amanhã no horário sugerido; descrição = modelo; caixa selecionada.
+- No salvamento (`CreateCEGView`): `{grupo}` e `{era}` viram os nomes; prazo do item vazio + encerramento
+  informado = encerramento + N dias. Prazo informado à mão sempre vale. CEGs já criadas não mudam.

@@ -41,6 +41,15 @@ class Gom(models.Model):
     regras = models.TextField('Regras do GOM', blank=True,
                               help_text='Cancelamento, prazos, o que acontece sem pagamento, caixinha…')
     regras_atualizadas_em = models.DateTimeField('Regras atualizadas em', null=True, blank=True)
+    # Padrões de CEG (C2): só pré-preenchem o Criar; CEGs já criadas não mudam.
+    padrao_prazo_item_dias = models.PositiveSmallIntegerField(
+        'Prazo para pagar o item (dias depois do fechamento)', null=True, blank=True,
+        help_text='Conta a partir do encerramento da CEG. Em branco: sem prazo automático.')
+    padrao_horario_abertura = models.TimeField('Horário de abertura sugerido', null=True, blank=True,
+                                               help_text='Nova CEG já vem marcada para amanhã neste horário.')
+    padrao_descricao = models.TextField('Modelo de descrição', blank=True,
+                                        help_text='Use {grupo} e {era}: viram o grupo e a era escolhidos.')
+    padrao_caixa_aberta = models.BooleanField('Vincular à caixa aberta mais recente', default=False)
     is_active = models.BooleanField('Ativo', default=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 
