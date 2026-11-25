@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from apps.participants.session_auth import safe_next_url
 
 from .access import (
-    ACTIVE_GOM_SESSION_KEY, accessible_goms, gom_member_required, gom_owner_required,
+    ACTIVE_GOM_SESSION_KEY, accessible_goms, get_active_gom, gom_member_required, gom_owner_required,
     gom_role, has_gom_perm, is_gom_member, is_platform_admin, platform_admin_required,
 )
 from .forms import GomCreateForm, InviteForm, InviteSignupForm, _style
@@ -53,6 +53,8 @@ def backoffice_home(request):
         return redirect('backoffice_login')
     if not (user.is_superuser or is_gom_member(user)):
         raise PermissionDenied('Esta conta não faz parte da equipe de nenhum GOM.')
+    if is_platform_admin(user) and get_active_gom(request) is None:
+        return redirect('platform_goms')  # a plataforma escolhe o GOM antes de abrir um painel
     denied = check_staff(request, ANY)
     if denied is not None:
         return denied
@@ -93,6 +95,12 @@ def switch_gom(request):
     if not accessible_goms(request.user):
         raise PermissionDenied('Esta conta não faz parte da equipe de nenhum GOM.')
     wanted = request.POST.get('gom_id', '')
+    if wanted == '' and is_platform_admin(request.user):
+        old = get_active_gom(request)
+        request.session.pop(ACTIVE_GOM_SESSION_KEY, None)
+        if old is not None:
+            messages.success(request, f'Você saiu do painel de {old.name}.')
+        return redirect('platform_goms')
     gom = next((g for g in accessible_goms(request.user) if str(g.id) == wanted), None)
     if gom is not None:
         request.session[ACTIVE_GOM_SESSION_KEY] = gom.id
@@ -218,6 +226,13 @@ def platform_goms(request):
         cegs_abertas=Count('cegs', filter=Q(cegs__status='OPEN'), distinct=True),
         membros=Count('memberships', filter=Q(memberships__is_active=True), distinct=True),
     ).order_by('name')
+    from apps.participants.models import Claim
+
+    pend = dict(Claim.objects.filter(status=Claim.Status.PENDING).order_by().values_list('slot__set__ceg__gom_id').annotate(n=Count('id')))
+    joiners = dict(Claim.objects.order_by().values_list('slot__set__ceg__gom_id').annotate(n=Count('participant', distinct=True)))
+    goms = list(goms)
+    for g in goms:
+        g.a_pagar, g.joiners = pend.get(g.id, 0), joiners.get(g.id, 0)
     return render(request, 'goms/platform_goms.html', {'goms': goms, 'form': form, 'new_link': new_link,
                                                        'is_platform_admin': is_platform_admin(request.user)})
 

@@ -1,0 +1,24 @@
+{% comment %}
+Faixa fixa para o administrador da plataforma quando ele está dentro do painel de um GOM:
+deixa claro de quem são os dados que ele está mexendo, com "Trocar GOM" e "Sair do painel".
+{% endcomment %}
+{% if is_platform_admin and active_gom %}
+<div class="w-full border-b border-ui-line" style="background: color-mix(in srgb, var(--ui-warn) 14%, var(--ui-surface)); backdrop-filter: blur(8px)" role="status" aria-label="Painel aberto como plataforma">
+    <div class="max-w-7xl mx-auto px-4 lg:px-10 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <p class="flex items-center gap-2 min-w-0">
+            <i data-lucide="eye" class="w-4 h-4 shrink-0" stroke-width="1.75"></i>
+            <span>Você está no painel de <b>{{ active_gom.name }}</b> como plataforma. O que você mudar aqui muda os dados desse GOM.</span>
+        </p>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'platform_goms' %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+                <i data-lucide="repeat" class="w-4 h-4" stroke-width="1.75"></i>Trocar GOM</a>
+            <form method="post" action="{% url 'gom_switch' %}">
+                {% csrf_token %}
+                <input type="hidden" name="gom_id" value="">
+                <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm">
+                    <i data-lucide="log-out" class="w-4 h-4" stroke-width="1.75"></i>Sair do painel</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -3,7 +3,7 @@ Menu do painel do GOM (P5) na barra lateral: itens de apps/goms/menu.py já filt
 do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_menu).
 {% endcomment %}
 <nav class="space-y-0.5" aria-label="Painel do GOM">
-    <p class="ui-label px-3 pb-1.5 truncate">Painel{% if active_gom %} · {{ active_gom.name }}{% endif %}</p>
+    {% if gom_menu %}<p class="ui-label px-3 pb-1.5 truncate">Painel{% if active_gom %} · {{ active_gom.name }}{% endif %}</p>{% endif %}
     {% for item in gom_menu %}
         <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
             <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i>
@@ -14,7 +14,7 @@ do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_me
         </a>
     {% endfor %}
     {% if platform_menu %}
-        <p class="ui-label px-3 pt-3 pb-1.5">Plataforma</p>
+        <p class="ui-label px-3 {% if gom_menu %}pt-3 {% endif %}pb-1.5">Plataforma</p>
         {% for item in platform_menu %}
             <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
                 <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span>{{ item.label }}</span>

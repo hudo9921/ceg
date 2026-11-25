@@ -150,6 +150,7 @@
                 <i data-lucide="shield" class="w-3 h-3 text-pink-500"></i>
                 <span>{{ log.actor_name }}</span>
             </span>
+            {% if log.actor.is_superuser %}<span class="ui-status ui-warn ml-1" title="Feito pelo administrador da plataforma">via plataforma</span>{% endif %}
         {% else %}
             <span class="text-[11px] ui-muted">
                 {{ log.actor_name|default:"Sistema" }}

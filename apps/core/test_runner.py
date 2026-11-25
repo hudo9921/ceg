@@ -29,9 +29,27 @@ class ProjectTestRunner(DiscoverRunner):
         from apps.participants.models import Participant
         post_save.connect(_legacy_joiner_known_by_valcegs, sender=Participant,
                           dispatch_uid='tests-legacy-joiner-valcegs')
+        # Testes antigos logam como superusuário e operam o ValCegs. A plataforma agora precisa
+        # escolher o GOM ("Abrir painel"); aqui o login de superusuário já abre o painel do ValCegs.
+        # Os testes da escolha (apps/goms/tests_platform_entry.py) saem do painel explicitamente.
+        from django.test import Client
+        self._original_client_login = Client._login
+        original = self._original_client_login
+
+        def _login(client, user, backend=None):
+            original(client, user, backend)
+            if getattr(user, 'is_superuser', False):
+                from apps.goms.access import ACTIVE_GOM_SESSION_KEY
+                from apps.goms.scoping import default_gom_id
+                session = client.session
+                session[ACTIVE_GOM_SESSION_KEY] = default_gom_id()
+                session.save()
+        Client._login = _login
 
     def teardown_test_environment(self, **kwargs):
         self._two_factor_override.disable()
+        from django.test import Client
+        Client._login = self._original_client_login
         super().teardown_test_environment(**kwargs)
 
 
