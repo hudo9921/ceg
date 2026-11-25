@@ -54,7 +54,7 @@ class Http:
         if path.exists():
             return json.loads(path.read_text(encoding='utf-8'))
         host = urllib.parse.urlparse(url).netloc
-        for tentativa in range(6):
+        for tentativa in range(4):
             wait = self.last.get(host, 0) + interval - time.time()
             if wait > 0:
                 time.sleep(wait)
@@ -140,17 +140,30 @@ def pageviews(http, lang, titles):
     total = {}
     titles = [t for t in dict.fromkeys(titles) if t]
     for i in range(0, len(titles), 50):
-        q = urllib.parse.urlencode({'action': 'query', 'prop': 'pageviews', 'titles': '|'.join(titles[i:i + 50]),
-                                    'format': 'json', 'formatversion': 2, 'redirects': 1})
-        body = http.get(f'https://{lang}.wikipedia.org/w/api.php?' + q, interval=0.2)
-        query = body.get('query') or {}
-        back = {}
-        for n in (query.get('normalized') or []) + (query.get('redirects') or []):
-            back[n['to']] = back.get(n['from'], n['from'])
-        for p in query.get('pages') or []:
-            views = sum(v or 0 for v in (p.get('pageviews') or {}).values())
-            total[back.get(p['title'], p['title'])] = views
+        _pageviews_lote(http, lang, titles[i:i + 50], total)
     return total
+
+
+def _pageviews_lote(http, lang, lote, total):
+    """Um lote de títulos; se a API falhar, divide em lotes menores e, no limite, desiste só daqueles títulos."""
+    q = urllib.parse.urlencode({'action': 'query', 'prop': 'pageviews', 'titles': '|'.join(lote),
+                                'format': 'json', 'formatversion': 2, 'redirects': 1})
+    try:
+        body = http.get(f'https://{lang}.wikipedia.org/w/api.php?' + q, interval=0.3)
+    except RuntimeError:
+        if len(lote) > 5:
+            meio = len(lote) // 2
+            _pageviews_lote(http, lang, lote[:meio], total)
+            _pageviews_lote(http, lang, lote[meio:], total)
+        else:
+            http.log(f'  pageviews: desisti de {", ".join(lote)}')
+        return
+    query = (body or {}).get('query') or {}
+    back = {}
+    for n in (query.get('normalized') or []) + (query.get('redirects') or []):
+        back[n['to']] = back.get(n['from'], n['from'])
+    for p in query.get('pages') or []:
+        total[back.get(p['title'], p['title'])] = sum(v or 0 for v in (p.get('pageviews') or {}).values())
 
 
 # --- MusicBrainz -------------------------------------------------------------------------------
