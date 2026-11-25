@@ -134,3 +134,16 @@ docker exec -d valcegs-web sh -c 'python manage.py load_catalog_seed data/catalo
 Detalhes de qualidade tratados no build: grupos fictícios ficam de fora (ex.: grupos de filmes), integrantes usam o
 nome de palco em letras latinas (rótulo curto > pseudônimo > sem sobrenome > título da Wikipedia), lançamentos
 "Japanese ver." contam como japoneses e singles só entram com edição física (photocard).
+
+### Quem entra (ranking)
+
+- **Popularidade** = fusão de posições (RRF) entre visualizações da Wikipedia (en + ko, 60 dias) e vendas de álbum
+  no **Circle Chart** (antigo Gaon; ranking mensal de álbuns dos últimos 36 meses, API pública do site).
+- **Sempre entram:** quem está em `data/catalog_obrigatorios.txt` (um nome por linha, título da Wikipedia em inglês) e
+  quem vendeu **≥ 10 mil álbuns** em 3 anos no Circle Chart.
+- **Cotas de grupos:** 45% girl groups, 45% boy groups, 10% outros (os forçados contam dentro da cota do seu tipo);
+  depois até 100 estreantes dos últimos 3 anos. Solistas: os 100 mais populares com lançamento solo + forçados.
+- `data/catalog_relatorio.md` lista o que faltou: obrigatórios não encontrados, quem vende no Circle Chart sem
+  correspondência no Wikidata, e top 200 sem integrantes/foto/eras. Corrija o `.txt` e rode o build de novo (usa cache).
+- Seed de 2026-11-25: 740 artistas (546 grupos, 194 solistas), 1.988 eras, 1.707 integrantes. Grupo que falte
+  continua podendo ser adicionado pelo GOM na Nova CEG (§9).
