@@ -29,19 +29,6 @@ Retirada (pede_endereco=False) esconde o formulário de endereço.
         </fieldset>
     {% endif %}
 
-    <div x-show="!semEndereco.includes(metodo)" class="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div class="flex-1 min-w-0 space-y-1">
-            <h2 class="text-base font-bold">Preencha o formulário de envio de {{ ev.gom.name }}</h2>
-            <p class="ui-muted text-sm">A GOM precisa dele para cotar o frete e enviar seu pacote.</p>
-            {% if ev.config.instrucoes_envio %}<p class="ui-well text-sm p-3 mt-2 whitespace-pre-line">{{ ev.config.instrucoes_envio }}</p>{% endif %}
-        </div>
-        {% if ev.config.link_formulario_google %}
-            <a href="{{ ev.config.link_formulario_google }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost w-full sm:w-auto flex-none">
-                Abrir formulário <i data-lucide="external-link" class="w-4 h-4" stroke-width="1.75"></i>
-            </a>
-        {% else %}
-            <p class="ui-status ui-warn flex-none">A GOM ainda não cadastrou o formulário</p>
-        {% endif %}
-    </div>
-    <p x-show="semEndereco.includes(metodo)" x-cloak class="ui-well p-3 text-sm">Sem endereço: {{ ev.gom.name }} combina a entrega com você pelo WhatsApp.</p>
+    {% if ev.config.instrucoes_envio %}<p x-show="!semEndereco.includes(metodo)" class="ui-well text-sm p-3 whitespace-pre-line">{{ ev.config.instrucoes_envio }}</p>{% endif %}
+    <p x-show="semEndereco.includes(metodo)" x-cloak class="ui-well p-3 text-sm">Sem endereço: {{ ev.gom.name }} combina a retirada com você.</p>
 </section>

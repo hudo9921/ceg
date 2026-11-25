@@ -1,0 +1,35 @@
+{% comment %}Folha de cadastro/edição de endereço (enderecoForm): o CEP preenche rua, bairro, cidade e UF.{% endcomment %}
+<div x-show="open" x-cloak class="ui-scrim flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="open = false" @keydown.escape.window="open = false">
+    <form method="post" action="{% url 'endereco_salvar' %}" class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-lg max-h-[92vh] overflow-y-auto space-y-3"
+          role="dialog" aria-modal="true" aria-labelledby="endereco-sheet-title">
+        {% csrf_token %}
+        <input type="hidden" name="id" :value="f.id">
+        <h2 id="endereco-sheet-title" class="ui-disp text-2xl" x-text="f.id ? 'Editar endereço' : 'Novo endereço'">Novo endereço</h2>
+        <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <label class="block space-y-1.5"><span class="ui-label">CEP</span>
+                <input name="cep" x-model="f.cep" @input.debounce.400ms="buscarCep()" inputmode="numeric" maxlength="9" required class="ui-input w-full" placeholder="00000-000" autocomplete="postal-code"></label>
+            <span class="ui-muted text-[13px] pb-3" x-text="cepMsg"></span>
+        </div>
+        <label class="block space-y-1.5"><span class="ui-label">Rua / avenida</span><input name="logradouro" x-model="f.logradouro" required class="ui-input w-full" autocomplete="address-line1"></label>
+        <div class="grid grid-cols-[1fr_2fr] gap-3">
+            <label class="block space-y-1.5"><span class="ui-label">Número</span><input name="numero" x-model="f.numero" x-ref="numero" required class="ui-input w-full"></label>
+            <label class="block space-y-1.5"><span class="ui-label">Complemento</span><input name="complemento" x-model="f.complemento" class="ui-input w-full" placeholder="Apto, bloco…" autocomplete="address-line2"></label>
+        </div>
+        <label class="block space-y-1.5"><span class="ui-label">Bairro</span><input name="bairro" x-model="f.bairro" required class="ui-input w-full"></label>
+        <div class="grid grid-cols-[1fr_96px] gap-3">
+            <label class="block space-y-1.5"><span class="ui-label">Cidade</span><input name="cidade" x-model="f.cidade" required class="ui-input w-full" autocomplete="address-level2"></label>
+            <label class="block space-y-1.5"><span class="ui-label">UF</span>
+                <select name="uf" x-model="f.uf" required class="ui-input w-full">
+                    <option value="">--</option>
+                    {% for uf in ufs %}<option value="{{ uf }}">{{ uf }}</option>{% endfor %}
+                </select></label>
+        </div>
+        <label class="block space-y-1.5"><span class="ui-label">Quem recebe</span><input name="nome_destinatario" x-model="f.nome" required class="ui-input w-full" autocomplete="name"></label>
+        <label class="block space-y-1.5"><span class="ui-label">Apelido <span class="ui-muted">(opcional)</span></span><input name="apelido" x-model="f.apelido" maxlength="40" class="ui-input w-full" placeholder="Casa, Trabalho…"></label>
+        <label class="flex items-center gap-3 text-[15px] cursor-pointer"><input type="checkbox" name="padrao" x-model="f.padrao" class="w-5 h-5 accent-[var(--ui-accent)]">Usar como principal</label>
+        <div class="flex justify-end gap-2 pt-1">
+            <button type="button" class="ui-btn ui-btn-ghost" @click="open = false">Cancelar</button>
+            <button type="submit" class="ui-btn ui-btn-primary">Salvar endereço</button>
+        </div>
+    </form>
+</div>

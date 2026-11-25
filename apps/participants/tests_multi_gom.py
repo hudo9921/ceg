@@ -66,15 +66,18 @@ class JoinerWithTwoGomsTests(TestCase):
         pend = self.client.get(reverse('my_claims')).context['mercari_pendencias']
         self.assertEqual(pend['pix_key'], 'pix-alfa@x.com')
 
-    def test_caixinha_shows_each_goms_shipping_form_and_request_splits_packages(self):
-        ConfiguracaoEnvio.objects.create(gom=self.gom_b, link_formulario_google='https://forms.example/beta')
+    def test_caixinha_shows_each_goms_shipping_card_and_request_splits_packages(self):
+        ConfiguracaoEnvio.objects.create(gom=self.gom_b, instrucoes_envio='Instruções da Beta')
         ItemIndividual.objects.filter(pk__in=[self.item_a.pk, self.item_b.pk]).update(produto_pago=True)
         ctx = self.client.get(reverse('my_claims')).context
-        forms = {e['gom'].slug: e['config'].link_formulario_google for e in ctx['envio_por_gom']}
-        self.assertEqual(forms, {'loja-alfa': '', 'loja-beta': 'https://forms.example/beta'})
+        instr = {e['gom'].slug: e['config'].instrucoes_envio for e in ctx['envio_por_gom']}
+        self.assertEqual(instr, {'loja-alfa': '', 'loja-beta': 'Instruções da Beta'})
 
+        from apps.participants.models import Endereco
+        e = Endereco.objects.create(participant=self.joiner, nome_destinatario='J', cep='01001-000', logradouro='Rua A',
+                                    numero='1', bairro='Centro', cidade='SP', uf='SP')
         self.client.post(reverse('solicitar_envio_nacional'),
-                         {'selected_uids': f'mercari_{self.item_a.id},mercari_{self.item_b.id}'})
+                         {'selected_uids': f'mercari_{self.item_a.id},mercari_{self.item_b.id}', 'endereco_id': e.id})
         pacotes = PacoteNacional.objects.filter(participant=self.joiner)
         self.assertEqual(sorted(p.gom.slug for p in pacotes), ['loja-alfa', 'loja-beta'])
 

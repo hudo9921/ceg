@@ -1,6 +1,6 @@
 # Tudo no site — Plano (sem Google Forms e sem WhatsApp)
 
-> Status: **S1 entregue** (2026-11-25); próximo: S2 (endereços). Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
+> Status: **S1 e S2 entregues** (2026-11-25); próximo: S3 (login). Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
 > confirmação do GOM); login com **Google, passkey e código por e-mail**; **uma conta só** para joiner e equipe.
 > Primeiro passo: protótipo de Pagar → Gerar Pix → QR e da fila "Recebi" do GOM (board **PagamentosV2** do canvas).
 
@@ -58,7 +58,11 @@ referência) e o GOM confirma com um toque. Confirmação automática (conta do 
 - **GOM, Pagamentos** (novo item do menu): fila "Para confirmar" (Informadas primeiro), com joiner, valor, referência,
   linhas e comprovante; **Recebi** / **Não recebi**. Início ganha a tarefa "N pagamentos para confirmar".
 
-## 3. S2 — Endereços no site
+## 3. S2 — Endereços no site ✅
+Feito: `participants.Endereco` (criptografado), `enderecos_views.py` (salvar, excluir, CEP via ViaCEP pelo servidor),
+"Seus endereços" e "Entregar em" na aba Envios, cópia no pacote, botão "Ver endereço" no Envios (com `log_pii_access`),
+exportação/anonimização LGPD incluem os endereços. O link do Google Forms saiu das telas (coluna mantida no banco).
+
 - `Endereco(participant, apelido, nome_destinatario, cep, logradouro, numero, complemento, bairro, cidade, uf)` com
   `EncryptedTextField` (regra 6 do AGENTS.md); preenchimento pelo CEP via ViaCEP (gratuito, chamada do navegador).
 - Ao pedir envio, o joiner escolhe o endereço (retirada não pede). O pacote guarda uma cópia; a tela do GOM registra

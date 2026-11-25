@@ -533,3 +533,52 @@ class ParticipantNotification(models.Model):
             self.read_at = timezone.now()
             self.save(update_fields=['is_read', 'read_at'])
 
+
+
+UF_CHOICES = [(uf, uf) for uf in (
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
+    'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO')]
+
+
+class Endereco(models.Model):
+    """
+    Endereço de entrega do joiner (S2, docs/SITE_ONLY_PLAN.md): substitui o Google Forms de cada GOM.
+    Tudo criptografado em repouso (regra 6 do AGENTS.md); o pacote guarda uma cópia ao pedir o envio.
+    """
+    from apps.core.fields import EncryptedTextField
+
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name='enderecos')
+    apelido = models.CharField('Apelido', max_length=40, blank=True, help_text='Ex.: Casa, Trabalho.')
+    nome_destinatario = EncryptedTextField('Quem recebe')
+    cep = EncryptedTextField('CEP')
+    logradouro = EncryptedTextField('Rua / avenida')
+    numero = EncryptedTextField('Número')
+    complemento = EncryptedTextField('Complemento', blank=True)
+    bairro = EncryptedTextField('Bairro')
+    cidade = EncryptedTextField('Cidade')
+    uf = models.CharField('UF', max_length=2, choices=UF_CHOICES)
+    padrao = models.BooleanField('Endereço principal', default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Endereço'
+        verbose_name_plural = 'Endereços'
+        ordering = ['-padrao', 'created_at']
+
+    def __str__(self):
+        return self.apelido or f'Endereço #{self.pk}'
+
+    @property
+    def cep_formatado(self):
+        digits = re.sub(r'\D', '', self.cep or '')
+        return f'{digits[:5]}-{digits[5:]}' if len(digits) == 8 else self.cep
+
+    @property
+    def linha_curta(self):
+        return f'{self.logradouro}, {self.numero} · {self.cidade}/{self.uf}'
+
+    def texto_completo(self):
+        """Como vai para o pacote (o GOM copia para a etiqueta)."""
+        comp = f' — {self.complemento}' if self.complemento else ''
+        return (f'{self.nome_destinatario}\n{self.logradouro}, {self.numero}{comp}\n'
+                f'{self.bairro} — {self.cidade}/{self.uf}\nCEP {self.cep_formatado}')

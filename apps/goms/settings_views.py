@@ -18,14 +18,12 @@ class EnvioConfigForm(forms.ModelForm):
     class Meta:
         from apps.cegs.models import ConfiguracaoEnvio
         model = ConfiguracaoEnvio
-        fields = ['link_formulario_google', 'instrucoes_envio']
-        labels = {'link_formulario_google': 'Formulário de endereço (link)',
-                  'instrucoes_envio': 'Instruções para o joiner'}
+        fields = ['instrucoes_envio']
+        labels = {'instrucoes_envio': 'Instruções para o joiner'}
         widgets = {'instrucoes_envio': forms.Textarea(attrs={'rows': 4})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['link_formulario_google'].required = False
         _style(self)
 
 

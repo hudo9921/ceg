@@ -38,11 +38,11 @@ class GomSettingsTests(TestCase):
         self.assertEqual((self.gom.name, self.gom.default_pix_key), ('Loja C2', 'pix-antigo'))
 
     def test_envio_tab_saves_this_gom_config_only(self):
-        res = self.client.post(tab('envio'), {'link_formulario_google': 'https://forms.gle/abc', 'instrucoes_envio': 'CEP'})
+        res = self.client.post(tab('envio'), {'instrucoes_envio': 'Confira o CEP'})
         self.assertRedirects(res, tab('envio'), fetch_redirect_response=False)
-        self.assertEqual(ConfiguracaoEnvio.get_for_gom(self.gom).link_formulario_google, 'https://forms.gle/abc')
+        self.assertEqual(ConfiguracaoEnvio.get_for_gom(self.gom).instrucoes_envio, 'Confira o CEP')
         other = Gom.objects.create(name='Outra', slug='outra-c')
-        self.assertEqual(ConfiguracaoEnvio.get_for_gom(other).link_formulario_google, '')
+        self.assertEqual(ConfiguracaoEnvio.get_for_gom(other).instrucoes_envio, '')
 
     def test_admin_only_sees_allowed_tabs_and_is_sent_to_first(self):
         admin = User.objects.create_user('adm-c', password='x')

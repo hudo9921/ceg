@@ -8,8 +8,10 @@
                 <p class="ui-muted text-[15px] max-w-2xl">Itens que já chegaram na casa da GOM e estão quitados. Escolha o que quer receber e peça o envio.</p>
             </header>
             {% include 'participants/partials/_caixinha_prontos.html' %}
+            {% include 'participants/partials/_enderecos.html' %}
             {% include 'participants/partials/_caixinha_bloqueados.html' %}
             {% include 'participants/partials/_caixinha_pacotes.html' %}
         </div>
     </template>
 </section>
+{% include 'participants/partials/_endereco_script.html' %}

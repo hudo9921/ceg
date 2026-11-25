@@ -21,13 +21,8 @@
 
 <section class="ui-card p-5 space-y-4" aria-labelledby="envio-title">
     <div class="space-y-1">
-        <h2 id="envio-title" class="ui-disp text-xl">Formulário de endereço</h2>
-        <p class="ui-muted text-sm">O joiner vê o link e as instruções na caixinha, no botão <b>Abrir formulário</b>. Pode ser Google Forms, Typeform ou Tally. Retirada em mãos não pede o formulário.</p>
+        <h2 id="envio-title" class="ui-disp text-xl">Instruções para o joiner</h2>
+        <p class="ui-muted text-sm">Aparecem na caixinha, ao pedir o envio. O endereço o joiner cadastra no próprio site: você vê no pacote.</p>
     </div>
-    {% include 'goms/partials/_profile_field.html' with field=form.link_formulario_google %}
     {% include 'goms/partials/_profile_field.html' with field=form.instrucoes_envio %}
-    {% if form.instance.link_formulario_google %}
-        <a href="{{ form.instance.link_formulario_google }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost ui-btn-sm">
-            <i data-lucide="external-link" class="w-4 h-4" stroke-width="1.75"></i>Abrir formulário</a>
-    {% endif %}
 </section>

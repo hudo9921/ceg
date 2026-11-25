@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
 from .charges import attach_pix_state, build_charges
+from .models import UF_CHOICES
 from .items_panel import build_items, stage_options
 from .gom_panel import gom_pix_defaults, goms_summary, mercari_pix_by_gom, shipping_configs_by_gom
 from .services import BulkParticipantService
@@ -1052,6 +1053,8 @@ class MyClaimsView(View):
             'pacotes_em_andamento': pacotes_em_andamento,
             'pacotes_recebidos': pacotes_recebidos,
             'itens_caixinha_prontos': itens_caixinha_prontos,
+            'enderecos': list(participant.enderecos.all()),
+            'ufs': [uf for uf, _label in UF_CHOICES],
             'itens_caixinha_bloqueados': itens_caixinha_bloqueados,
             'total_caixinha_disponivel': len(itens_caixinha_prontos),
             # Multi-GOM: resumo por GOM (filtro/visão por GOM) e envio de cada GOM na Caixinha
@@ -1223,9 +1226,17 @@ class SolicitarEnvioNacionalView(View):
                 return redirect('my_claims')
             metodos[gom_id] = escolhido
 
+        # Endereço (S2): obrigatório se algum GOM vai mandar pelo correio (forma que pede endereço ou sem formas).
+        precisa_endereco = any(metodos.get(gid) is None or metodos[gid].pede_endereco for gid in por_gom)
+        endereco = participant.enderecos.filter(pk=request.POST.get('endereco_id') or 0).first()
+        if precisa_endereco and endereco is None:
+            messages.error(request, "Escolha (ou cadastre) o endereço de entrega antes de pedir o envio.")
+            return redirect('/me/?tab=envios#enderecos')
+
         identificadores = []
         for gom_id, objs in por_gom.items():
             metodo = metodos.get(gom_id)
+            vai_pelo_correio = metodo is None or metodo.pede_endereco
             pacote = PacoteNacional.objects.create(
                 gom_id=gom_id,
                 participant=participant,
@@ -1234,6 +1245,8 @@ class SolicitarEnvioNacionalView(View):
                 solicitado_em=timezone.now(),
                 metodo_envio=metodo,
                 metodo_nome=metodo.nome if metodo else '',
+                endereco_destinatario=endereco.texto_completo() if vai_pelo_correio and endereco else '',
+                cep_destinatario=endereco.cep_formatado if vai_pelo_correio and endereco else '',
             )
             for obj in objs:
                 obj.pacote_nacional = pacote
