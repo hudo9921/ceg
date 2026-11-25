@@ -34,7 +34,7 @@ equipe reserva pelo modal assistido. Esgotado fica cinza com carimbo.
                 <i data-lucide="maximize-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
             </button>
             {% endif %}
-            {% if is_gom_staff %}
+            {% if staff_can.editar %}
             <button type="button" class="ui-tag !h-8 !px-2" aria-label="Editar item avulso" @click.stop="openEditAvulsoModal(findAvulsoItem({{ idef.id }}))">
                 <i data-lucide="pencil" class="w-3.5 h-3.5" stroke-width="1.75"></i>
             </button>

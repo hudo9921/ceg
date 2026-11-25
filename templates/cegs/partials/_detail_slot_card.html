@@ -80,7 +80,7 @@ com carimbo. Equipe: caixa de seleção em lote, editar, histórico e marcação
                 <i data-lucide="maximize-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
             </button>
             {% endif %}
-            {% if is_gom_staff %}
+            {% if staff_can.pedidos %}
             <button type="button" class="ui-tag !h-8 !px-2" aria-label="Editar item ou gerenciar reserva"
                     @click.stop="openManageSlotModal({
                         id: {{ slot.id }}, itemDefId: {{ slot.item_definition.id }},
@@ -94,7 +94,7 @@ com carimbo. Equipe: caixa de seleção em lote, editar, histórico e marcação
             </button>
             {% endif %}
         </div>
-        {% if is_gom_staff %}
+        {% if staff_can.editar or staff_can.pagar or staff_can.excluir or staff_can.pedidos %}
         <label class="absolute left-2 top-2 z-[3] ui-tag !h-8 !px-2 cursor-pointer" @click.stop>
             <input type="checkbox" class="w-4 h-4 accent-current cursor-pointer" :checked="selectedSlotIds.includes({{ slot.id }})"
                    @click.stop="toggleSlotSelection({{ slot.id }}, {{ slot.item_definition.id }})">

@@ -75,7 +75,7 @@
                 Quando o organizador oficializar os sets, as vagas serão preenchidas prioritariamente por ordem cronológica exata de envio do voto.
             </p>
         </div>
-        {% if is_gom_staff %}
+        {% if staff_can.editar %}
         <div class="flex items-center gap-2 shrink-0">
             <button type="button" @click="consolidateModalOpen = true"
                     class="px-4 py-2.5 bg-ui-accent text-white text-white font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer active:scale-95">

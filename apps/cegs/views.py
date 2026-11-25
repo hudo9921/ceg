@@ -226,6 +226,12 @@ class UpdateHomeBannerView(PlatformAdminRequiredMixin, View):
         return redirect('home')
 
 
+def _ceg_staff_can(request):
+    keys = {'editar': 'ceg.editar', 'excluir': 'ceg.excluir', 'pagar': 'pag.confirmar', 'pedidos': 'pedidos.editar',
+            'espera': 'ceg.espera', 'valores': 'caixas.valores'}
+    return {name: has_gom_permission(request, key) for name, key in keys.items()}
+
+
 class CEGDetailView(View):
     def get(self, request, slug):
         ceg = get_object_or_404(
@@ -463,6 +469,8 @@ class CEGDetailView(View):
             'brand_gom': ceg.gom,
             'ceg': ceg,
             'is_gom_staff': manage,
+            # O que este admin pode fazer nesta CEG (apps.goms.permissions); o servidor confere de novo.
+            'staff_can': _ceg_staff_can(request) if manage else {},
             'sets': regular_sets,
             'avulso_set': avulso_set,
             'avulso_slots': avulso_slots,
@@ -1409,6 +1417,13 @@ class ManageSlotView(View):
         })
 
 
+BULK_ACTION_PERMISSIONS = {
+    'update_type': 'ceg.editar', 'update_price': 'ceg.editar',
+    'delete_items': 'ceg.excluir', 'delete_slots': 'ceg.excluir',
+    'bulk_payment': 'pag.confirmar',
+}
+
+
 class BulkManageCEGItemsView(View):
     """
     Permite ao organizador (staff) realizar alterações e exclusões em massa de itens de uma CEG:
@@ -1420,9 +1435,6 @@ class BulkManageCEGItemsView(View):
     def post(self, request, slug):
         if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-        if not has_gom_permission(request, 'ceg.editar'):
-            return deny_gom_permission(request, as_json=True)
-
         ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         try:
@@ -1434,6 +1446,9 @@ class BulkManageCEGItemsView(View):
             data = request.POST
 
         action = data.get('action')
+        # Cada ação em lote exige a própria permissão (antes tudo passava com ceg.editar).
+        if not has_gom_permission(request, BULK_ACTION_PERMISSIONS.get(action, 'ceg.editar')):
+            return deny_gom_permission(request, as_json=True)
         slot_ids = data.get('slot_ids', [])
         item_def_ids = data.get('item_def_ids', [])
 

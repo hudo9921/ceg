@@ -15,7 +15,7 @@ Sem imagem, o fundo holográfico do tema ocupa o lugar.
                 <span class="hidden sm:inline">Ver imagem</span>
             </button>
         {% endif %}
-        {% if is_gom_staff %}
+        {% if staff_can.editar %}
             <button type="button" @click="editCegModalOpen = true" class="ui-tag !h-9">
                 <i data-lucide="{% if ceg.display_image_url %}image{% else %}image-plus{% endif %}" class="w-4 h-4" stroke-width="1.75"></i>
                 <span>{% if ceg.display_image_url %}Alterar foto{% else %}Adicionar foto{% endif %}</span>

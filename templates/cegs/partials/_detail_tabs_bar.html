@@ -24,7 +24,7 @@ Tudo / Set N / Avulsos controlam viewMode e activeSetTab de cegDetailApp(); "Só
             <span>Avulsos</span><span class="ui-mono text-xs ui-muted">{{ avulso_definitions|length }}</span>
         </button>
     {% endif %}
-    {% if is_gom_staff %}
+    {% if staff_can.editar %}
         <button type="button" @click="openAddAvulsoModal()" class="ui-btn ui-btn-ghost ui-btn-sm shrink-0">
             <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i><span>Item avulso</span>
         </button>

@@ -81,6 +81,12 @@ A hierarquia atual não muda (item → `ceg.pix_key`; frete/taxa → caixa → C
 
 **GOM principal:** a tela "Equipe" convida admins (link com validade), remove e troca papéis. A tela "Configurações" (`/gom/configuracoes/<aba>/`, `apps/goms/settings_tabs.py`) tem uma aba por assunto, cada uma com a sua permissão: Perfil (`gom.perfil`), Pix (`pix.alterar`), Envio (`gom.envio`). Plano das próximas abas em `docs/GOM_CUSTOMIZATION_PLAN.md`.
 
+**Página da CEG por permissão:** `CEGDetailView` passa `staff_can` (editar, excluir, pagar, pedidos, espera, valores) e cada
+ferramenta da equipe aparece só com a sua permissão (Editar/Recortar/Adicionar avulso → `ceg.editar`; Taxas e prazos →
+`caixas.valores`; Alocar joiners e gerenciar reserva → `pedidos.editar`; Fila e logs → `ceg.espera`; Excluir →
+`ceg.excluir`; chips de pagamento → `pag.confirmar`). As ações em lote (`bulk_manage_ceg_items`) exigem a permissão de
+cada ação (`BULK_ACTION_PERMISSIONS`).
+
 **Admin de GOM:** o mesmo backoffice de hoje, limitado ao GOM em que está atuando.
 
 **Joiner:**
