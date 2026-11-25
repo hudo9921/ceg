@@ -23,6 +23,10 @@ function vitrineApp() {
         init() {
             this.recalculateVisible();
             this.sortCards();
+            // ?item=<slug> (links da loja do GOM): abre a ficha do item.
+            const slug = new URLSearchParams(window.location.search).get('item');
+            const card = slug && document.getElementById('vitrine-' + slug);
+            if (card) this.$nextTick(() => { card.scrollIntoView({ block: 'center' }); this.openCard(card); });
         },
 
         get hasActiveFilters() {

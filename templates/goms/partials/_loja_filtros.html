@@ -1,0 +1,73 @@
+{% comment %}
+Filtros da loja do GOM. Só aparece o que está à venda agora (apps/goms/loja.py:facetas): os grupos com mais CEGs viram
+chips e o resto fica em "Mais grupos"; integrantes aparecem depois de escolher o grupo. Cada mudança recarrega o corpo.
+{% endcomment %}
+<div class="space-y-3">
+    {% if grupos_topo %}
+    <div class="ui-rail-track !py-1 !gap-2" role="radiogroup" aria-label="Grupo">
+        <label class="ui-chip{% if not f.grupo %} is-on{% endif %}">
+            <input type="radio" name="grupo" value="" class="sr-only"{% if not f.grupo %} checked{% endif %}>Todos os grupos
+        </label>
+        {% for g in grupos_topo %}
+            <label class="ui-chip{% if g.id == f.grupo %} is-on{% endif %}">
+                <input type="radio" name="grupo" value="{{ g.id }}" class="sr-only"{% if g.id == f.grupo %} checked{% endif %}>
+                {{ g.name }}{% if g.n %} <span class="ui-mono ui-muted text-xs">{{ g.n }}</span>{% endif %}
+            </label>
+        {% endfor %}
+        {% if grupos_todos|length > grupos_topo|length %}
+            <label class="ui-chip !pr-2">
+                <span class="sr-only">Mais grupos</span>
+                <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i>
+                <select name="grupo_mais" class="bg-transparent border-0 text-sm font-medium cursor-pointer outline-none text-ui-text">
+                    <option value="">Mais grupos ({{ grupos_todos|length }})</option>
+                    {% for g in grupos_todos %}<option value="{{ g.id }}">{{ g.name }} ({{ g.n }})</option>{% endfor %}
+                </select>
+            </label>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if f.grupo and integrantes %}
+    <div class="ui-rail-track !py-1 !gap-2" role="radiogroup" aria-label="Integrante">
+        <label class="ui-chip{% if not f.integrante %} is-on{% endif %}">
+            <input type="radio" name="integrante" value="" class="sr-only"{% if not f.integrante %} checked{% endif %}>Qualquer integrante
+        </label>
+        {% for i in integrantes %}
+            <label class="ui-chip{% if i.nome|lower == f.integrante|lower %} is-on{% endif %}">
+                <input type="radio" name="integrante" value="{{ i.nome }}" class="sr-only"{% if i.nome|lower == f.integrante|lower %} checked{% endif %}>{{ i.nome }}
+            </label>
+        {% endfor %}
+    </div>
+    {% elif f.integrante %}
+        <input type="hidden" name="integrante" value="{{ f.integrante }}">
+    {% endif %}
+
+    <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm sm:hidden" @click="maisFiltros = !maisFiltros" :aria-expanded="maisFiltros.toString()">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4" stroke-width="1.75"></i>
+        <span>Tipo, preço e ordem{% if f.tipo or f.preco_max or f.ordem != 'recentes' %} ·{% endif %}</span>
+    </button>
+    <div class="grid-cols-2 sm:grid-cols-4 gap-2 sm:grid" :class="maisFiltros ? 'grid' : 'hidden'">
+        <label class="block space-y-1">
+            <span class="ui-label">Tipo</span>
+            <select name="tipo" class="ui-input w-full">
+                <option value="">Todos</option>
+                {% for t in tipos %}<option value="{{ t.id }}"{% if t.id == f.tipo %} selected{% endif %}>{{ t.nome }} ({{ t.n }})</option>{% endfor %}
+            </select>
+        </label>
+        <label class="block space-y-1">
+            <span class="ui-label">Preço até (R$)</span>
+            <input type="number" name="preco_max" min="1" step="1" inputmode="numeric" value="{{ f.preco_max|default_if_none:''|floatformat:'0' }}"
+                   placeholder="Qualquer" class="ui-input w-full">
+        </label>
+        <label class="block space-y-1 col-span-2 sm:col-span-1">
+            <span class="ui-label">Ordenar por</span>
+            <select name="ordem" class="ui-input w-full">
+                {% for chave, nome in ordens.items %}
+                    {% if f.aba != 'pronta' or chave != 'fechando' and chave != 'vagas' %}
+                    <option value="{{ chave }}"{% if chave == f.ordem %} selected{% endif %}>{{ nome }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+</div>

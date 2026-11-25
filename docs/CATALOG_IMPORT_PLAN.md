@@ -147,3 +147,12 @@ nome de palco em letras latinas (rótulo curto > pseudônimo > sem sobrenome > t
   correspondência no Wikidata, e top 200 sem integrantes/foto/eras. Corrija o `.txt` e rode o build de novo (usa cache).
 - Seed de 2026-11-25: 740 artistas (546 grupos, 194 solistas), 1.988 eras, 1.707 integrantes. Grupo que falte
   continua podendo ser adicionado pelo GOM na Nova CEG (§9).
+
+## 12. Muitos grupos na interface (regra)
+
+- **Joiner nunca vê o catálogo inteiro.** Filtros (loja do GOM, Vitrine, Home) só oferecem grupos/eras/integrantes com
+  algo à venda agora, com contagem; os mais frequentes viram chips e o resto fica em "Mais grupos".
+- **O catálogo completo só aparece por busca**, onde o GOM cria coisas (Nova CEG, formulário da Vitrine).
+- **Telas de staff** (Analytics, Alocador) listam só grupos com CEG do próprio GOM.
+- Toda tela nova com filtro de grupo segue isso; os testes de número fixo de consultas (`tests_vitrine`, `tests_loja`)
+  pegam regressões.

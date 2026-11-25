@@ -226,7 +226,14 @@
 - **Lucro por CEG:** `analytics/lucro.html` + `analytics/partials/_lucro_row.html` (`/analytics/lucro/`, `analytics.ver`; link em Relatórios). Custo da CEG editado na própria linha.
 - **Mensagens:** `conversas/joiner.html` (`/me/mensagens/`) e `conversas/gom.html` (`/mensagens/`), com `conversas/partials/_lista.html`, `_thread.html` (componente `chatThread`, busca a cada 8 s) e `_botao_mensagem.html` (botão do joiner em pacote, CEG e página do GOM).
 - **Reservas da Vitrine:** `conversas/partials/_reserva_painel.html` no topo da conversa (ações do GOM e do joiner); botão "Reservar" em `cegs/partials/_vitrine_modal_detail.html`.
-- **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
+- **Página pública do GOM (loja):** `goms/public_page.html` (`/gom/<slug>/`): cabeçalho, regras, CEG fixada,
+  `_loja_em_breve.html` (trilho das agendadas) e a loja. Busca, filtros, ordenação e paginação são do servidor
+  (`apps/goms/loja.py`); cada mudança troca só `_loja_corpo.html` (`?parcial=1`, componente `lojaGom` em
+  `_loja_script.html`) e a URL acompanha os filtros. `_loja_filtros.html`: abas CEGs abertas / Pronta entrega, chips dos
+  grupos com mais CEGs + "Mais grupos", integrantes depois do grupo, tipo, preço e ordem (no celular atrás de um botão).
+  `_loja_cards.html` (+ "Carregar mais", `?parcial=mais`) usa `_loja_card_ceg.html`, `_loja_card_item.html` (vista
+  "Itens": cada item livre vira produto e abre a CEG em `?item=<id>`, `cegs/partials/_detail_item_link_script.html`) e
+  `_loja_card_pronta.html` (abre a ficha na Vitrine em `?item=<slug>`). Filtros só oferecem o que está à venda.
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).
   - `invite_accept.html`: aceitar convite.
@@ -245,7 +252,7 @@
 - `participants/login_otp.html` + `partials/_login_phone.html` / `_login_code.html`: entrar com WhatsApp (número → código).
 - `core/two_factor/_layout.html`: moldura de login da equipe, convite e 2FA (`ui-card`); `_token_field.html`: campo do código.
 - `goms/login.html`, `goms/invite_accept.html`, `core/two_factor/setup|verify|backup_codes|manage.html`.
-- `goms/public_page.html` + `partials/_public_cegs.html`: página pública do GOM. `participants/privacidade.html`: política.
+- `goms/public_page.html` + `partials/_loja_*.html`: página pública do GOM (loja). `participants/privacidade.html`: política.
 - Campos dos formulários de GOM usam `ui-input` (`apps/goms/forms.py: INPUT_CLASS`).
 
 ### Painel do GOM (P5)

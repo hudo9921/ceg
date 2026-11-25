@@ -3,7 +3,7 @@
 {% block title %}{{ gom.name }} — CEGs e pronta entrega | ValCegs{% endblock %}
 
 {% block content %}
-{% comment %}Página pública do GOM (P5a): perfil, contatos, CEGs abertas/em breve e pronta entrega.{% endcomment %}
+{% comment %}Página pública do GOM: perfil, CEG fixada, "abrindo em breve" e a loja (busca, filtros e paginação no servidor, apps/goms/loja.py).{% endcomment %}
 <div class="max-w-[1120px] mx-auto space-y-8">
     <section class="ui-card overflow-hidden" aria-labelledby="gom-title">
         {% if gom.banner_url %}
@@ -11,12 +11,12 @@
         {% else %}
             <div class="w-full h-24 sm:h-32" style="background: var(--ui-holo)"></div>
         {% endif %}
-        <div class="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14">
+        <div class="p-5 sm:p-6 pt-0 sm:pt-0 flex flex-col sm:flex-row sm:items-end gap-4">
             {% if gom.logo_url %}
                 <img src="{{ gom.logo_url|thumb }}" data-full="{{ gom.logo_url }}" alt="Logo de {{ gom.name }}"
-                     class="w-20 h-20 rounded-ui-card object-cover shadow-md" style="background: var(--ui-surface); border: 4px solid var(--ui-surface)">
+                     class="w-20 h-20 -mt-10 rounded-ui-card object-cover shadow-md shrink-0" style="background: var(--ui-surface); border: 4px solid var(--ui-surface)">
             {% else %}
-                <span class="w-20 h-20 rounded-ui-card shadow-md bg-ui-accent text-white text-3xl font-bold flex items-center justify-center" style="border: 4px solid var(--ui-surface)">{{ gom.name|slice:":1"|upper }}</span>
+                <span class="w-20 h-20 -mt-10 shrink-0 rounded-ui-card shadow-md bg-ui-accent text-white text-3xl font-bold flex items-center justify-center" style="border: 4px solid var(--ui-surface)">{{ gom.name|slice:":1"|upper }}</span>
             {% endif %}
             <div class="flex-1 min-w-0 space-y-1">
                 <p class="ui-label">GOM</p>
@@ -37,31 +37,23 @@
 
     {% if destaque %}{% include 'goms/partials/_public_destaque.html' with ceg=destaque %}{% endif %}
 
-    {% include 'goms/partials/_public_cegs.html' with titulo="CEGs abertas" cegs=abertas vazio="Nenhuma CEG aberta agora." %}
-    {% if agendadas %}
-        {% include 'goms/partials/_public_cegs.html' with titulo="Abrindo em breve" cegs=agendadas vazio="" %}
-    {% endif %}
+    {% if agendadas %}{% include 'goms/partials/_loja_em_breve.html' %}{% endif %}
 
-    {% if vitrine %}
-    <section class="space-y-3" aria-labelledby="gom-vitrine-title">
-        <div class="flex items-baseline justify-between gap-3">
-            <h2 id="gom-vitrine-title" class="ui-disp text-2xl">Pronta entrega</h2>
-            <a href="{% url 'vitrine_list' %}" class="ui-label hover:underline">Ver a vitrine</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {% for item in vitrine %}
-                <a href="{% url 'vitrine_list' %}" class="ui-pick is-free block">
-                    <span class="ui-pc block">
-                        {% if item.display_image_url %}<img src="{{ item.display_image_url|thumb }}" data-full="{{ item.display_image_url }}" alt="" loading="lazy" decoding="async">{% else %}<span class="ui-pc-empty font-bold px-2 text-center">{{ item.titulo }}</span>{% endif %}
-                    </span>
-                    <span class="block px-1 pt-2">
-                        <span class="block text-[15px] font-bold line-clamp-2">{{ item.titulo }}</span>
-                        <span class="block ui-mono font-bold">R$ {{ item.preco|floatformat:2 }}</span>
-                    </span>
-                </a>
-            {% endfor %}
-        </div>
+    <section aria-label="Loja de {{ gom.name }}" x-data="lojaGom()" class="space-y-4">
+        <form id="loja-form" method="get" action="{% url 'gom_public' gom.slug %}" @submit.prevent="aplicar()" @change="mudou($event)" class="space-y-4">
+            <div class="ui-filters">
+                <div class="relative flex-1 min-w-[200px]">
+                    <label for="loja-busca" class="sr-only">Buscar nesta loja</label>
+                    <input type="search" id="loja-busca" name="q" value="{{ f.q }}" @input.debounce.400ms="aplicar()"
+                           placeholder="Buscar grupo, era, integrante ou item" class="ui-input w-full pl-11" autocomplete="off">
+                    <i data-lucide="search" class="w-4 h-4 ui-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" stroke-width="1.75"></i>
+                </div>
+            </div>
+            <div id="loja-corpo" :aria-busy="carregando.toString()" :class="carregando && 'opacity-60 transition-opacity'">
+                {% include 'goms/partials/_loja_corpo.html' %}
+            </div>
+        </form>
     </section>
-    {% endif %}
 </div>
+{% include 'goms/partials/_loja_script.html' %}
 {% endblock %}
