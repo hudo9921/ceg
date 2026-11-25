@@ -251,13 +251,20 @@ def gom_public_page(request, slug):
     abertas = list(base.filter(Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now))
                    .order_by('-created_at'))
     agendadas = list(base.filter(status=CEG.Status.SCHEDULED, opens_at__gt=now).order_by('opens_at'))
-    enrich_cegs_with_availability(abertas + agendadas)
+    # Opções da página (Configurações → Perfil): CEG fixada no topo e seções visíveis.
+    destaque = next((c for c in abertas + agendadas if c.id == gom.pagina_ceg_destaque_id), None)
+    if destaque is not None:
+        abertas = [c for c in abertas if c.id != destaque.id]
+        agendadas = [c for c in agendadas if c.id != destaque.id]
+    if not gom.pagina_mostrar_agendadas:
+        agendadas = []
+    enrich_cegs_with_availability(abertas + agendadas + ([destaque] if destaque else []))
     vitrine = list(ItemVitrine.objects.for_gom(gom).filter(status=ItemVitrine.Status.DISPONIVEL)
-                   .order_by('-destaque', '-created_at')[:12])
+                   .order_by('-destaque', '-created_at')[:12]) if gom.pagina_mostrar_vitrine else []
     from .rules import rules_context
 
     return render(request, 'goms/public_page.html', {
-        'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine, 'brand_gom': gom,
+        'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine, 'brand_gom': gom, 'destaque': destaque,
         **rules_context(request, gom),
     })
 

@@ -1,0 +1,17 @@
+{% comment %}CEG fixada no topo da página pública do GOM (Configurações → Perfil). Parâmetro: ceg.{% endcomment %}
+<a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-lift overflow-hidden grid sm:grid-cols-[1.2fr_1fr] no-underline text-ui-text" aria-label="Em destaque: {{ ceg.title }}">
+    {% if ceg.display_image_url %}
+        <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt="" loading="lazy" decoding="async" class="w-full h-full min-h-[180px] aspect-[16/9] sm:aspect-auto object-cover">
+    {% else %}
+        <span class="block w-full min-h-[180px] aspect-[16/9] sm:aspect-auto" style="background: var(--ui-holo)"></span>
+    {% endif %}
+    <span class="p-5 sm:p-6 flex flex-col justify-center gap-2">
+        <span class="ui-label flex items-center gap-1.5"><i data-lucide="pin" class="w-3.5 h-3.5" stroke-width="1.75"></i>Em destaque</span>
+        <span class="ui-disp text-2xl sm:text-3xl leading-tight">{{ ceg.title }}</span>
+        <span class="ui-muted text-sm">{{ ceg.era.group.name }} · {{ ceg.era.name }}</span>
+        <span class="ui-status {% if ceg.status == 'SCHEDULED' %}ui-warn{% else %}ui-ok{% endif %}">
+            {% if ceg.status == 'SCHEDULED' and ceg.opens_at %}Abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}{% else %}{{ ceg.available_slots_count }} vaga{{ ceg.available_slots_count|pluralize }} livre{{ ceg.available_slots_count|pluralize }}{% endif %}
+        </span>
+        <span class="ui-btn ui-btn-primary ui-btn-sm self-start mt-1">Ver CEG</span>
+    </span>
+</a>
