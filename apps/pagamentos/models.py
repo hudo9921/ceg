@@ -75,6 +75,8 @@ class CobrancaLinha(models.Model):
     item_individual = models.ForeignKey('cegs.ItemIndividual', on_delete=models.CASCADE, null=True, blank=True,
                                         related_name='+')
     pacote = models.ForeignKey('cegs.PacoteNacional', on_delete=models.CASCADE, null=True, blank=True, related_name='+')
+    reserva_vitrine = models.ForeignKey('conversas.ReservaVitrine', on_delete=models.CASCADE, null=True, blank=True,
+                                        related_name='+')
 
     class Meta:
         verbose_name = 'Linha da cobrança'
@@ -87,7 +89,8 @@ class CobrancaLinha(models.Model):
     def unit_key(self):
         """Identifica a unidade + tipo (a mesma unidade não entra em duas cobranças abertas)."""
         target = (f'slot:{self.slot_id}' if self.slot_id else
-                  f'avulso:{self.item_individual_id}' if self.item_individual_id else f'pacote:{self.pacote_id}')
+                  f'avulso:{self.item_individual_id}' if self.item_individual_id else
+                  f'vitrine:{self.reserva_vitrine_id}' if self.reserva_vitrine_id else f'pacote:{self.pacote_id}')
         return f'{self.tipo}:{target}'
 
 

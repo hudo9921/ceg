@@ -1062,7 +1062,9 @@ class MyClaimsView(View):
             'envio_por_gom': shipping_configs_by_gom(itens_caixinha_prontos, goms_by_id),
             'prazos_proximos': prazos_proximos,
             # Seção Pagar (P3): cobranças em aberto agrupadas por GOM, com a chave Pix de cada uma.
-            'charges': attach_pix_state(build_charges(list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais), participant),
+            'charges': attach_pix_state(build_charges(
+                list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais,
+                vitrine=participant.reservas_vitrine.filter(status='RESERVADA').select_related('item__gom')), participant),
             # Seção Meus itens (P3b): claims + avulsos numa lista, com etapa para agrupar e filtrar.
             'items_panel': build_items(claims_list, itens_individuais_list),
             'item_stages': stage_options(),

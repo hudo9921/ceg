@@ -13,4 +13,8 @@ urlpatterns = [
     path('mensagens/nova/', views.gom_nova, name='gom_mensagem_nova'),
     path('mensagens/<int:conversa_id>/enviar/', views.gom_enviar, name='gom_mensagem_enviar'),
     path('mensagens/<int:conversa_id>/novas/', views.gom_novas, name='gom_mensagens_novas'),
+    # Vitrine (S5b): joiner reserva/cancela; equipe cancela ou marca como pago (vitrine.reservar).
+    path('vitrine/<slug:slug>/reservar/', views.vitrine_reservar, name='vitrine_reservar'),
+    path('me/reservas/<int:reserva_id>/cancelar/', views.joiner_reserva_cancelar, name='joiner_reserva_cancelar'),
+    path('mensagens/reserva/<int:reserva_id>/<str:acao>/', views.gom_reserva_acao, name='gom_reserva_acao'),
 ]

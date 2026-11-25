@@ -12,6 +12,7 @@ Uma conversa (S5): mensagens (do JSON inicial e das buscas a cada 8 s) e a caixa
             <p class="ui-muted text-[13px] truncate">{{ cur.assunto }}{% if lado == 'gom' %} · <a href="{% url 'consulta_joiner' %}?participant_id={{ cur.participant_id }}" class="underline">Consulta 360°</a>{% endif %}</p>
         </div>
     </header>
+    {% include 'conversas/partials/_reserva_painel.html' %}
     <div x-ref="lista" class="flex-1 overflow-y-auto p-4 space-y-2" aria-live="polite">
         <template x-for="m in msgs" :key="m.id">
             <div :class="m.autor === 'sistema' ? 'flex justify-center' : (m.meu ? 'flex justify-end' : 'flex justify-start')">

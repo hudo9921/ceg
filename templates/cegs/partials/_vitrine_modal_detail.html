@@ -36,8 +36,15 @@
 
         <template x-if="activeItem.status === 'DISPONIVEL'">
             <div class="space-y-2">
-                <a :href="whatsappUrl" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-primary w-full">Tenho interesse · falar no WhatsApp</a>
-                <p class="ui-muted text-[13px] text-center">A mensagem já vai com o nome do item e o valor<span x-show="activeItem.gom" x-text="', para ' + activeItem.gom"></span>.</p>
+                {% if logged_participant %}
+                    <form method="post" :action="activeItem.reservarUrl">
+                        {% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary w-full">Reservar</button>
+                    </form>
+                    <p class="ui-muted text-[13px] text-center">O item fica guardado para você. Você paga pelo Pix em Pagar e combina o resto com <span x-text="activeItem.gom || 'o GOM'"></span> em Mensagens.</p>
+                {% else %}
+                    <a href="{% url 'login_otp' %}?next={% url 'vitrine_list' %}" class="ui-btn ui-btn-primary w-full">Entrar para reservar</a>
+                {% endif %}
             </div>
         </template>
     </div>

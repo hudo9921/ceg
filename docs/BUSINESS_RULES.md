@@ -192,3 +192,11 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   (R$ por 1 unidade) e taxas extras em R$. `CEG.custo_brl = valor × câmbio + taxas` (em reais, câmbio = 1).
 - Relatórios → Lucro por CEG: vendido (claims não cancelados) e recebido (pagos) dos itens contra o custo; lucro e margem
   só para CEGs com custo. Frete internacional e taxa ficam de fora (repassados ao joiner pela caixa).
+
+## Conversas e reservas da Vitrine
+
+- Conversa entre joiner e GOM por assunto (geral, pacote, CEG, item da Vitrine). Cada rodada de mensagens gera um aviso
+  no site para o outro lado; a tela aberta atualiza a cada 8 s. Equipe responde com a permissão `mensagens.responder`.
+- **Reservar** na Vitrine guarda uma unidade para o joiner (respeitando `quantidade`) e abre a conversa da reserva.
+  O joiner paga pelo Pix em Pagar; o GOM pode **Marcar como pago** (em mãos) ou **Cancelar reserva** a qualquer momento.
+  O item vira Reservado quando todas as unidades estão reservadas e Vendido quando todas foram pagas. Nada expira sozinho.

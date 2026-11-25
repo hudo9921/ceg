@@ -26,7 +26,8 @@ def _unit(tipo, desc, valor, key, group, group_title, **target):
 
 def _unit_key(u):
     target = (f"slot:{u['slot'].id}" if u.get('slot') else
-              f"avulso:{u['item_individual'].id}" if u.get('item_individual') else f"pacote:{u['pacote'].id}")
+              f"avulso:{u['item_individual'].id}" if u.get('item_individual') else
+              f"vitrine:{u['reserva_vitrine'].id}" if u.get('reserva_vitrine') else f"pacote:{u['pacote'].id}")
     return f"{u['tipo']}:{target}"
 
 
@@ -84,6 +85,12 @@ def open_units(participant, gom):
                            pacote.pix_key_frete_nacional, f'frete_nacional:pacote:{pacote.id}',
                            f'Pacote {pacote.identificador}', pacote=pacote))
 
+    from apps.conversas.models import ReservaVitrine
+    for r in ReservaVitrine.objects.filter(participant=participant, item__gom=gom,
+                                           status=ReservaVitrine.Status.RESERVADA).select_related('item'):
+        units.append(_unit('item', f'{r.item.titulo} (Vitrine)', r.preco, gom.pix_for('item')[0],
+                           f'item:vitrine:{r.id}', f'{r.item.titulo} (Vitrine)', reserva_vitrine=r))
+
     busy = {line.unit_key for line in CobrancaLinha.objects.filter(
         cobranca__gom=gom, cobranca__participant=participant, cobranca__status__in=Cobranca.OPEN)}
     return [u for u in units if _unit_key(u) not in busy]
@@ -132,7 +139,8 @@ def create_cobrancas(participant, gom, group_keys, created_by=None):
         cob.save()
         CobrancaLinha.objects.bulk_create([
             CobrancaLinha(cobranca=cob, tipo=u['tipo'], descricao=u['descricao'], valor=u['valor'],
-                          slot=u.get('slot'), item_individual=u.get('item_individual'), pacote=u.get('pacote'))
+                          slot=u.get('slot'), item_individual=u.get('item_individual'), pacote=u.get('pacote'),
+                          reserva_vitrine=u.get('reserva_vitrine'))
             for u in items])
         created.append(cob)
     return created
@@ -163,6 +171,9 @@ def _mark_paid(line, actor):
     elif line.pacote_id:
         line.pacote.is_frete_pago = True
         line.pacote.save(update_fields=['is_frete_pago'])
+    elif line.reserva_vitrine_id and line.reserva_vitrine.status == 'RESERVADA':
+        from apps.conversas.reservas import marcar_paga
+        marcar_paga(line.reserva_vitrine)
 
 
 @transaction.atomic
@@ -171,7 +182,7 @@ def confirmar(cobranca, actor):
     cobranca = Cobranca.objects.select_for_update().get(pk=cobranca.pk)
     if not cobranca.is_open:
         raise CobrancaError('Esta cobrança já foi resolvida.')
-    for line in cobranca.linhas.select_related('slot__set__ceg', 'item_individual', 'pacote'):
+    for line in cobranca.linhas.select_related('slot__set__ceg', 'item_individual', 'pacote', 'reserva_vitrine__item__gom'):
         _mark_paid(line, actor)
     cobranca.status = Cobranca.Status.CONFIRMADA
     cobranca.resolvida_em, cobranca.resolvida_por = timezone.now(), actor
