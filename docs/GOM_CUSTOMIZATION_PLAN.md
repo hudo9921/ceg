@@ -1,6 +1,6 @@
 # Personalização por GOM — Plano
 
-> Status: **C0 entregue** (2026-11-25); C1 em andamento. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
+> Status: **C0 e C1 entregues** (2026-11-25); próximo: C2. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
 > Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
 
 ## 1. O que já é do GOM hoje
@@ -32,7 +32,11 @@ Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "comp
 
 ## 3. Entregas
 
-### C1 — Regras do GOM
+### C1 — Regras do GOM ✅
+Feito: `apps/goms/rules.py` (`needs_rules`, `accept_rules`, `rules_gate`, `rules_context`), modelo `AceiteRegras`,
+aba Regras (`gom.regras`), bloco `goms/partials/_gom_rules.html` na CEG e na página pública, endpoint
+`gom_rules_accept`. `bulk_claim`/`claim_slot` respondem 409 `needs_rules`; o front dispara `rules-needed` com `retry`.
+
 - `Gom.regras` (texto) e `Gom.regras_atualizadas_em`.
 - **Aceite só na primeira participação** (decisão de 2026-11-24): só quem nunca participou de uma CEG desse GOM
   precisa aceitar. Quem já tem claim no GOM (inclusive os joiners antigos do ValCegs) não é barrado, nem quando

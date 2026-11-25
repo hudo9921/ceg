@@ -14,4 +14,5 @@ urlpatterns = [
     path('plataforma/goms/', views.platform_goms, name='platform_goms'),
     # Depois das rotas fixas de /gom/ (equipe, trocar): slugs reservados em services.RESERVED_SLUGS.
     path('gom/<slug:slug>/', views.gom_public_page, name='gom_public'),
+    path('gom/<slug:slug>/regras/aceitar/', views.accept_gom_rules, name='gom_rules_accept'),
 ]

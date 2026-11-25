@@ -37,6 +37,10 @@ class Gom(models.Model):
     default_pix_instructions_taxa = models.TextField('Instruções — taxa aduaneira', blank=True)
     default_pix_key_frete_nacional = models.CharField('Chave Pix padrão — frete nacional', max_length=255, blank=True)
     default_pix_instructions_frete_nacional = models.TextField('Instruções — frete nacional', blank=True)
+    # Regras do GOM (C1, docs/GOM_CUSTOMIZATION_PLAN.md): só quem nunca participou do GOM precisa aceitar.
+    regras = models.TextField('Regras do GOM', blank=True,
+                              help_text='Cancelamento, prazos, o que acontece sem pagamento, caixinha…')
+    regras_atualizadas_em = models.DateTimeField('Regras atualizadas em', null=True, blank=True)
     is_active = models.BooleanField('Ativo', default=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 
@@ -162,3 +166,21 @@ class GomInvite(models.Model):
         if self.expires_at <= timezone.now():
             return 'expirado'
         return 'pendente'
+
+
+class AceiteRegras(models.Model):
+    """Aceite das regras de um GOM por um joiner (uma vez; quem já participou nunca é barrado)."""
+    participant = models.ForeignKey('participants.Participant', on_delete=models.CASCADE,
+                                    related_name='aceites_regras', verbose_name='Joiner')
+    gom = models.ForeignKey(Gom, on_delete=models.CASCADE, related_name='aceites_regras')
+    aceito_em = models.DateTimeField('Aceito em', auto_now_add=True)
+    texto_hash = models.CharField('Hash do texto aceito', max_length=64, blank=True,
+                                  help_text='SHA-256 das regras no momento do aceite (prova do que foi aceito).')
+
+    class Meta:
+        verbose_name = 'Aceite de regras'
+        verbose_name_plural = 'Aceites de regras'
+        constraints = [models.UniqueConstraint(fields=['participant', 'gom'], name='aceite_regras_unico')]
+
+    def __str__(self):
+        return f'{self.participant} aceitou as regras de {self.gom}'

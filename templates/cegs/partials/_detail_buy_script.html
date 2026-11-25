@@ -71,6 +71,10 @@ function cegBuyMixin() {
                     window.location.href = data.redirect_url;
                     return;
                 }
+                if (res.status === 409 && data.needs_rules) {  // estreante no GOM: aceita as regras e o claim é refeito
+                    window.dispatchEvent(new CustomEvent('rules-needed', { detail: { retry: () => this.quickClaim() } }));
+                    return;
+                }
                 if (!data.success) {
                     alert(data.message || 'Não foi possível reservar agora. Tente de novo.');
                     return;

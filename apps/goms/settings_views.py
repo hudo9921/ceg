@@ -76,8 +76,36 @@ def _envio(request, gom):
     return form, False
 
 
-HANDLERS = {'perfil': _perfil, 'pix': _pix, 'envio': _envio}
-SAVED = {'perfil': 'Perfil do GOM atualizado.', 'pix': 'Chaves Pix atualizadas.', 'envio': 'Configuração de envio atualizada.'}
+class RegrasForm(forms.ModelForm):
+    class Meta:
+        from .models import Gom
+        model = Gom
+        fields = ['regras']
+        labels = {'regras': 'Regras do GOM'}
+        widgets = {'regras': forms.Textarea(attrs={'rows': 14})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style(self)
+
+
+def _regras(request, gom):
+    from django.utils import timezone
+
+    before = gom.regras
+    form = RegrasForm(request.POST or None, instance=gom)
+    if request.method == 'POST' and form.is_valid():
+        gom = form.save(commit=False)
+        if gom.regras.strip() != (before or '').strip():
+            gom.regras_atualizadas_em = timezone.now()
+        gom.save(update_fields=['regras', 'regras_atualizadas_em'])
+        return form, True
+    return form, False
+
+
+HANDLERS = {'perfil': _perfil, 'pix': _pix, 'regras': _regras, 'envio': _envio}
+SAVED = {'perfil': 'Perfil do GOM atualizado.', 'pix': 'Chaves Pix atualizadas.', 'regras': 'Regras salvas.',
+         'envio': 'Configuração de envio atualizada.'}
 
 
 @never_cache
@@ -95,10 +123,19 @@ def gom_settings(request, tab):
         messages.success(request, SAVED[tab])
         return redirect('gom_settings_tab', tab=tab)
     tabs = visible_tabs(request, current=tab)
+    extra = _regras_stats(gom) if tab == 'regras' else {}
     return render(request, 'goms/settings.html', {
         'gom': gom, 'form': form, 'tab': tab, 'tabs': tabs,
-        'current_tab': next(t for t in tabs if t['active']),
+        'current_tab': next(t for t in tabs if t['active']), **extra,
     })
+
+
+def _regras_stats(gom):
+    """Quantos joiners já participaram (não precisam aceitar) e quantos aceitaram."""
+    from apps.participants.models import Claim
+
+    veteranos = Claim.objects.for_gom(gom).order_by().values('participant').distinct().count()
+    return {'veteranos': veteranos, 'aceites': gom.aceites_regras.count()}
 
 
 

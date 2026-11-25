@@ -101,7 +101,7 @@ html.dark .ui-hud::after { bottom: -1px; right: -1px; border-left: 0; border-top
 .ui-btn-primary { color: #fff; background: var(--ui-accent); }
 :root:not(.dark) .ui-btn-primary { background: linear-gradient(180deg, #DA4C91 0%, #C8307A 55%, #B0246A 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 8px 18px -10px rgba(200, 48, 122, .8); }
 html.dark .ui-btn-primary { font-family: 'Chakra Petch', var(--ui-font-body); text-transform: uppercase; letter-spacing: .06em; box-shadow: 0 0 0 1px rgba(143, 178, 255, .45), 0 0 24px -8px rgba(42, 98, 245, .9); }
-.ui-btn-primary:disabled, .ui-btn-primary[aria-disabled="true"] { cursor: default; background: var(--ui-surface-2); color: var(--ui-muted); box-shadow: none; }
+:root .ui-btn-primary:disabled, :root .ui-btn-primary[aria-disabled="true"] { cursor: default; background: var(--ui-surface-2); color: var(--ui-muted); box-shadow: none; }
 .ui-btn-ghost { background: var(--ui-surface-2); color: var(--ui-text); }
 .ui-btn-ghost:hover { background: var(--ui-line); }
 .ui-btn-sm { min-height: 36px; padding: 0 12px; font-size: 13px; }

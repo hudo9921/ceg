@@ -29,6 +29,7 @@ CATALOG = [
     ('analytics.ver', 'Relatórios', 'Ver faturamento, relatórios e auditoria', 'Status das CEGs, vendas e logs', False),
     ('gom.perfil', 'GOM', 'Editar perfil do GOM', 'Nome, logo, banner e contatos', False),
     ('pix.alterar', 'GOM', 'Alterar chaves Pix', 'Do GOM, das CEGs e das caixas: para onde vai o dinheiro', True),
+    ('gom.regras', 'GOM', 'Editar as regras do GOM', 'Texto que o joiner aceita na primeira participação', False),
     ('gom.envio', 'GOM', 'Configuração de envio', 'Formulário de endereço e instruções do envio nacional', False),
 ]
 
@@ -56,7 +57,7 @@ MENU = [
     ('Envios Nacionais', ['envios.pacotes']),
     ('Auditoria', ['analytics.ver']),
     ('Relatório de Vendas', ['analytics.ver']),
-    ('Configurações', ['gom.perfil', 'pix.alterar', 'gom.envio']),
+    ('Configurações', ['gom.perfil', 'pix.alterar', 'gom.regras', 'gom.envio']),
 ]
 
 

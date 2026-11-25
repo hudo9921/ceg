@@ -1,0 +1,18 @@
+{% comment %}Aba Regras das Configurações do GOM (C1, permissão gom.regras).{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="regras-title">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div class="space-y-1">
+            <h2 id="regras-title" class="ui-disp text-xl">Regras do GOM</h2>
+            <p class="ui-muted text-sm">Aparecem na sua página pública e em cada CEG. Em branco, ninguém precisa aceitar nada.</p>
+        </div>
+        {% if gom.regras_atualizadas_em %}<span class="ui-status ui-muted">Atualizadas em {{ gom.regras_atualizadas_em|date:"d/m/Y" }}</span>{% endif %}
+    </div>
+    {% include 'goms/partials/_profile_field.html' with field=form.regras %}
+    <div class="ui-well p-4 space-y-1.5 text-sm">
+        <p class="font-bold">Quem precisa aceitar</p>
+        <p class="ui-muted">Só quem vai participar de uma CEG do {{ gom.name }} pela primeira vez: o aceite aparece antes do primeiro claim.
+            Os <b class="text-ui-text">{{ veteranos }} joiner{{ veteranos|pluralize:"s" }}</b> que já participaram não são barrados, nem quando você muda as regras.
+            {% if aceites %}{{ aceites }} estreante{{ aceites|pluralize }} já aceit{{ aceites|pluralize:"ou,aram" }}.{% endif %}</p>
+    </div>
+    <p class="ui-muted text-[13px]">Dica: escreva uma regra por linha (cancelamento, prazo de pagamento, o que acontece sem pagamento, tempo na caixinha, contato).</p>
+</section>

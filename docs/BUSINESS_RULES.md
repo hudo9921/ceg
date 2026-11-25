@@ -138,3 +138,13 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 3. **Retenção:** `python manage.py purge_personal_data` apaga endereço/CEP/observações de pacotes entregues há mais de `PII_RETENTION_DAYS` (180) e OTPs com mais de `OTP_RETENTION_DAYS` (30).
 4. **Direitos do titular:** no `/me/` (Perfil → Privacidade) o joiner baixa seus dados em JSON e pede a exclusão (digitando `EXCLUIR`). A GOM recebe uma notificação e usa a ação **Anonimizar (LGPD)** no admin de Participantes.
 5. **Anonimização (`apps.core.privacy.anonymize_participant`):** recusada enquanto houver reservas não entregues, compras avulsas em andamento ou pacotes não entregues. Apaga nome, apelido, @, notas, WhatsApp (vira `removido-<id>`), endereços, notificações e OTPs; mantém claims e valores sem identificação. Se o mesmo número fizer login depois, nasce uma conta nova e vazia.
+
+## Regras do GOM (aceite do estreante)
+
+- Cada GOM escreve as suas regras em **Configurações → Regras** (`Gom.regras`, permissão `gom.regras`).
+- Só o **estreante** precisa aceitar: quem nunca teve claim numa CEG daquele GOM e não tem `AceiteRegras`.
+  Joiners que já participaram (inclusive os antigos do ValCegs) nunca são barrados, nem quando as regras mudam.
+- O aceite pode ser feito antes da abertura (faixa na CEG) ou no próprio claim: `bulk_claim` e `claim_slot`
+  respondem **409 `needs_rules`**; a folha de regras abre, e "Aceitar e pegar" refaz o claim sozinho.
+  A checagem roda antes do `select_for_update` (`apps/goms/rules.py`). Staff reservando por alguém não passa por ela.
+- O aceite guarda o SHA-256 do texto e gera um registro na auditoria do GOM.

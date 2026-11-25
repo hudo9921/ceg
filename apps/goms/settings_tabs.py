@@ -8,6 +8,7 @@ from django.urls import reverse
 TABS = [
     ('perfil', 'Perfil', 'store', 'gom.perfil', 'Nome, logo, banner, bio e contatos da sua página.'),
     ('pix', 'Pix', 'qr-code', 'pix.alterar', 'Chaves Pix usadas quando a CEG ou a caixa não tem chave própria.'),
+    ('regras', 'Regras', 'scroll-text', 'gom.regras', 'O que o joiner aceita antes da primeira participação.'),
     ('envio', 'Envio', 'truck', 'gom.envio', 'Formulário de endereço e instruções do envio nacional.'),
 ]
 PERMISSIONS = tuple(perm for _slug, _label, _icon, perm, _help in TABS)

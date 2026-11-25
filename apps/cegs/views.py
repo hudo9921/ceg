@@ -456,7 +456,10 @@ class CEGDetailView(View):
         else:
             ceg_price_display = ""
 
+        from apps.goms.rules import rules_context
+
         return render(request, 'cegs/detail.html', {
+            **rules_context(request, ceg.gom),
             'ceg': ceg,
             'is_gom_staff': manage,
             'sets': regular_sets,
@@ -555,6 +558,15 @@ class ClaimSlotView(View):
                     }, status=401)
                 messages.error(request, 'Sessão expirada. Por favor, autentique novamente.')
                 return redirect(f"/me/login/?next=/ceg/{ceg.slug}/")
+            # Regras do GOM (C1): o estreante aceita antes do primeiro claim.
+            if not is_staff:
+                from apps.goms.rules import rules_gate
+                gate = rules_gate(p, ceg.gom, accept=request.POST.get('accept_rules') == '1')
+                if gate is not None:
+                    if is_ajax:
+                        return gate
+                    messages.error(request, f'Leia e aceite as regras do {ceg.gom.name} antes do primeiro claim.')
+                    return redirect('ceg_detail', slug=ceg.slug)
 
         try:
             claim = ClaimService.claim_slot(
@@ -681,6 +693,12 @@ class BulkClaimView(View):
                     'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
                     'message': 'Sessão expirada. Por favor, autentique novamente.'
                 }, status=401)
+            # Regras do GOM (C1): o estreante aceita antes do primeiro claim; staff reservando por alguém não passa aqui.
+            if not is_staff:
+                from apps.goms.rules import rules_gate
+                gate = rules_gate(p, ceg.gom, accept=bool(body.get('accept_rules')))
+                if gate is not None:
+                    return gate
         elif is_staff and not whatsapp:
             # Fallback para staff autenticado quando nenhum joiner for selecionado na lista
             from apps.participants.models import Participant
