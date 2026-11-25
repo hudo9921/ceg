@@ -10,7 +10,7 @@ from .models import Gom, GomInvite, GomMembership
 
 security_logger = logging.getLogger('security')
 
-RESERVED_SLUGS = {'equipe', 'trocar', 'entrar', 'convite', 'plataforma', 'admin', 'painel', 'novo', 'perfil'}
+RESERVED_SLUGS = {'equipe', 'trocar', 'entrar', 'convite', 'plataforma', 'admin', 'painel', 'novo', 'perfil', 'configuracoes'}
 
 
 class TeamRuleError(ValueError):

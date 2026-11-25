@@ -79,7 +79,7 @@ A hierarquia atual não muda (item → `ceg.pix_key`; frete/taxa → caixa → C
 
 **Plataforma (você):** tela "GOMs" (criar, ativar/desativar, gerar convite do dono) e visão geral com totais por GOM.
 
-**GOM principal:** a tela "Equipe" convida admins (link com validade), remove e troca papéis. A tela "Perfil do GOM" edita nome, logo, banner, bio, contatos, Pix padrão e a configuração de envio.
+**GOM principal:** a tela "Equipe" convida admins (link com validade), remove e troca papéis. A tela "Configurações" (`/gom/configuracoes/<aba>/`, `apps/goms/settings_tabs.py`) tem uma aba por assunto, cada uma com a sua permissão: Perfil (`gom.perfil`), Pix (`pix.alterar`), Envio (`gom.envio`). Plano das próximas abas em `docs/GOM_CUSTOMIZATION_PLAN.md`.
 
 **Admin de GOM:** o mesmo backoffice de hoje, limitado ao GOM em que está atuando.
 

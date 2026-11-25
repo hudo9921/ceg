@@ -72,7 +72,7 @@ class AdminPermissionTests(TestCase):
         GomMembership.objects.create(user=legacy, gom=self.gom, role='ADMIN')
         self.client.force_login(legacy)
         self.assertEqual(self.client.get(reverse('creations_hub')).status_code, 200)
-        self.assertEqual(self.client.get(reverse('gom_profile')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('gom_settings_tab', args=['perfil'])).status_code, 200)
 
     def test_pix_fields_ignored_without_pix_permission(self):
         self.client.force_login(self.admin)
@@ -81,9 +81,12 @@ class AdminPermissionTests(TestCase):
         self.assertEqual(caixa.pix_key_frete, '')
 
         set_permissions(self.admin_m, ['gom.perfil'], self.owner)
-        page = self.client.get(reverse('gom_profile')).content.decode()
+        page = self.client.get(reverse('gom_settings_tab', args=['perfil'])).content.decode()
         self.assertNotIn('default_pix_key', page)
-        self.client.post(reverse('gom_profile'), {'name': 'Loja Nova', 'default_pix_key': 'golpe@pix.com'})
+        self.assertNotIn(reverse('gom_settings_tab', args=['pix']), page)
+        self.assertEqual(self.client.get(reverse('gom_settings_tab', args=['pix'])).status_code, 403)
+        self.client.post(reverse('gom_settings_tab', args=['perfil']), {'name': 'Loja Nova', 'default_pix_key': 'golpe@pix.com'})
+        self.client.post(reverse('gom_settings_tab', args=['pix']), {'default_pix_key': 'golpe@pix.com'})
         self.gom.refresh_from_db()
         self.assertEqual((self.gom.name, self.gom.default_pix_key), ('Loja Nova', ''))
 

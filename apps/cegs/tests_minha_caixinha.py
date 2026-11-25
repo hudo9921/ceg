@@ -197,7 +197,7 @@ class MinhaCaixinhaTests(TestCase):
     def test_configuracao_envio_google_form(self):
         self.client.force_login(self.staff_user)
 
-        response = self.client.post('/envios/configuracao/', {
+        response = self.client.post(reverse('gom_settings_tab', args=['envio']), {
             'link_formulario_google': 'https://forms.google.com/test-form-link',
             'instrucoes_envio': 'Preencha com o mesmo nome do WhatsApp'
         })

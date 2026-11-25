@@ -715,23 +715,3 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
 
         messages.success(request, f"Pacote {identificador} excluído com sucesso. Os itens retornaram para a fila.")
         return redirect(next_url)
-
-
-class AtualizarConfiguracaoEnvioView(StaffRequiredMixin, View):
-    """
-    Atualiza o link do formulário Google e instruções de envio nacional configurados pela GOM.
-    """
-    gom_permission = 'gom.envio'
-
-    def post(self, request):
-        link_google = request.POST.get('link_formulario_google', '').strip()
-        instrucoes = request.POST.get('instrucoes_envio', '').strip()
-        next_url = request.POST.get('next', '/envios/')
-
-        config = ConfiguracaoEnvio.get_for_gom(request.active_gom)
-        config.link_formulario_google = link_google
-        config.instrucoes_envio = instrucoes
-        config.save()
-
-        messages.success(request, "Link do Formulário de Envio Nacional atualizado com sucesso!")
-        return redirect(next_url)

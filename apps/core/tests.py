@@ -112,7 +112,7 @@ class RouteFixtures:
         return {
             'slot_id': self.slot.id, 'set_id': self.cset.id, 'item_def_id': self.item_def.id,
             'item_id': self.item_individual.id, 'ceg_id': self.ceg.id,
-            'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido',
+            'pacote_id': self.pacote.id, 'pk': self.tipo.id, 'token': 'token-invalido', 'tab': 'perfil',
         }[name]
 
     def _build(self, route):
