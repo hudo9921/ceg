@@ -1,0 +1,74 @@
+{% comment %}
+Regras do GOM (C1) na página da CEG e na página pública. Contexto: `rules` de apps.goms.rules.rules_context.
+- Estreante logado: faixa "Primeira vez com o GOM? Leia e aceite antes da abertura" + folha com aceite.
+- Quem já participou (ou visitante): linha discreta "Regras do X · ver regras".
+- Claim barrado no servidor (409 needs_rules): a tela dispara `rules-needed` com `retry`; depois do aceite o
+  claim é refeito sozinho.
+{% endcomment %}
+{% if rules %}
+<div x-data="gomRules({ mustAccept: {{ rules.must_accept|yesno:'true,false' }}, logged: {{ rules.logged|yesno:'true,false' }}, url: '{% url 'gom_rules_accept' rules.gom.slug %}' })"
+     @rules-needed.window="need($event.detail && $event.detail.retry)">
+    <div x-show="mustAccept" class="ui-card p-4 flex flex-wrap items-center gap-3" style="background: var(--ui-accent-soft)">
+        <i data-lucide="scroll-text" class="w-5 h-5 shrink-0" stroke-width="1.75"></i>
+        <p class="flex-1 min-w-[220px] text-[15px]"><b>Primeira vez com o {{ rules.gom.name }}?</b> Leia e aceite as regras antes da abertura, assim o seu claim sai na hora.</p>
+        <button type="button" class="ui-btn ui-btn-primary ui-btn-sm" @click="open = true">Ler regras</button>
+    </div>
+    <p x-show="!mustAccept" x-cloak class="ui-muted text-sm flex items-center gap-2">
+        <i data-lucide="scroll-text" class="w-4 h-4" stroke-width="1.75"></i>
+        <span x-show="accepted">Regras do {{ rules.gom.name }} aceitas.</span>
+        <span x-show="!accepted">Regras do {{ rules.gom.name }}{% if rules.updated_at %} · atualizadas em {{ rules.updated_at|date:"d/m" }}{% endif %}</span>
+        · <button type="button" class="underline" @click="open = true">ver regras</button>
+    </p>
+
+    <div x-show="open" x-cloak class="ui-scrim flex items-end sm:items-center justify-center p-0 sm:p-4"
+         @click.self="close()" @keydown.escape.window="close()">
+        <div class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-lg space-y-4" role="dialog" aria-modal="true" aria-labelledby="regras-title">
+            <h2 id="regras-title" class="ui-disp text-2xl">Regras do {{ rules.gom.name }}</h2>
+            <div class="ui-well p-4 max-h-[50vh] overflow-y-auto whitespace-pre-line text-[15px] leading-relaxed">{{ rules.text }}</div>
+            <template x-if="mustAccept">
+                <div class="space-y-4">
+                    <label class="flex items-center gap-3 text-[15px] font-semibold cursor-pointer">
+                        <input type="checkbox" x-model="agree" class="w-5 h-5 accent-[var(--ui-accent)]">
+                        Li e aceito as regras do {{ rules.gom.name }}
+                    </label>
+                    <p x-show="error" x-text="error" class="text-sm ui-danger" role="alert"></p>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" class="ui-btn ui-btn-ghost" @click="close()">Agora não</button>
+                        <button type="button" class="ui-btn ui-btn-primary" :disabled="!agree || busy"
+                                @click="accept()" x-text="retry ? 'Aceitar e pegar' : 'Aceitar regras'"></button>
+                    </div>
+                </div>
+            </template>
+            <div x-show="!mustAccept" class="flex justify-end"><button type="button" class="ui-btn ui-btn-ghost" @click="close()">Fechar</button></div>
+        </div>
+    </div>
+</div>
+<script>
+function gomRules(cfg) {
+    return {
+        ...cfg, open: false, agree: false, busy: false, error: '', accepted: false, retry: null,
+        need(retry) { this.mustAccept = true; this.retry = typeof retry === 'function' ? retry : null; this.open = true; },
+        close() { this.open = false; this.retry = null; },
+        async accept() {
+            if (!this.agree || this.busy) return;
+            if (!this.logged && !this.retry) { window.location.href = '/me/login/?next=' + encodeURIComponent(location.pathname); return; }
+            this.busy = true; this.error = '';
+            try {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                const res = await fetch(this.url, { method: 'POST', headers: { 'X-CSRFToken': csrf } });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401 && data.redirect_url) { window.location.href = data.redirect_url + '?next=' + encodeURIComponent(location.pathname); return; }
+                if (!data.success) { this.error = data.message || 'Não deu certo. Tente de novo.'; return; }
+                const retry = this.retry;
+                this.mustAccept = false; this.accepted = true; this.open = false; this.retry = null;
+                if (retry) retry();
+            } catch (e) {
+                this.error = 'Sem conexão. Confira a internet e tente de novo.';
+            } finally {
+                this.busy = false;
+            }
+        }
+    };
+}
+</script>
+{% endif %}

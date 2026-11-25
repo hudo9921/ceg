@@ -32,6 +32,8 @@
         </div>
     </section>
 
+    {% include 'goms/partials/_gom_rules.html' %}
+
     {% include 'goms/partials/_public_cegs.html' with titulo="CEGs abertas" cegs=abertas vazio="Nenhuma CEG aberta agora." %}
     {% if agendadas %}
         {% include 'goms/partials/_public_cegs.html' with titulo="Abrindo em breve" cegs=agendadas vazio="" %}

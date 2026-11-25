@@ -254,6 +254,29 @@ def gom_public_page(request, slug):
     enrich_cegs_with_availability(abertas + agendadas)
     vitrine = list(ItemVitrine.objects.for_gom(gom).filter(status=ItemVitrine.Status.DISPONIVEL)
                    .order_by('-destaque', '-created_at')[:12])
+    from .rules import rules_context
+
     return render(request, 'goms/public_page.html', {
         'gom': gom, 'abertas': abertas, 'agendadas': agendadas, 'vitrine': vitrine,
+        **rules_context(request, gom),
     })
+
+
+@require_POST
+def accept_gom_rules(request, slug):
+    """Joiner logado aceita as regras do GOM antes da abertura (C1). Responde JSON."""
+    from django.http import JsonResponse
+
+    from apps.participants.models import Participant
+
+    from .rules import accept_rules, has_rules
+
+    pid = request.session.get('participant_id')
+    participant = Participant.objects.filter(pk=pid).first() if pid else None
+    if participant is None:
+        return JsonResponse({'success': False, 'requires_auth': True,
+                             'redirect_url': '/me/login/', 'message': 'Entre com seu WhatsApp para aceitar.'}, status=401)
+    gom = get_object_or_404(Gom, slug=slug, is_active=True)
+    if has_rules(gom):
+        accept_rules(participant, gom)
+    return JsonResponse({'success': True})

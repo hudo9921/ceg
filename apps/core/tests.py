@@ -35,7 +35,7 @@ PUBLIC_ROUTES = {
 PARTICIPANT_ROUTES = {
     'my_claims', 'update_profile', 'mark_notification_read', 'mark_all_notifications_read',
     'confirmar_entrega_pacote', 'cancelar_solicitacao_envio', 'solicitar_envio_nacional',
-    'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion',
+    'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion', 'gom_rules_accept',
 }
 LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
 LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')

@@ -482,6 +482,10 @@ function cegDetailApp() {
                      }
                  }
                  const data = await res.json();
+                 if (res.status === 409 && data.needs_rules) {  // estreante no GOM: regras antes do claim
+                     window.dispatchEvent(new CustomEvent('rules-needed', { detail: { retry: () => this.submitBulkClaim() } }));
+                     return;
+                 }
                  if (data.success) {
                      this.bulkClaimResults = data.results;
                      this.bulkClaimSummary = data.summary;
@@ -1401,6 +1405,10 @@ function cegDetailApp() {
     body: formData
     });
     const data = await res.json();
+    if (res.status === 409 && data.needs_rules) {
+    window.dispatchEvent(new CustomEvent('rules-needed', { detail: { retry: () => this.submitClaimForm() } }));
+    return;
+    }
     if (data.success) {
     this.claimResult = { ok: true, message: data.message, pixKey: data.pix_key || null, isWaiting: data.is_waiting_list
     || false };
