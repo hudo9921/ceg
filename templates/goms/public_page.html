@@ -25,6 +25,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 {% if gom.instagram %}<span class="ui-chip">{{ gom.instagram }}</span>{% endif %}
+                {% include 'conversas/partials/_botao_mensagem.html' with g=gom tipo='geral' %}
                 {% if logged_participant %}
                     <a href="{% url 'my_claims' %}?tab=itens" class="ui-btn ui-btn-primary ui-btn-sm">Meus itens</a>
                 {% endif %}

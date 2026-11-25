@@ -1,6 +1,6 @@
 # Tudo no site — Plano (sem Google Forms e sem WhatsApp)
 
-> Status: **S1 e S2 entregues** (2026-11-25); próximo: S3 (login). Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
+> Status: **S1, S2 e S5a entregues** (2026-11-25). S3/S4 esperam o domínio definitivo; próximo: S5b (Reservar na Vitrine). Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
 > confirmação do GOM); login com **Google, passkey e código por e-mail**; **uma conta só** para joiner e equipe.
 > Primeiro passo: protótipo de Pagar → Gerar Pix → QR e da fila "Recebi" do GOM (board **PagamentosV2** do canvas).
 
@@ -90,6 +90,9 @@ exportação/anonimização LGPD incluem os endereços. O link do Google Forms s
 - E-mail opcional depois, no mesmo plano gratuito do login.
 
 ## 6. S5 — Conversas no site
+S5a ✅ feito: app `apps/conversas` (`Conversa` por assunto — geral, pacote, CEG, Vitrine —, `Mensagem`), telas
+`/me/mensagens/` e `/mensagens/` (`mensagens.responder`), atualização a cada 8 s, avisos no site (um por rodada),
+botões em pacote, CEG, página do GOM e Consulta 360°; exportação/anonimização LGPD incluem as mensagens.
 - **Mensagens por pedido** (pacote, CEG ou item da Vitrine) entre joiner e GOM, com aviso por push.
 - Vitrine: **Reservar** no lugar de "Tenho interesse": reserva o item e cria a cobrança.
 - WhatsApp de contato do GOM vira opcional.

@@ -1,0 +1,68 @@
+{% comment %}
+Uma conversa (S5): mensagens (do JSON inicial e das buscas a cada 8 s) e a caixa de envio. `cur`, `lado`, `msgs`,
+`base`, `url_enviar`, `url_novas`. Mensagens do sistema (ex.: reserva na Vitrine) aparecem centralizadas.
+{% endcomment %}
+{{ msgs|json_script:"chat-inicial" }}
+<section class="ui-card flex flex-col min-h-[60vh] lg:h-[calc(100vh-220px)]" aria-labelledby="chat-title"
+         x-data="chatThread('{{ url_novas }}', '{{ url_enviar }}')">
+    <header class="p-4 border-b border-ui-line flex items-center gap-3">
+        <a href="{{ base }}" class="ui-icon-btn lg:hidden flex-none" aria-label="Voltar para as conversas"><i data-lucide="arrow-left" class="w-5 h-5" stroke-width="1.75"></i></a>
+        <div class="min-w-0">
+            <h2 id="chat-title" class="font-bold truncate">{% if lado == 'joiner' %}{{ cur.gom.name }}{% else %}{{ cur.participant.display_name }}{% endif %}</h2>
+            <p class="ui-muted text-[13px] truncate">{{ cur.assunto }}{% if lado == 'gom' %} · <a href="{% url 'consulta_joiner' %}?participant_id={{ cur.participant_id }}" class="underline">Consulta 360°</a>{% endif %}</p>
+        </div>
+    </header>
+    <div x-ref="lista" class="flex-1 overflow-y-auto p-4 space-y-2" aria-live="polite">
+        <template x-for="m in msgs" :key="m.id">
+            <div :class="m.autor === 'sistema' ? 'flex justify-center' : (m.meu ? 'flex justify-end' : 'flex justify-start')">
+                <div :class="m.autor === 'sistema' ? 'ui-well px-3 py-1.5 text-[13px] ui-muted text-center max-w-[90%]' : (m.meu ? 'bg-ui-accent text-white rounded-2xl rounded-br-md px-3.5 py-2 max-w-[80%]' : 'ui-well rounded-2xl rounded-bl-md px-3.5 py-2 max-w-[80%]')">
+                    <p class="whitespace-pre-line text-[15px] break-words" x-text="m.texto"></p>
+                    <p class="text-[11px] mt-0.5 opacity-75" x-show="m.autor !== 'sistema'" x-text="(m.quem ? m.quem + ' · ' : '') + m.quando"></p>
+                </div>
+            </div>
+        </template>
+        <p x-show="!msgs.length" class="text-center ui-muted text-sm py-8">Escreva a primeira mensagem.</p>
+    </div>
+    <form class="p-3 border-t border-ui-line flex items-end gap-2" @submit.prevent="enviar()">
+        <label class="sr-only" for="chat-texto">Mensagem</label>
+        <textarea id="chat-texto" x-model="texto" rows="1" maxlength="2000" class="ui-input flex-1 !py-2.5 resize-none max-h-40"
+                  placeholder="Escreva sua mensagem…" @keydown.enter.prevent="if (!$event.shiftKey) enviar(); else texto += '\n'"></textarea>
+        <button type="submit" class="ui-btn ui-btn-primary flex-none" :disabled="busy || !texto.trim()">Enviar</button>
+    </form>
+    <p x-show="erro" x-text="erro" class="px-4 pb-3 text-sm ui-danger" role="alert"></p>
+</section>
+<script>
+function chatThread(urlNovas, urlEnviar) {
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    return {
+        msgs: JSON.parse(document.getElementById('chat-inicial').textContent || '[]'), texto: '', busy: false, erro: '', timer: null,
+        init() { this.$nextTick(() => this.rolar()); this.timer = setInterval(() => this.buscar(), 8000); },
+        destroy() { clearInterval(this.timer); },
+        ultimo() { return this.msgs.length ? this.msgs[this.msgs.length - 1].id : 0; },
+        rolar() { const el = this.$refs.lista; if (el) el.scrollTop = el.scrollHeight; },
+        async buscar() {
+            if (document.hidden) return;
+            try {
+                const res = await fetch(urlNovas + '?depois=' + this.ultimo(), { headers: { 'Accept': 'application/json' } });
+                const data = await res.json();
+                const novas = (data.mensagens || []).filter((m) => !this.msgs.some((x) => x.id === m.id));
+                if (novas.length) { this.msgs.push(...novas); this.$nextTick(() => this.rolar()); }
+            } catch (e) { /* sem conexão: tenta de novo no próximo ciclo */ }
+        },
+        async enviar() {
+            const texto = this.texto.trim();
+            if (!texto || this.busy) return;
+            this.busy = true; this.erro = '';
+            const body = new FormData(); body.append('texto', texto);
+            try {
+                const res = await fetch(urlEnviar, { method: 'POST', body, headers: { 'X-CSRFToken': csrf(), 'Accept': 'application/json' } });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) { this.erro = data.message || 'Não enviou. Tente de novo.'; return; }
+                this.texto = '';
+                await this.buscar();
+            } catch (e) { this.erro = 'Sem conexão. Tente de novo.'; }
+            finally { this.busy = false; }
+        },
+    };
+}
+</script>

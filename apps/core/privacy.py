@@ -41,6 +41,7 @@ def _iso(dt):
 
 def export_participant_data(participant) -> dict:
     """Retorna um dicionário serializável com todos os dados pessoais do joiner."""
+    from apps.conversas.models import Mensagem
     claims = participant.claims.select_related(
         'slot__set__ceg', 'slot__item_definition'
     ).order_by('claimed_at')
@@ -73,6 +74,10 @@ def export_participant_data(participant) -> dict:
             'status': i.get_status_display(),
             'criado_em': _iso(i.created_at),
         } for i in itens],
+        'mensagens': [{
+            'gom': m.conversa.gom.name, 'assunto': m.conversa.assunto, 'autor': m.get_autor_display(),
+            'texto': m.texto, 'enviada_em': _iso(m.criada_em),
+        } for m in Mensagem.objects.filter(conversa__participant=participant).select_related('conversa__gom')],
         'enderecos': [{
             'apelido': e.apelido, 'quem_recebe': e.nome_destinatario, 'cep': e.cep_formatado,
             'endereco': f'{e.logradouro}, {e.numero} {e.complemento}'.strip(), 'bairro': e.bairro,
@@ -198,6 +203,7 @@ def anonymize_participant(participant, actor=None, force: bool = False):
     participant.claims.update(participant_notes='')
     participant.pacotes_nacionais.update(endereco_destinatario='', cep_destinatario='', observacoes_joiner='')
     participant.enderecos.all().delete()
+    participant.conversas.all().delete()
     participant.notifications.all().delete()
     WhatsAppOTP.objects.filter(phone=old_phone).delete()
     AuditLog.objects.filter(participant=participant).update(

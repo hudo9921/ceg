@@ -10,6 +10,9 @@
         </p>
     </div>
     <div class="flex items-center gap-2">
+        <a href="{% url 'joiner_mensagens' %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+            <i data-lucide="message-square" class="w-4 h-4" stroke-width="1.75"></i>Mensagens{% if joiner_unread_mensagens %}
+            <span class="min-w-[20px] h-5 px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold inline-flex items-center justify-center" aria-label="{{ joiner_unread_mensagens }} com resposta nova">{{ joiner_unread_mensagens }}</span>{% endif %}</a>
         <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="profileModalOpen = true">Editar perfil</button>
         <a href="{% url 'logout_participant' %}" class="ui-btn ui-btn-ghost ui-btn-sm">Sair</a>
     </div>

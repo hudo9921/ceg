@@ -222,6 +222,7 @@
 - **Ver endereço (GOM):** `cegs/partials/_pacote_endereco.html`, nos cartões de pacote do Envios (quadro e lista).
 - **Lista de embalagem:** `cegs/imprimir_pacotes.html` (`/envios/imprimir/?ids=` ou `?status=`), página própria para imprimir: uma folha A4 por pacote com etiqueta (destinatário/endereço/forma) e itens com foto para conferir. Cada endereço impresso vai para a Auditoria. Botões no cartão do quadro e "Imprimir em preparação" no topo do Envios.
 - **Lucro por CEG:** `analytics/lucro.html` + `analytics/partials/_lucro_row.html` (`/analytics/lucro/`, `analytics.ver`; link em Relatórios). Custo da CEG editado na própria linha.
+- **Mensagens:** `conversas/joiner.html` (`/me/mensagens/`) e `conversas/gom.html` (`/mensagens/`), com `conversas/partials/_lista.html`, `_thread.html` (componente `chatThread`, busca a cada 8 s) e `_botao_mensagem.html` (botão do joiner em pacote, CEG e página do GOM).
 - **Página pública do GOM:** `goms/public_page.html` + `goms/partials/_public_cegs.html` (`/gom/<slug>/`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).

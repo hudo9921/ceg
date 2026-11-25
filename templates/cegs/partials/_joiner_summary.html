@@ -18,6 +18,11 @@ etapas como filtro. Os números vêm de `statsData` (recalculados ao marcar paga
         <div class="flex flex-wrap gap-2">
             <a href="https://wa.me/{{ selected_participant.whatsapp }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost ui-btn-sm">
                 <i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i>WhatsApp</a>
+            {% if 'mensagens.responder' in gom_perms %}
+                <form method="post" action="{% url 'gom_mensagem_nova' %}" class="inline">{% csrf_token %}
+                    <input type="hidden" name="participant_id" value="{{ selected_participant.id }}">
+                    <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="message-square" class="w-4 h-4" stroke-width="1.75"></i>Mensagem</button></form>
+            {% endif %}
             {% if 'pag.confirmar' in gom_perms %}
                 <a href="{% url 'pix_cobrar' selected_participant.id %}" class="ui-btn ui-btn-ghost ui-btn-sm" title="Gerar o Pix do que deve e mandar pelo seu WhatsApp">
                     <i data-lucide="qr-code" class="w-4 h-4" stroke-width="1.75"></i>Cobrar no WhatsApp</a>

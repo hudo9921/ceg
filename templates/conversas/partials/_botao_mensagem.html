@@ -1,0 +1,18 @@
+{% comment %}
+Botão "Mandar mensagem" para o joiner abrir (ou continuar) a conversa com um GOM sobre um assunto (S5).
+Parâmetros: g (Gom), tipo (geral/pacote/ceg/vitrine), alvo_id (opcional), label (opcional), cls (opcional).
+Sem login: leva para entrar e voltar.
+{% endcomment %}
+{% if logged_participant %}
+    <form method="post" action="{% url 'joiner_mensagem_nova' %}" class="inline">
+        {% csrf_token %}
+        <input type="hidden" name="gom_id" value="{{ g.id }}">
+        <input type="hidden" name="tipo" value="{{ tipo|default:'geral' }}">
+        {% if alvo_id %}<input type="hidden" name="alvo_id" value="{{ alvo_id }}">{% endif %}
+        <button type="submit" class="{{ cls|default:'ui-btn ui-btn-ghost ui-btn-sm' }}">
+            <i data-lucide="message-square" class="w-4 h-4" stroke-width="1.75"></i>{{ label|default:"Mandar mensagem" }}</button>
+    </form>
+{% else %}
+    <a href="{% url 'login_otp' %}?next={{ request.get_full_path|urlencode }}" class="{{ cls|default:'ui-btn ui-btn-ghost ui-btn-sm' }}">
+        <i data-lucide="message-square" class="w-4 h-4" stroke-width="1.75"></i>{{ label|default:"Mandar mensagem" }}</a>
+{% endif %}

@@ -12,6 +12,7 @@ GOM_MENU = [
     ('cegs', 'CEGs', 'sparkles', 'cegs_status', ('ceg.editar', 'analytics.ver', 'pag.confirmar'), ('cegs_status', 'cegs_status_tab')),
     ('criar', 'Criar', 'circle-plus', 'creations_hub', ('ceg.editar',), ('creations_hub', 'ceg_bulk_allocator', 'bulk_joiner_allocator_global', 'creations_bulk_participant')),
     ('pagamentos', 'Pagamentos', 'qr-code', 'pix_fila', ('pag.confirmar',), ('pix_fila', 'pix_cobrar')),
+    ('mensagens', 'Mensagens', 'message-square', 'gom_mensagens', ('mensagens.responder',), ('gom_mensagens',)),
     ('caixas', 'Caixas', 'plane', 'caixas_dashboard', ('caixas.editar', 'caixas.valores', 'caixas.etapa'),
      ('caixas_dashboard', 'caixa_create', 'caixa_update', 'caixa_transfer_unclaimed_vitrine')),
     ('envios', 'Envios', 'truck', 'envios_nacionais', ('envios.pacotes', 'gom.envio'), ('envios_nacionais',)),
