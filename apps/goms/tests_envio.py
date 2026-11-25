@@ -103,5 +103,8 @@ class JoinerShippingChoiceTests(TestCase):
 
     def test_gom_without_methods_works_as_before(self):
         MetodoEnvio.objects.all().delete()
-        self.client.post(SOLICITAR, {'selected_uids': f'slot_{self.slot.id}'})
+        from apps.participants.models import Endereco
+        e = Endereco.objects.create(participant=self.joiner, nome_destinatario='Joiner E', cep='01001-000',
+                                    logradouro='Rua A', numero='1', bairro='Centro', cidade='SP', uf='SP')
+        self.client.post(SOLICITAR, {'selected_uids': f'slot_{self.slot.id}', 'endereco_id': e.id})
         self.assertEqual(PacoteNacional.objects.get(participant=self.joiner).metodo_nome, '')

@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.models import Count, Q, Avg, Prefetch
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
-from apps.core.permissions import StaffRequiredMixin
+from apps.core.permissions import StaffRequiredMixin, staff_required
 from apps.participants.models import Participant, ParticipantNotification
 from apps.participants.session_auth import safe_next_url
 
@@ -421,7 +421,7 @@ class EnviosNacionaisDashboardView(StaffRequiredMixin, View):
         feedback_filter = request.GET.get('feedback', '').strip()
         search_query = request.GET.get('q', '').strip()
 
-        qs = PacoteNacional.objects.for_gom(request.active_gom).select_related('participant').prefetch_related(
+        qs = PacoteNacional.objects.for_gom(request.active_gom).select_related('participant', 'metodo_envio').prefetch_related(
             'slots__item_definition__tipo_item',
             'slots__set__ceg__era__group',
             'itens_individuais__tipo_item'
@@ -750,3 +750,18 @@ class ExcluirPacoteView(StaffRequiredMixin, View):
 
         messages.success(request, f"Pacote {identificador} excluído com sucesso. Os itens retornaram para a fila.")
         return redirect(next_url)
+
+
+@staff_required('envios.pacotes')
+def pacote_endereco(request, pacote_id):
+    """Endereço do pacote só quando a equipe toca em "Ver endereço" (S2): cada visualização vai para a Auditoria."""
+    from django.http import JsonResponse
+
+    from apps.core.privacy import log_pii_access
+
+    pacote = get_object_or_404(PacoteNacional.objects.for_gom(request.active_gom).select_related('participant'),
+                               pk=pacote_id)
+    if not pacote.endereco_destinatario:
+        return JsonResponse({'success': False, 'message': 'Este pacote não tem endereço (retirada ou pedido antigo).'})
+    log_pii_access(request, pacote.participant, 'endereço do pacote em Envios', pacote=pacote)
+    return JsonResponse({'success': True, 'texto': pacote.endereco_destinatario})

@@ -1,4 +1,6 @@
 from django.urls import path
+
+from . import enderecos_views
 from .privacy_views import ExportMyDataView, RequestDataDeletionView
 from .views import (
     LoginOtpView, MyClaimsView, LogoutView, ProfileUpdateView,
@@ -9,6 +11,9 @@ from .views import (
 
 urlpatterns = [
     path('login/', LoginOtpView.as_view(), name='login_otp'),
+    path('enderecos/salvar/', enderecos_views.salvar, name='endereco_salvar'),
+    path('enderecos/<int:endereco_id>/excluir/', enderecos_views.excluir, name='endereco_excluir'),
+    path('cep/<str:cep>/', enderecos_views.cep, name='endereco_cep'),
     path('profile/', ProfileUpdateView.as_view(), name='update_profile'),
     path('participantes/em-massa/', BulkParticipantCreateView.as_view(), name='bulk_participant_create'),
     path('cadastros-em-massa/', BulkParticipantCreateView.as_view(), name='bulk_participant_create_alias'),

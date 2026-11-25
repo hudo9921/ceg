@@ -177,3 +177,11 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   e avisa o joiner; **Não recebi** devolve com recado. Pix gerado e não avisado em 7 dias é cancelado.
 - Joiner fora do site: **Cobrar no WhatsApp** (Consulta 360° ou fila) gera o Pix em nome dele e abre o WhatsApp do
   próprio GOM (`wa.me`) com o copia e cola; a confirmação é a mesma (Recebi).
+
+## Endereços (sem Google Forms)
+
+- O joiner cadastra endereços em **Envios → Seus endereços** (`participants.Endereco`, todos os campos com
+  `EncryptedTextField`); o CEP preenche rua, bairro, cidade e UF pelo ViaCEP, consultado pelo servidor.
+- Pedir envio exige escolher um endereço, a menos que todas as formas escolhidas sejam retirada. O pacote guarda uma
+  cópia (`endereco_destinatario`, `cep_destinatario`), apagada pelo `purge_personal_data` depois da entrega.
+- A equipe vê o endereço só ao tocar em **Ver endereço** no Envios; cada visualização gera `PII_ACCESS` na Auditoria.

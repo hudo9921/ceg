@@ -1,0 +1,18 @@
+{% comment %}Endereço do pacote para a equipe (S2): escondido até tocar em "Ver endereço" (cada visualização vai para a Auditoria). `pacote`.{% endcomment %}
+{% if pacote.metodo_envio and not pacote.metodo_envio.pede_endereco %}
+    <p class="text-[13px] ui-muted">Retirada: sem endereço.</p>
+{% else %}
+<div x-data="{ texto: '', erro: '', busy: false, copied: false,
+              async ver() { this.busy = true; try { const r = await fetch('{% url 'pacote_endereco' pacote.id %}'); const d = await r.json();
+                  if (d.success) { this.texto = d.texto; } else { this.erro = d.message || 'Sem endereço.'; } } catch (e) { this.erro = 'Sem conexão.'; } finally { this.busy = false; } } }"
+     class="text-[13px]">
+    <button type="button" x-show="!texto && !erro" class="ui-btn ui-btn-ghost ui-btn-sm" @click.stop="ver()" :disabled="busy">
+        <i data-lucide="map-pin" class="w-4 h-4" stroke-width="1.75"></i>Ver endereço</button>
+    <div x-show="texto" x-cloak class="ui-well p-2.5 flex items-start gap-2">
+        <span class="flex-1 whitespace-pre-line" x-text="texto"></span>
+        <button type="button" class="ui-btn ui-btn-sm flex-none" style="background: var(--ui-surface); color: var(--ui-text)"
+                @click.stop="navigator.clipboard.writeText(texto); copied = true" x-text="copied ? 'Copiado!' : 'Copiar'">Copiar</button>
+    </div>
+    <p x-show="erro" x-cloak class="ui-muted" x-text="erro"></p>
+</div>
+{% endif %}

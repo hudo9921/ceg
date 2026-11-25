@@ -73,6 +73,11 @@ def export_participant_data(participant) -> dict:
             'status': i.get_status_display(),
             'criado_em': _iso(i.created_at),
         } for i in itens],
+        'enderecos': [{
+            'apelido': e.apelido, 'quem_recebe': e.nome_destinatario, 'cep': e.cep_formatado,
+            'endereco': f'{e.logradouro}, {e.numero} {e.complemento}'.strip(), 'bairro': e.bairro,
+            'cidade': e.cidade, 'uf': e.uf,
+        } for e in participant.enderecos.all()],
         'pacotes_nacionais': [{
             'identificador': p.identificador,
             'status': p.get_status_display(),
@@ -192,6 +197,7 @@ def anonymize_participant(participant, actor=None, force: bool = False):
 
     participant.claims.update(participant_notes='')
     participant.pacotes_nacionais.update(endereco_destinatario='', cep_destinatario='', observacoes_joiner='')
+    participant.enderecos.all().delete()
     participant.notifications.all().delete()
     WhatsAppOTP.objects.filter(phone=old_phone).delete()
     AuditLog.objects.filter(participant=participant).update(

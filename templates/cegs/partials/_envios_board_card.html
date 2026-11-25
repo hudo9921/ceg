@@ -28,6 +28,7 @@
     </div>
     {% if pacote.codigo_rastreio and pacote.status != 'SOLICITADO' %}<p class="ui-mono text-[12px] ui-muted truncate">{{ pacote.transportadora|default:"Rastreio" }} · {{ pacote.codigo_rastreio }}</p>{% endif %}
     {% if pacote.observacoes_joiner %}<p class="ui-muted text-[13px] line-clamp-2" title="{{ pacote.observacoes_joiner }}">"{{ pacote.observacoes_joiner }}"</p>{% endif %}
+    {% if pacote.status != 'ENTREGUE' %}{% include 'cegs/partials/_pacote_endereco.html' %}{% endif %}
 
     <div class="flex flex-wrap gap-2 pt-1">
         {% if pacote.status == 'SOLICITADO' %}
