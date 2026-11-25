@@ -17,7 +17,7 @@
             <div class="space-y-2.5 min-w-0">
                 <div class="flex flex-wrap gap-1.5">
                     <span class="ui-chip !h-7 !text-[12px]">{{ caixa.get_origem_display }}</span>
-                    <span class="ui-chip !h-7 !text-[12px]">{{ caixa.gom.name }}</span>
+                    <a href="{% url 'gom_public' caixa.gom.slug %}" class="ui-chip !h-7 !text-[12px] no-underline">por {{ caixa.gom.name }}</a>
                     <span class="ui-chip !h-7 !text-[12px]">{{ cegs|length }} CEG{{ cegs|length|pluralize }}</span>
                     {% if caixa.transportadora %}<span class="ui-chip !h-7 !text-[12px]">{{ caixa.transportadora }}</span>{% endif %}
                 </div>

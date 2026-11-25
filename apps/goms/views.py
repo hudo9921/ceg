@@ -280,3 +280,16 @@ def accept_gom_rules(request, slug):
     if has_rules(gom):
         accept_rules(participant, gom)
     return JsonResponse({'success': True})
+
+
+def gom_directory(request):
+    """Lista pública de GOMs (/goms/): quem organiza as CEGs, com CEGs abertas e link para a página de cada um."""
+    from django.db.models import Count, Q
+
+    from apps.cegs.models import CEG
+
+    goms = (Gom.objects.filter(is_active=True)
+            .annotate(cegs_abertas=Count('cegs', filter=Q(cegs__status__in=[CEG.Status.OPEN, CEG.Status.SCHEDULED]),
+                                         distinct=True))
+            .order_by('-cegs_abertas', 'name'))
+    return render(request, 'goms/directory.html', {'goms': goms})

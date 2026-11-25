@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}GOMs — quem organiza as CEGs | ValCegs{% endblock %}
+
+{% block content %}
+{% comment %}Lista pública de GOMs: quem organiza as compras em grupo, com as CEGs abertas e a página de cada um.{% endcomment %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <header class="space-y-2">
+        <p class="ui-label">GOMs</p>
+        <h1 class="ui-disp text-4xl">Quem organiza as CEGs</h1>
+        <p class="ui-muted text-[15px] max-w-2xl">Cada CEG é de um GOM: ele define os preços, as regras, o Pix e faz os envios. Conheça cada um antes de participar.</p>
+    </header>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+        {% for g in goms %}
+            <a href="{% url 'gom_public' g.slug %}" class="ui-card ui-lift p-5 flex flex-col gap-3 no-underline text-ui-text">
+                <div class="flex items-center gap-3 min-w-0">
+                    {% include 'components/_gom_avatar.html' with g=g size="w-12 h-12" %}
+                    <div class="min-w-0">
+                        <h2 class="ui-disp text-xl truncate">{{ g.name }}</h2>
+                        <p class="ui-muted text-sm">{% if g.instagram %}{{ g.instagram }} · {% endif %}{{ g.cegs_abertas }} CEG{{ g.cegs_abertas|pluralize }} aberta{{ g.cegs_abertas|pluralize }} ou em breve</p>
+                    </div>
+                </div>
+                {% if g.bio %}<p class="ui-muted text-sm line-clamp-3">{{ g.bio }}</p>{% endif %}
+                <span class="mt-auto text-sm font-bold text-ui-accent-text flex items-center gap-1.5">Ver página <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.75"></i></span>
+            </a>
+        {% empty %}
+            <p class="ui-card p-8 text-center ui-muted sm:col-span-2">Nenhum GOM por aqui ainda.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

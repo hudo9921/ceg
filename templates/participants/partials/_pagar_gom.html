@@ -1,13 +1,9 @@
 {% comment %}Um GOM na seção Pagar: total e cada cobrança (item, frete, taxa, frete nacional) com o Pix dela.{% endcomment %}
 <section class="ui-card overflow-hidden" aria-label="Cobranças de {{ group.gom.name }}">
     <div class="flex items-center gap-3 p-4 sm:p-5">
-        {% if group.gom.logo_url %}
-            <img src="{{ group.gom.logo_url }}" alt="" class="w-10 h-10 flex-none rounded-ui-pill object-cover" loading="lazy" decoding="async">
-        {% else %}
-            <span class="w-10 h-10 flex-none flex items-center justify-center rounded-ui-pill bg-ui-accent text-white font-bold" aria-hidden="true">{{ group.gom.name|slice:":1"|upper }}</span>
-        {% endif %}
+        {% include 'components/_gom_avatar.html' with g=group.gom size="w-10 h-10" %}
         <div class="flex-1 min-w-0">
-            <h2 class="ui-disp text-xl truncate">{{ group.gom.name }}</h2>
+            <h2 class="ui-disp text-xl truncate"><a href="{% url 'gom_public' group.gom.slug %}" class="no-underline text-ui-text hover:underline" title="Ver a página de {{ group.gom.name }}">{{ group.gom.name }}</a></h2>
             <p class="ui-muted text-sm">{{ group.count }} cobrança{{ group.count|pluralize }}</p>
         </div>
         <span class="ui-mono text-xl font-bold">R$ {{ group.total|floatformat:2 }}</span>

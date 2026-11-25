@@ -15,7 +15,7 @@ JOINER_SECTIONS = (
 def _active_section(request):
     match = getattr(request, 'resolver_match', None)
     name = match.url_name if match else ''
-    if name in ('home', 'ceg_detail', 'gom_public'):
+    if name in ('home', 'ceg_detail'):
         return 'cegs'
     if name and name.startswith('vitrine'):
         return 'vitrine'
@@ -40,6 +40,7 @@ def frontend(request):
     return {
         'frontend_build': settings.FRONTEND_MODE == 'build',
         'nav_section': active,
+        'nav_goms': getattr(getattr(request, 'resolver_match', None), 'url_name', '') in ('gom_directory', 'gom_public'),
         'joiner_nav': [
             {'key': key, 'label': label, 'icon': icon, 'url': urls[key], 'active': key == active}
             for key, label, icon in JOINER_SECTIONS
