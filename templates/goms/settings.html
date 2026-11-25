@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurações — {{ gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Configurações do GOM (C0, docs/GOM_CUSTOMIZATION_PLAN.md): abas com permissão própria
+(apps/goms/settings_tabs.py). Cada aba é uma página com o seu formulário: _settings_<aba>.html.
+{% endcomment %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-2">
+            <p class="ui-label">GOM {{ gom.name }}</p>
+            <h1 class="ui-disp text-4xl">Configurações</h1>
+            <p class="ui-muted text-[15px]">Como o seu GOM aparece e funciona para os joiners.</p>
+        </div>
+        <a href="{% url 'gom_public' gom.slug %}" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost ui-btn-sm">
+            <i data-lucide="external-link" class="w-4 h-4" stroke-width="1.75"></i>Ver página pública</a>
+    </header>
+
+    <nav class="flex gap-1 overflow-x-auto border-b border-ui-line -mx-4 px-4 sm:mx-0 sm:px-0" aria-label="Seções das configurações">
+        {% for t in tabs %}
+            <a href="{{ t.url }}" class="settings-tab{% if t.active %} is-on{% endif %}"{% if t.active %} aria-current="page"{% endif %}>
+                <i data-lucide="{{ t.icon }}" class="w-4 h-4" stroke-width="1.75"></i>{{ t.label }}</a>
+        {% endfor %}
+    </nav>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6" aria-label="{{ current_tab.label }}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<p class="ui-well p-3 text-sm ui-danger" role="alert">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+        {% include 'goms/partials/_settings_'|add:tab|add:'.html' %}
+        <div class="flex justify-end">
+            <button type="submit" class="ui-btn ui-btn-primary">Salvar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

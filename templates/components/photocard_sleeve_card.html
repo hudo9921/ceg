@@ -30,7 +30,7 @@
     <!-- 2. CORPO / FOTO DO PHOTOCARD (100% LIMPA SEM DEGRADÊ ESCURO) -->
     <div class="absolute inset-0 w-full h-full z-0 overflow-hidden bg-slate-100 dark:bg-cyber-obsidian">
         {% if claim.slot.item_definition.image_url %}
-            <img src="{{ claim.slot.item_definition.image_url }}"
+            <img src="{{ claim.slot.item_definition.image_url|thumb }}" data-full="{{ claim.slot.item_definition.image_url }}"
                  alt="{{ claim.slot.item_definition.name }}"
                  loading="lazy"
                  class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">

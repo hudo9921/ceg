@@ -1,0 +1,36 @@
+{% comment %}Passo 1 do login do joiner: número de WhatsApp (qualquer formato; internacional com +DDI).{% endcomment %}
+<form action="{% url 'login_otp' %}" method="POST" class="space-y-4" x-data="loginPhoneInput('{{ phone|default:''|escapejs }}')">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="send_otp">
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+
+    <label class="block space-y-1.5">
+        <span class="flex items-center justify-between gap-2">
+            <span class="ui-label">Seu WhatsApp</span>
+            <span class="ui-label" x-show="recognizedFormat" x-text="recognizedFormat"></span>
+        </span>
+        <input type="tel" name="phone" required autofocus autocomplete="tel" inputmode="tel" x-model="rawPhone" @input="formatPreview()"
+               value="{{ phone|default:'' }}" placeholder="11 91234-5678" class="ui-input w-full !text-lg">
+        <span class="block ui-muted text-[13px]">Com DDD. De fora do Brasil? Comece com + e o código do país.</span>
+    </label>
+
+    <button type="submit" class="ui-btn ui-btn-primary w-full">Receber código no WhatsApp</button>
+</form>
+
+<script>
+function loginPhoneInput(initialPhone) {
+    return {
+        rawPhone: initialPhone || '',
+        recognizedFormat: '',
+        init() { this.formatPreview(); },
+        formatPreview() {
+            const val = this.rawPhone.trim();
+            const digits = val.replace(/\D/g, '');
+            if (!val) this.recognizedFormat = '';
+            else if (val.startsWith('+')) this.recognizedFormat = 'Internacional';
+            else if (digits.length >= 10) this.recognizedFormat = 'Brasil';
+            else this.recognizedFormat = 'Falta o DDD?';
+        },
+    };
+}
+</script>

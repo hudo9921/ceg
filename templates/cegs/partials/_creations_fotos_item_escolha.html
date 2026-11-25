@@ -1,0 +1,22 @@
+{% comment %}
+Dentro de um item da Nova CEG (x-for: `item`): fotos anteriores do mesmo integrante nesta era. Tocar usa a foto.
+{% endcomment %}
+<div x-data="{ aberto: false }" x-show="$store.fotosEra.doIntegrante(item.member_name).length" x-cloak class="pt-2 border-t border-ui-line">
+    <button type="button" class="text-[12px] font-semibold inline-flex items-center gap-1" @click="aberto = !aberto" :aria-expanded="aberto">
+        <i data-lucide="images" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+        <span x-text="'Fotos anteriores de ' + item.member_name + ' (' + $store.fotosEra.doIntegrante(item.member_name).length + ')'"></span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition" :class="aberto && 'rotate-180'" stroke-width="1.75"></i>
+    </button>
+    <div x-show="aberto" class="flex gap-2 overflow-x-auto pt-2 pb-1">
+        <template x-for="f in $store.fotosEra.doIntegrante(item.member_name)" :key="f.url">
+            <button type="button" @click="item.image_url = f.url; item.image_base64 = ''"
+                    :aria-label="'Usar a foto de ' + f.nome + ' (' + f.origem + ')'" :aria-pressed="item.image_url === f.url"
+                    :title="f.nome + ' · ' + f.origem + (f.gom ? ' · ' + f.gom : '')"
+                    :class="item.image_url === f.url ? 'ring-2 ring-ui-accent' : 'ring-1 ring-ui-line'"
+                    class="flex-none w-14 rounded-xl overflow-hidden bg-ui-surface-2">
+                <img :src="f.thumb" :data-full="f.url" alt="" loading="lazy" decoding="async" class="w-14 h-[74px] object-cover">
+                <span class="block text-[10px] text-center truncate px-0.5" x-text="f.sub || f.nome"></span>
+            </button>
+        </template>
+    </div>
+</div>

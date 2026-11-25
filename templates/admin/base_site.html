@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% comment %}
+Django Admin (só a plataforma) com as cores e fontes do design system (P5h): Pearl Y2K no claro e
+Y3K Chrome no escuro, trocando só as variáveis de cor do próprio admin. Fonte local (static/css/fonts.css).
+{% endcomment %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+<style>
+  :root, html[data-theme="light"] {
+    --primary: #C8307A; --secondary: #8E2A5E; --accent: #F9A8D4; --primary-fg: #fff;
+    --body-fg: #1E1B26; --body-bg: #F7F6FB; --body-quiet-color: #5E5869; --body-loud-color: #1E1B26;
+    --header-color: #FDE7F3; --header-branding-color: #fff; --header-bg: #8E2A5E; --header-link-color: #fff;
+    --breadcrumbs-fg: #fff; --breadcrumbs-link-fg: #fff; --breadcrumbs-bg: #C8307A;
+    --link-fg: #A8215F; --link-hover-color: #6D28D9; --link-selected-fg: #6D28D9;
+    --hairline-color: rgba(30,27,38,.09); --border-color: rgba(30,27,38,.14);
+    --selected-bg: #FCE7F3; --selected-row: #FDF2F8; --button-bg: #C8307A; --button-hover-bg: #A8215F;
+    --default-button-bg: #6D28D9; --default-button-hover-bg: #5B21B6; --object-tools-bg: #5E5869;
+    --font-family-primary: 'Outfit', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --primary: #2A62F5; --secondary: #131317; --accent: #00CCDD; --primary-fg: #fff;
+      --body-fg: #ECEEF3; --body-bg: #0A0A0C; --body-quiet-color: #A3AAB8; --body-loud-color: #fff;
+      --header-color: #A3AAB8; --header-branding-color: #ECEEF3; --header-bg: #131317; --header-link-color: #ECEEF3;
+      --breadcrumbs-bg: #1B1B21; --breadcrumbs-fg: #A3AAB8; --breadcrumbs-link-fg: #8FB2FF;
+      --link-fg: #8FB2FF; --link-hover-color: #BFD2FF; --link-selected-fg: #BFD2FF;
+      --hairline-color: rgba(220,228,240,.13); --border-color: rgba(220,228,240,.2);
+      --selected-bg: rgba(42,98,245,.18); --selected-row: rgba(42,98,245,.12); --button-bg: #2A62F5; --button-hover-bg: #1E4FD6;
+      --default-button-bg: #2A62F5; --default-button-hover-bg: #1E4FD6; --darkened-bg: #131317; --object-tools-bg: #26262E;
+    }
+  }
+  html[data-theme="dark"] {
+    --primary: #2A62F5; --secondary: #131317; --accent: #00CCDD; --primary-fg: #fff;
+    --body-fg: #ECEEF3; --body-bg: #0A0A0C; --body-quiet-color: #A3AAB8; --body-loud-color: #fff;
+    --header-color: #A3AAB8; --header-branding-color: #ECEEF3; --header-bg: #131317; --header-link-color: #ECEEF3;
+    --breadcrumbs-bg: #1B1B21; --breadcrumbs-fg: #A3AAB8; --breadcrumbs-link-fg: #8FB2FF;
+    --link-fg: #8FB2FF; --link-hover-color: #BFD2FF; --link-selected-fg: #BFD2FF;
+    --hairline-color: rgba(220,228,240,.13); --border-color: rgba(220,228,240,.2);
+    --selected-bg: rgba(42,98,245,.18); --selected-row: rgba(42,98,245,.12); --button-bg: #2A62F5; --button-hover-bg: #1E4FD6;
+    --default-button-bg: #2A62F5; --default-button-hover-bg: #1E4FD6; --darkened-bg: #131317; --object-tools-bg: #26262E;
+  }
+  #site-name a { font-weight: 700; letter-spacing: -.01em; }
+  .button, input[type=submit], input[type=button], .submit-row input, a.button { border-radius: 999px; }
+</style>
+{% endblock %}
+
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}">ValCegs · Plataforma</a></div>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
+
+{% block userlinks %}
+<a href="{% url 'backoffice_home' %}">Painel</a> /
+<a href="{% url 'staff_2fa_manage' %}">Segurança (2FA)</a> /
+{{ block.super }}
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

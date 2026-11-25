@@ -1,534 +1,129 @@
-<!-- =======================================================================
-     LÓGICA REATIVA ALPINE.JS — PORTAL DO PARTICIPANTE (MY CLAIMS)
-     Gestão de Abas, Filtros, Quick Pix, Caixinha, Notificações e Modais
-     ======================================================================= -->
+{% comment %}
+myClaimsApp(): painel do joiner (/me/). Abas (Pagar · Meus itens · Envios), seleção da caixinha, modais
+de pacote, prévia de item, copiar Pix e avisos. Meus itens tem o próprio componente (_itens_script.html).
+{% endcomment %}
 <script>
-    function myClaimsApp() {
-        let allCegs = [];
-        try {
-            const el = document.getElementById('cegs-filter-data');
-            if (el) allCegs = JSON.parse(el.textContent);
-        } catch (e) {
-            console.error('Erro ao ler cegs-filter-data:', e);
-        }
+function myClaimsApp(chargesCount = 0) {
+    const readJson = (id, fallback) => {
+        try { return JSON.parse(document.getElementById(id).textContent); } catch (e) { return fallback; }
+    };
+    const caixinhaProntos = readJson('caixinha-prontos-data', []);
+    // Abas: pagar · reservas (Meus itens) · caixinha (Envios). Sem ?tab=, abre Pagar se houver cobrança.
+    const params = new URLSearchParams(window.location.search);
+    const TAB_ALIASES = { pagar: 'pagar', itens: 'reservas', reservas: 'reservas', envios: 'caixinha', caixinha: 'caixinha' };
+    const initialTab = TAB_ALIASES[params.get('tab')] || (window.location.hash === '#pagar' || chargesCount > 0 ? 'pagar' : 'reservas');
+    const post = (url) => fetch(url, {
+        method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' },
+    }).then((r) => r.json());
 
-        let allMercari = [];
-        try {
-            const elMercari = document.getElementById('mercari-filter-data');
-            if (elMercari) allMercari = JSON.parse(elMercari.textContent);
-        } catch (e) {
-            console.error('Erro ao ler mercari-filter-data:', e);
-        }
-
-        let caixinhaProntos = [];
-        try {
-            const elProntos = document.getElementById('caixinha-prontos-data');
-            if (elProntos) caixinhaProntos = JSON.parse(elProntos.textContent);
-        } catch (e) {
-            console.error('Erro ao ler caixinha-prontos-data:', e);
-        }
-
-        let claimsData = {};
-        try {
-            const elClaims = document.getElementById('claims-preview-data');
-            if (elClaims) claimsData = JSON.parse(elClaims.textContent);
-        } catch (e) {
-            console.error('Erro ao ler claims-preview-data:', e);
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const initialTab = urlParams.get('tab') === 'caixinha' ? 'caixinha' : 'reservas';
-
-        return {
-            activeMainTab: initialTab,
-            caixinhaProntos: caixinhaProntos,
-            selectedCaixinhaUids: caixinhaProntos.map(i => i.uid),
-            bloqueadosOpen: false,
-            cancelModalOpen: false,
-            cancelPacoteId: null,
-            cancelPacoteIdentificador: '',
-
-            toggleSelectAllCaixinha() {
-                if (this.selectedCaixinhaUids.length === this.caixinhaProntos.length) {
-                    this.selectedCaixinhaUids = [];
-                } else {
-                    this.selectedCaixinhaUids = this.caixinhaProntos.map(i => i.uid);
-                }
-            },
-
-            toggleCaixinhaItem(uid) {
-                const idx = this.selectedCaixinhaUids.indexOf(uid);
-                if (idx > -1) {
-                    this.selectedCaixinhaUids.splice(idx, 1);
-                } else {
-                    this.selectedCaixinhaUids.push(uid);
-                }
-            },
-
-            openCancelModal(id, identificador) {
-                this.cancelPacoteId = id;
-                this.cancelPacoteIdentificador = identificador;
-                this.cancelModalOpen = true;
-            },
-
-            profileModalOpen: {% if is_placeholder_name %}true{% else %} false{% endif %},
-            searchQuery: '',
-            viewMode: (function() {
-                try { return localStorage.getItem('ceg_view_mode') || 'gallery'; } catch(e) { return 'gallery'; }
-            })(),
-            setViewMode(mode) {
-                this.viewMode = mode;
-                try { localStorage.setItem('ceg_view_mode', mode); } catch(e) {}
-                this.$nextTick(() => {
-                    window.dispatchEvent(new Event('icons-refresh'));
-                });
-            },
-            quickPixOpen: true,
-            quickPixTab: '{% if cegs_com_pendencias %}ceg{% elif caixas_com_pendencias %}caixa{% else %}mercari{% endif %}',
-            previewModalOpen: false,
-            previewItem: null,
-            claimsData: claimsData,
-            openPreview(itemOrId) {
-                if (typeof itemOrId === 'object' && itemOrId !== null) {
-                    this.previewItem = itemOrId;
-                } else {
-                    this.previewItem = this.claimsData[String(itemOrId)] || null;
-                }
-                this.previewModalOpen = true;
-                this.$nextTick(() => {
-                    window.dispatchEvent(new Event('icons-refresh'));
-                });
-            },
-            closePreview() {
-                this.previewModalOpen = false;
-                this.previewItem = null;
-            },
-            matchesSearch(text) {
-                if (!this.searchQuery) return true;
-                const q = this.searchQuery.toLowerCase().trim();
-                return (text || '').toLowerCase().includes(q);
-            },
-            selectedGroup: '',
-            selectedCeg: '',
-            selectedCaixa: 'ALL',
-            categoryFilter: 'ALL',
-            statusFilter: 'ALL',
-            allMercari: allMercari.map(it => ({
-                id: String(it.id),
-                caixaId: String(it.caixa_id || ''),
-                status: it.status,
-                freteInter: it.frete_inter || 0,
-                freteInterPago: !!it.frete_inter_pago,
-                taxaAduaneira: it.taxa_aduaneira || 0,
-                taxaAduaneiraPaga: !!it.taxa_aduaneira_paga,
-                searchText: (it.search_text || '').toLowerCase()
-            })),
-            allCegs: allCegs.map(c => ({
-                id: String(c.id),
-                title: c.title,
-                groupId: String(c.group_id),
-                groupName: c.group_name || '',
-                caixaId: String(c.caixa_id || ''),
-                count: c.items_count,
-                countPending: c.count_pending,
-                countPaid: c.count_paid,
-                countInterUnpaid: c.count_inter_unpaid || 0,
-                countTaxaUnpaid: c.count_taxa_unpaid || 0,
-                countAnyUnpaid: c.count_any_unpaid !== undefined ? c.count_any_unpaid : (c.count_pending + (c.count_inter_unpaid || 0) + (c.count_taxa_unpaid || 0)),
-                searchText: (c.search_text || (c.title + ' ' + (c.caixa_nome || ''))).toLowerCase()
-            })),
-            get cegsMap() {
-                if (!this._cegsMap) {
-                    const map = {};
-                    this.allCegs.forEach(c => { map[c.id] = c; });
-                    this._cegsMap = map;
-                }
-                return this._cegsMap;
-            },
-            expandedCegs: {},
-            copiedPixCegId: null,
-            galleryDisplayMode: (function() {
-                try { return localStorage.getItem('ceg_gallery_display_mode') || 'folders'; } catch(e) { return 'folders'; }
-            })(),
-            setGalleryDisplayMode(mode) {
-                this.galleryDisplayMode = mode;
-                try { localStorage.setItem('ceg_gallery_display_mode', mode); } catch(e) {}
-                this.$nextTick(() => {
-                    window.dispatchEvent(new Event('icons-refresh'));
-                });
-            },
-            activeCegFolder: null,
-            openCegFolder(cegId) {
-                this.activeCegFolder = String(cegId);
-                this.expandedCegs[String(cegId)] = true;
-            },
-            closeCegFolder() {
-                this.activeCegFolder = null;
-            },
-            init() {
-                const map = {};
-                this.allCegs.forEach(c => {
-                    map[c.id] = false;
-                });
-                this.expandedCegs = map;
-                this.$watch('activeMainTab', () => {
-                    this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
-                });
-                this.$watch('viewMode', () => {
-                    this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
-                });
-                this.$watch('galleryDisplayMode', () => {
-                    this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
-                });
-            },
-            toggleCeg(cegId) {
-                const id = String(cegId);
-                this.expandedCegs[id] = !this.isCegExpanded(id);
-                this.$nextTick(() => {
-                    window.dispatchEvent(new Event('icons-refresh'));
-                });
-            },
-            isCegExpanded(cegId) {
-                const id = String(cegId);
-                if (this.searchQuery) {
-                    const found = this.cegsMap[id];
-                    if (found && found.searchText && found.searchText.includes(this.searchQuery.toLowerCase().trim())) {
-                        return true;
-                    }
-                }
-                if (this.expandedCegs[id] === undefined) {
-                    return false;
-                }
-                return !!this.expandedCegs[id];
-            },
-            expandAllCegs() {
-                const map = {};
-                this.allCegs.forEach(c => { map[c.id] = true; });
-                document.querySelectorAll('[data-ceg-id]').forEach(el => {
-                    const id = el.getAttribute('data-ceg-id');
-                    if (id) map[id] = true;
-                });
-                this.expandedCegs = map;
-                this.$nextTick(() => {
-                    window.dispatchEvent(new Event('icons-refresh'));
-                });
-            },
-                                collapseAllCegs() {
-                                    const map = {};
-                                    this.allCegs.forEach(c => { map[c.id] = false; });
-                                    document.querySelectorAll('[data-ceg-id]').forEach(el => {
-                                        const id = el.getAttribute('data-ceg-id');
-                                        if (id) map[id] = false;
-                                    });
-                                    this.expandedCegs = map;
-                                },
-        get filteredGroupsOptions() {
-            let cegs = this.allCegs;
-            if (this.selectedCaixa !== 'ALL') {
-                if (this.selectedCaixa === 'NONE') {
-                    cegs = cegs.filter(c => !c.caixaId);
-                } else {
-                    cegs = cegs.filter(c => String(c.caixaId) === String(this.selectedCaixa));
-                }
-            }
-            const groupMap = {};
-            cegs.forEach(c => {
-                if (!groupMap[c.groupId]) {
-                    groupMap[c.groupId] = { id: c.groupId, name: c.groupName, count: 0 };
-                }
-                groupMap[c.groupId].count += c.count;
-            });
-            return Object.values(groupMap).sort((a, b) => a.name.localeCompare(b.name));
-        },
-        get filteredCegsOptions() {
-            let list = this.allCegs;
-            if (this.selectedCaixa !== 'ALL') {
-                if (this.selectedCaixa === 'NONE') {
-                    list = list.filter(c => !c.caixaId);
-                } else {
-                    list = list.filter(c => String(c.caixaId) === String(this.selectedCaixa));
-                }
-            }
-            if (this.selectedGroup) {
-                list = list.filter(c => String(c.groupId) === String(this.selectedGroup));
-            }
-            return list;
-        },
-        get filteredCounts() {
-            let cegs = this.allCegs;
-            if (this.selectedCaixa !== 'ALL') {
-                if (this.selectedCaixa === 'NONE') {
-                    cegs = cegs.filter(c => !c.caixaId);
-                } else {
-                    cegs = cegs.filter(c => String(c.caixaId) === String(this.selectedCaixa));
-                }
-            }
-            if (this.selectedGroup) {
-                cegs = cegs.filter(c => String(c.groupId) === String(this.selectedGroup));
-            }
-            if (this.selectedCeg) {
-                cegs = cegs.filter(c => String(c.id) === String(this.selectedCeg));
-            }
-            return {
-                total: cegs.reduce((acc, c) => acc + c.count, 0),
-                pending: cegs.reduce((acc, c) => acc + c.countPending, 0),
-                anyUnpaid: cegs.reduce((acc, c) => acc + (c.countAnyUnpaid !== undefined ? c.countAnyUnpaid : c.countPending), 0),
-                paid: cegs.reduce((acc, c) => acc + c.countPaid, 0),
-                interUnpaid: cegs.reduce((acc, c) => acc + c.countInterUnpaid, 0),
-                taxaUnpaid: cegs.reduce((acc, c) => acc + c.countTaxaUnpaid, 0),
-            };
-        },
-        get visibleCegsCount() {
-            return this.allCegs.filter(c => this.matchesCeg(
-                c.groupId, c.id, c.caixaId,
-                c.countPending, c.countPaid, c.countInterUnpaid, c.countTaxaUnpaid, c.countAnyUnpaid
-            )).length;
-        },
-        get visibleMercariCount() {
-            return this.allMercari.filter(it => this.matchesMercariItem(
-                it.caixaId, it.status, it.freteInterPago, it.taxaAduaneiraPaga,
-                it.freteInter, it.taxaAduaneira, it.searchText
-            )).length;
-        },
-        filterByCegPayment(cegId, caixaId = '', specificFilter = null) {
-            const id = String(cegId);
-            // Se a caixa atual ocultaria esta CEG, reajusta para a caixa da CEG ou ALL
-            if (this.selectedCaixa !== 'ALL') {
-                const targetCaixa = caixaId ? String(caixaId) : 'NONE';
-                if (this.selectedCaixa !== targetCaixa) {
-                    this.selectedCaixa = 'ALL';
-                }
-            }
-            this.selectedGroup = '';
-            this.selectedCeg = id;
-            this.expandedCegs[id] = true;
-
-            if (specificFilter) {
-                this.statusFilter = specificFilter;
-            } else {
-                const ceg = this.allCegs.find(c => c.id === id);
-                if (ceg) {
-                    if (ceg.countPending > 0 && ceg.countInterUnpaid === 0 && ceg.countTaxaUnpaid === 0) {
-                        this.statusFilter = 'PENDING';
-                    } else if (ceg.countInterUnpaid > 0 && ceg.countPending === 0 && ceg.countTaxaUnpaid === 0) {
-                        this.statusFilter = 'INTER_UNPAID';
-                    } else if (ceg.countTaxaUnpaid > 0 && ceg.countPending === 0 && ceg.countInterUnpaid === 0) {
-                        this.statusFilter = 'TAXA_UNPAID';
-                    } else {
-                        this.statusFilter = 'ALL';
-                    }
-                } else {
-                    this.statusFilter = 'PENDING';
-                }
-            }
-            this.$nextTick(() => {
-                const el = document.querySelector(`[data-ceg-id='${id}']`);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return {
+        activeMainTab: initialTab,
+        init() {
+            this.syncTabNav(this.activeMainTab);
+            this.$watch('activeMainTab', (tab) => {
+                this.syncTabNav(tab);
+                this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
             });
         },
-        onGroupChange() {
-            if (this.selectedCeg) {
-                const exists = this.filteredCegsOptions.some(c => String(c.id) === String(this.selectedCeg));
-                if (!exists) this.selectedCeg = '';
-            }
-        },
-        onCaixaChange() {
-            if (this.selectedGroup) {
-                const groupExists = this.filteredGroupsOptions.some(g => String(g.id) === String(this.selectedGroup));
-                if (!groupExists) this.selectedGroup = '';
-            }
-            if (this.selectedCeg) {
-                const cegExists = this.filteredCegsOptions.some(c => String(c.id) === String(this.selectedCeg));
-                if (!cegExists) this.selectedCeg = '';
-            }
-        },
-        toggleMercariFilter() {
-            if (this.categoryFilter === 'MERCARI') {
-                this.categoryFilter = 'ALL';
-            } else {
-                this.categoryFilter = 'MERCARI';
-                setTimeout(() => {
-                    document.getElementById('secao-mercari')?.scrollIntoView({ behavior: 'smooth' });
-                }, 50);
-            }
-        },
-        get hasActiveFilters() {
-            return !!(
-                (this.searchQuery && this.searchQuery.trim() !== '') ||
-                this.selectedGroup !== '' ||
-                this.selectedCeg !== '' ||
-                this.selectedCaixa !== 'ALL' ||
-                this.statusFilter !== 'ALL' ||
-                this.categoryFilter !== 'ALL'
-            );
-        },
-        get activeFiltersCount() {
-            let count = 0;
-            if (this.searchQuery && this.searchQuery.trim() !== '') count++;
-            if (this.selectedGroup) count++;
-            if (this.selectedCeg) count++;
-            if (this.selectedCaixa !== 'ALL') count++;
-            if (this.statusFilter !== 'ALL') count++;
-            if (this.categoryFilter !== 'ALL') count++;
-            return count;
-        },
-        resetToAll() {
-            this.clearFilters();
-        },
-        clearFilters() {
-            this.searchQuery = '';
-            this.selectedGroup = '';
-            this.selectedCeg = '';
-            this.selectedCaixa = 'ALL';
-            this.categoryFilter = 'ALL';
-            this.statusFilter = 'ALL';
-            this.activeCegFolder = null;
-        },
-        matchesCeg(groupId, cegId, caixaId = '', countPending, countPaid, countInterUnpaid = 0, countTaxaUnpaid = 0, countAnyUnpaid = undefined) {
-            if (this.categoryFilter === 'MERCARI') return false;
-            if (this.selectedCaixa !== 'ALL') {
-                if (this.selectedCaixa === 'NONE') {
-                    if (caixaId) return false;
-                } else {
-                    if (String(caixaId) !== String(this.selectedCaixa)) return false;
-                }
-            }
-            if (this.selectedGroup && String(this.selectedGroup) !== String(groupId)) return false;
-            if (this.selectedCeg && String(this.selectedCeg) !== String(cegId)) return false;
-            if (this.statusFilter === 'PENDING' && countPending === 0) return false;
-            if (this.statusFilter === 'PAID' && countPaid === 0) return false;
-            if (this.statusFilter === 'INTER_UNPAID' && countInterUnpaid === 0) return false;
-            if (this.statusFilter === 'TAXA_UNPAID' && countTaxaUnpaid === 0) return false;
-
-            if (this.searchQuery) {
-                const q = this.searchQuery.toLowerCase().trim();
-                const found = this.cegsMap[String(cegId)];
-                if (found && found.searchText && !found.searchText.includes(q)) {
-                    return false;
-                }
-            }
-            return true;
-        },
-        matchesMercariItem(caixaId, itemStatus, freteInterPago, taxaAduaneiraPaga, freteInter = 0, taxaAduaneira = 0, searchText = '') {
-            // 0. Filtro por Busca Textual
-            if (this.searchQuery) {
-                const q = this.searchQuery.toLowerCase().trim();
-                if (searchText && !searchText.toLowerCase().includes(q)) return false;
-            }
-            // 1. Filtro por Caixa
-            if (this.selectedCaixa !== 'ALL') {
-                if (this.selectedCaixa === 'NONE') {
-                    if (caixaId) return false;
-                } else {
-                    if (String(caixaId) !== String(this.selectedCaixa)) return false;
-                }
-            }
-            // 2. Filtro por Status
-            const hasUnpaidFrete = freteInter > 0 && !freteInterPago;
-            const hasUnpaidTaxa = taxaAduaneira > 0 && !taxaAduaneiraPaga;
-            const isItemUnpaid = itemStatus !== 'COMPRADO' && itemStatus !== 'PAGO';
-
-            if (this.statusFilter === 'PENDING') {
-                if (!isItemUnpaid) return false;
-            } else if (this.statusFilter === 'PAID') {
-                if (isItemUnpaid) return false;
-            } else if (this.statusFilter === 'INTER_UNPAID') {
-                if (!hasUnpaidFrete) return false;
-            } else if (this.statusFilter === 'TAXA_UNPAID') {
-                if (!(taxaAduaneira > 0 && !taxaAduaneiraPaga)) return false;
-            }
-            return true;
-        },
-        matchesRow(filter, claimStatus, isInterUnpaid, isTaxaUnpaid) {
-            if (filter === 'ALL') return true;
-            if (filter === 'PENDING') return claimStatus === 'PENDING';
-            if (filter === 'PAID') return (claimStatus === 'PAID');
-            if (filter === 'INTER_UNPAID') return isInterUnpaid;
-            if (filter === 'TAXA_UNPAID') return isTaxaUnpaid;
-            return true;
-        },
-        copyPix(key, cegId = null) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(key).then(() => {
-                    if (cegId) {
-                        this.copiedPixCegId = String(cegId);
-                        setTimeout(() => {
-                            if (this.copiedPixCegId === String(cegId)) {
-                                this.copiedPixCegId = null;
-                            }
-                        }, 2500);
-                    } else {
-                        alert('Chave Pix copiada com sucesso! ' + key);
-                    }
-                }).catch(() => {
-                    alert('Chave Pix copiada: ' + key);
-                });
-            } else {
-                alert('Chave Pix: ' + key);
-            }
-        },
-        notificationsOpen: {% if unread_notifications_count > 0 %}true{% else %}false{% endif %},
-        toggleNotifications() {
-            this.notificationsOpen = !this.notificationsOpen;
-            this.$nextTick(() => {
-                window.dispatchEvent(new Event('icons-refresh'));
+        // Mantém ?tab= na URL e o destaque da barra lateral/abas iguais à aba aberta.
+        syncTabNav(tab) {
+            const alias = { pagar: 'pagar', reservas: 'itens', caixinha: 'envios' }[tab] || 'itens';
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', alias);
+            url.hash = '';
+            window.history.replaceState(null, '', url);
+            document.querySelectorAll('.ui-nav-item, .ui-tab').forEach((a) => {
+                const href = a.getAttribute('href') || '';
+                if (!href.includes('/me/')) return;
+                const on = href.includes('tab=' + alias);
+                a.classList.toggle('is-on', on);
+                if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
             });
         },
-        unreadNotificationsCount: {{ unread_notifications_count|default:0 }},
-        readNotifIds: [],
-        allMarkedRead: false,
-        isRead(id, initialRead) {
-            return initialRead || this.readNotifIds.includes(id);
+
+        // Caixinha: itens escolhidos para o pedido de envio (todos começam escolhidos).
+        caixinhaProntos,
+        selectedCaixinhaUids: caixinhaProntos.map((i) => i.uid),
+        toggleSelectAllCaixinha() {
+            this.selectedCaixinhaUids = this.selectedCaixinhaUids.length === this.caixinhaProntos.length
+                ? [] : this.caixinhaProntos.map((i) => i.uid);
         },
-        async markNotificationRead(notifId) {
-            try {
-                const res = await fetch(`/me/notifications/${notifId}/read/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.unreadNotificationsCount = data.unread_count;
-                    if (!this.readNotifIds.includes(notifId)) {
-                        this.readNotifIds.push(notifId);
-                    }
-                }
-            } catch (err) {
-                console.error('Erro ao marcar notificação como lida:', err);
-            }
+        toggleCaixinhaItem(uid) {
+            const idx = this.selectedCaixinhaUids.indexOf(uid);
+            if (idx > -1) this.selectedCaixinhaUids.splice(idx, 1); else this.selectedCaixinhaUids.push(uid);
         },
-        async markAllNotificationsRead() {
-            try {
-                const res = await fetch('/me/notifications/read-all/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.unreadNotificationsCount = 0;
-                    this.allMarkedRead = true;
-                }
-            } catch (err) {
-                console.error('Erro ao marcar todas notificações:', err);
-            }
+
+        // Pacotes: cancelar pedido e confirmar entrega com avaliação.
+        cancelModalOpen: false, cancelPacoteId: null, cancelPacoteIdentificador: '',
+        openCancelModal(id, identificador) {
+            this.cancelPacoteId = id;
+            this.cancelPacoteIdentificador = identificador;
+            this.cancelModalOpen = true;
         },
-        deliveryModalOpen: false,
-        deliveryPacoteId: '',
-        deliveryPacoteIdentificador: '',
-        deliveryRating: 5,
+        deliveryModalOpen: false, deliveryPacoteId: '', deliveryPacoteIdentificador: '', deliveryRating: 5,
         openConfirmDeliveryModal(id, identificador) {
             this.deliveryPacoteId = id;
             this.deliveryPacoteIdentificador = identificador;
             this.deliveryRating = 5;
             this.deliveryModalOpen = true;
-        }
+        },
+
+        profileModalOpen: {% if is_placeholder_name %}true{% else %}false{% endif %},
+
+        // Prévia de um item (id de claim ou objeto pronto).
+        claimsData: readJson('claims-preview-data', {}),
+        previewModalOpen: false, previewItem: null,
+        openPreview(itemOrId) {
+            this.previewItem = (typeof itemOrId === 'object' && itemOrId !== null) ? itemOrId : (this.claimsData[String(itemOrId)] || null);
+            this.previewModalOpen = true;
+            this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+        },
+        closePreview() { this.previewModalOpen = false; this.previewItem = null; },
+        // Mesmas 5 etapas de Meus itens (apps/participants/items_panel.py: CODE_STAGE).
+        stageNames: ['A pagar', 'A caminho', 'No Brasil', 'Na caixinha', 'Enviado'],
+        get previewStage() {
+            const CODE_STAGE = { PENDING_PAYMENT: 1, ITEM_PAID: 2, COMPRADO: 2, WAREHOUSE: 2, CONSOLIDATION: 2, IN_TRANSIT: 2,
+                CUSTOMS_PENDING: 3, CUSTOMS_CLEARING: 3, READY_CAIXINHA: 4, PACKAGING: 5, SHIPPED: 5, DELIVERED: 5 };
+            const life = (this.previewItem && this.previewItem.lifecycle) || {};
+            return CODE_STAGE[life.code] || life.stage || 0;
+        },
+
+        brl(v) { return String(v || '0.00').replace('.', ','); },
+        copiedPixCegId: null,
+        copyPix(key, id = null) {
+            const done = () => {
+                if (!id) return;
+                this.copiedPixCegId = String(id);
+                setTimeout(() => { if (this.copiedPixCegId === String(id)) this.copiedPixCegId = null; }, 2500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(key).then(done).catch(() => window.prompt('Copie a chave Pix:', key));
+            } else {
+                window.prompt('Copie a chave Pix:', key);
+            }
+        },
+
+        // Avisos do joiner.
+        notificationsOpen: {% if unread_notifications_count > 0 %}true{% else %}false{% endif %},
+        toggleNotifications() { this.notificationsOpen = !this.notificationsOpen; },
+        unreadNotificationsCount: {{ unread_notifications_count|default:0 }},
+        readNotifIds: [], allMarkedRead: false,
+        isRead(id, initialRead) { return initialRead || this.readNotifIds.includes(id); },
+        async markNotificationRead(id) {
+            try {
+                const data = await post(`/me/notifications/${id}/read/`);
+                if (data.success) {
+                    this.unreadNotificationsCount = data.unread_count;
+                    if (!this.readNotifIds.includes(id)) this.readNotifIds.push(id);
+                }
+            } catch (err) { console.error('Erro ao marcar aviso como lido:', err); }
+        },
+        async markAllNotificationsRead() {
+            try {
+                const data = await post('/me/notifications/read-all/');
+                if (data.success) { this.unreadNotificationsCount = 0; this.allMarkedRead = true; }
+            } catch (err) { console.error('Erro ao marcar avisos como lidos:', err); }
+        },
     };
 }
 </script>
-

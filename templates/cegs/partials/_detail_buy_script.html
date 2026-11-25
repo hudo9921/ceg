@@ -1,0 +1,98 @@
+<!-- Compra competitiva do joiner (DESIGN_SYSTEM §7.6): a lista é montada antes da abertura e a reserva
+     só sai no toque manual em "Pegar meus X". Misturado em cegDetailApp() via ...cegBuyMixin(). -->
+<script>
+function cegBuyMixin() {
+    return {
+        quickClaimLoading: false,
+        claimResultOpen: false,
+        claimResults: [],
+        claimSummary: null,
+        pixCopied: false,
+        listKey: 'ceg-list:{{ ceg.slug|escapejs }}',
+        initSavedList() {
+            const store = window.Alpine ? Alpine.store('claimSelection') : null;
+            if (!store) return;
+            try {
+                const saved = JSON.parse(localStorage.getItem(this.listKey) || '[]');
+                if (Array.isArray(saved) && store.slots.length === 0) {
+                    saved.filter(s => s && s.id !== undefined).forEach(s => store.slots.push(s));
+                }
+            } catch (e) {}
+            this.$watch('$store.claimSelection.slots', (slots) => {
+                try {
+                    if (slots.length) localStorage.setItem(this.listKey, JSON.stringify(slots));
+                    else localStorage.removeItem(this.listKey);
+                } catch (e) {}
+            });
+        },
+        listCount() {
+            return Alpine.store('claimSelection').slots.reduce((n, s) => n + (s.isAvulso ? (parseInt(s.quantity) || 0) : 1), 0);
+        },
+        listCountLabel() {
+            const n = this.listCount();
+            return n === 1 ? '1 item' : n + ' itens';
+        },
+        listTotalLabel() {
+            const total = Alpine.store('claimSelection').slots.reduce((t, s) => t + (parseFloat(s.price) || 0), 0);
+            return 'R$ ' + total.toFixed(2).replace('.', ',');
+        },
+        countdownShort() {
+            const s = Math.max(0, this.secondsLeft);
+            if (s >= 86400) return Math.floor(s / 86400) + 'd ' + String(Math.floor((s % 86400) / 3600)).padStart(2, '0') + 'h';
+            const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+            const mmss = String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+            return h > 0 ? h + ':' + mmss : mmss;
+        },
+        claimHeadline() {
+            const sm = this.claimSummary || {};
+            if (sm.succeeded > 0 && sm.succeeded === sm.total) return 'Tudo garantido!';
+            if (sm.succeeded > 0) return sm.succeeded + ' de ' + sm.total + ' garantidos';
+            if (sm.waiting_list > 0) return 'Você entrou na lista de espera';
+            return 'Não foi dessa vez';
+        },
+        async quickClaim() {
+            if (this.quickClaimLoading || this.isStandby) return;
+            const store = Alpine.store('claimSelection');
+            if (!store.slots.length) return;
+            this.quickClaimLoading = true;
+            try {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+                const res = await fetch('/ceg/{{ ceg.slug|escapejs }}/bulk-claim/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                    body: JSON.stringify({
+                        slot_ids: store.slots.filter(s => !s.isAvulso).map(s => s.id),
+                        avulso_claims: store.slots.filter(s => s.isAvulso).map(s => ({ item_def_id: s.itemDefId, quantity: s.quantity })),
+                        entrega_tipo: 'CAIXINHA',
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 401 && data.requires_auth) {
+                    window.location.href = data.redirect_url;
+                    return;
+                }
+                if (res.status === 409 && data.needs_rules) {  // estreante no GOM: aceita as regras e o claim é refeito
+                    window.dispatchEvent(new CustomEvent('rules-needed', { detail: { retry: () => this.quickClaim() } }));
+                    return;
+                }
+                if (!data.success) {
+                    alert(data.message || 'Não foi possível reservar agora. Tente de novo.');
+                    return;
+                }
+                this.claimResults = data.results || [];
+                this.claimSummary = data.summary || null;
+                // Tudo que o servidor respondeu sai da lista; os cards dessas vagas deixam de estar disponíveis.
+                const handled = new Set(this.claimResults.filter(r => r.slot_id && r.result !== 'ERROR').map(r => r.slot_id));
+                const avulsoDone = this.claimResults.some(r => !r.slot_id && (r.success || r.is_waiting_list));
+                store.slots = store.slots.filter(s => s.isAvulso ? !avulsoDone : !handled.has(s.id));
+                window.dispatchEvent(new CustomEvent('slots-claimed', { detail: { ids: Array.from(handled) } }));
+                this.claimResultOpen = true;
+            } catch (e) {
+                alert('Sem conexão. Confira a internet e toque de novo.');
+            } finally {
+                this.quickClaimLoading = false;
+            }
+        }
+    };
+}
+</script>

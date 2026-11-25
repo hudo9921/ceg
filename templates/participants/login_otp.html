@@ -1,166 +1,28 @@
 {% extends 'base.html' %}
 
-{% block title %}Consulta por WhatsApp — K-pop CEG Manager{% endblock %}
+{% block title %}Entrar com WhatsApp — ValCegs{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto py-8">
+{% comment %}Entrada do joiner (P5a): WhatsApp → código de 6 dígitos. Sem senha.{% endcomment %}
+<div class="max-w-md mx-auto py-6 sm:py-10 space-y-5">
+    <header class="space-y-2">
+        <p class="ui-label">{% if next_url %}Quase lá{% else %}Sua conta{% endif %}</p>
+        <h1 class="ui-disp text-3xl sm:text-4xl">Entrar com WhatsApp</h1>
+        <p class="ui-muted text-[15px]">
+            {% if next_url %}Confirme seu número e você volta direto para a CEG para pegar seus photocards.{% else %}Sem senha: mandamos um código para o seu WhatsApp e você acessa suas reservas, pagamentos e envios.{% endif %}
+        </p>
+    </header>
 
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
-        
-        <!-- Header -->
-        <div class="text-center space-y-2.5">
-            <div class="w-14 h-14 bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-400 rounded-2xl flex items-center justify-center mx-auto border border-pink-200 dark:border-pink-900/40 shadow-xs">
-                <i data-lucide="message-circle" class="w-7 h-7 stroke-[2]"></i>
-            </div>
-            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                {% if next_url %}Identificação Rápida{% else %}Consulta Sem Senha{% endif %}
-            </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
-                {% if next_url %}
-                    Informe seu WhatsApp para confirmar suas reservas com 1 clique e acompanhar seus claims.
-                {% else %}
-                    Acesse suas reservas, status de pagamento e chave Pix utilizando apenas o seu WhatsApp.
-                {% endif %}
-            </p>
-        </div>
-
-        {% if next_url %}
-            <div class="p-3.5 bg-pink-50 dark:bg-pink-950/40 border border-pink-200/80 dark:border-pink-900/60 rounded-2xl text-xs text-pink-900 dark:text-pink-200 flex items-center gap-2.5 shadow-2xs">
-                <i data-lucide="zap" class="w-4 h-4 text-pink-500 shrink-0 stroke-[2]"></i>
-                <div>
-                    <strong>Pronto para reservar:</strong> Após confirmar o código de acesso, você voltará diretamente para a CEG!
-                </div>
-            </div>
-        {% endif %}
-
+    <section class="ui-card p-5 sm:p-6 space-y-5">
         {% if step == 'verify' %}
-            <!-- Etapa 2: Digitar o código de 6 dígitos -->
-            <form action="{% url 'login_otp' %}" method="POST" class="space-y-4">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="verify_otp">
-                <input type="hidden" name="phone" value="{{ phone }}">
-                {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
-
-                <div class="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl text-emerald-900 dark:text-emerald-200 text-xs text-center space-y-1">
-                    <div class="text-[11px] font-medium text-emerald-800 dark:text-emerald-300">Código de 6 dígitos enviado para:</div>
-                    <div class="text-sm font-mono font-black text-emerald-950 dark:text-emerald-100">{{ formatted_phone|default:phone }}</div>
-                </div>
-
-                {% if dev_code %}
-                <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 rounded-2xl text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2 shadow-2xs">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="terminal" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" stroke-width="1.75"></i>
-                        <span>Modo Dev: Código <strong>{{ dev_code }}</strong></span>
-                    </div>
-                    <button type="button" onclick="document.querySelector('input[name=code]').value = '{{ dev_code }}'"
-                        class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] rounded-lg transition cursor-pointer active:scale-95 shadow-xs">
-                        Preencher
-                    </button>
-                </div>
-                {% endif %}
-
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 text-center">
-                        Digite o Código de 6 Dígitos
-                    </label>
-                    <input type="text" name="code" maxlength="6" pattern="[0-9]{6}" required autofocus
-                           placeholder="Ex: 123456"
-                           value="{{ dev_code|default:'' }}"
-                           class="w-full text-center text-3xl font-mono font-black tracking-widest px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
-                </div>
-
-                <button type="submit"
-                        class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-pink-500/25 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="sparkles" class="w-4 h-4" stroke-width="1.75"></i>
-                    <span>Confirmar e Continuar</span>
-                </button>
-
-                <div class="pt-2 text-center text-xs text-slate-400 dark:text-slate-500">
-                    <a href="{% url 'login_otp' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="inline-flex items-center gap-1.5 hover:text-pink-600 dark:hover:text-pink-400 transition">
-                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 stroke-[2]"></i>
-                        <span>Digitar outro número de WhatsApp</span>
-                    </a>
-                </div>
-            </form>
-
+            {% include 'participants/partials/_login_code.html' %}
         {% else %}
-            <!-- Etapa 1: Digitar o telefone WhatsApp -->
-            <form action="{% url 'login_otp' %}" method="POST" class="space-y-4" x-data="loginPhoneInput('{{ phone|default:'' }}')">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="send_otp">
-                {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
-
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                        <span>Número de WhatsApp</span>
-                        <span class="text-[11px] font-bold text-pink-600 dark:text-pink-400" x-show="recognizedFormat" x-text="recognizedFormat"></span>
-                    </label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500 pointer-events-none">
-                            <i data-lucide="phone" class="w-4 h-4 stroke-[2]"></i>
-                        </span>
-                        <input type="tel" name="phone" required autofocus
-                               x-model="rawPhone"
-                               @input="formatPreview()"
-                               value="{{ phone|default:'' }}"
-                               placeholder="Ex: 11 91234-5678 ou +1 202 555-0199"
-                               class="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 transition">
-                    </div>
-                    <span class="text-[11px] text-slate-400 dark:text-slate-500 block">
-                        Aceita qualquer formato: com DDD, espaços, traço, parênteses ou internacional (+DDI).
-                    </span>
-                </div>
-
-                <button type="submit"
-                        class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-pink-500/25 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i data-lucide="send" class="w-4 h-4 stroke-[2]"></i>
-                    <span>Receber Código de 6 Dígitos</span>
-                </button>
-            </form>
-
-            <script>
-            function loginPhoneInput(initialPhone) {
-                return {
-                    rawPhone: initialPhone || '',
-                    recognizedFormat: '',
-                    init() {
-                        this.formatPreview();
-                        this.$nextTick(() => {
-                            if (typeof lucide !== 'undefined') {
-                                lucide.createIcons();
-                            }
-                        });
-                    },
-                    formatPreview() {
-                        const val = this.rawPhone.trim();
-                        if (!val) {
-                            this.recognizedFormat = '';
-                            return;
-                        }
-                        if (val.startsWith('+')) {
-                            this.recognizedFormat = 'Internacional (+DDI)';
-                        } else {
-                            const digits = val.replace(/\D/g, '');
-                            if (digits.length >= 10) {
-                                this.recognizedFormat = 'Brasil (DDD identificado)';
-                            } else if (digits.length > 0) {
-                                this.recognizedFormat = 'Digite o DDD + número';
-                            } else {
-                                this.recognizedFormat = '';
-                            }
-                        }
-                    }
-                }
-            }
-            </script>
+            {% include 'participants/partials/_login_phone.html' %}
         {% endif %}
+    </section>
 
-        <div class="border-t border-slate-100 dark:border-slate-800 pt-4 text-center text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1.5">
-            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 stroke-[2]"></i>
-            <span>Seus dados são protegidos e usados apenas para a gestão de reservas de K-pop.</span>
-        </div>
-
-    </div>
-
+    <p class="ui-muted text-[13px] text-center">
+        Seus dados são usados só para as suas reservas. <a href="{% url 'privacy_policy' %}" class="underline">Política de privacidade</a>
+    </p>
 </div>
 {% endblock %}

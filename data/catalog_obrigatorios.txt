@@ -1,0 +1,170 @@
+# Artistas que SEMPRE entram no catálogo, independentemente do ranking (build_catalog_seed).
+# Um por linha, como no título da Wikipedia em inglês. O build avisa quem não encontrou (data/catalog_relatorio.md).
+# Adicione aqui quem faltar; rode `python manage.py build_catalog_seed` de novo (usa cache, é rápido).
+
+# --- Girl groups ---
+Blackpink
+Twice
+Red Velvet
+aespa
+IVE
+Le Sserafim
+NewJeans
+I-dle
+Itzy
+NMIXX
+Kep1er
+STAYC
+Fromis 9
+TripleS
+Kiss of Life
+Babymonster
+Illit
+Meovv
+Izna
+KiiiKiii
+Hearts2Hearts
+Unis
+Billlie
+Viviz
+Dreamcatcher
+Mamamoo
+Oh My Girl
+Apink
+Girls' Generation
+Wonder Girls
+2NE1
+F(x)
+Sistar
+EXID
+Loona
+Artms
+Everglow
+Purple Kiss
+Rescene
+QWER
+Fifty Fifty
+WJSN
+GFriend
+Lovelyz
+Momoland
+Weeekly
+Woo!ah!
+Young Posse
+Badvillain
+Katseye
+H1-Key
+Say My Name
+Ifeye
+Baby Dont Cry
+
+# --- Boy groups ---
+BTS
+Exo
+Seventeen
+Stray Kids
+NCT
+NCT 127
+NCT Dream
+WayV
+NCT Wish
+Enhypen
+Tomorrow X Together
+Ateez
+The Boyz
+Treasure
+Riize
+Zerobaseone
+Boynextdoor
+TWS
+Cortis
+&Team
+Monsta X
+Got7
+Shinee
+Super Junior
+Big Bang
+2PM
+Infinite
+Highlight
+BtoB
+Day6
+Xdinary Heroes
+P1Harmony
+Xikers
+Evnne
+Plave
+Cravity
+Oneus
+SF9
+Astro
+iKon
+Winner
+Kickflip
+Nexz
+82Major
+Ampers&One
+Close Your Eyes
+AHOF
+TempEst
+n.SSign
+Golden Child
+Pentagon
+Victon
+Verivery
+TVXQ
+Shinhwa
+Wanna One
+X1
+Ab6ix
+
+# --- Solistas ---
+IU
+Taeyeon
+Jennie
+Lisa
+Rosé
+Jisoo
+Jungkook
+Jimin
+V
+RM
+Suga
+J-Hope
+Jin
+G-Dragon
+Taeyang
+Baekhyun
+Kai
+D.O.
+Taemin
+Key
+Chungha
+Sunmi
+Hwasa
+Jessi
+BoA
+Psy
+Zico
+Jay Park
+Crush
+Yuqi
+Jeon Somi
+Choi Ye-na
+Kwon Eun-bi
+Lee Chae-yeon
+Jo Yu-ri
+Wendy
+Seulgi
+Kang Daniel
+Ten
+Doyoung
+Hyolyn
+Heize
+Lee Hi
+Woodz
+Yves
+Chuu
+Hyuna
+Mark Lee
+Hoshi

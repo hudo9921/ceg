@@ -8,19 +8,18 @@
     <!-- 1. HEADER HERO, FEEDBACK TOASTS E AÇÕES -->
     {% include 'cegs/partials/_envios_header.html' %}
 
-    <!-- 2. MÉTRICAS E INDICADORES OPERACIONAIS -->
-    {% include 'cegs/partials/_envios_metrics.html' %}
+    <!-- 2. MÉTRICAS (só na lista; no quadro, cada coluna já mostra a contagem) -->
+    {% if view_mode == 'lista' %}{% include 'cegs/partials/_envios_metrics.html' %}{% endif %}
 
     <!-- 3. BARRA DE FILTROS E BUSCA -->
     {% include 'cegs/partials/_envios_filters.html' %}
 
-    <!-- 4. GRID DE PACOTES OU ESTADO VAZIO -->
-    {% include 'cegs/partials/_envios_grid.html' %}
+    <!-- 4. QUADRO POR ETAPA (padrão) OU LISTA DE CARTÕES -->
+    {% if view_mode == 'lista' %}{% include 'cegs/partials/_envios_grid.html' %}{% else %}{% include 'cegs/partials/_envios_board.html' %}{% endif %}
 
     <!-- 5. MODAIS OPERACIONAIS -->
     {% include 'cegs/partials/_envios_modal_dispatch.html' %}
     {% include 'cegs/partials/_envios_modal_edit.html' %}
-    {% include 'cegs/partials/_envios_modal_config.html' %}
     {% include 'cegs/partials/_envios_modal_image_zoom.html' %}
 
 </div>

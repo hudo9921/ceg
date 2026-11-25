@@ -1,0 +1,70 @@
+{% comment %}Componente pixPay (S1): seleção, gerar Pix, rever, "Já paguei" e cancelar (apps/pagamentos/joiner_views.py).{% endcomment %}
+<script>
+function pixPay(gomId) {
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const call = async (url, opts) => {
+        const res = await fetch(url, Object.assign({ headers: { 'X-CSRFToken': csrf() } }, opts));
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401 && data.redirect_url) { window.location.href = data.redirect_url; return null; }
+        return data;
+    };
+    return {
+        picked: [], sheet: false, pix: [], idx: 0, done: {}, busy: false, error: '', file: null, copied: '',
+        brl(v) { return Number(v || 0).toFixed(2).replace('.', ','); },
+        totalPicked() {
+            return Array.from(this.$root.querySelectorAll('input[type=checkbox][data-amount]'))
+                .filter((el) => this.picked.includes(el.value)).reduce((a, el) => a + Number(el.dataset.amount), 0);
+        },
+        cur() { return this.pix[this.idx]; },
+        open(list) { this.pix = list; this.idx = 0; this.done = {}; this.error = ''; this.file = null; this.sheet = true; },
+        async gerar() {
+            if (!this.picked.length || this.busy) return;
+            this.busy = true; this.error = '';
+            try {
+                const data = await call('{% url "pix_gerar" %}', { method: 'POST', body: JSON.stringify({ gom_id: gomId, groups: this.picked }) });
+                if (!data) return;
+                if (!data.success) { alert(data.message || 'Não deu para gerar o Pix agora.'); return; }
+                this.picked = [];
+                this.open(data.cobrancas);
+            } catch (e) { alert('Sem conexão. Confira a internet e tente de novo.'); }
+            finally { this.busy = false; }
+        },
+        async abrir(ref) {
+            const data = await call('/me/pagar/cobranca/' + encodeURIComponent(ref) + '/', { method: 'GET' });
+            if (data && data.success) this.open(data.cobrancas);
+        },
+        async copiar() {
+            try { await navigator.clipboard.writeText(this.cur().code); this.copied = this.cur().ref; } catch (e) { this.copied = ''; }
+        },
+        async paguei() {
+            if (this.busy) return;
+            this.busy = true; this.error = '';
+            const body = new FormData();
+            if (this.file) body.append('comprovante', this.file);
+            try {
+                const data = await call('/me/pagar/cobranca/' + encodeURIComponent(this.cur().ref) + '/paguei/', { method: 'POST', body });
+                if (!data) return;
+                if (!data.success) { this.error = data.message || 'Não deu certo. Tente de novo.'; return; }
+                this.done = Object.assign({}, this.done, { [this.cur().ref]: true });
+                this.file = null;
+                const next = this.pix.findIndex((p) => !this.done[p.ref]);
+                if (next >= 0) this.idx = next;
+            } catch (e) { this.error = 'Sem conexão. Confira a internet e tente de novo.'; }
+            finally { this.busy = false; }
+        },
+        async cancelar(ref) {
+            if (!confirm('Cancelar este Pix? As cobranças voltam para a lista.')) return;
+            const data = await call('/me/pagar/cobranca/' + encodeURIComponent(ref) + '/cancelar/', { method: 'POST' });
+            if (data && data.success) window.location.reload();
+            else if (data) alert(data.message);
+        },
+        fechar() {
+            const changed = Object.keys(this.done).length || this.pix.length;
+            this.sheet = false;
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('pix')) { url.searchParams.delete('pix'); history.replaceState(null, '', url); }
+            if (changed) window.location.reload();  // atualiza "Pagamento em análise" e o "Pix em andamento"
+        },
+    };
+}
+</script>

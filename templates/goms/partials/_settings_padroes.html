@@ -1,0 +1,19 @@
+{% comment %}Aba Padrões de CEG das Configurações do GOM (C2, permissão ceg.padroes). Só pré-preenchem o Criar.{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="padroes-title">
+    <div class="space-y-1">
+        <h2 id="padroes-title" class="ui-disp text-xl">Padrões de CEG</h2>
+        <p class="ui-muted text-sm">Já vêm preenchidos em Criar → Nova CEG. Você pode mudar em cada CEG; as CEGs já criadas não mudam.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+        {% include 'goms/partials/_profile_field.html' with field=form.padrao_prazo_item_dias %}
+        {% include 'goms/partials/_profile_field.html' with field=form.padrao_horario_abertura %}
+    </div>
+    {% include 'goms/partials/_profile_field.html' with field=form.padrao_descricao %}
+    <label class="ui-well p-4 flex items-start gap-3 cursor-pointer">
+        {{ form.padrao_caixa_aberta }}
+        <span class="space-y-0.5">
+            <span class="block font-semibold text-[15px]">{{ form.padrao_caixa_aberta.label }}</span>
+            <span class="block ui-muted text-[13px]">{% if caixa_aberta %}Hoje: "{{ caixa_aberta.nome }}" (em consolidação).{% else %}Nenhuma caixa em consolidação agora.{% endif %}</span>
+        </span>
+    </label>
+</section>

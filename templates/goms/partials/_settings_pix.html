@@ -1,0 +1,17 @@
+{% comment %}Aba Pix das Configurações do GOM (permissão pix.alterar): QR do Pix (S1) e chaves padrão.{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="pix-qr-title">
+    <div class="space-y-1">
+        <h2 id="pix-qr-title" class="ui-disp text-xl">Pix com QR code</h2>
+        <p class="ui-muted text-sm">Com estes dois campos, o joiner escolhe o que pagar e recebe um Pix com o valor exato e uma referência. Você confere em <b>Pagamentos</b> e toca em Recebi.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+        {% include 'goms/partials/_profile_field.html' with field=form.pix_nome_recebedor %}
+        {% include 'goms/partials/_profile_field.html' with field=form.pix_cidade %}
+    </div>
+    {% if not gom.pix_nome_recebedor or not gom.pix_cidade %}
+        <p class="ui-status ui-warn">Sem nome e cidade, os joiners continuam vendo só a chave para copiar.</p>
+    {% else %}
+        <p class="ui-status ui-ok">Pix com QR ativo para os seus joiners.</p>
+    {% endif %}
+</section>
+{% include 'goms/partials/_profile_pix.html' %}

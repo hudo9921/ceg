@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-import random
+import secrets
 
 
 class WhatsAppOTP(models.Model):
@@ -9,6 +9,7 @@ class WhatsAppOTP(models.Model):
     code = models.CharField('Código OTP (6 dígitos)', max_length=6)
     expires_at = models.DateTimeField('Expira em')
     attempts = models.PositiveIntegerField('Tentativas Incorretas', default=0)
+    ip_address = models.GenericIPAddressField('IP de Origem', null=True, blank=True)
     is_used = models.BooleanField('Código Utilizado', default=False)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 
@@ -21,13 +22,16 @@ class WhatsAppOTP(models.Model):
         return f"OTP para {self.phone} [{self.code}] - Utilizado: {self.is_used}"
 
     @classmethod
-    def create_for_phone(cls, phone: str, valid_minutes: int = 10):
-        code = f"{random.randint(100000, 999999)}"
+    def create_for_phone(cls, phone: str, valid_minutes: int = 10, ip_address: str | None = None):
+        # Invalida códigos anteriores ainda ativos: apenas um código válido por telefone.
+        cls.objects.filter(phone=phone, is_used=False).update(is_used=True)
+        code = f"{secrets.randbelow(900000) + 100000}"
         expires_at = timezone.now() + timedelta(minutes=valid_minutes)
         return cls.objects.create(
             phone=phone,
             code=code,
-            expires_at=expires_at
+            expires_at=expires_at,
+            ip_address=ip_address,
         )
 
     def is_valid(self) -> bool:

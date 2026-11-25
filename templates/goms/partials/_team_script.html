@@ -1,0 +1,43 @@
+{% comment %}teamApp(): seleção de membro, modelos e interruptores de permissão (dados em #team-data).{% endcomment %}
+<script>
+window.teamApp = window.teamApp || function () {
+    const data = JSON.parse(document.getElementById('team-data').textContent || '{}');
+    const same = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+    const firstAdmin = (data.members || []).find((m) => !m.is_owner) || (data.members || [])[0] || { id: null };
+    return {
+        members: data.members || [], areas: data.areas || [], presets: data.presets || [],
+        menu: data.menu || [], total: data.total || 0, canEditTeam: !!data.can_edit,
+        selId: firstAdmin.id, draft: [], inviteOpen: false, invRole: 'ADMIN', invPreset: 'completo',
+        init() { this.resetDraft(); },
+        get sel() { return this.members.find((m) => m.id === this.selId) || { perms: [], is_owner: true }; },
+        get canEdit() { return this.canEditTeam && !this.sel.is_owner; },
+        get dirty() { return this.canEdit && !same(this.draft, this.sel.perms); },
+        resetDraft() { this.draft = [...this.sel.perms]; },
+        pick(id) {
+            if (id === this.selId) return;
+            if (this.dirty && !window.confirm('Descartar as alterações não salvas?')) return;
+            this.selId = id;
+            this.resetDraft();
+        },
+        has(key) { return this.draft.includes(key); },
+        toggle(key) {
+            if (!this.canEdit) return;
+            this.draft = this.has(key) ? this.draft.filter((x) => x !== key) : [...this.draft, key];
+        },
+        presetOf(perms) { const p = this.presets.find((x) => same(x.perms, perms)); return p ? p.key : null; },
+        applyPreset(p) { if (this.canEdit) this.draft = [...p.perms]; },
+        summary(m, perms) {
+            perms = perms || m.perms;
+            if (m.is_owner) return 'Dono · acesso total';
+            const key = this.presetOf(perms);
+            const name = perms.length === this.total ? 'Acesso completo'
+                : key ? this.presets.find((p) => p.key === key).name : 'Personalizado';
+            return `${name} · ${perms.length} de ${this.total}`;
+        },
+        areaCount(area) { return `${area.perms.filter((p) => this.has(p.key)).length} de ${area.perms.length}`; },
+        get menuPreview() { return this.menu.filter((m) => m.perms.some((k) => this.has(k))).map((m) => m.name); },
+        get invHelp() { const p = this.presets.find((x) => x.key === this.invPreset); return p ? p.help : ''; },
+        initial(name) { return (name || '?').slice(0, 1).toUpperCase(); },
+    };
+};
+</script>

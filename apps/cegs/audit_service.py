@@ -61,8 +61,13 @@ class AuditService:
         if not ceg and slot and hasattr(slot, 'set') and getattr(slot.set, 'ceg', None):
             ceg = slot.set.ceg
 
+        # Multi-GOM: o evento pertence ao GOM da CEG/item/pacote (ou à plataforma, sem GOM).
+        gom_id = next((getattr(o, 'gom_id', None) for o in (ceg, item_individual, pacote_nacional)
+                       if o is not None and getattr(o, 'gom_id', None)), None)
+
         try:
             log_entry = AuditLog(
+                gom_id=gom_id,
                 event_type=event_type,
                 actor=actor_user,
                 actor_name=actor_name,
@@ -667,8 +672,10 @@ class AuditService:
                 action_url = f"/cegs/consulta-joiner/?q={p_phone or p_name}"
                 action_label = "Ver Joiner"
 
-            if notif_type:
+            # Eventos de plataforma (sem GOM, ex.: cadastro de joiner) não viram notificação de GOM.
+            if notif_type and log_entry.gom_id:
                 return GOMNotification.objects.create(
+                    gom_id=log_entry.gom_id,
                     notification_type=notif_type,
                     title=title,
                     message=message,

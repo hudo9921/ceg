@@ -15,18 +15,9 @@ from apps.cegs.models import Caixa, CEG, CEGItemDefinition, CEGSet, ItemSlot, It
 from apps.cegs.services import ClaimService
 from .image_utils import process_image_upload
 from apps.participants.models import Participant, Claim
+from apps.core.permissions import PlatformAdminRequiredMixin, StaffRequiredMixin, pix_fields
 
 logger = logging.getLogger(__name__)
-
-
-class StaffRequiredMixin(AccessMixin):
-    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-        return super().dispatch(request, *args, **kwargs)
 
 
 def parse_local_datetime(val_str: str):
@@ -44,48 +35,28 @@ def parse_local_datetime(val_str: str):
 
 class CreationsHubView(StaffRequiredMixin, View):
     """Página principal de criações e gerenciamento para o Organizador."""
+    gom_permission = 'ceg.editar'
 
     def get(self, request):
-        groups = KpopGroup.objects.prefetch_related('eras', 'members').order_by('name')
-        eras = Era.objects.select_related('group').order_by('group__name', 'name')
-        cegs = CEG.objects.select_related('era__group').prefetch_related('sets').order_by('-created_at')
-        caixas = Caixa.objects.all().order_by('-created_at')
+        gom = request.active_gom
+        cegs = CEG.objects.for_gom(gom).select_related('era__group').prefetch_related('sets').order_by('-created_at')
+        caixas = Caixa.objects.for_gom(gom).order_by('-created_at')
 
-        # Dicionário de grupos e eras para seleção em cascata e edição no Alpine.js
-        groups_data = []
-        for g in groups:
-            members_list = list(g.members.all())
-            groups_data.append({
-                'id': g.id,
-                'name': g.name,
-                'slug': g.slug,
-                'image_url': g.image_url,
-                'color_hex': g.color_hex or '',
-                'description': g.description or '',
-                'members_count': len(members_list),
-                'members': [
-                    {'id': m.id, 'name': m.name, 'order': m.order}
-                    for m in members_list
-                ],
-                'eras': [
-                    {
-                        'id': e.id,
-                        'name': e.name,
-                        'slug': e.slug,
-                        'release_date': e.release_date.strftime('%Y-%m-%d') if e.release_date else '',
-                        'banner_url': e.banner_url,
-                        'color_hex': e.color_hex or '',
-                        'description': e.description or '',
-                        'group_id': g.id,
-                        'group_name': g.name,
-                    }
-                    for e in g.eras.all()
-                ]
-            })
+        # Catálogo pode ter centenas de grupos: o Hub só pré-carrega os que este GOM usa, os cadastrados à mão e
+        # os mais populares. O resto vem pela busca (catalogo_views.catalogo_buscar), que adiciona em `groups`.
+        from django.db.models import Q
+        from apps.groups.models import Source
+        from .catalogo_views import grupo_json
+        populares = list(KpopGroup.objects.exclude(popularity_rank=None).order_by('popularity_rank')
+                         .values_list('id', flat=True)[:24])
+        groups = (KpopGroup.objects.filter(Q(eras__cegs__gom=gom) | Q(source=Source.MANUAL) | Q(id__in=populares))
+                  .distinct().select_related('parent').prefetch_related('eras', 'members').order_by('name'))
+        eras = Era.objects.filter(group__in=groups).select_related('group').order_by('group__name', 'name')
+        groups_data = [grupo_json(g) for g in groups]
 
         # Participantes cadastrados para pré-reserva de itens no cadastro da CEG
         participants = list(
-            Participant.objects.all().order_by('name').values(
+            Participant.objects.for_gom(gom).order_by('name').values(
                 'id', 'name', 'username', 'whatsapp', 'social_handle'
             )
         )
@@ -112,6 +83,8 @@ class CreationsHubView(StaffRequiredMixin, View):
         tipos_item = list(TipoItem.objects.all().order_by('nome'))
         tipos_item_data = [{'id': t.id, 'nome': t.nome} for t in tipos_item]
 
+        from apps.goms.ceg_defaults import creations_defaults
+
         context = {
             'groups': groups,
             'eras': eras,
@@ -130,9 +103,10 @@ class CreationsHubView(StaffRequiredMixin, View):
             'category_filter': category_filter,
             'category': category_filter,
             'preselected_caixa_id': int(request.GET.get('caixa_id')) if request.GET.get('caixa_id', '').isdigit() else '',
+            'ceg_defaults': creations_defaults(gom),
             'auto_open_modal': request.GET.get('open', ''),
-            'total_groups': groups.count(),
-            'total_eras': eras.count(),
+            'total_groups': KpopGroup.objects.count(),
+            'total_eras': Era.objects.count(),
             'total_cegs': cegs.count(),
             'open_cegs': sum(1 for c in cegs if c.status == CEG.Status.OPEN),
             'item_individual_statuses': ItemIndividual.Status.choices,
@@ -200,6 +174,7 @@ def extract_member_names(request):
 
 class CreateGroupView(StaffRequiredMixin, View):
     """Cadastra um novo Grupo ou Solista de K-pop."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         name = request.POST.get('name', '').strip()
@@ -213,6 +188,11 @@ class CreateGroupView(StaffRequiredMixin, View):
         if not name:
             messages.error(request, "O nome do grupo é obrigatório.")
             return redirect('/creations/?tab=group')
+
+        existente = KpopGroup.objects.matching(name).first()
+        if existente:
+            messages.info(request, f"'{existente.name}' já está no catálogo. Use esse grupo para criar a era ou a CEG.")
+            return redirect('/creations/?tab=era')
 
         try:
             image_url = process_image_upload(
@@ -256,7 +236,7 @@ class CreateGroupView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=group')
 
 
-class UpdateGroupView(StaffRequiredMixin, View):
+class UpdateGroupView(PlatformAdminRequiredMixin, View):  # catálogo compartilhado: só a plataforma edita
     """Atualiza as informações de um Grupo ou Solista existente."""
 
     def post(self, request):
@@ -347,6 +327,7 @@ class UpdateGroupView(StaffRequiredMixin, View):
 
 class CreateEraView(StaffRequiredMixin, View):
     """Cadastra uma nova Era / Álbum / Comeback vinculado a um grupo."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         group_id = request.POST.get('group_id')
@@ -413,7 +394,7 @@ class CreateEraView(StaffRequiredMixin, View):
             return redirect('/creations/?tab=era')
 
 
-class UpdateEraView(StaffRequiredMixin, View):
+class UpdateEraView(PlatformAdminRequiredMixin, View):  # catálogo compartilhado: só a plataforma edita
     """Atualiza as informações de uma Era / Comeback existente."""
 
     def post(self, request):
@@ -508,6 +489,7 @@ class CreateCEGView(StaffRequiredMixin, View):
     - Construtor dinâmico de itens/photocards com valores
     - Geração automática do Set #1 e de seus slots físicos
     """
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         era_id = request.POST.get('era_id')
@@ -521,8 +503,8 @@ class CreateCEGView(StaffRequiredMixin, View):
         taxa_aduaneira_str = request.POST.get('taxa_aduaneira', '').strip()
         prazo_pagamento_frete_inter_str = request.POST.get('prazo_pagamento_frete_inter', '').strip()
         prazo_pagamento_taxa_aduaneira_str = request.POST.get('prazo_pagamento_taxa_aduaneira', '').strip()
-        pix_key = request.POST.get('pix_key', '').strip()
-        pix_instructions = request.POST.get('pix_instructions', '').strip()
+        # Em branco = a CEG segue as chaves Pix padrão do GOM (resolvidas na hora: CEG._resolve_pix).
+        pix_key, pix_instructions = pix_fields(request, ['pix_key', 'pix_instructions'])
         banner_file = request.FILES.get('banner_file')
         banner_base64 = request.POST.get('banner_base64', '').strip()
         banner_url_input = request.POST.get('banner_url', '').strip()
@@ -569,6 +551,12 @@ class CreateCEGView(StaffRequiredMixin, View):
         frete_inter = parse_optional_decimal(frete_inter_str)
         taxa_aduaneira = parse_optional_decimal(taxa_aduaneira_str)
 
+        # Padrões de CEG do GOM (C2): {grupo}/{era} na descrição e prazo do item a partir do fechamento.
+        from apps.goms.ceg_defaults import default_prazo_item, render_description
+        description = render_description(description, era)
+        if prazo_pagamento_item is None:
+            prazo_pagamento_item = default_prazo_item(request.active_gom, closes_at)
+
         # Se tiver opens_at no futuro e status for OPEN, ajusta para SCHEDULED
         if opens_at and timezone.now() < opens_at and status == CEG.Status.OPEN:
             status = CEG.Status.SCHEDULED
@@ -610,7 +598,7 @@ class CreateCEGView(StaffRequiredMixin, View):
         shipping_status = Caixa.Status.EM_CONSOLIDACAO
         if caixa_id:
             try:
-                caixa = Caixa.objects.filter(id=int(caixa_id)).first()
+                caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id)).first()
                 if caixa:
                     shipping_status = caixa.status
             except (ValueError, TypeError):
@@ -620,6 +608,7 @@ class CreateCEGView(StaffRequiredMixin, View):
             with transaction.atomic():
                 # 1. Cria a CEG
                 ceg = CEG.objects.create(
+                    gom=request.active_gom,
                     era=era,
                     caixa=caixa,
                     shipping_status=shipping_status,
@@ -712,7 +701,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                             p_id = idata.get('participant_id') or idata.get('pre_assigned_participant_id') if idata else None
                             if p_id:
                                 try:
-                                    participant = Participant.objects.get(id=int(p_id))
+                                    participant = Participant.objects.for_gom(request.active_gom).get(id=int(p_id))
                                     slot.claimed_by = participant
                                     slot.status = ItemSlot.Status.RESERVED
                                     slot.claimed_at = now
@@ -755,7 +744,7 @@ class CreateCEGView(StaffRequiredMixin, View):
                             p_id = idata.get('participant_id') or idata.get('pre_assigned_participant_id') if idata else None
                             if p_id:
                                 try:
-                                    participant = Participant.objects.get(id=int(p_id))
+                                    participant = Participant.objects.for_gom(request.active_gom).get(id=int(p_id))
                                     slot.claimed_by = participant
                                     slot.status = ItemSlot.Status.RESERVED
                                     slot.claimed_at = now
@@ -808,6 +797,7 @@ class CreateCEGView(StaffRequiredMixin, View):
 
 class CreateSetView(StaffRequiredMixin, View):
     """Adiciona um novo Set a uma CEG existente e gera os slots automaticamente."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         next_url = request.POST.get('next')
@@ -820,7 +810,7 @@ class CreateSetView(StaffRequiredMixin, View):
             messages.error(request, "Selecione a CEG para a qual deseja adicionar o Set.")
             return redirect(next_url or '/creations/?tab=sets')
 
-        ceg = get_object_or_404(CEG, id=ceg_id)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), id=ceg_id)
 
         # Determina o próximo número do Set (ignorando o set avulso #0)
         if set_number_input and set_number_input.isdigit():
@@ -864,6 +854,7 @@ class CreateSetView(StaffRequiredMixin, View):
 
 class AddItemToCEGView(StaffRequiredMixin, View):
     """Adiciona uma nova definição de item/photocard a uma CEG existente."""
+    gom_permission = 'ceg.editar'
 
     def post(self, request):
         ceg_id = request.POST.get('ceg_id')
@@ -884,7 +875,7 @@ class AddItemToCEGView(StaffRequiredMixin, View):
             messages.error(request, "Selecione a CEG e informe o Nome do Item.")
             return redirect('/creations/?tab=items')
 
-        ceg = get_object_or_404(CEG, id=ceg_id)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), id=ceg_id)
 
         try:
             price = Decimal(price_str)

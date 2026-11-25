@@ -18,10 +18,19 @@ MONTH_FULL = {
 }
 
 
+
+def _q(model, gom):
+    """
+    Queryset base de um modelo no escopo do GOM. As views sempre informam o GOM ativo;
+    `gom=None` (comandos/testes legados) vê tudo.
+    """
+    return model.objects.for_gom(gom) if gom is not None else model.objects.all()
+
+
 class AnalyticsService:
 
     @staticmethod
-    def get_filter_options():
+    def get_filter_options(gom=None):
         """Retorna os grupos, eras e meses disponíveis para alimentar os filtros do painel."""
         groups = KpopGroup.objects.prefetch_related('eras').all().order_by('name')
         groups_data = []
@@ -42,11 +51,11 @@ class AnalyticsService:
         } for e in eras]
 
         # Meses com claims ou itens individuais registrados
-        claim_months = list(Claim.objects.annotate(
+        claim_months = list(_q(Claim, gom).annotate(
             m=TruncMonth('claimed_at')
         ).values_list('m', flat=True).distinct())
 
-        item_months = list(ItemIndividual.objects.annotate(
+        item_months = list(_q(ItemIndividual, gom).annotate(
             m=TruncMonth('created_at')
         ).values_list('m', flat=True).distinct())
 
@@ -78,7 +87,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def get_summary_metrics(group_id=None, era_id=None, month=None):
+    def get_summary_metrics(group_id=None, era_id=None, month=None, gom=None):
         """
         Calcula as métricas financeiras e operacionais com filtros opcionais:
         - total_paid: Faturamento Confirmado (Pix aprovado)
@@ -89,9 +98,9 @@ class AnalyticsService:
         - total_slots, reserved_slots, available_slots, occupancy_percentage
         - unique_participants, avg_ticket
         """
-        claims = Claim.objects.exclude(status=Claim.Status.CANCELLED)
-        slots = ItemSlot.objects.filter(set__is_active=True)
-        cegs = CEG.objects.all()
+        claims = _q(Claim, gom).exclude(status=Claim.Status.CANCELLED)
+        slots = _q(ItemSlot, gom).filter(set__is_active=True)
+        cegs = _q(CEG, gom).all()
 
         if group_id:
             claims = claims.filter(slot__set__ceg__era__group_id=group_id)
@@ -145,11 +154,11 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def get_monthly_sales_flow(group_id=None, era_id=None):
+    def get_monthly_sales_flow(group_id=None, era_id=None, gom=None):
         """
         Retorna agregação de vendas mês a mês para o gráfico de fluxo temporal (Chart.js).
         """
-        claims = Claim.objects.exclude(status=Claim.Status.CANCELLED)
+        claims = _q(Claim, gom).exclude(status=Claim.Status.CANCELLED)
         if group_id:
             claims = claims.filter(slot__set__ceg__era__group_id=group_id)
         if era_id:
@@ -193,12 +202,12 @@ class AnalyticsService:
         return results
 
     @staticmethod
-    def get_detailed_inventory_table(group_id=None, era_id=None):
+    def get_detailed_inventory_table(group_id=None, era_id=None, gom=None):
         """
         Retorna a tabela consolidada de cada CEG com:
         Aberto/Status, Faturado, Falta Pagar, Já Vendido, Para Vender e Total Potencial.
         """
-        cegs = CEG.objects.select_related('era__group', 'era').all()
+        cegs = _q(CEG, gom).select_related('era__group', 'era').all()
         if group_id:
             cegs = cegs.filter(era__group_id=group_id)
         if era_id:
@@ -208,14 +217,14 @@ class AnalyticsService:
         ceg_ids = [c.id for c in cegs_list]
 
         all_slots = list(
-            ItemSlot.objects.filter(set__ceg_id__in=ceg_ids, set__is_active=True)
+            _q(ItemSlot, gom).filter(set__ceg_id__in=ceg_ids, set__is_active=True)
             .select_related('set')
         )
         slots_by_ceg = defaultdict(list)
         for s in all_slots:
             slots_by_ceg[s.set.ceg_id].append(s)
 
-        claim_aggregates = Claim.objects.filter(
+        claim_aggregates = _q(Claim, gom).filter(
             slot__set__ceg_id__in=ceg_ids
         ).values('slot__set__ceg_id', 'status').annotate(
             total_val=Sum('total_price')
@@ -268,11 +277,11 @@ class AnalyticsService:
         return sorted(table_rows, key=lambda x: (x['total_potential'], x['sold_amount']), reverse=True)
 
     @staticmethod
-    def get_group_comparison():
+    def get_group_comparison(gom=None):
         """Compara o faturamento e capacidade entre os grupos para gráficos (0 queries N+1)"""
         groups = list(KpopGroup.objects.all().order_by('name'))
         
-        claim_aggs = Claim.objects.exclude(status=Claim.Status.CANCELLED).values(
+        claim_aggs = _q(Claim, gom).exclude(status=Claim.Status.CANCELLED).values(
             'slot__set__ceg__era__group_id', 'status'
         ).annotate(
             total_val=Sum('total_price'),
@@ -292,7 +301,7 @@ class AnalyticsService:
             elif row['status'] == Claim.Status.PENDING:
                 pending_by_group[gid] += val
 
-        slot_aggs = ItemSlot.objects.filter(
+        slot_aggs = _q(ItemSlot, gom).filter(
             set__is_active=True, status=ItemSlot.Status.AVAILABLE
         ).values('set__ceg__era__group_id').annotate(
             avail_val=Sum('price')
@@ -318,9 +327,9 @@ class AnalyticsService:
         return sorted(results, key=lambda x: x['total_amount'], reverse=True)
 
     @staticmethod
-    def get_member_popularity(group_id=None, era_id=None):
+    def get_member_popularity(group_id=None, era_id=None, gom=None):
         """Calcula integrantes mais disputados, com suporte a filtros de grupo e era."""
-        qs = ItemSlot.objects.filter(
+        qs = _q(ItemSlot, gom).filter(
             item_definition__member_name__isnull=False
         ).exclude(
             item_definition__member_name=''
@@ -359,9 +368,9 @@ class AnalyticsService:
         return sorted(results, key=lambda x: (x['claim_percentage'], x['claimed_slots']), reverse=True)
 
     @staticmethod
-    def get_sets_near_completion(group_id=None, era_id=None):
+    def get_sets_near_completion(group_id=None, era_id=None, gom=None):
         """Retorna sets com suporte a filtros de grupo e era (em memória, sem N+1)."""
-        active_sets = CEGSet.objects.filter(
+        active_sets = _q(CEGSet, gom).filter(
             is_active=True,
             ceg__status__in=[CEG.Status.OPEN, CEG.Status.SCHEDULED]
         ).select_related('ceg', 'ceg__era', 'ceg__era__group').prefetch_related('slots')
@@ -395,11 +404,11 @@ class AnalyticsService:
 
     # Mantém compatibilidade com código legado que chama get_era_financials
     @staticmethod
-    def get_era_financials():
-        return AnalyticsService.get_detailed_inventory_table()
+    def get_era_financials(gom=None):
+        return AnalyticsService.get_detailed_inventory_table(gom=gom)
 
     @staticmethod
-    def get_cegs_operational_status(group_id=None, era_id=None, category='all', search=None):
+    def get_cegs_operational_status(group_id=None, era_id=None, category='all', search=None, gom=None):
         """
         Retorna o status operacional detalhado das CEGs, Sets e Itens Individuais (Mercari):
         - sets_completed_pending: Sets 100% preenchidos, porém ainda não finalizados
@@ -417,10 +426,10 @@ class AnalyticsService:
         total_sets_count = 0
         total_slots_count = 0
         total_reserved_slots_count = 0
-        cegs_qs = CEG.objects.none()
+        cegs_qs = _q(CEG, gom).none()
 
         if category in ['all', 'ceg']:
-            cegs_qs = CEG.objects.select_related('era__group', 'era', 'caixa').all()
+            cegs_qs = _q(CEG, gom).select_related('era__group', 'era', 'caixa').all()
 
             if group_id:
                 cegs_qs = cegs_qs.filter(era__group_id=group_id)
@@ -440,7 +449,7 @@ class AnalyticsService:
 
             # 1. Carrega todos os sets ativos de uma vez
             active_sets = list(
-                CEGSet.objects.filter(ceg_id__in=ceg_ids, is_active=True).order_by('set_number')
+                _q(CEGSet, gom).filter(ceg_id__in=ceg_ids, is_active=True).order_by('set_number')
             )
             sets_by_ceg = defaultdict(list)
             for s in active_sets:
@@ -448,7 +457,7 @@ class AnalyticsService:
 
             # 2. Carrega todos os slots dos sets ativos de uma vez
             all_slots = list(
-                ItemSlot.objects.filter(set__ceg_id__in=ceg_ids, set__is_active=True)
+                _q(ItemSlot, gom).filter(set__ceg_id__in=ceg_ids, set__is_active=True)
                 .select_related('set', 'item_definition')
                 .order_by('item_definition__name')
             )
@@ -459,7 +468,7 @@ class AnalyticsService:
                 slots_by_ceg[slot.set.ceg_id].append(slot)
 
             # 3. Agrega valores de Claims em 1 única query
-            claim_aggregates = Claim.objects.filter(
+            claim_aggregates = _q(Claim, gom).filter(
                 slot__set__ceg_id__in=ceg_ids
             ).values('slot__set__ceg_id', 'status').annotate(
                 total_val=Sum('total_price')
@@ -745,7 +754,7 @@ class AnalyticsService:
                     'opens_at_iso': ceg.opens_at.strftime('%Y-%m-%dT%H:%M') if ceg.opens_at else '',
                     'closes_at_iso': ceg.closes_at.strftime('%Y-%m-%dT%H:%M') if ceg.closes_at else '',
                     'prazo_item_iso': ceg.prazo_pagamento_item.strftime('%Y-%m-%dT%H:%M') if ceg.prazo_pagamento_item else '',
-                    'pix_key': ceg.pix_key or '',
+                    'pix_key': ceg.get_pix_key_item(),
                     'pix_instructions': ceg.pix_instructions or '',
                     'description': ceg.description or '',
                 })
@@ -766,7 +775,7 @@ class AnalyticsService:
         mercari_taxa_unpaid_count = 0
 
         if category in ['all', 'mercari']:
-            mercari_qs = ItemIndividual.objects.select_related('caixa', 'comprador', 'tipo_item').all()
+            mercari_qs = _q(ItemIndividual, gom).select_related('caixa', 'comprador', 'tipo_item').all()
             if (group_id or era_id) and category != 'mercari':
                 mercari_items_list = []
             else:
@@ -894,7 +903,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def get_sales_analytics(group_id=None, era_id=None, time_window=None, month=None, category='all'):
+    def get_sales_analytics(group_id=None, era_id=None, time_window=None, month=None, category='all', gom=None):
         """
         Retorna o relatório analítico completo de vendas, faturamento e BI com suporte a categorias:
         - category: 'all' (Geral: CEGs + Mercari), 'ceg' (Apenas CEGs), 'mercari' (Apenas Caixa Mercari)
@@ -908,9 +917,9 @@ class AnalyticsService:
         now = timezone.now()
 
         # 1. CEGs Claims
-        claims = Claim.objects.none()
+        claims = _q(Claim, gom).none()
         if category in ['all', 'ceg']:
-            claims = Claim.objects.exclude(status=Claim.Status.CANCELLED).select_related(
+            claims = _q(Claim, gom).exclude(status=Claim.Status.CANCELLED).select_related(
                 'participant', 'slot__set__ceg__era__group', 'slot__item_definition'
             )
             if group_id:
@@ -961,10 +970,10 @@ class AnalyticsService:
                     }
 
         # 2. Itens Individuais (Mercari)
-        mercari_items = ItemIndividual.objects.none()
+        mercari_items = _q(ItemIndividual, gom).none()
         if category in ['all', 'mercari']:
             if not ((group_id or era_id) and category != 'mercari'):
-                mercari_items = ItemIndividual.objects.select_related('comprador', 'caixa').all()
+                mercari_items = _q(ItemIndividual, gom).select_related('comprador', 'caixa').all()
                 if time_window == '30d':
                     mercari_items = mercari_items.filter(created_at__gte=now - timedelta(days=30))
                 elif time_window == '90d':

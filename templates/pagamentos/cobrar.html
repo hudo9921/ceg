@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Cobrar {{ joiner.display_name }} — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Cobrar um joiner pelo WhatsApp do próprio GOM (S1, joiners que ainda não usam o site): escolher o que cobrar, gerar o
+Pix com valor exato e abrir o WhatsApp com a mensagem pronta. O Pix entra na fila de Pagamentos.
+{% endcomment %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <header class="space-y-2">
+        <p class="ui-label"><a href="{% url 'pix_fila' %}" class="hover:underline">Pagamentos</a> · Cobrar</p>
+        <h1 class="ui-disp text-4xl">{{ joiner.display_name }}</h1>
+        <p class="ui-muted text-[15px]">Gere o Pix com o valor exato e mande pelo seu WhatsApp. Quando cair, toque em Recebi na fila de Pagamentos.</p>
+    </header>
+
+    {% if not pix_ready %}
+        <p class="ui-card p-4 text-sm"><span class="ui-status ui-warn">Pix com QR desligado.</span> Preencha o nome de quem recebe e a cidade em
+            <a href="{% url 'gom_settings_tab' 'pix' %}" class="underline">Configurações → Pix</a>.</p>
+    {% endif %}
+
+    {% for cob in abertas %}{% include 'pagamentos/partials/_cobrar_pix.html' %}{% endfor %}
+
+    {% if groups %}
+        <form method="post" class="ui-card overflow-hidden" aria-labelledby="em-aberto-title">
+            {% csrf_token %}
+            <div class="p-5 space-y-1">
+                <h2 id="em-aberto-title" class="ui-disp text-xl">Em aberto, sem Pix</h2>
+                <p class="ui-muted text-sm">Marque o que entra na cobrança. Se forem chaves Pix diferentes, sai um Pix para cada.</p>
+            </div>
+            {% for g in groups %}
+                <label class="flex items-center gap-3 px-5 py-3.5 border-t border-ui-line cursor-pointer">
+                    <input type="checkbox" name="groups" value="{{ g.key }}" checked class="w-5 h-5 accent-[var(--ui-accent)]">
+                    <span class="flex-1 min-w-0"><b class="block">{{ g.title }}</b><span class="ui-muted text-[13px]">{{ g.tipo_label }} · {{ g.count }} ite{{ g.count|pluralize:"m,ns" }}</span></span>
+                    <span class="ui-mono font-bold">R$ {{ g.total|floatformat:2 }}</span>
+                </label>
+            {% endfor %}
+            <div class="p-4 border-t border-ui-line flex justify-end"><button type="submit" class="ui-btn ui-btn-primary">Gerar Pix</button></div>
+        </form>
+    {% elif pix_ready and not abertas %}
+        <p class="ui-card p-8 text-center ui-muted">{{ joiner.display_name }} não deve nada a {{ active_gom.name }} agora.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% comment %}Privacidade e direitos do titular (LGPD): baixar os dados e pedir exclusão da conta.{% endcomment %}
+<div x-data="{ confirmDelete: false }" class="pt-4 border-t space-y-3" style="border-color: var(--ui-line)">
+    <div class="flex items-center justify-between gap-3">
+        <h3 class="text-base font-bold">Privacidade e seus dados</h3>
+        <a href="{% url 'privacy_policy' %}" target="_blank" rel="noopener" class="text-sm font-semibold hover:underline">Política de privacidade</a>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+        <a href="{% url 'export_my_data' %}" class="ui-btn ui-btn-ghost ui-btn-sm">Baixar meus dados</a>
+        <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm ui-danger" @click="confirmDelete = !confirmDelete" :aria-expanded="confirmDelete.toString()">Excluir minha conta</button>
+    </div>
+    <form x-show="confirmDelete" x-cloak method="POST" action="{% url 'request_data_deletion' %}" class="ui-well p-3 space-y-2">
+        {% csrf_token %}
+        <p class="text-sm">A organização conclui antes as reservas, pagamentos e envios em andamento. Depois, seu nome, WhatsApp, @ e endereços são apagados. Os registros financeiros ficam guardados sem identificação.</p>
+        <label class="block space-y-1.5">
+            <span class="ui-label">Digite <span class="ui-mono">EXCLUIR</span> para confirmar</span>
+            <span class="flex gap-2">
+                <input type="text" name="confirmacao" autocomplete="off" required class="ui-input flex-1 min-w-0 ui-mono">
+                <button type="submit" class="ui-btn ui-btn-ghost ui-danger flex-none">Enviar pedido</button>
+            </span>
+        </label>
+    </form>
+</div>

@@ -1,14 +1,16 @@
 import json
 import logging
 from django.views import View
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from apps.core.permissions import StaffRequiredMixin, has_gom_permission
+from apps.goms.access import can_manage
 
 from apps.cegs.models import CEG
 from apps.cegs.polling_service import PollingDemandService, PollingError
 from apps.participants.models import Participant
+from apps.participants.session_auth import get_session_participant
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,20 @@ class CEGVoteView(View):
     """Endpoint público para envio de votos / pré-claims em uma CEG em status POLLING."""
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
+
+        # poderes de staff só na CEG do próprio GOM e com permissão de editar pedidos
+        is_staff = can_manage(request, ceg) and has_gom_permission(request, 'pedidos.editar')
+        p = get_session_participant(request)
+
+        # Joiners precisam estar autenticados via OTP; a identidade vem SOMENTE da sessão.
+        # Apenas o staff pode registrar votos em nome de outro número.
+        if not p and not is_staff:
+            return JsonResponse({
+                'success': False,
+                'requires_auth': True,
+                'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
+                'message': 'Por favor, autentique com seu WhatsApp para votar.'
+            }, status=401)
 
         if ceg.status != CEG.Status.POLLING:
             return JsonResponse({
@@ -43,21 +59,12 @@ class CEGVoteView(View):
         social_handle = body.get('social_handle', '').strip()
         notes = body.get('notes', '').strip()
 
-        # Se houver participante autenticado na sessão, preenche dados ausentes
-        logged_id = request.session.get('participant_id')
-        if logged_id:
-            try:
-                p = Participant.objects.get(id=logged_id)
-                if not whatsapp:
-                    whatsapp = p.whatsapp
-                if not name:
-                    name = p.name
-                if not username:
-                    username = p.username
-                if not social_handle:
-                    social_handle = p.social_handle
-            except Participant.DoesNotExist:
-                request.session.pop('participant_id', None)
+        if p:
+            if not is_staff or not whatsapp:
+                whatsapp = p.whatsapp
+            name = name or p.name
+            username = username or p.username
+            social_handle = social_handle or p.social_handle
 
         if not whatsapp:
             return JsonResponse({
@@ -83,10 +90,6 @@ class CEGVoteView(View):
                 actor=request.user if request.user.is_authenticated else None,
             )
 
-            # Salva na sessão o participante
-            if not request.user.is_staff:
-                request.session['participant_id'] = result['participant'].id
-
             summary = PollingDemandService.get_polling_summary(ceg)
 
             return JsonResponse({
@@ -102,16 +105,14 @@ class CEGVoteView(View):
             return JsonResponse({'success': False, 'message': str(e)}, status=400)
         except Exception as e:
             logger.error(f"Erro ao processar votos na CEG {ceg.slug}: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'message': f"Erro interno: {e}"}, status=500)
+            return JsonResponse({'success': False, 'message': "Erro interno ao registrar votos."}, status=500)
 
 
-class ConsolidatePollingView(LoginRequiredMixin, View):
+class ConsolidatePollingView(StaffRequiredMixin, View):
     """Endpoint administrativo para consolidar a enquete e gerar N sets físicos com alocação."""
+    gom_permission = 'ceg.editar'
     def post(self, request, slug):
-        if not request.user.is_staff:
-            return HttpResponseForbidden("Apenas administradores podem consolidar enquetes.")
-
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         is_json = request.content_type == 'application/json'
         if is_json:

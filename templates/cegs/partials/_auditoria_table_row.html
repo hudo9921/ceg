@@ -1,8 +1,8 @@
 <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
     <!-- Data e Hora -->
     <td class="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
-        <span class="font-bold text-slate-800 dark:text-white">{{ log.created_at|date:"d/m/Y" }}</span>
-        <span class="text-slate-400 dark:text-slate-500 block text-[10px]">{{ log.created_at|date:"H:i:s" }}</span>
+        <span class="font-bold">{{ log.created_at|date:"d/m/Y" }}</span>
+        <span class="ui-muted block text-[10px]">{{ log.created_at|date:"H:i:s" }}</span>
     </td>
 
     <!-- Tipo de Evento com Badge -->
@@ -63,17 +63,17 @@
                 <span>Pacote Entregue</span>
             </span>
         {% elif log.event_type == 'SLOT_ASSIGNED' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/10">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10">
                 <i data-lucide="link" class="w-3 h-3"></i>
                 <span>Vínculo Slot</span>
             </span>
         {% elif log.event_type == 'SLOT_RELEASED' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/10">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10">
                 <i data-lucide="unlock" class="w-3 h-3"></i>
                 <span>Liberação Slot</span>
             </span>
         {% else %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 ui-muted border border-slate-200 dark:border-white/10">
                 <i data-lucide="settings" class="w-3 h-3"></i>
                 <span>{{ log.get_event_type_display }}</span>
             </span>
@@ -87,14 +87,14 @@
                 {{ log.participant.name }}
             </a>
             {% if log.participant.formatted_phone %}
-                <a href="https://wa.me/{{ log.participant.whatsapp }}" target="_blank" class="text-[10px] text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 block">
+                <a href="https://wa.me/{{ log.participant.whatsapp }}" target="_blank" class="text-[10px] ui-muted hover:text-emerald-600 dark:hover:text-emerald-400 block">
                     {{ log.participant.formatted_phone }}
                 </a>
             {% endif %}
         {% elif log.participant_name %}
-            <span class="font-bold text-slate-800 dark:text-white block">{{ log.participant_name }}</span>
+            <span class="font-bold block">{{ log.participant_name }}</span>
             {% if log.participant_phone %}
-                <span class="text-[10px] text-slate-400 dark:text-slate-500 block">{{ log.participant_phone }}</span>
+                <span class="text-[10px] ui-muted block">{{ log.participant_phone }}</span>
             {% endif %}
         {% else %}
             <span class="text-slate-400 dark:text-slate-600 italic">—</span>
@@ -110,15 +110,15 @@
         {% endif %}
 
         {% if log.slot %}
-            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">
+            <span class="text-[11px] ui-muted block">
                 Slot #{{ log.slot.id }} · Set {{ log.slot.set.set_number }} · {{ log.slot.item_definition.name }}
             </span>
         {% elif log.item_individual %}
-            <span class="text-[11px] text-slate-500 dark:text-slate-400 block">
+            <span class="text-[11px] ui-muted block">
                 Mercari #{{ log.item_individual.id }} · {{ log.item_individual.nome }}
             </span>
         {% elif log.pacote_nacional %}
-            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 block w-max">
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 block w-max">
                 <i data-lucide="package" class="w-3 h-3"></i>
                 <span>Pacote {{ log.pacote_nacional.identificador }}</span>
             </span>
@@ -131,12 +131,12 @@
     <td class="py-3 px-4">
         <span class="text-xs text-slate-800 dark:text-slate-200 font-medium block">{{ log.action_label }}</span>
         {% if log.old_value or log.new_value %}
-            <div class="flex items-center gap-1.5 text-[10px] mt-0.5 text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-1.5 text-[10px] mt-0.5 ui-muted">
                 {% if log.old_value %}
                     <span class="line-through opacity-70">{{ log.old_value }}</span>
                     <span>➔</span>
                 {% endif %}
-                <span class="font-bold {% if 'pago' in log.new_value|lower %}text-emerald-600 dark:text-emerald-400{% elif 'pendente' in log.new_value|lower %}text-amber-600 dark:text-amber-400{% else %}text-slate-900 dark:text-white{% endif %}">
+                <span class="font-bold {% if 'pago' in log.new_value|lower %}text-emerald-600 dark:text-emerald-400{% elif 'pendente' in log.new_value|lower %}text-amber-600 dark:text-amber-400{% else %}{% endif %}">
                     {{ log.new_value }}
                 </span>
             </div>
@@ -146,12 +146,13 @@
     <!-- Operador / Usuário -->
     <td class="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400 font-medium">
         {% if log.actor %}
-            <span class="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-slate-700 dark:text-slate-300">
+            <span class="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">
                 <i data-lucide="shield" class="w-3 h-3 text-pink-500"></i>
                 <span>{{ log.actor_name }}</span>
             </span>
+            {% if log.actor.is_superuser %}<span class="ui-status ui-warn ml-1" title="Feito pelo administrador da plataforma">via plataforma</span>{% endif %}
         {% else %}
-            <span class="text-[11px] text-slate-400 dark:text-slate-500">
+            <span class="text-[11px] ui-muted">
                 {{ log.actor_name|default:"Sistema" }}
             </span>
         {% endif %}
@@ -170,7 +171,7 @@
                     participant_phone: '{{ log.participant_phone|default:""|escapejs }}',
                     old_value: '{{ log.old_value|default:""|escapejs }}',
                     new_value: '{{ log.new_value|default:""|escapejs }}',
-                    metadata: {{ log.metadata|default:"{}"|safe }}
+                    metadata: {{ log.metadata|json_attr:"{}" }}
                 })"
                 class="px-2.5 py-1 text-[11px] font-bold text-pink-600 dark:text-pink-400 hover:text-pink-800 dark:hover:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-950/40 rounded-lg transition border border-pink-200 dark:border-pink-800/40 cursor-pointer">
             Detalhes

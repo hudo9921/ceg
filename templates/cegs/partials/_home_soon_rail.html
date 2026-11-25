@@ -1,0 +1,51 @@
+{% comment %}
+"Abrindo em breve" na home (DESIGN_SYSTEM §7.7): CEGs agendadas num trilho horizontal, cada uma com contagem ao vivo.
+A contagem usa um horário-alvo (não atrasa com a aba em segundo plano). Some quando não há CEG agendada.
+{% endcomment %}
+{% if scheduled_cegs %}
+<section aria-labelledby="soon-title" class="space-y-3" x-data="uiRail()">
+    <div class="flex items-end justify-between gap-3">
+        <h2 id="soon-title" class="ui-disp text-2xl m-0">Abrindo em breve</h2>
+        <div class="flex items-center gap-1">
+            <span class="ui-label mr-2">{{ scheduled_cegs|length }} agendada{{ scheduled_cegs|length|pluralize }}</span>
+            {% if scheduled_cegs|length > 1 %}
+            <button type="button" class="ui-icon-btn hidden sm:inline-flex" aria-label="CEGs anteriores" @click="go(-1)"><i data-lucide="chevron-left" class="w-5 h-5" stroke-width="1.75"></i></button>
+            <button type="button" class="ui-icon-btn hidden sm:inline-flex" aria-label="Próximas CEGs" @click="go(1)"><i data-lucide="chevron-right" class="w-5 h-5" stroke-width="1.75"></i></button>
+            {% endif %}
+        </div>
+    </div>
+    <div x-ref="track" class="ui-rail-track"
+         @pointerdown="down($event)" @pointermove.window="move($event)" @pointerup.window="up()" @pointercancel.window="up()"
+         @click.capture="guardClick($event)" @dragstart.prevent>
+        {% for ceg in scheduled_cegs %}
+        {% firstof ceg.banner_url ceg.era.banner_url ceg.era.group.image_url as soon_img %}
+        <a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-hud ui-lift overflow-hidden no-underline text-ui-text flex flex-col w-[84vw] sm:w-80"
+           x-data="{ left: {{ ceg.countdown_seconds }}, init() { const end = Date.now() + this.left * 1000; const tick = () => { this.left = Math.max(0, Math.ceil((end - Date.now()) / 1000)); }; setInterval(tick, 1000); document.addEventListener('visibilitychange', tick); } }">
+            <div class="relative aspect-[16/9] overflow-hidden" style="background: var(--ui-holo)">
+                {% if soon_img %}
+                    <img src="{{ soon_img|thumb }}" data-full="{{ soon_img }}" alt="" loading="lazy" decoding="async" class="ui-fade w-full h-full object-cover" x-init="$el.complete && $el.classList.add('is-loaded')" @load="$el.classList.add('is-loaded')">
+                {% endif %}
+                <span class="ui-timer absolute right-3 bottom-3 z-[2]" role="timer" aria-label="Tempo para abrir">
+                    <i data-lucide="clock" class="w-3.5 h-3.5" stroke-width="2"></i>
+                    <span x-text="uiCountdownLabel(left)">{{ ceg.opens_at|date:"d/m H:i" }}</span>
+                </span>
+            </div>
+            <div class="p-4 flex flex-col gap-1">
+                <p class="ui-label m-0 truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</p>
+                <p class="m-0 text-[17px] font-bold leading-snug line-clamp-2">{{ ceg.title }}</p>
+                <p class="m-0 text-sm ui-muted">por <b class="text-ui-text">{{ ceg.gom.name }}</b> · abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+<script>
+    // "2d 04:10:05" / "04:10:05" a partir de segundos restantes.
+    window.uiCountdownLabel = window.uiCountdownLabel || function (s) {
+        if (s <= 0) return 'Aberta agora';
+        const p = (n) => String(n).padStart(2, '0');
+        const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+        return (d > 0 ? d + 'd ' : '') + p(h) + ':' + p(m) + ':' + p(sec);
+    };
+</script>
+{% endif %}

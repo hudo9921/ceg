@@ -1,181 +1,42 @@
+{% comment %}Card de uma caixa na lista (P5d): etapa (6 passos), rastreio, datas, conteúdo e ações. Usa `item` de caixas_data.{% endcomment %}
 {% with caixa=item.caixa %}
-<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-2xl border border-sky-100/80 dark:border-white/10 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
-    <!-- Topo do Card -->
-    <div class="p-5 border-b border-slate-100 dark:border-white/10 space-y-4">
-        <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <!-- Ícone / Origem -->
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-xs shrink-0
-                    {% if caixa.origem == 'KR' %}bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800
-                    {% elif caixa.origem == 'JP' %}bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800
-                    {% else %}bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %}">
-                    {% if caixa.origem == 'KR' %}
-                        <i data-lucide="globe" class="w-6 h-6"></i>
-                    {% elif caixa.origem == 'JP' %}
-                        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
-                    {% else %}
-                        <i data-lucide="archive" class="w-6 h-6"></i>
-                    {% endif %}
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
-                            <a href="{% url 'caixa_detail' slug=caixa.slug %}">{{ caixa.nome }}</a>
-                        </h2>
-                    </div>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full
-                            {% if caixa.origem == 'KR' %}bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300
-                            {% elif caixa.origem == 'JP' %}bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300
-                            {% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
-                            {{ caixa.get_origem_display }}
-                        </span>
-                        {% if caixa.transportadora %}
-                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                via {{ caixa.transportadora }}
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Badge de Status Atual -->
-            <div class="text-right">
-                <span class="inline-block text-[11px] font-black px-2.5 py-1 rounded-full shadow-2xs
-                    {% if caixa.status == 'EM_CONSOLIDACAO' %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700
-                    {% elif caixa.status == 'PRONTA_ENVIO' %}bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800
-                    {% elif caixa.status == 'ENVIADA' %}bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800
-                    {% elif caixa.status == 'NO_BRASIL' %}bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800
-                    {% elif caixa.status == 'TRIBUTADA' %}bg-orange-100 dark:bg-orange-950/80 text-orange-900 dark:text-orange-300 border border-orange-300 dark:border-orange-800
-                    {% elif caixa.status == 'LIBERADA' %}bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-300 border border-teal-300 dark:border-teal-800
-                    {% elif caixa.status == 'ENTREGUE' %}bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800
-                    {% else %}bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800{% endif %}">
-                    {{ caixa.get_status_display }}
-                </span>
-            </div>
+<article class="ui-card p-5 flex flex-col gap-4" aria-label="{{ caixa.nome }}">
+    <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+            <p class="ui-label">{{ caixa.get_origem_display }}{% if caixa.transportadora %} · {{ caixa.transportadora }}{% endif %}</p>
+            <h3 class="ui-disp text-2xl mt-1 truncate"><a href="{% url 'caixa_detail' slug=caixa.slug %}" class="hover:underline">{{ caixa.nome }}</a></h3>
         </div>
+        <span class="ui-status flex-none {% if caixa.status == 'ENTREGUE' or caixa.status == 'FINALIZADA' %}ui-ok{% elif item.step >= 4 %}ui-warn{% else %}ui-muted{% endif %}">{{ caixa.get_status_display }}</span>
+    </div>
 
-        <!-- Linha de Progresso Visual da Remessa -->
+    <div class="grid grid-cols-6 gap-1" role="img" aria-label="Etapa {{ item.step }} de 6">
+        {% for n in "123456" %}
+            <span class="h-1.5 rounded-full" style="background: {% if forloop.counter < item.step %}var(--ui-seg-on){% elif forloop.counter == item.step %}var(--ui-accent){% else %}var(--ui-seg-off){% endif %}"></span>
+        {% endfor %}
+    </div>
+
+    <dl class="ui-well grid grid-cols-2 gap-3 p-3 text-sm">
+        <div><dt class="ui-label">Rastreio</dt>
+            <dd class="mt-0.5 ui-mono font-bold truncate">{% if caixa.codigo_rastreio %}<a href="{{ caixa.tracking_url }}" target="_blank" rel="noopener noreferrer" class="hover:underline">{{ caixa.codigo_rastreio }}</a>{% else %}<span class="ui-muted font-normal">não informado</span>{% endif %}</dd></div>
+        <div><dt class="ui-label">Datas</dt>
+            <dd class="mt-0.5">{% if caixa.data_recebimento %}No Brasil {{ caixa.data_recebimento|date:"d/m" }}{% elif caixa.data_envio %}Enviada {{ caixa.data_envio|date:"d/m" }}{% if caixa.data_previsao %} · prev. {{ caixa.data_previsao|date:"d/m" }}{% endif %}{% else %}<span class="ui-muted">Aguardando envio</span>{% endif %}</dd></div>
+    </dl>
+
+    {% if item.cegs or item.itens %}
         <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                <span>Etapa {{ item.step }} de 6</span>
-                <span class="font-bold text-slate-700 dark:text-slate-200 font-mono">{{ item.progress_pct }}%</span>
-            </div>
-            <div class="w-full bg-slate-100 dark:bg-cyber-obsidian rounded-full h-2 overflow-hidden border border-slate-200/50 dark:border-white/5">
-                <div class="h-2 rounded-full transition-all duration-500
-                    {% if caixa.status == 'ENTREGUE' or caixa.status == 'FINALIZADA' %}bg-emerald-500
-                    {% elif caixa.status == 'NO_BRASIL' or caixa.status == 'TRIBUTADA' or caixa.status == 'LIBERADA' %}bg-amber-500
-                    {% else %}bg-sky-500{% endif %}"
-                     style="width: {{ item.progress_pct }}%"></div>
+            <p class="ui-label">{{ item.cegs_count }} CEG{{ item.cegs_count|pluralize }}{% if item.itens_count %} · {{ item.itens_count }} avulso{{ item.itens_count|pluralize }}{% endif %}</p>
+            <div class="flex flex-wrap gap-1.5">
+                {% for c in item.cegs|slice:":4" %}<span class="ui-chip !h-7 !text-[12px] max-w-full truncate">{{ c.era.group.name }} · {{ c.title|truncatechars:34 }}</span>{% endfor %}
+                {% if item.cegs_count > 4 %}<span class="ui-chip !h-7 !text-[12px]">+{{ item.cegs_count|add:"-4" }}</span>{% endif %}
             </div>
         </div>
+    {% endif %}
 
-        <!-- Código de Rastreio e Datas -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 bg-slate-50/80 dark:bg-cyber-obsidian/80 p-3 rounded-xl border border-slate-100 dark:border-white/10">
-            <!-- Rastreio -->
-            <div class="flex flex-col">
-                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Código de Rastreio</span>
-                {% if caixa.codigo_rastreio %}
-                    <div class="flex items-center gap-1.5 mt-0.5">
-                        <a href="{{ caixa.tracking_url }}" target="_blank"
-                           class="font-mono font-bold text-xs text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 hover:underline flex items-center gap-1">
-                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                            <span>{{ caixa.codigo_rastreio }}</span>
-                        </a>
-                        <button type="button" @click="copyToClipboard('{{ caixa.codigo_rastreio }}')"
-                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1 rounded cursor-pointer" title="Copiar código">
-                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                {% else %}
-                    <span class="text-xs text-slate-400 italic">Não informado</span>
-                {% endif %}
-            </div>
-
-            <!-- Datas -->
-            <div class="flex flex-col">
-                <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Datas & Prazos</span>
-                <div class="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5 flex items-center gap-1.5">
-                    {% if caixa.data_recebimento %}
-                        <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i>
-                        <span>Na GOM: <b class="font-mono">{{ caixa.data_recebimento|date:"d/m/Y" }}</b></span>
-                    {% elif caixa.data_envio %}
-                        <i data-lucide="plane" class="w-3.5 h-3.5 text-sky-500 shrink-0"></i>
-                        <span>Enviada: <b class="font-mono">{{ caixa.data_envio|date:"d/m/Y" }}</b></span>
-                    {% elif caixa.data_previsao %}
-                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i>
-                        <span>Previsão: <b class="font-mono">{{ caixa.data_previsao|date:"d/m/Y" }}</b></span>
-                    {% else %}
-                        <span class="text-slate-400 dark:text-slate-500 italic">Aguardando envio</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- CEGs & Itens Vinculados nesta Caixa -->
-        <div class="space-y-2">
-            <div class="flex items-center justify-between text-xs">
-                <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
-                    <i data-lucide="tag" class="w-3.5 h-3.5 text-slate-400"></i>
-                    <span>Conteúdo na remessa:</span>
-                    <span class="bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 text-[10px] font-black px-1.5 py-0.5 rounded-full font-mono">
-                        {{ item.cegs_count }} CEG(s)
-                    </span>
-                    {% if item.itens_count > 0 %}
-                        <span class="bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-[10px] font-black px-1.5 py-0.5 rounded-full font-mono">
-                            {{ item.itens_count }} item(ns) Mercari
-                        </span>
-                    {% endif %}
-                </span>
-            </div>
-
-            {% if item.cegs or item.itens %}
-                <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar">
-                    {% for c in item.cegs %}
-                        <a href="{% url 'ceg_detail' slug=c.slug %}"
-                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-cyber-obsidian hover:bg-sky-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-sky-700 dark:hover:text-sky-300 border border-slate-200 dark:border-white/10 transition">
-                            <span class="font-bold">{{ c.era.group.name }}</span>
-                            <span class="text-slate-400">/</span>
-                            <span class="truncate max-w-[140px]">{{ c.title }}</span>
-                        </a>
-                    {% endfor %}
-                    {% for it in item.itens %}
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
-                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                            <span class="truncate max-w-[140px]">{{ it.nome }}</span>
-                        </span>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-xs italic bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60 p-2 rounded-lg text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                    <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i>
-                    <span>Nenhum item ou CEG vinculado a esta caixa ainda.</span>
-                </p>
-            {% endif %}
-        </div>
+    <div class="flex flex-wrap gap-2 mt-auto">
+        <a href="{% url 'caixa_detail' slug=caixa.slug %}" class="ui-btn ui-btn-primary ui-btn-sm">Abrir</a>
+        <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" data-slug="{{ caixa.slug }}" data-name="{{ caixa.nome }}" data-status="{{ caixa.status }}"
+                @click="openQuickStatusModal($el.dataset.slug, $el.dataset.name, $el.dataset.status)">Mudar etapa</button>
+        <a href="{% url 'caixa_update' slug=caixa.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">Editar</a>
     </div>
-
-    <!-- Rodapé do Card com Ações -->
-    <div class="p-4 bg-slate-50/90 dark:bg-cyber-obsidian/60 border-t border-slate-100 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <a href="{% url 'caixa_detail' slug=caixa.slug %}"
-           class="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 flex items-center justify-center sm:justify-start gap-1 py-1.5 transition">
-            <span>Ver Detalhes, CEGs & Itens Mercari</span>
-            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </a>
-
-        {% if is_staff_user %}
-            <div class="flex items-center gap-2">
-                <button type="button" @click="openQuickStatusModal('{{ caixa.slug }}', '{{ caixa.nome|escapejs }}', '{{ caixa.status }}')"
-                        class="px-3 py-1.5 rounded-lg bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 hover:border-sky-500 text-slate-700 dark:text-slate-200 hover:text-sky-600 text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
-                    <span>Atualizar Status</span>
-                </button>
-                <a href="{% url 'caixa_update' slug=caixa.slug %}"
-                   class="p-2 rounded-lg bg-white dark:bg-cyber-surface border border-slate-300 dark:border-white/10 hover:border-slate-400 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 text-xs transition" title="Editar Caixa">
-                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                </a>
-            </div>
-        {% endif %}
-    </div>
-</div>
+</article>
 {% endwith %}

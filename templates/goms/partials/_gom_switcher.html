@@ -1,0 +1,16 @@
+{% comment %}Seletor do GOM em que o usuário está atuando (só aparece com mais de um GOM).{% endcomment %}
+{% if switchable_goms|length > 1 %}
+<form method="post" action="{% url 'gom_switch' %}" class="flex items-center gap-2">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <label for="gom-switch" class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+        <i data-lucide="building-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>Atuando em
+    </label>
+    <select id="gom-switch" name="gom_id" onchange="this.form.submit()"
+            class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100">
+        {% for g in switchable_goms %}
+            <option value="{{ g.id }}" {% if active_gom and g.id == active_gom.id %}selected{% endif %}>{{ g.name }}</option>
+        {% endfor %}
+    </select>
+</form>
+{% endif %}

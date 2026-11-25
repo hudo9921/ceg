@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.db import transaction, OperationalError
 from django.utils import timezone
 from apps.cegs.models import ItemSlot, CEG, ClaimAttemptLog, ItemWaitingList
+from apps.goms.joiners import apply_profile_updates
 from apps.participants.models import Participant, Claim, clean_phone_number
 
 logger = logging.getLogger('cegs.concurrency')
@@ -183,18 +184,9 @@ class ClaimService:
                         'social_handle': social_clean,
                     }
                 )
-                updated = False
-                if name_clean and participant.name != name_clean:
-                    participant.name = name_clean
-                    updated = True
-                if username_clean and participant.username != username_clean:
-                    participant.username = username_clean
-                    updated = True
-                if social_clean and participant.social_handle != social_clean:
-                    participant.social_handle = social_clean
-                    updated = True
-                if updated:
-                    participant.save()
+                # Cadastro do joiner que já fez login é dele (apps.goms.joiners).
+                apply_profile_updates(participant, name=name_clean, username=username_clean,
+                                      social_handle=social_clean)
 
                 # 1. Bloqueio seletivo de linha e transação atômica completa
                 with transaction.atomic():
@@ -646,18 +638,9 @@ class ClaimService:
                     'social_handle': social_clean,
                 }
             )
-            updated = False
-            if name_clean and participant.name != name_clean:
-                participant.name = name_clean
-                updated = True
-            if username_clean and participant.username != username_clean:
-                participant.username = username_clean
-                updated = True
-            if social_clean and participant.social_handle != social_clean:
-                participant.social_handle = social_clean
-                updated = True
-            if updated:
-                participant.save()
+            # Cadastro do joiner que já fez login é dele (apps.goms.joiners).
+            apply_profile_updates(participant, name=name_clean, username=username_clean,
+                                  social_handle=social_clean)
 
             created_claims = []
             with transaction.atomic():

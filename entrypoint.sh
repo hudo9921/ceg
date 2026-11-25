@@ -13,11 +13,14 @@ python manage.py initadmin || true
 
 
 
-echo "🚀 Iniciando Gunicorn com 4 workers e 4 threads (24GB RAM)..."
+# Padrão para a VM E2.1.Micro (1 GB). Numa máquina maior: GUNICORN_WORKERS=4 no .env.
+WORKERS="${GUNICORN_WORKERS:-2}"
+THREADS="${GUNICORN_THREADS:-4}"
+echo "Iniciando Gunicorn com ${WORKERS} workers e ${THREADS} threads..."
 exec gunicorn ceg_project.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --workers 4 \
-    --threads 4 \
+    --workers "$WORKERS" \
+    --threads "$THREADS" \
     --worker-class gthread \
     --max-requests 1000 \
     --timeout 60

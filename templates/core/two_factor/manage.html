@@ -1,0 +1,26 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Segurança da conta — ValCegs{% endblock %}
+{% block heading %}Segurança da conta{% endblock %}
+{% block lead %}Verificação em duas etapas ativa para {{ request.user.get_username }}.{% endblock %}
+
+{% block body %}
+<dl class="space-y-2">
+    {% for device in devices %}
+        <div class="ui-well flex items-center justify-between gap-3 px-3.5 py-3">
+            <dt class="font-semibold">{{ device.name }}</dt>
+            <dd class="ui-status ui-ok">Ativo</dd>
+        </div>
+    {% endfor %}
+    <div class="ui-well flex items-center justify-between gap-3 px-3.5 py-3">
+        <dt class="font-semibold">Códigos de recuperação</dt>
+        <dd class="ui-status {% if remaining_codes < 3 %}ui-danger{% else %}ui-muted{% endif %}">{{ remaining_codes }} restantes</dd>
+    </div>
+</dl>
+<form method="post" class="space-y-2">
+    {% csrf_token %}
+    <button type="submit" class="ui-btn ui-btn-ghost w-full">Gerar novos códigos de recuperação</button>
+    <p class="ui-muted text-[13px] text-center">Os códigos atuais deixam de funcionar.</p>
+</form>
+<a href="{% url 'backoffice_home' %}" class="block text-center ui-muted text-sm hover:underline">Voltar ao painel</a>
+{% endblock %}

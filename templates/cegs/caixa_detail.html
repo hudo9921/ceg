@@ -4,7 +4,7 @@
 
 {% block content %}
 {{ itens_individuais_data|default:"[]"|json_script:"itens-individuais-data" }}
-{{ tipos_item_json|safe|default:"[]"|json_script:"tipos-item-data" }}
+{{ tipos_item_list|json_script:"tipos-item-data" }}
 
 <div x-data="caixaDetail()" class="space-y-8">
     <!-- Cabeçalho, Ações e Rastreio da Caixa -->

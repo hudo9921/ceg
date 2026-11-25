@@ -30,7 +30,7 @@
                 Limpar
             </button>
             <button type="button" @click="openVoteModal()"
-                class="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-400 text-white text-xs font-black rounded-xl transition shadow-lg flex items-center gap-2 cursor-pointer active:scale-95">
+                class="px-5 py-2.5 bg-ui-accent text-white text-white text-xs font-black rounded-xl transition shadow-lg flex items-center gap-2 cursor-pointer active:scale-95">
                 <i data-lucide="check-circle" class="w-4 h-4" stroke-width="1.75"></i>
                 <span x-text="'Votar em ' + selectedVoteDefIds.length + ' item(ns)'"></span>
             </button>
@@ -48,17 +48,17 @@
      x-transition:leave-end="opacity-0 scale-95"
      class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
      @keydown.escape.window="closeVoteModal()">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 transform transition-all border border-purple-100/70 dark:border-white/10 my-auto"
+    <div class="ui-card max-w-lg w-full p-6 sm:p-7 space-y-4 transform transition-all my-auto"
          @click.away="closeVoteModal()">
         
         <div class="flex justify-between items-start border-b border-purple-100/60 dark:border-white/5 pb-3">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 text-white flex items-center justify-center text-lg font-black shadow-xs">
+                <div class="w-10 h-10 rounded-2xl bg-ui-accent text-white text-white flex items-center justify-center text-lg font-black shadow-xs">
                     <i data-lucide="vote" class="w-5 h-5" stroke-width="1.75"></i>
                 </div>
                 <div>
-                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Registrar Voto na Enquete</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Sondagem de Demanda para Abertura de Sets</p>
+                    <h3 class="ui-disp text-lg">Registrar Voto na Enquete</h3>
+                    <p class="text-xs ui-muted">Sondagem de Demanda para Abertura de Sets</p>
                 </div>
             </div>
             <button type="button" @click="closeVoteModal()" class="p-2 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer">
@@ -69,12 +69,12 @@
         <div class="space-y-3">
             <!-- Itens selecionados -->
             <div class="p-3 bg-purple-50/50 dark:bg-white/[0.03] rounded-2xl border border-purple-100 dark:border-white/10 space-y-2">
-                <span class="text-[11px] font-black uppercase text-purple-900 dark:text-cyber-neon tracking-wider block">
+                <span class="ui-label block">
                     Itens Selecionados (<span x-text="selectedVoteDefIds.length"></span>):
                 </span>
                 <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
                     <template x-for="item in selectedVoteDefIds" :key="item.id">
-                        <div class="flex items-center justify-between text-xs py-1.5 px-3 bg-white dark:bg-slate-800 rounded-xl border border-purple-100 dark:border-white/10">
+                        <div class="ui-card flex items-center justify-between text-xs py-1.5 px-3">
                             <span class="font-bold text-slate-800 dark:text-slate-200 truncate" x-text="(item.member ? item.member + ' · ' : '') + item.name"></span>
                             <span class="font-black text-purple-700 dark:text-cyber-neon ml-2 shrink-0 font-mono" x-text="'R$ ' + item.price"></span>
                         </div>
@@ -85,28 +85,37 @@
             <!-- Dados do participante -->
             {% if logged_participant %}
             <div class="p-3 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/10 text-xs space-y-1">
-                <div class="text-[11px] text-slate-500 dark:text-slate-400">Identificado como:</div>
-                <div class="font-bold text-slate-900 dark:text-white">{{ logged_participant.name }}</div>
+                <div class="text-[11px] ui-muted">Identificado como:</div>
+                <div class="font-bold">{{ logged_participant.name }}</div>
                 <div class="text-[11px] text-slate-600 dark:text-slate-300 font-mono">{{ logged_participant.whatsapp }}</div>
             </div>
-            {% else %}
+            {% elif is_gom_staff %}
             <div class="space-y-2.5 text-xs">
                 <div>
-                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Seu Nome Completo *</label>
+                    <label class="block font-bold mb-1">Seu Nome Completo *</label>
                     <input type="text" x-model="formName" required placeholder="Ex: Maria Eduarda"
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 rounded-xl font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
+                        class="ui-input w-full">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">WhatsApp com DDD (números) *</label>
+                    <label class="block font-bold mb-1">WhatsApp com DDD (números) *</label>
                     <input type="text" x-model="formWhatsapp" required placeholder="Ex: 11999998888"
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 rounded-xl font-mono text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
+                        class="ui-input w-full font-mono">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">@ da Rede Social (Twitter / Instagram)</label>
+                    <label class="block font-bold mb-1">@ da Rede Social (Twitter / Instagram)</label>
                     <input type="text" x-model="formSocial" placeholder="@seuusuario"
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500">
+                        class="ui-input w-full">
                 </div>
             </div>
+            {% else %}
+            <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}"
+                class="flex items-center gap-3 p-3 bg-purple-50 dark:bg-white/[0.03] rounded-2xl border border-purple-200 dark:border-white/10 text-xs hover:border-purple-400 dark:hover:border-cyber-neon transition">
+                <i data-lucide="smartphone" class="w-5 h-5 text-purple-600 dark:text-cyber-neon shrink-0" stroke-width="1.75"></i>
+                <span class="">
+                    <span class="block font-black">Entre com seu WhatsApp para votar</span>
+                    Enviamos um código de 6 dígitos para confirmar que o número é seu.
+                </span>
+            </a>
             {% endif %}
 
             <!-- Regra de Notificação & Timestamp -->
@@ -123,11 +132,11 @@
 
         <div class="flex justify-end gap-2 pt-2 border-t border-purple-100/60 dark:border-white/5">
             <button type="button" @click="closeVoteModal()"
-                class="px-4 py-2 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+                class="ui-btn ui-btn-ghost cursor-pointer">
                 Cancelar
             </button>
             <button type="button" @click="submitVotes()" :disabled="voteLoading"
-                class="px-6 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-500 hover:to-rose-400 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95">
+                class="px-6 py-2.5 bg-ui-accent text-white text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95">
                 <i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>
                 <span>Confirmar Meu Voto</span>
             </button>

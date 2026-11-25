@@ -1,4 +1,7 @@
 from django.urls import path
+
+from . import enderecos_views
+from .privacy_views import ExportMyDataView, RequestDataDeletionView
 from .views import (
     LoginOtpView, MyClaimsView, LogoutView, ProfileUpdateView,
     MarkNotificationReadView, MarkAllNotificationsReadView,
@@ -8,6 +11,9 @@ from .views import (
 
 urlpatterns = [
     path('login/', LoginOtpView.as_view(), name='login_otp'),
+    path('enderecos/salvar/', enderecos_views.salvar, name='endereco_salvar'),
+    path('enderecos/<int:endereco_id>/excluir/', enderecos_views.excluir, name='endereco_excluir'),
+    path('cep/<str:cep>/', enderecos_views.cep, name='endereco_cep'),
     path('profile/', ProfileUpdateView.as_view(), name='update_profile'),
     path('participantes/em-massa/', BulkParticipantCreateView.as_view(), name='bulk_participant_create'),
     path('cadastros-em-massa/', BulkParticipantCreateView.as_view(), name='bulk_participant_create_alias'),
@@ -16,6 +22,8 @@ urlpatterns = [
     path('pacotes/<int:pacote_id>/confirmar-entrega/', ConfirmarEntregaPacoteView.as_view(), name='confirmar_entrega_pacote'),
     path('pacotes/<int:pacote_id>/cancelar-solicitacao/', CancelarSolicitacaoEnvioView.as_view(), name='cancelar_solicitacao_envio'),
     path('envios/solicitar/', SolicitarEnvioNacionalView.as_view(), name='solicitar_envio_nacional'),
+    path('meus-dados/exportar/', ExportMyDataView.as_view(), name='export_my_data'),
+    path('meus-dados/excluir/', RequestDataDeletionView.as_view(), name='request_data_deletion'),
     path('', MyClaimsView.as_view(), name='my_claims'),
     path('logout/', LogoutView.as_view(), name='logout_participant'),
 ]

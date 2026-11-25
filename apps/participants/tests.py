@@ -32,7 +32,7 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(self.participant.display_name, 'Hudo')
         self.assertEqual(self.participant.social_handle, '@hudokpop')
         self.assertEqual(self.participant.whatsapp, '5581994222104')
-        self.assertContains(response, 'Olá, Hudo! 👋')
+        self.assertContains(response, 'Olá, Hudo!')
         self.assertContains(response, 'Hudo Silva')
         self.assertContains(response, '@hudokpop')
 
@@ -55,7 +55,7 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(self.participant.name, 'Beatriz Lima da Silva')
         self.assertEqual(self.participant.username, '')
         self.assertEqual(self.participant.display_name, 'Beatriz Lima da Silva')
-        self.assertContains(response, 'Olá, Beatriz Lima da Silva! 👋')
+        self.assertContains(response, 'Olá, Beatriz Lima da Silva!')
 
     def test_display_name_property_fallback(self):
         p = Participant(name='Lucas Ferreira', username='Luke', whatsapp='5511988887777')
@@ -108,7 +108,7 @@ class ParticipantProfileTests(TestCase):
     def test_profile_update_redirects_if_unauthenticated(self):
         response = self.client.post('/me/profile/', data={'name': 'Anonimo'}, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Consulta Sem Senha')
+        self.assertContains(response, 'Entrar com WhatsApp')
 
     def test_my_claims_view_metrics_and_filters(self):
         from apps.groups.models import KpopGroup, Era
@@ -150,14 +150,14 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(len(response.context['cegs_filter_list']), 1)
         self.assertEqual(response.context['cegs_filter_list'][0]['title'], 'CEG POB Withmuu')
 
-        # Template content assertions
-        self.assertContains(response, 'Grupo:')
-        self.assertContains(response, 'CEG:')
-        self.assertContains(response, 'Todos os Grupos')
-        self.assertContains(response, 'Todas as CEGs')
-        self.assertContains(response, 'Filtrar por Status:')
-        self.assertContains(response, 'Faltam Pagar')
-        self.assertContains(response, 'Confirmados')
+        # Meus itens (P3b): os dois itens na lista, agrupáveis por GOM/CEG/caixa e filtráveis por etapa.
+        items = response.context['items_panel']
+        self.assertEqual(len(items), 2)
+        self.assertEqual({it['ceg'] for it in items}, {'CEG POB Withmuu'})
+        self.assertEqual([it['stage'] for it in items].count(1), 1)  # só o pendente fica em 'A pagar'
+        self.assertContains(response, 'Por GOM')
+        self.assertContains(response, 'Por caixa')
+        self.assertContains(response, 'Filtrar por etapa')
 
     def test_my_claims_frete_and_taxa_not_shown_as_pending_when_zero_or_none(self):
         from decimal import Decimal
@@ -236,12 +236,11 @@ class ParticipantProfileTests(TestCase):
         self.assertEqual(response.context['inter_unpaid_count'], 1)
         self.assertEqual(response.context['taxa_unpaid_count'], 1)
 
-        # Cabeçalhos com os valores
+        # Seção Pagar: frete e taxa aparecem como cobranças com os valores
         self.assertContains(response, 'R$ 12,50')
         self.assertContains(response, 'R$ 6,00')
-        # Filtros pills
-        self.assertContains(response, 'Inter Não Pago')
-        self.assertContains(response, 'Taxa Não Paga')
+        kinds = {l['kind'] for g in response.context['charges']['goms'] for l in g['lines']}
+        self.assertTrue({'frete', 'taxa'} <= kinds)
 
     def test_my_claims_rates_accordion_and_totals_by_item_type(self):
         from decimal import Decimal
@@ -324,14 +323,11 @@ class ParticipantProfileTests(TestCase):
         self.assertTrue(ceg_data['has_multiple_fretes'])
         self.assertTrue(ceg_data['has_multiple_taxas'])
 
-        # HTML deve conter totais no cabeçalho da CEG e valores individuais na tabela
-        self.assertContains(response, 'Frete a Pagar:')
+        # Seção Pagar: frete 55, taxa 30 e total 245 desta CEG
         self.assertContains(response, 'R$ 55,00')
-        self.assertContains(response, 'Taxa a Pagar:')
         self.assertContains(response, 'R$ 30,00')
-        self.assertContains(response, 'Total a Pagar nesta CEG:')
         self.assertContains(response, 'R$ 245,00')
-        self.assertNotContains(response, 'Valores de Frete')
+        self.assertEqual(response.context['charges']['total'], Decimal('245.00'))
 
 
 class ParticipantNotificationTests(TestCase):
@@ -491,7 +487,11 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(prazos[0]['tipo'], 'ITEM')
         self.assertEqual(prazos[0]['ceg_id'], str(self.ceg.id))
         self.assertEqual(prazos[0]['valor'], 50.00)
-        self.assertContains(res, 'Prazos Próximos de Pagamento')
+        # Seção Pagar (P3): a cobrança do item aparece com o valor e o título da CEG.
+        charges = res.context['charges']
+        self.assertEqual(charges['count'], 1)
+        self.assertEqual(charges['total'], 50.00)
+        self.assertContains(res, 'Você deve')
         self.assertContains(res, 'LE SSERAFIM - CRAZY POB')
 
     def test_prazos_proximos_disappears_when_paid(self):
@@ -512,7 +512,8 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(res.status_code, 200)
         prazos = res.context['prazos_proximos']
         self.assertEqual(len(prazos), 0)
-        self.assertNotContains(res, 'Prazos Próximos de Pagamento')
+        self.assertEqual(res.context['charges']['count'], 0)
+        self.assertContains(res, 'Tudo pago')
 
     def test_claim_lifecycle_property_stages(self):
         from apps.participants.models import Claim
@@ -562,15 +563,14 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertIn('cegs_com_pendencias', res.context)
         self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
         self.assertEqual(res.context['total_geral_pendente_todas_cegs'], 50.00)
-        self.assertContains(res, 'Central de Pagamento Rápido (Pix)')
+        self.assertContains(res, 'Você deve')
 
         # Search text presence in JSON script
         self.assertIn('search_text', res.context['cegs_filter_list'][0])
         self.assertIn('chaewon', res.context['cegs_filter_list'][0]['search_text'])
 
-        # View mode toggle buttons present
-        self.assertContains(res, 'Galeria')
-        self.assertContains(res, 'Tabela')
+        # Meus itens: o item aparece na lista com a CEG
+        self.assertEqual(res.context['items_panel'][0]['ceg'], 'LE SSERAFIM - CRAZY POB')
 
     def test_my_claims_caixa_filter_and_unpaid_rates_counting(self):
         from decimal import Decimal
@@ -622,13 +622,9 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(len(res.context['cegs_com_pendencias']), 1)
         self.assertEqual(res.context['total_geral_pendente_todas_cegs'], Decimal('24.00'))
 
-        # Template contains interactive filters and clear filter button
-        self.assertContains(res, 'filterByCegPayment')
-        self.assertContains(res, 'filteredCounts.pending')
-        self.assertContains(res, 'visibleCegsCount')
-        self.assertContains(res, 'Limpar Filtros')
-        self.assertContains(res, 'clearFilters()')
-        self.assertContains(res, 'hasActiveFilters')
+        # Meus itens: item pago com frete/taxa em aberto não conta como "A pagar"; Pagar mostra os 24,00
+        self.assertNotEqual(res.context['items_panel'][0]['stage'], 1)
+        self.assertEqual(res.context['charges']['total'], Decimal('24.00'))
 
     def test_quick_pix_caixa_and_mercari_consolidation(self):
         from decimal import Decimal
@@ -690,12 +686,13 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertEqual(res.context['total_geral_pendente_global'], Decimal('105.00'))
 
         # 4. Renderização no template
-        self.assertContains(res, 'Por CEG')
-        self.assertContains(res, 'Por Caixa')
-        self.assertContains(res, 'Mercari')
-        self.assertContains(res, 'quickPixTab')
+        # Seção Pagar (P3): item da CEG + produto, frete e taxa do avulso = 105,00 no mesmo GOM.
+        charges = res.context['charges']
+        self.assertEqual(charges['total'], Decimal('105.00'))
+        self.assertEqual(len(charges['goms']), 1)
+        self.assertEqual({l['kind'] for l in charges['goms'][0]['lines']}, {'item', 'frete', 'taxa'})
         self.assertContains(res, 'Photobar Mercari Sakura')
-        self.assertContains(res, 'Caixa Japão #01')
+        self.assertIn('Caixa Japão #01', {it['caixa'] for it in res.context['items_panel']})
 
     def test_distinct_pix_keys_for_item_frete_taxa(self):
         from decimal import Decimal
@@ -756,9 +753,12 @@ class ParticipantPrazosProximosTests(TestCase):
         self.assertContains(res, 'pix_item@banco.com')
         self.assertContains(res, 'pix_frete_ceg@transportadora.com')
         self.assertContains(res, 'pix_taxa_ceg@alfandega.com')
-        self.assertContains(res, 'Pix Itens:')
-        self.assertContains(res, 'Pix Frete:')
-        self.assertContains(res, 'Pix Taxa:')
+        # Seção Pagar (P3): uma linha por tipo, cada uma com a própria chave e instrução.
+        lines = {l['kind']: l for l in res.context['charges']['goms'][0]['lines']}
+        self.assertEqual(lines['item']['pix_key'], 'pix_item@banco.com')
+        self.assertEqual(lines['frete']['pix_key'], 'pix_frete_ceg@transportadora.com')
+        self.assertEqual(lines['taxa']['pix_key'], 'pix_taxa_ceg@alfandega.com')
+        self.assertContains(res, 'Comprovante taxa urgente')
 
         # 2. Testar sobrescrita pela Caixa (Caixa com chaves próprias de Frete e Taxa)
         caixa = Caixa.objects.create(
@@ -780,6 +780,10 @@ class ParticipantPrazosProximosTests(TestCase):
 
         res2 = self.client.get(reverse('my_claims'))
         self.assertEqual(res2.status_code, 200)
+        lines2 = {l['kind']: l for l in res2.context['charges']['goms'][0]['lines']}
+        self.assertEqual(lines2['frete']['pix_key'], 'pix_caixa_frete@courier.com')
+        self.assertEqual(lines2['taxa']['pix_key'], 'pix_caixa_taxa@receita.com')
+        self.assertIn('Caixa KR Chaves Específicas', lines2['frete']['title'])
 
         # Na visualização por Caixa
         caixa_pend = res2.context['caixas_com_pendencias'][0]

@@ -1,13 +1,12 @@
 import logging
 import requests
 from django.conf import settings
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from django.utils.decorators import method_decorator
 from django.views import View
 
+from apps.core.permissions import PlatformAdminRequiredMixin
 from .providers import get_whatsapp_provider
 
 logger = logging.getLogger(__name__)
@@ -61,8 +60,7 @@ def fetch_qr_code():
     return {}
 
 
-@method_decorator(staff_member_required, name='dispatch')
-class WhatsAppManagerView(View):
+class WhatsAppManagerView(PlatformAdminRequiredMixin, View):
     template_name = 'admin/whatsapp_manager.html'
 
     def get(self, request):
@@ -122,8 +120,7 @@ class WhatsAppManagerView(View):
         return redirect('admin_whatsapp')
 
 
-@method_decorator(staff_member_required, name='dispatch')
-class WhatsAppStatusAPIView(View):
+class WhatsAppStatusAPIView(PlatformAdminRequiredMixin, View):
     """
     Endpoint JSON para polling em tempo real do status e QR Code.
     """

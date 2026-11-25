@@ -1,4 +1,6 @@
 from django.urls import path
+
+from . import catalogo_views, envios_views
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -58,7 +60,6 @@ from .envios_views import (
     AtualizarPacoteView,
     DesempacotarItemView,
     ExcluirPacoteView,
-    AtualizarConfiguracaoEnvioView,
 )
 
 from .allocator_views import (
@@ -119,11 +120,17 @@ urlpatterns = [
     path('creations/ceg/create/', CreateCEGView.as_view(), name='create_ceg'),
     path('creations/set/create/', CreateSetView.as_view(), name='create_set'),
     path('creations/item/create/', AddItemToCEGView.as_view(), name='add_item_to_ceg'),
+    path('creations/era/<int:era_id>/fotos/', catalogo_views.era_fotos, name='era_fotos'),
+    path('creations/catalogo/buscar/', catalogo_views.catalogo_buscar, name='catalogo_buscar'),
+    path('creations/catalogo/grupo/', catalogo_views.catalogo_grupo_novo, name='catalogo_grupo_novo'),
+    path('creations/catalogo/era/', catalogo_views.catalogo_era_nova, name='catalogo_era_nova'),
 
     # 1. Consulta Joiner (Visão 360º de itens, pagamentos e envios de cada participante)
     path('consulta-joiner/', ConsultaJoinerView.as_view(), name='consulta_joiner'),
 
     # 2. Envios Nacionais & Pacotes (Dashboard Global com todos os envios, filtros e feedbacks)
+    path('envios/pacote/<int:pacote_id>/endereco/', envios_views.pacote_endereco, name='pacote_endereco'),
+    path('envios/imprimir/', envios_views.imprimir_pacotes, name='imprimir_pacotes'),
     path('envios/', EnviosNacionaisDashboardView.as_view(), name='envios_nacionais'),
     path('envios/empacotar/', EmpacotarItensView.as_view(), name='empacotar_itens'),
     path('envios/pacote/<int:pacote_id>/marcar-enviado/', MarcarPacoteEnviadoView.as_view(), name='marcar_pacote_enviado'),
@@ -131,7 +138,6 @@ urlpatterns = [
     path('envios/pacote/<int:pacote_id>/atualizar/', AtualizarPacoteView.as_view(), name='atualizar_pacote'),
     path('envios/desempacotar/', DesempacotarItemView.as_view(), name='desempacotar_item'),
     path('envios/pacote/<int:pacote_id>/excluir/', ExcluirPacoteView.as_view(), name='excluir_pacote'),
-    path('envios/configuracao/', AtualizarConfiguracaoEnvioView.as_view(), name='atualizar_configuracao_envio'),
 
     # Itens Individuais (Pedidos Mercari / JP / etc.)
     path('itens-individuais/create/', CreateItemIndividualView.as_view(), name='create_item_individual'),

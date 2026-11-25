@@ -190,7 +190,7 @@ class CaixasViewsTests(TestCase):
         response = self.client.get(reverse('caixas_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Caixa Mercari IVE #01")
-        self.assertContains(response, "Caixas & Remessas Internacionais")
+        self.assertContains(response, "Remessas")
 
     def test_caixa_detail_view_anonymous(self):
         """Visitante anônimo acessa visão pública da caixa (status 200), mas tracking e admin ficam ocultos."""
@@ -198,8 +198,8 @@ class CaixasViewsTests(TestCase):
         response = self.client.get(reverse('caixa_detail', kwargs={'slug': self.caixa.slug}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Caixa Mercari IVE #01")
-        self.assertContains(response, "Linha do Tempo da Remessa")
-        self.assertContains(response, "1. Consolidação")
+        self.assertContains(response, 'aria-label="Etapas da caixa"')
+        self.assertContains(response, "No armazém")
         # Tracking code e ações de admin NÃO devem aparecer
         self.assertNotContains(response, "JP123456789BR")
         self.assertNotContains(response, "Vincular Outras CEGs")
@@ -272,20 +272,19 @@ class CaixasViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Resumos no topo para o joiner
-        self.assertContains(response, "Resumo Financeiro da sua Remessa")
-        self.assertContains(response, "Itens Pendentes")
-        self.assertContains(response, "Frete a Pagar")
-        self.assertContains(response, "Taxa a Pagar")
-        self.assertContains(response, "Total a Pagar nesta Caixa")
+        self.assertContains(response, "Sua parte nesta caixa")
+        self.assertContains(response, "Frete internacional")
+        self.assertContains(response, "Taxa aduaneira")
+        self.assertContains(response, "R$ 73,50 em aberto")  # item 50 + frete 15 + taxa 8,50
 
         # Prazos e taxas da remessa
-        self.assertContains(response, "Prazo Pagamento Frete Internacional")
-        self.assertContains(response, "Prazo Pagamento Taxa Aduaneira")
-        self.assertContains(response, "FRETE INTER")
-        self.assertContains(response, "TAXA ADUAN.")
+        self.assertContains(response, "Prazo do frete internacional")
+        self.assertContains(response, "Prazo da taxa aduaneira")
+        self.assertContains(response, "R$ 15,00")  # frete por unidade do tipo
+        self.assertContains(response, "R$ 8,50")   # taxa por unidade do tipo
 
         # Itens e CEG do participante (apenas as dele!)
-        self.assertContains(response, "Seus Itens &amp; CEGs nesta Remessa")
+        self.assertContains(response, "Seus itens nesta caixa")
         self.assertContains(response, "Wonyoung PC")
         self.assertContains(response, "IVE SWITCH Digipack")
 
@@ -296,7 +295,7 @@ class CaixasViewsTests(TestCase):
         # O código de rastreio e botões de admin NUNCA devem aparecer para o joiner
         self.assertNotContains(response, "JP123456789BR")
         self.assertNotContains(response, "Vincular Outras CEGs")
-        self.assertNotContains(response, "Ajustar Valores / Prazos")
+        self.assertNotContains(response, "Ajustar valores e prazos")
 
     def test_caixa_detail_view_admin(self):
         """Administrador tem acesso completo incluindo código de rastreio e ferramentas de gestão."""
@@ -469,8 +468,8 @@ class CaixasViewsTests(TestCase):
         self.assertIn("Caixa KR Chegou na GOM", gom_nomes)
 
         # Labels e seções no HTML
-        self.assertContains(response, "Caixas em Vigência")
-        self.assertContains(response, "Caixas que Chegaram na GOM")
+        self.assertContains(response, 'id="vigencia-title"')
+        self.assertContains(response, "Na casa da GOM")
         self.assertContains(response, "Chegou na casa da GOM")
         self.assertContains(response, "Etapa 6 de 6")
 

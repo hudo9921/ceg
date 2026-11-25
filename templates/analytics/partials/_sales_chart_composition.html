@@ -1,13 +1,13 @@
 <!-- SEÇÃO DUPLA DE GRÁFICOS: Composição de Receita & Vendas por Grupo -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Gráfico Donut de Composição Financeira -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 space-y-4 flex flex-col justify-between">
+    <div class="ui-card p-6 space-y-4 flex flex-col justify-between">
         <div class="border-b border-slate-100 dark:border-white/10 pb-3">
-            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 class="ui-disp text-lg flex items-center gap-2">
                 <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-500"></i>
                 <span>Composição da Receita (Pago vs Pendente)</span>
             </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Proporção entre valores já quitados e aguardando pagamento.</p>
+            <p class="text-xs ui-muted">Proporção entre valores já quitados e aguardando pagamento.</p>
         </div>
         <div class="h-64 relative flex items-center justify-center">
             <canvas id="salesDonutChart"></canvas>
@@ -25,13 +25,13 @@
     </div>
 
     <!-- Gráfico de Vendas por Grupo -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm p-6 space-y-4 flex flex-col justify-between">
+    <div class="ui-card p-6 space-y-4 flex flex-col justify-between">
         <div class="border-b border-slate-100 dark:border-white/10 pb-3">
-            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 class="ui-disp text-lg flex items-center gap-2">
                 <i data-lucide="mic" class="w-4 h-4 text-purple-500"></i>
                 <span>Faturamento por Grupo K-pop</span>
             </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Comparativo de vendas totais geradas por cada grupo.</p>
+            <p class="text-xs ui-muted">Comparativo de vendas totais geradas por cada grupo.</p>
         </div>
         <div class="h-64 relative">
             <canvas id="salesGroupsChart"></canvas>

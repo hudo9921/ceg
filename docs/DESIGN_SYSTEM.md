@@ -187,3 +187,122 @@ Para manter a consistência visual em qualquer novo template ou componente, util
 | **Badge de Sucesso (Pago)** | `bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold` | `dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800` |
 | **Badge de Alerta (Urgente)** | `bg-rose-50 text-rose-800 border border-rose-200 font-black` | `dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800` |
 | **Ícones Lucide** | Traço uniforme `stroke-[1.75]` | Traço uniforme `stroke-[1.75]` |
+
+---
+
+## 🧭 7. Redesign 2026 — "Pearl Y2K" (claro) × "Y3K Chrome" (escuro)
+
+Aprovado em 23/11/2026 depois do protótipo P0 (https://claude.ai/artifact/Qw48h6kSVGKVFms1LXbf7Z). O piloto da §6 (efeitos sobre o layout antigo) foi descartado; a §6 fica só como histórico.
+
+### 7.1. Princípios
+- **Estrutura no estilo Apple:**
+  - a foto é a protagonista;
+  - uma ação principal por bloco;
+  - texto de leitura com 16 px e nada abaixo de 11–12 px;
+  - frases em caixa normal;
+  - vidro só na navegação e nos controles.
+- **Cor só tem significado:** acento = ação/seleção; verde/âmbar/vermelho = status (pago/vence/vencida).
+- **Dois temas com personalidades diferentes**, trocados por tokens. Nenhum `dark:` espalhado nos componentes novos.
+
+### 7.2. Tokens (`static/css/ui.css`, `:root` = claro, `html.dark` = escuro)
+| Token | Claro (Pearl Y2K) | Escuro (Y3K Chrome) |
+| :--- | :--- | :--- |
+| Fundo / superfície / elevada | `#F7F6FB` (perolado) / `#FFFFFF` / `#F2EFF8` | `#0A0A0C` / `#141418` / `#1C1C22` |
+| Texto / secundário | `#1E1B26` / `#625C70` | `#ECEEF3` / `#9AA1B0` |
+| Acento (botões, seleção) | rosa `#C8307A` com gloss | azul elétrico `#2A62F5` com brilho |
+| Raios (card/controle/pílula) | 22 / 14 / 999 px | 4 / 3 / 3 px |
+| Fonte de destaque | M PLUS Rounded 1c | Chakra Petch (MAIÚSCULAS só em títulos) |
+| Assinatura | holográfico nas pílulas ativas e no progresso; gloss "holo-foil" no photocard | cromo prateado, cantos de HUD (`ui-hud`), barras segmentadas, scan-line no photocard |
+
+No Tailwind: `bg-ui-surface`, `text-ui-muted`, `border-ui-line`, `bg-ui-accent`, `text-ui-accent-text`, `rounded-ui-card`, `rounded-ui-ctl`, `font-display`… (`static/src/tailwind.theme.js`).
+
+### 7.3. Componentes (`ui-*`)
+- **Texto:** `ui-disp` (título), `ui-chrome` (marca e destaques), `ui-label` (metadado), `ui-mono` (dinheiro e números).
+- **Superfícies:** `ui-card`, `ui-hud` (cantos de HUD no escuro), `ui-well` (bloco interno).
+- **Ações:**
+  - botões `ui-btn` + `ui-btn-primary`, `ui-btn-ghost` ou `ui-btn-sm`;
+  - `ui-icon-btn` (44 px);
+  - `ui-chip` com `.is-on` para o selecionado;
+  - `ui-toggle` (controle segmentado).
+- **Dados:** `ui-seg` (barra de vagas/progresso), `ui-status` com `ui-ok`/`ui-warn`/`ui-danger`, `ui-pc` (moldura 2:3 de photocard).
+- **Navegação:** `ui-sidebar`, `ui-nav-item`, `ui-topbar`, `ui-tabbar` e `ui-tab`.
+- **Sobreposição:** `ui-sheet`, `ui-scrim`.
+- **Compra:** `ui-buybar` (barra de compra fixa: acima da `ui-tabbar` no celular, no rodapé ao lado da sidebar no desktop).
+
+### 7.4. Estrutura do joiner (navegação)
+Cinco seções, as mesmas na barra lateral (desktop) e na barra de abas (celular), definidas em `apps/core/context_processors.py`:
+1. **CEGs**
+2. **Vitrine** (separada das CEGs, por decisão do produto)
+3. **Pagar:** tudo o que o joiner deve, agrupado por GOM
+4. **Meus itens:** por GOM, CEG ou caixa
+5. **Envios**
+
+Até a fase P3, Pagar, Meus itens e Envios abrem as partes correspondentes do `/me/`.
+
+### 7.5. Fases
+| Fase | Escopo |
+| :--- | :--- |
+| P1 | Fundação: tokens, fontes, componentes, navegação (**entregue**) |
+| P2 | CEGs e página da CEG. P2a, compra competitiva (§7.6), e P2b, visual da página e da home (§7.7): **entregues** |
+| P3 | Pagar, Meus itens, Envios, login e 2FA |
+| P4 | Vitrine e páginas de GOM |
+| P5 | Backoffice |
+
+### 7.6. Compra competitiva no segundo zero (joiner)
+Decisão do produto: o joiner monta a lista antes, mas **a compra é manual e competitiva**. Nada é comprado automaticamente quando a contagem zera.
+
+1. **Durante a contagem:** os cards ficam selecionáveis ("Adicionar à lista" / "Na lista"). A `ui-buybar` mostra a quantidade, o total e um botão neutro "Abre em mm:ss", que não faz nada.
+2. **No segundo zero:** o botão vira "Pegar meus X" (primário). Um toque envia tudo para `/ceg/<slug>/bulk-claim/`, sem formulário. Nome e WhatsApp vêm da sessão.
+3. **Resultado:** a `ui-sheet` mostra cada item como Garantido, Lista de espera #n ou Não foi dessa vez, com a chave Pix e o atalho "Ver tudo o que devo" (`/me/?tab=pagar#pagar`).
+
+Detalhes:
+- **Contagem:** usa um horário-alvo (`Date.now() + countdown_seconds`), com tique de 250 ms e recálculo no `visibilitychange`. Não atrasa com a aba em segundo plano. O servidor continua sendo a autoridade (`CEGNotOpenYetError`).
+- **Lista salva:** fica no `localStorage` (`ceg-list:<slug>`), por aparelho. Sobrevive a recarregar a página.
+- **Depois do envio:** os itens respondidos saem da lista e os cards viram indisponíveis (evento `slots-claimed`).
+- **Visitante sem login:** vê "Entrar para reservar" com `?next=` da CEG.
+- **Staff:** continua com a barra e o modal antigos (`_detail_claim_bar.html`), que permitem reservar para outra pessoa.
+- **Arquivos:** `_detail_buybar.html`, `_detail_result_sheet.html` e `_detail_buy_script.html` (`cegBuyMixin()`, misturado em `cegDetailApp()`). Testes em `apps/cegs/tests_buying_flow.py`.
+
+### 7.7. Página da CEG e home (P2b)
+Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
+- **Hero da CEG (`ui-hero`):** a imagem aparece inteira (contida) sobre um fundo desfocado dela mesma; tags (grupo, era, GOM), título e a contagem (`ui-count`) ficam por cima. A contagem pulsa nos últimos 10 s e respeita "reduzir movimento".
+- **Fatos rápidos (`ui-facts`):** preço, vagas livres e prazo do item, logo abaixo do hero.
+- **Filtros (`ui-filters`):** uma linha de chips fixa ao rolar (abaixo da topbar no celular) e o interruptor `ui-switch` "Só disponíveis".
+- **Photocards (`ui-pick` + `ui-pc`):** a foto é o elemento principal. Selecionado = contorno na cor de destaque + `ui-tick`; tomado = cinza + `ui-stamp` ("Reservado"/"Pago"/"Esgotado"). O texto do status sempre acompanha a cor. Frete e taxa saem do card do joiner (ficam em "Como funciona o pagamento"); a equipe continua vendo valores e os chips de pagamento.
+- **Informação de referência recolhida:** etapas de pagamento e Pix do item ficam no `<details class="ui-details">` "Como funciona o pagamento".
+- **Ferramentas da equipe:** todas numa linha `ui-well` ("Equipe do GOM") abaixo do hero, em vez de espalhadas.
+- **Home:** título "CEGs" + banner da plataforma → "Abrindo em breve" (`ui-rail`, contagem por card) → "Abertas agora" (busca, "Filtros" recolhidos, chips de grupo e um trilho por grupo com cards `ui-card` 16:10 e barra de reservas).
+- **Acessibilidade:** alvos de toque ≥ 44 px, `aria-pressed` nos chips e cards, `role="switch"` no interruptor, `role="timer"` nas contagens, rótulos em botões só com ícone.
+
+## Cor da marca do GOM (C4)
+
+- O GOM escolhe 1 de 6 cores prontas (`apps/goms/branding.py`); o padrão é a cor da plataforma.
+- Só vale em páginas de **um** GOM: página pública, CEG, caixa e o painel do GOM. Home, Vitrine geral e `/me/`
+  misturam GOMs e ficam com a cor da plataforma.
+- `components/_brand_style.html` redefine `--ui-accent`, `--ui-accent-text`, `--ui-accent-soft`, `--ui-focus`,
+  `--ui-accent-on-soft`, `--ui-seg-on` e, no escuro, `--ui-holo`. Componentes novos devem usar esses tokens
+  (nunca o hex do rosa/azul) para acompanhar a cor do GOM.
+
+## Contraste da página no modo claro (2026-11-25)
+
+- O fundo da página fica um tom de lavanda abaixo do branco (`--ui-bg: #E6E1F1`, degradês `#F2D0E4` e `#D2D8F6`), com
+  borda (`--ui-line` 11%) e sombra um pouco mais marcadas: os cards brancos se destacam sem depender de um modal
+  escurecer o fundo. Texto comum, `--ui-muted` e `--ui-accent-text` continuam ≥ 4,5:1 sobre o fundo.
+- Superfícies dentro dos cards também ganharam contraste: `--ui-surface-2: #EDE8F5` (caixas e botões fantasma,
+  ≥ 4,5:1 para texto comum, muted, destaque, ok e perigo), `--ui-line` 14% e o novo `--ui-line-strong` (`#8A8398` no
+  claro, `#6B7080` no escuro) na borda dos campos, ≥ 3:1 no branco e no `--ui-surface-2` (WCAG 1.4.11).
+
+## Modo claro "velado" (2026-11-25, substitui os valores acima)
+
+- Pedido do dono: o claro estava branco demais; o visual certo é o de um véu cinza-lavanda (como o escurecido de um
+  print). Tokens: página `--ui-bg #D6D1E0` (degradês `#E2CDDA`/`#CCD1EA`), cards `--ui-surface #F1EEF6`, caixas
+  `--ui-surface-2 #DCD7E3`, bordas de campo `--ui-line-strong #776F86`.
+- Texto escurecido para seguir AA (≥ 4,5:1) em card, caixa, página e degradês: muted `#4F4A5E`, destaque
+  `#92195A`, ok `#035C43`, perigo `#A0163C`, aviso `#7A4404`.
+- `bg-white` das telas antigas segue o card no claro (override em ui.css). O QR do Pix usa `.keep-white`.
+- O fundo do `<body>` no claro vinha de um estilo antigo no `base.html` com `!important`; agora usa `var(--ui-page)`.
+- Barra lateral no claro (desktop): painel flutuante (`inset 12px`, cantos do card, `--ui-surface` + sombra), item
+  ativo em pílula `--ui-accent-soft` com texto `--ui-accent-text` e ícone `--ui-accent`, rótulos de seção em versalete.
+  O escuro não muda.
+- Chip selecionado no claro: mesma pílula do item ativo da barra lateral (`--ui-accent-soft`, borda rosa 45%,
+  texto `--ui-accent-text`). O degradê holográfico ficou só nas barras de progresso e enfeites.

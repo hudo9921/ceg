@@ -1,10 +1,10 @@
 <!-- SERIALIZAÇÃO DE DADOS & MOTOR REATIVO ALPINE.JS PARA CONSULTA JOINER -->
 <script id="participants-search-data-json" type="application/json">
-    {{ participants_search_data_json|safe }}
+    {{ participants_search_data_json|json_embed:"[]" }}
 </script>
 
 <script id="items-data-json" type="application/json">
-    {{ items_data_json|safe }}
+    {{ items_data_json|json_embed:"[]" }}
 </script>
 
 {% include 'cegs/partials/_joiner_app_payments.html' %}

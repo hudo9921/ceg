@@ -4,11 +4,11 @@
     "currentCategory": "{{ category_filter|default:'all' }}",
     "selectedCaixaId": "{{ preselected_caixa_id|default:'' }}",
     "autoOpenModal": "{{ auto_open_modal|default:'' }}",
-    "groups": {{ groups_json|safe|default:"[]" }},
-    "participants": {{ participants_json|safe|default:"[]" }},
-    "caixas": {{ caixas_json|safe|default:"[]" }},
+    "groups": {{ groups_json|json_embed:"[]" }},
+    "participants": {{ participants_json|json_embed:"[]" }},
+    "caixas": {{ caixas_json|json_embed:"[]" }},
     "itensIndividuais": [],
-    "tiposItem": {{ tipos_item_json|safe|default:"[]" }}
+    "tiposItem": {{ tipos_item_json|json_embed:"[]" }}
 }
 </script>
 
@@ -138,13 +138,8 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            // Auto-popula itens a partir do primeiro grupo disponível
-            if (this.groups && this.groups.length > 0) {
-                if (!this.selectedGroupId) {
-                    this.selectedGroupId = this.groups[0].id;
-                }
-                this.populateItemsFromGroup(this.selectedGroupId);
-            }
+            // O grupo da Nova CEG é escolhido no seletor "busca primeiro" (_catalogo_picker): nada pré-selecionado.
+            if (this.selectedGroupId) this.populateItemsFromGroup(this.selectedGroupId);
 
             // Escuta global de paste para colar imagem via Ctrl+C / Ctrl+V em qualquer modal ativo
             window.addEventListener('paste', (e) => {
@@ -412,9 +407,6 @@ document.addEventListener('alpine:init', () => {
                     this.itemTipoId = this.tiposItem[0].id;
                 }
             } else if (name === 'ceg') {
-                if (!this.selectedGroupId && this.groups && this.groups.length > 0) {
-                    this.selectedGroupId = this.groups[0].id;
-                }
                 if (this.selectedGroupId && (!this.items || this.items.length === 0)) {
                     this.populateItemsFromGroup(this.selectedGroupId);
                 }

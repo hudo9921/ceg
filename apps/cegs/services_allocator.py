@@ -413,7 +413,7 @@ class BulkJoinerAllocatorService:
                 participant = None
                 p_id = row.get('participant_id')
                 if p_id:
-                    participant = Participant.objects.filter(id=p_id).first()
+                    participant = Participant.objects.for_gom(ceg.gom).filter(id=p_id).first()
 
                 if not participant and auto_create:
                     phone = row.get('participant_phone') or ''
@@ -540,7 +540,7 @@ class BulkJoinerAllocatorService:
 
                     # Se o slot ainda não tinha comprador salvo no banco mas veio participant_id, realiza a atribuição
                     if not slot.claimed_by and p_id:
-                        participant = Participant.objects.filter(id=p_id).first()
+                        participant = Participant.objects.for_gom(ceg.gom).filter(id=p_id).first()
                         if participant:
                             slot.claimed_by = participant
                             slot.claimed_at = timezone.now()
@@ -580,7 +580,7 @@ class BulkJoinerAllocatorService:
                     p_id = up.get('participant_id')
                     if not p_id:
                         continue
-                    participant = Participant.objects.filter(id=p_id).first()
+                    participant = Participant.objects.for_gom(ceg.gom).filter(id=p_id).first()
                     if not participant:
                         errors.append(f"Participante #{p_id} não encontrado.")
                         continue

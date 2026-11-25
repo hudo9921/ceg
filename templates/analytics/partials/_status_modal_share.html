@@ -2,7 +2,7 @@
 <div x-show="shareModalOpen" x-cloak
      class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
      @keydown.escape.window="closeShareModal()">
-    <div class="bg-white dark:bg-[#14121B] rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 border border-slate-200 dark:border-white/10 transition-all transform my-auto"
+    <div class="ui-card max-w-xl w-full p-6 sm:p-7 space-y-5 transition-all transform my-auto"
          @click.away="closeShareModal()">
 
         <!-- Modal Header -->
@@ -12,10 +12,10 @@
                     <i data-lucide="share-2" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h3 class="font-black text-slate-900 dark:text-white text-base leading-tight">
+                    <h3 class="ui-disp text-lg">
                         Gerador de Divulgação de Vagas
                     </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <p class="text-xs ui-muted font-medium">
                         Texto pronto para redes sociais da CEG <span class="font-bold text-slate-800 dark:text-slate-200" x-text="currentShareCeg ? currentShareCeg.title : ''"></span>
                     </p>
                 </div>
@@ -32,7 +32,7 @@
                 <!-- Escolha do Emoji de Vaga -->
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Emoji de vaga:</span>
-                    <div class="inline-flex rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-white/10 shadow-2xs gap-1">
+                    <div class="ui-card inline-flex p-1 gap-1">
                         <button type="button" @click="shareEmoji = '🟢'"
                             class="px-2 py-0.5 rounded-lg text-sm transition cursor-pointer"
                             :class="shareEmoji === '🟢' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-black' : 'hover:bg-slate-100 dark:hover:bg-slate-700'">🟢</button>
@@ -65,11 +65,11 @@
         <!-- Preview do Texto -->
         <div class="space-y-2">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="ui-label flex items-center gap-1.5">
                     <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Prévia do Texto:</span>
                 </span>
-                <span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                <span class="text-[11px] font-semibold ui-muted">
                     <span x-text="shareText.length"></span> caracteres
                     <span x-show="shareText.length <= 280" class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">✓ Cabe no Twitter/X</span>
                 </span>
@@ -79,7 +79,7 @@
                 :value="shareText"
                 @click="$event.target.select()"
                 rows="9"
-                class="w-full text-xs font-mono bg-slate-900 text-slate-100 p-3.5 rounded-2xl border border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 leading-relaxed resize-y select-all shadow-inner"
+                class="ui-input w-full !py-3 font-mono p-3.5 leading-relaxed resize-y select-all"
                 title="Clique para selecionar tudo"></textarea>
         </div>
 

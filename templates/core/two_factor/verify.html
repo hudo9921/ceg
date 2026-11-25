@@ -1,0 +1,13 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Verificação em duas etapas — ValCegs{% endblock %}
+{% block heading %}Digite o código{% endblock %}
+{% block lead %}Abra o aplicativo autenticador e digite o código atual. Sem o celular? Use um dos seus códigos de recuperação.{% endblock %}
+
+{% block body %}
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% include 'core/two_factor/_token_field.html' with allow_backup=True submit_label="Entrar" %}
+</form>
+<p class="ui-muted text-[13px] text-center">Perdeu o celular e os códigos? Peça ao administrador da plataforma para redefinir seu 2FA.</p>
+{% endblock %}

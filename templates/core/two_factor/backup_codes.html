@@ -1,0 +1,13 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Códigos de recuperação — ValCegs{% endblock %}
+{% block heading %}{% if first_time %}Verificação ativada{% else %}Novos códigos de recuperação{% endif %}{% endblock %}
+{% block lead %}Guarde estes códigos num lugar seguro (gerenciador de senhas). Cada um funciona uma única vez se você ficar sem o celular.{% endblock %}
+
+{% block body %}
+<p class="ui-well p-3 text-sm ui-warn" role="alert">Eles não serão exibidos de novo.{% if not first_time %} Os códigos anteriores deixaram de funcionar.{% endif %}</p>
+<ul class="grid grid-cols-2 gap-2 select-all">
+    {% for code in codes %}<li class="ui-well px-3 py-2.5 text-center ui-mono font-bold tracking-wider">{{ code }}</li>{% endfor %}
+</ul>
+<a href="{{ next_url }}" class="ui-btn ui-btn-primary w-full">Já guardei, continuar</a>
+{% endblock %}

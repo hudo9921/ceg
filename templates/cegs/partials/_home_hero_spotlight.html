@@ -1,73 +1,23 @@
-{% load static %}
-<!-- Hero Banner Flutuante (Spotlight Vitrine ValCegs) -->
-<div class="relative overflow-hidden rounded-[28px] border border-purple-100/70 dark:border-white/10 border-t-white/90 dark:border-t-white/20 bg-white/70 dark:bg-cyber-surface/70 backdrop-blur-2xl shadow-glass dark:shadow-cyber transition-all duration-300">
-    <div class="w-full relative aspect-[21/7] sm:aspect-[24/6] max-h-72 sm:max-h-80 overflow-hidden flex items-center justify-center bg-[#FAF5FF] dark:bg-[#12101B]">
-        <!-- Aura suave no fundo do banner -->
-        <div class="absolute inset-0 bg-gradient-to-r from-purple-100/50 via-pink-100/40 to-purple-100/50 dark:from-purple-950/20 dark:via-pink-950/10 dark:to-purple-950/20 pointer-events-none"></div>
+{% comment %}
+Topo da home (DESIGN_SYSTEM §7.7): título "CEGs" e o banner da plataforma (claro/escuro, editável pela plataforma).
+Vitrine e Minhas reservas já estão na navegação, então não se repetem aqui.
+{% endcomment %}
+<header class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <p class="ui-label m-0">Compras em grupo de K-pop</p>
+        <h1 class="ui-disp ui-chrome text-4xl sm:text-5xl m-0 mt-1">CEGs</h1>
+    </div>
+    <p class="m-0 text-sm ui-muted max-w-md">Escolha seus photocards, monte sua lista antes da abertura e acompanhe pagamentos e envios em um só lugar.</p>
+</header>
 
-        <!-- Banner Modo Claro (Soft Y2K) -->
-        <img src="{{ home_banner.get_light_url }}"
-             alt="{{ home_banner.alt_text|default:'ValCegs Masterlist' }}"
-             class="dark:hidden w-full h-full object-cover sm:object-contain object-center relative z-10 transition-opacity duration-300">
-
-        <!-- Banner Modo Escuro (Cyber-Luxury) -->
-        <img src="{{ home_banner.get_dark_url }}"
-             alt="{{ home_banner.alt_text|default:'ValCegs Masterlist' }}"
-             class="hidden dark:block w-full h-full object-cover sm:object-contain object-center relative z-10 transition-opacity duration-300">
-
-        {% if user.is_staff %}
-        <!-- Botão Flutuante de Gestão de Banners para Organizador/Staff -->
-        <button type="button"
-                @click="$dispatch('open-banner-modal')"
-                class="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-md backdrop-blur-md transition-all duration-200 cursor-pointer
-                       bg-white/90 hover:bg-white text-purple-950 border border-purple-200/90 hover:scale-105 active:scale-95
-                       dark:bg-cyber-surface/90 dark:hover:bg-cyber-elevated dark:text-pink-200 dark:border-pink-500/40 dark:shadow-[0_0_15px_rgba(244,114,182,0.25)]">
-            <i data-lucide="image-plus" class="w-3.5 h-3.5 text-pink-500 dark:text-cyber-neon" stroke-width="1.75"></i>
-            <span class="text-[11px] font-black">Editar Banners</span>
+<div class="ui-card ui-hud overflow-hidden relative">
+    <div class="w-full aspect-[21/7] sm:aspect-[24/6] max-h-72 flex items-center justify-center" style="background: var(--ui-surface-2)">
+        <img src="{{ home_banner.get_light_url }}" alt="{{ home_banner.alt_text|default:'ValCegs' }}" class="dark:hidden w-full h-full object-cover sm:object-contain" decoding="async">
+        <img src="{{ home_banner.get_dark_url }}" alt="{{ home_banner.alt_text|default:'ValCegs' }}" class="hidden dark:block w-full h-full object-cover sm:object-contain" decoding="async">
+    </div>
+    {% if is_platform_admin %}
+        <button type="button" @click="$dispatch('open-banner-modal')" class="ui-tag !h-9 absolute top-3 right-3 z-[3]">
+            <i data-lucide="image-plus" class="w-4 h-4" stroke-width="1.75"></i><span>Editar banners</span>
         </button>
-        {% endif %}
-    </div>
-    
-    <!-- Faixa de Ações Rápidas com Destaque Especular -->
-    <div class="p-3.5 sm:p-5 bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-md border-t border-purple-100/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-purple-100/80 dark:bg-cyber-elevated border border-purple-200/80 dark:border-white/10 flex items-center justify-center text-purple-700 dark:text-cyber-neon shadow-xs shrink-0">
-                <i data-lucide="sparkles" class="w-4.5 h-4.5" stroke-width="1.75"></i>
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pink-100/90 dark:bg-pink-950/50 border border-pink-200 dark:border-pink-800/40 text-[10px] font-bold uppercase tracking-wider text-pink-700 dark:text-cyber-neon">
-                        <span class="relative flex h-1.5 w-1.5">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-pink-500"></span>
-                        </span>
-                        <span>Compras em Grupo</span>
-                    </span>
-                    <h2 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-cyber-silver tracking-tight">Bem-vindo(a) à ValCegs!</h2>
-                </div>
-                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">Explore as CEGs abertas, garanta os photocards do seu bias e acompanhe seus envios e caixinha em um só lugar.</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2">
-            <!-- Botão Primário: Soft Y2K Pastel no Claro | Cyber-Luxury Ametista Neon no Escuro (Ultra-Crispy) -->
-            <a href="{% url 'vitrine_list' %}"
-               class="px-5.5 sm:px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm tracking-tight antialiased flex items-center gap-2.5 group transition-all duration-200 cursor-pointer
-                      bg-gradient-to-r from-pink-100 via-purple-100 to-indigo-100 hover:from-pink-200 hover:via-purple-200 hover:to-indigo-200 text-purple-950 border border-purple-300
-                      shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(112,26,117,0.08)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_6px_rgba(112,26,117,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
-                      dark:bg-gradient-to-r dark:from-purple-950 dark:via-purple-900/90 dark:to-pink-950 dark:hover:from-purple-900 dark:hover:to-pink-900 dark:text-pink-100 dark:border-pink-500/50
-                      dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_16px_rgba(244,114,182,0.25)] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_22px_rgba(244,114,182,0.4)]">
-                <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0 text-purple-900 dark:text-cyber-neon" stroke-width="1.75"></i>
-                <span class="whitespace-nowrap">Vitrine Pronta Entrega</span>
-                <i data-lucide="arrow-right" class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 text-purple-800 dark:text-cyber-neon" stroke-width="1.75"></i>
-            </a>
-            <!-- Botão Secundário Pastel / Acrílico Translúcido -->
-            <a href="{% url 'my_claims' %}"
-               class="px-5 sm:px-5.5 py-2.5 rounded-full font-bold text-xs sm:text-sm tracking-tight antialiased hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 flex items-center gap-2 cursor-pointer
-                      bg-white/95 hover:bg-white text-purple-950 border border-purple-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-xs
-                      dark:bg-cyber-elevated dark:hover:bg-purple-950/40 dark:text-cyber-silver dark:hover:text-cyber-neon dark:border-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <i data-lucide="user" class="w-3.5 h-3.5 shrink-0 text-purple-800 dark:text-cyber-silver" stroke-width="1.75"></i>
-                <span class="whitespace-nowrap">Minhas Reservas</span>
-            </a>
-        </div>
-    </div>
+    {% endif %}
 </div>

@@ -1,108 +1,41 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}ValCegs Caixinhas — Remessas KR / JP{% endblock %}
+{% block title %}Caixas — Painel {{ active_gom.name }}{% endblock %}
 
 {% block content %}
-<div x-data="caixasDashboard()" class="space-y-8">
-
-    <!-- 1. Hero Banner Oficial & KPIs -->
+{% comment %}Caixas & remessas do GOM (P5d): filtros, caixas em andamento e as que chegaram, CEGs sem caixa.{% endcomment %}
+<div x-data="caixasDashboard()" class="max-w-[1120px] mx-auto space-y-6">
     {% include 'cegs/partials/_caixas_hero.html' %}
-
-    <!-- 2. Filtros & Barra de Pesquisa -->
     {% include 'cegs/partials/_caixas_filters.html' %}
 
-    <!-- 3. SEÇÃO 1: CAIXAS EM VIGÊNCIA -->
     {% if caixas_em_vigencia %}
-        <div class="space-y-4">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-white/10 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-xs">
-                        <i data-lucide="plane" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Caixas em Vigência</h3>
-                            <span class="px-2 py-0.5 bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-bold text-[10px] rounded-full uppercase tracking-wider font-mono">
-                                {{ caixas_em_vigencia|length }} em andamento
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Remessas internacionais ativas, em consolidação ou trânsito até a chegada ao Brasil.
-                        </p>
-                    </div>
-                </div>
+        <section class="space-y-3" aria-labelledby="vigencia-title">
+            <h2 id="vigencia-title" class="ui-disp text-2xl">A caminho <span class="ui-muted text-base font-normal">· {{ caixas_em_vigencia|length }}</span></h2>
+            <div class="grid gap-4 md:grid-cols-2">
+                {% for item in caixas_em_vigencia %}{% include 'cegs/_caixa_card.html' with item=item %}{% endfor %}
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {% for item in caixas_em_vigencia %}
-                    {% include 'cegs/_caixa_card.html' with item=item %}
-                {% endfor %}
-            </div>
-        </div>
+        </section>
     {% endif %}
 
-    <!-- 4. SEÇÃO 2: CAIXAS QUE CHEGARAM NA GOM -->
     {% if caixas_chegaram_gom %}
-        <div class="space-y-4 {% if caixas_em_vigencia %}pt-6 border-t border-slate-200/80 dark:border-white/10{% endif %}">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-white/10 pb-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-xs">
-                        <i data-lucide="home" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Caixas que Chegaram na GOM</h3>
-                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px] rounded-full uppercase tracking-wider font-mono">
-                                {{ caixas_chegaram_gom|length }} recebida(s)
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Remessas concluídas que já chegaram à casa da GOM para triagem e empacotamento nacional.
-                        </p>
-                    </div>
-                </div>
+        <section class="space-y-3" aria-labelledby="chegaram-title">
+            <h2 id="chegaram-title" class="ui-disp text-2xl">Na casa da GOM <span class="ui-muted text-base font-normal">· {{ caixas_chegaram_gom|length }}</span></h2>
+            <div class="grid gap-4 md:grid-cols-2">
+                {% for item in caixas_chegaram_gom %}{% include 'cegs/_caixa_card.html' with item=item %}{% endfor %}
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {% for item in caixas_chegaram_gom %}
-                    {% include 'cegs/_caixa_card.html' with item=item %}
-                {% endfor %}
-            </div>
-        </div>
+        </section>
     {% endif %}
 
-    <!-- 5. Estado Vazio -->
     {% if not caixas_em_vigencia and not caixas_chegaram_gom %}
-        <div class="bg-white/90 dark:bg-cyber-surface/90 rounded-2xl border-2 border-dashed border-sky-200 dark:border-white/10 p-12 text-center space-y-4">
-            <div class="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300 flex items-center justify-center mx-auto">
-                <i data-lucide="package" class="w-6 h-6"></i>
-            </div>
-            <div class="space-y-1">
-                <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">Nenhuma caixa / remessa encontrada</h3>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                    {% if origem_filter or status_filter or search_query %}
-                        Nenhuma remessa corresponde aos filtros selecionados. Tente limpar os filtros para ver todas as caixas.
-                    {% else %}
-                        Comece cadastrando sua primeira caixa de encomendas vindas da Coreia ou do Japão (Mercari) para organizar seus envios!
-                    {% endif %}
-                </p>
-            </div>
-            {% if is_staff_user %}
-                <a href="{% url 'caixa_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition shadow-xs">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Cadastrar Primeira Caixa</span>
-                </a>
-            {% endif %}
+        <div class="ui-card p-8 text-center space-y-3 max-w-lg mx-auto">
+            <h2 class="ui-disp text-xl">Nenhuma caixa encontrada</h2>
+            <p class="ui-muted text-[15px]">{% if origem_filter or status_filter or search_query %}Nada com esses filtros. Tente limpar os filtros.{% else %}Cadastre a primeira remessa da Coreia ou do Japão para organizar fretes, taxas e envios.{% endif %}</p>
+            <a href="{% url 'caixa_create' %}" class="ui-btn ui-btn-primary">Nova caixa</a>
         </div>
     {% endif %}
 
-    <!-- 6. Seção de CEGs sem Caixa (Para Staff) -->
     {% include 'cegs/partials/_caixas_unlinked_cegs.html' %}
-
-    <!-- 7. Modal de Atualização Rápida de Status -->
     {% include 'cegs/partials/_caixas_quick_modal.html' %}
-
 </div>
 {% endblock %}
 

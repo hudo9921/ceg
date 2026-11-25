@@ -1,0 +1,59 @@
+{% comment %}
+Folha do Pix (pixPay): QR, copia e cola, valor e referência; "Já paguei" com comprovante opcional.
+Mais de uma chave Pix na seleção = mais de um Pix (abas). O QR vem do servidor em SVG (apps/pagamentos/pix.py).
+{% endcomment %}
+<div x-show="sheet" x-cloak class="ui-scrim flex items-end sm:items-center justify-center p-0 sm:p-4"
+     @click.self="fechar()" @keydown.escape.window="sheet && fechar()">
+    <div class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-md max-h-[92vh] overflow-y-auto space-y-4" role="dialog" aria-modal="true" aria-labelledby="pix-title-{{ group.gom.id }}">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <p class="ui-label" x-text="pix.length > 1 ? 'Pix ' + (idx + 1) + ' de ' + pix.length : 'Pix'"></p>
+                <h2 id="pix-title-{{ group.gom.id }}" class="ui-disp text-2xl" x-text="pix.length > 1 ? 'Seu pagamento vai em ' + pix.length + ' Pix' : 'Pague com Pix'"></h2>
+            </div>
+            <button type="button" class="ui-icon-btn flex-none" aria-label="Fechar" @click="fechar()"><i data-lucide="x" class="w-5 h-5" stroke-width="1.75"></i></button>
+        </div>
+        <p x-show="pix.length > 1" class="ui-muted text-sm">Estas cobranças vão para chaves Pix diferentes do {{ group.gom.name }}. Pague uma de cada vez.</p>
+        <div x-show="pix.length > 1" class="flex gap-2" role="tablist">
+            <template x-for="(p, i) in pix" :key="p.ref">
+                <button type="button" class="ui-chip flex-1 justify-center" :class="i === idx && 'is-on'" @click="idx = i"
+                        x-text="'R$ ' + brl(p.total) + (done[p.ref] ? ' ✓' : '')"></button>
+            </template>
+        </div>
+
+        <template x-if="cur()">
+            <div class="space-y-4">
+                <div x-show="!done[cur().ref]">
+                    <div class="space-y-4">
+                        <img :src="cur().qr" :alt="'QR code do Pix ' + cur().ref" class="w-56 h-56 mx-auto p-2 keep-white rounded-xl">
+                        <div class="text-center">
+                            <p class="ui-mono text-3xl font-bold" x-text="'R$ ' + brl(cur().total)"></p>
+                            <p class="ui-muted text-sm">para a chave (<span x-text="cur().key_label"></span>) <b class="ui-mono" x-text="cur().key"></b></p>
+                            <p class="ui-muted text-sm">referência <b class="ui-mono" x-text="cur().ref"></b></p>
+                        </div>
+                        <div class="ui-well p-2 pl-3 flex items-center gap-2">
+                            <span class="flex-1 min-w-0 ui-mono text-[11px] ui-muted break-all line-clamp-2" x-text="cur().code"></span>
+                            <button type="button" class="ui-btn ui-btn-sm flex-none" style="background: var(--ui-surface); color: var(--ui-text)"
+                                    @click="copiar()" x-text="copied === cur().ref ? 'Copiado!' : 'Copiar código'"></button>
+                        </div>
+                        <details class="ui-well p-3 text-sm">
+                            <summary class="cursor-pointer font-semibold" x-text="'O que este Pix paga (' + cur().lines.length + ')'"></summary>
+                            <ul class="mt-2 space-y-1">
+                                <template x-for="(l, i) in cur().lines" :key="i"><li class="flex justify-between gap-3"><span x-text="l.desc"></span><span class="ui-mono" x-text="'R$ ' + brl(l.value)"></span></li></template>
+                            </ul>
+                        </details>
+                        <label class="ui-well p-3 flex items-center gap-3 text-sm cursor-pointer">
+                            <span class="flex-1">Comprovante <span class="ui-muted">(opcional: print ou PDF)</span>
+                                <span class="block ui-muted text-[12px] truncate" x-text="file ? file.name : 'Ajuda o GOM a achar seu Pix mais rápido.'"></span></span>
+                            <input type="file" accept="image/*,application/pdf" class="sr-only" @change="file = $event.target.files[0] || null">
+                            <span class="ui-btn ui-btn-ghost ui-btn-sm">Escolher</span>
+                        </label>
+                        <p x-show="error" x-text="error" class="text-sm ui-danger" role="alert"></p>
+                        <button type="button" class="ui-btn ui-btn-primary w-full" @click="paguei()" :disabled="busy" x-text="'Já paguei R$ ' + brl(cur().total)"></button>
+                    </div>
+                </div>
+                <p x-show="done[cur().ref]" class="ui-status ui-ok !text-[15px]">Avisamos o {{ group.gom.name }}. Assim que conferirem, aparece como pago.</p>
+            </div>
+        </template>
+        <button type="button" class="ui-btn ui-btn-ghost w-full" @click="fechar()" x-text="Object.keys(done).length ? 'Fechar' : 'Pagar depois'"></button>
+    </div>
+</div>

@@ -1,0 +1,32 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Convite para a equipe — ValCegs{% endblock %}
+{% block heading %}{% if invalid %}Convite inválido{% else %}Entrar na equipe {{ invite.gom.name }}{% endif %}{% endblock %}
+{% block lead %}{% if invalid %}Este link expirou, já foi usado ou foi cancelado. Peça um novo ao dono do GOM.{% else %}Você foi convidado(a) como {{ invite.get_role_display }}.{% endif %}{% endblock %}
+
+{% block body %}
+{% if invalid %}
+    <a href="{% url 'home' %}" class="ui-btn ui-btn-ghost w-full">Ir para o início</a>
+{% else %}
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% if form %}
+        {% for field in form %}
+            <label for="{{ field.id_for_label }}" class="block space-y-1.5">
+                <span class="ui-label">{{ field.label }}</span>
+                {{ field }}
+                {% if field.errors %}
+                    <span class="block text-[13px] ui-danger">{{ field.errors|join:" " }}</span>
+                {% elif field.help_text %}
+                    <span class="block ui-muted text-[13px]">{{ field.help_text|striptags }}</span>
+                {% endif %}
+            </label>
+        {% endfor %}
+        <p class="ui-muted text-[13px]">Em seguida você ativa a verificação em duas etapas com um aplicativo autenticador.</p>
+    {% else %}
+        <p class="text-[15px]">Você está conectado(a) como <strong>{{ request.user.get_username }}</strong>. O convite será ligado a esta conta.</p>
+    {% endif %}
+    <button type="submit" class="ui-btn ui-btn-primary w-full">{% if form %}Criar conta e entrar{% else %}Aceitar convite{% endif %}</button>
+</form>
+{% endif %}
+{% endblock %}

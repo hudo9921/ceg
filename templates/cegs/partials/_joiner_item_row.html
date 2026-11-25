@@ -32,7 +32,7 @@
                class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
                :title="'Abrir CEG: ' + item.ceg_titulo">
                 <template x-if="item.image_url">
-                    <img :src="item.image_url" :alt="item.nome"
+                    <img loading="lazy" decoding="async" :src="item.image_url" :alt="item.nome"
                          class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
                 </template>
                 <template x-if="!item.image_url">
@@ -47,7 +47,7 @@
                        class="w-full h-full flex items-center justify-center hover:opacity-80 transition group"
                        title="Abrir anúncio Mercari">
                         <template x-if="item.image_url">
-                            <img :src="item.image_url" :alt="item.nome"
+                            <img loading="lazy" decoding="async" :src="item.image_url" :alt="item.nome"
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
                         </template>
                         <template x-if="!item.image_url">
@@ -58,7 +58,7 @@
                 <template x-if="!item.link_pedido">
                     <div class="w-full h-full flex items-center justify-center">
                         <template x-if="item.image_url">
-                            <img :src="item.image_url" :alt="item.nome"
+                            <img loading="lazy" decoding="async" :src="item.image_url" :alt="item.nome"
                                  class="w-full h-full object-contain">
                         </template>
                         <template x-if="!item.image_url">
@@ -73,11 +73,11 @@
     <!-- Textos & Detalhes com Links Diretos -->
     <div class="space-y-0.5">
         <div class="flex flex-wrap items-center gap-1.5">
-            <span class="px-2 py-0.2 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-[10px] font-black rounded-md uppercase"
+            <span class="px-2 py-0.2 bg-slate-100 dark:bg-white/10 text-[10px] font-black rounded-md uppercase"
                   x-text="item.tipo_item"></span>
             <span class="text-xs font-bold text-pink-600 dark:text-pink-400" x-text="item.group_name"></span>
             <template x-if="item.era_name">
-                <span class="text-xs text-slate-400 dark:text-slate-500" x-text="'• ' + item.era_name"></span>
+                <span class="text-xs ui-muted" x-text="'• ' + item.era_name"></span>
             </template>
         </div>
 
@@ -85,7 +85,7 @@
         <div>
             <template x-if="item.type === 'slot'">
                 <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
-                   class="text-sm font-black text-slate-900 dark:text-white hover:text-pink-600 dark:hover:text-pink-400 transition inline-flex items-center gap-1.5 group"
+                   class="text-sm font-black hover:text-pink-600 dark:hover:text-pink-400 transition inline-flex items-center gap-1.5 group"
                    :title="'Acessar CEG: ' + item.ceg_titulo">
                     <span x-text="item.nome"></span>
                     <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-pink-600 transition"></i>
@@ -95,21 +95,21 @@
                 <div>
                     <template x-if="item.link_pedido">
                         <a :href="item.link_pedido" target="_blank"
-                           class="text-sm font-black text-slate-900 dark:text-white hover:text-pink-600 dark:hover:text-pink-400 transition inline-flex items-center gap-1.5 group"
+                           class="text-sm font-black hover:text-pink-600 dark:hover:text-pink-400 transition inline-flex items-center gap-1.5 group"
                            title="Acessar anúncio do produto original">
                             <span x-text="item.nome"></span>
                             <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-pink-600 transition"></i>
                         </a>
                     </template>
                     <template x-if="!item.link_pedido">
-                        <span class="text-sm font-black text-slate-900 dark:text-white" x-text="item.nome"></span>
+                        <span class="text-sm font-black" x-text="item.nome"></span>
                     </template>
                 </div>
             </template>
         </div>
 
         <!-- Subtítulo: CEG & Caixa com Links -->
-        <div class="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2">
+        <div class="text-xs ui-muted flex flex-wrap items-center gap-2">
             <template x-if="item.type === 'slot'">
                 <a :href="'/ceg/' + item.ceg_slug + '/'" target="_blank"
                    class="font-medium text-slate-600 dark:text-slate-300 hover:text-pink-600 dark:hover:text-pink-400 hover:underline inline-flex items-center gap-1"
@@ -129,7 +129,7 @@
                    x-text="'Caixa: ' + item.caixa_nome"></a>
             </template>
             <template x-if="!item.caixa_id">
-                <span class="text-slate-500 dark:text-slate-400" x-text="'Caixa: ' + item.caixa_nome"></span>
+                <span class="ui-muted" x-text="'Caixa: ' + item.caixa_nome"></span>
             </template>
         </div>
 

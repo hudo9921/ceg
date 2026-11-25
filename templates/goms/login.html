@@ -1,0 +1,19 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Entrar no painel — ValCegs{% endblock %}
+{% block heading %}Entrar no painel{% endblock %}
+{% block lead %}Acesso da equipe dos GOMs. Joiners entram pelo WhatsApp.{% endblock %}
+
+{% block body %}
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <p class="ui-well p-3 text-sm ui-danger" role="alert">Usuário ou senha incorretos.</p>
+    {% endif %}
+    <label for="{{ form.username.id_for_label }}" class="block space-y-1.5"><span class="ui-label">Usuário</span>{{ form.username }}</label>
+    <label for="{{ form.password.id_for_label }}" class="block space-y-1.5"><span class="ui-label">Senha</span>{{ form.password }}</label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="ui-btn ui-btn-primary w-full">Entrar</button>
+</form>
+<a href="{% url 'login_otp' %}" class="block text-center ui-muted text-sm hover:underline">Sou joiner: entrar pelo WhatsApp</a>
+{% endblock %}

@@ -1,27 +1,19 @@
-<!-- Cabeçalho Principal de Envios Nacionais -->
-<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-    <div class="space-y-1">
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wide">Logística & Despacho Nacional</span>
-            <span class="px-2 py-0.5 bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 font-black text-[10px] rounded-full uppercase tracking-wider border border-pink-200 dark:border-pink-800">Staff / Admin</span>
+{% comment %}Topo de Envios nacionais (P5f).{% endcomment %}
+<header class="flex flex-wrap items-end justify-between gap-4">
+    <div class="space-y-2 max-w-2xl">
+        <p class="ui-label">Envios nacionais</p>
+        <h1 class="ui-disp text-4xl">Pacotes</h1>
+        <p class="ui-muted text-[15px]">Pedidos dos joiners, cotação de frete, despacho com rastreio, entregas e avaliações.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        <div class="ui-toggle" role="group" aria-label="Como mostrar os pacotes">
+            <a href="?view=quadro{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if participant_filter %}&participant_id={{ participant_filter }}{% endif %}" class="px-4 no-underline {% if view_mode != 'lista' %}is-on{% endif %}"{% if view_mode != 'lista' %} aria-current="page"{% endif %}>Quadro</a>
+            <a href="?view=lista{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if participant_filter %}&participant_id={{ participant_filter }}{% endif %}" class="px-4 no-underline {% if view_mode == 'lista' %}is-on{% endif %}"{% if view_mode == 'lista' %} aria-current="page"{% endif %}>Lista</a>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <i data-lucide="truck" class="w-7 h-7 text-pink-600 dark:text-pink-400"></i>
-            <span>Envios Nacionais & Gestão de Pacotes</span>
-        </h1>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Acompanhe todos os pacotes físicos montados, despachos com código de rastreamento, entregas confirmadas e avaliações dos clientes.
-        </p>
+        {% if stats.em_preparacao_count %}
+            <a href="{% url 'imprimir_pacotes' %}?status=EM_PREPARACAO" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost">
+                <i data-lucide="printer" class="w-4 h-4" stroke-width="1.75"></i>Imprimir em preparação ({{ stats.em_preparacao_count }})</a>
+        {% endif %}
+        <a href="{% url 'consulta_joiner' %}" class="ui-btn ui-btn-ghost">Empacotar pelo joiner</a>
     </div>
-
-    <div class="flex flex-wrap items-center gap-3">
-        <a href="{% url 'consulta_joiner' %}" class="px-4 py-2 bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800 hover:bg-pink-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-            <i data-lucide="search" class="w-3.5 h-3.5"></i>
-            <span>Consulta Joiner 360º</span>
-        </a>
-        <a href="{% url 'caixas_dashboard' %}" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-            <i data-lucide="plane" class="w-3.5 h-3.5"></i>
-            <span>Caixas & Remessas (KR/JP)</span>
-        </a>
-    </div>
-</div>
+</header>

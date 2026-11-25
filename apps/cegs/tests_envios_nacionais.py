@@ -125,7 +125,7 @@ class EnviosNacionaisTests(TestCase):
         # Com login de usuário comum
         self.client.login(username='regular_user', password='password123')
         resp = self.client.get(reverse('envios_nacionais'))
-        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.status_code, 403)
 
         # Com login de admin/staff
         self.client.login(username='admin_staff', password='password123')
@@ -299,14 +299,14 @@ class EnviosNacionaisTests(TestCase):
 
         resp = self.client.get(reverse('my_claims'))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, 'Meus Pacotes & Envios Nacionais')
+        self.assertContains(resp, 'Pacotes a caminho')
         self.assertContains(resp, 'PAC-RASTREIO-99')
         self.assertContains(resp, 'QD987654321BR')
         self.assertContains(resp, 'rastreamento.correios.com.br')
 
     def test_pacote_entregue_movido_para_recebidos_e_sem_badge_envio(self):
-        """Quando o pacote é entregue, ele deve ser exibido em 'Pacotes Recebidos',
-        não em 'Meus Pacotes & Envios Nacionais', e o badge no botão da aba Caixinha
+        """Quando o pacote é entregue, ele deve ser exibido em 'Pacotes recebidos',
+        não em 'Pacotes a caminho', e o badge no botão da aba Caixinha
         não deve exibir '1 envio(s)'."""
         pacote = PacoteNacional.objects.create(
             participant=self.participant,
@@ -325,11 +325,11 @@ class EnviosNacionaisTests(TestCase):
 
         resp = self.client.get(reverse('my_claims'))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, 'Pacotes Recebidos')
+        self.assertContains(resp, 'Pacotes recebidos')
         self.assertContains(resp, 'PAC-ENTREGUE-01')
         self.assertContains(resp, 'Chegou perfeito!')
         # Não deve exibir a seção de em andamento já que não há outros pacotes
-        self.assertNotContains(resp, 'Meus Pacotes & Envios Nacionais')
+        self.assertNotContains(resp, 'Pacotes a caminho')
         # Nem deve exibir o badge '1 envio(s)' na aba superior
         self.assertNotContains(resp, '1 envio(s)')
         self.assertNotContains(resp, 'envio(s)')
@@ -500,7 +500,7 @@ class EnviosNacionaisTests(TestCase):
 
         # Verifica na página de meus claims
         resp_claims = self.client.get(reverse('my_claims'))
-        self.assertContains(resp_claims, 'Sua Avaliação:')
+        self.assertContains(resp_claims, 'Sua avaliação')
         self.assertContains(resp_claims, 'Chegou super rápido e os cards vieram com toploader!')
 
     def test_consulta_joiner_search_by_name(self):
@@ -598,8 +598,8 @@ class EnviosNacionaisTests(TestCase):
         self.assertEqual(stats['total_pago_historico'], 174.50)
 
         # Confirma presença no HTML renderizado
-        self.assertContains(resp, 'Quanto Deve Atualmente')
-        self.assertContains(resp, 'Quanto Já Pagou Historicamente')
+        self.assertContains(resp, 'A receber')
+        self.assertContains(resp, 'Já pago')
         self.assertContains(resp, 'R$ 65,00')
         self.assertContains(resp, 'R$ 174,50')
 

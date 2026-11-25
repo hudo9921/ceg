@@ -10,6 +10,10 @@ planilhas/*
 *.backup*
 media/
 staticfiles/
+node_modules/
+# CSS gerado por `npm run build:css` (o Docker compila no build)
+static/css/tailwind.css
+static/js/lucide-subset.min.js
 .env
 .env.*
 .env.oracle
@@ -28,3 +32,6 @@ mysterious-fermi/
 /tests_envios_nacionais.py
 /urls.py
 /views.py
+
+# Cache das APIs usadas por build_catalog_seed
+.catalog_cache/

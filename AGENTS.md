@@ -4,7 +4,12 @@
 > **1. NUNCA QUEBRE A MODULARIZAÇÃO:** Nenhum arquivo de template ou parcial pode ultrapassar 200 linhas. Mantenha os subcomponentes organizados na pasta `partials/`.
 > **2. NUNCA USE EMOJIS BRUTOS:** Utilize 100% Lucide Icons (`stroke-width="1.75"`).
 > **3. PALETA BIPOLAR OBRIGATÓRIA:** Todo componente deve suportar Soft Y2K (Modo Claro) e Cyber-Luxury (Modo Escuro com `dark:`).
-> **4. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.
+> **4. PERMISSÕES CENTRALIZADAS:** Views da GOM herdam `apps.core.permissions.StaffRequiredMixin` (nunca crie outra cópia) e declaram `gom_permission` com uma chave de `apps/goms/permissions.py` (nova funcionalidade = nova chave no `CATALOG`). Quem precisa de 2FA é decidido só em `apps.core.two_factor.requires_two_factor` (novos papéis de GOM entram ali).
+> **4.2. MULTI-GOM:** toda consulta de backoffice usa `Modelo.objects.for_gom(request.active_gom)` e todo registro novo recebe `gom=request.active_gom`. Em páginas públicas, os poderes de gestão vêm de `apps.goms.access.can_manage(request, obj)`. O teste `apps.goms.tests_isolation` precisa continuar passando. Rotas públicas ou do joiner precisam ser registradas em `apps/core/tests.py`, senão a matriz de permissões falha.
+> **4.1. SEM CDN EXTERNO:** bibliotecas JS/CSS ficam em `static/vendor/` e cores/tema do Tailwind em `static/src/tailwind.theme.js` (a CSP bloqueia scripts de outros domínios).
+> **5. NUNCA USE `|safe` PARA DADOS:** JSON em templates usa `{{ x|json_embed }}` (em `<script>`) ou `{{ x|json_attr }}` (em atributos). Download de URL informada por usuário usa `apps.core.net.fetch_public_url` (anti-SSRF).
+> **6. DADOS PESSOAIS (LGPD):** endereço, CEP, CPF e afins usam `apps.core.fields.EncryptedTextField`; telas de staff que exibem esses dados chamam `apps.core.privacy.log_pii_access`.
+> **7. ATUALIZE A DOCUMENTAÇÃO:** Qualquer alteração relevante em models, regras ou templates deve ser documentada nos arquivos especializados em `docs/`.
 
 ---
 
@@ -21,7 +26,7 @@ python manage.py test apps.participants.tests.ParticipantProfileTests
 # 2. Testes de CEGs / Criação / Edição / Recorte (< 10s)
 python manage.py test apps.cegs.tests.CreationsHubIntegrationTests apps.cegs.tests_crop_studio
 python manage.py test apps.cegs.tests_crop_studio
-python manage.py test apps.cegs.tests.CEGModelTest
+python manage.py test apps.goms.tests_pix           # chaves Pix padrão do GOM e hierarquia
 python manage.py test apps.cegs.tests.CEGUpdateViewTest
 
 # 3. Testes de Caixas / Logística / Vitrine (< 8s)
@@ -34,6 +39,14 @@ python manage.py test apps.analytics.tests
 
 # 5. Suite Completa de Participantes (< 4s)
 python manage.py test apps.participants
+
+# 6. Regressões de Segurança: OTP, sessão, troca de identidade (< 5s)
+python manage.py test apps.participants.tests_security
+python manage.py test apps.core.tests_two_factor   # 2FA do backoffice
+python manage.py test apps.goms                    # GOMs, equipe, convites e isolamento entre GOMs (< 12s)
+
+# 7. Matriz de Permissões de todas as rotas (< 2s) — rode ao criar/alterar views
+python manage.py test apps.core
 
 # ⚠️ Suite Completa de CEGs (RODAR APENAS NA ENTREGA FINAL) (~50s)
 python manage.py test apps.cegs
@@ -67,6 +80,10 @@ Para detalhes aprofundados sem poluir o contexto de desenvolvimento, consulte os
 3. **[docs/BUSINESS_RULES.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/BUSINESS_RULES.md):** Regras completas de resolução hierárquica de chaves Pix, concorrência no Segundo Zero com `select_for_update`, ciclo de vida do item (`claim.lifecycle`), cascata de caixas, retenção de caixinha e estúdio de recorte com fallback Pillow CORS.
 4. **[docs/PROJECT_OVERVIEW.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/PROJECT_OVERVIEW.md):** Visão geral da plataforma, arquitetura dos apps Django, setup e comandos gerais.
 5. **[docs/IDEAS_BACKLOG.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/IDEAS_BACKLOG.md):** Roadmap de melhorias e ideias de inovação em espera.
+6. **[docs/MULTI_GOM_DESIGN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/MULTI_GOM_DESIGN.md):** Desenho da plataforma com vários GOMs (dono, admins, isolamento de dados, entregas M1–M4).
+7. **[docs/CATALOG_IMPORT_PLAN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/CATALOG_IMPORT_PLAN.md):** Plano (não iniciado) de importação do catálogo: top 500 grupos/100 solistas via Wikidata + MusicBrainz, seed revisável e manutenção de eras.
+8. **[docs/GOM_CUSTOMIZATION_PLAN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/GOM_CUSTOMIZATION_PLAN.md):** Plano da personalização por GOM: regras, padrões de CEG, opções de envio, cor da marca e mensagens do bot (C0–C5).
+9. **[docs/SITE_ONLY_PLAN.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/SITE_ONLY_PLAN.md):** Plano para tirar Google Forms e WhatsApp: cobranças com Pix de valor exato, endereços no site, login novo (Google, passkey, e-mail), push e mensagens (S1–S5).
 
 ---
 
@@ -74,6 +91,7 @@ Para detalhes aprofundados sem poluir o contexto de desenvolvimento, consulte os
 
 - [ ] Código modularizado: nenhum template ou parcial novo/alterado ultrapassa **200 linhas**.
 - [ ] 100% **Lucide Icons** utilizados com traço uniforme (`stroke-width="1.75"`), sem emojis soltos no HTML.
+- [ ] Imagens em listas/grades usam `src="{{ url|thumb }}" data-full="{{ url }}" loading="lazy" decoding="async"`.
 - [ ] Suporte a **Dark Mode** implementado (`dark:bg-slate-900`, `dark:border-slate-800`, `dark:text-white`).
 - [ ] Testes pontuais ultrarrápidos executados e passando com louvor (`OK`).
 - [ ] Se houve novas telas ou partials criados: atualizados [docs/TEMPLATES.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/TEMPLATES.md) e [docs/PROJECT_OVERVIEW.md](file:///d:/Users/hudo/Documents/GitHub/ceg/docs/PROJECT_OVERVIEW.md).

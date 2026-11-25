@@ -1,6 +1,9 @@
 import math
 import re
+from apps.core.fields import EncryptedTextField
 from django.db import models
+
+from apps.goms.scoping import default_gom_id, scoped_manager
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.text import slugify
@@ -23,6 +26,11 @@ class TipoItem(models.Model):
 
 
 class Caixa(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='caixas',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono da caixa (só agrupa CEGs/itens do mesmo GOM).')
+    objects = scoped_manager('gom')
+
     class Origem(models.TextChoices):
         KR = 'KR', 'Coreia do Sul (KR)'
         JP = 'JP', 'Japão (JP / Mercari)'
@@ -378,45 +386,42 @@ class Caixa(models.Model):
             # 3. Recalcula totais gerais da Caixa
             self.recalcular_totais_frete_taxa()
 
+    def _resolve_pix(self, kind: str) -> tuple[str, str]:
+        """
+        Chave/instruções de frete ou taxa (docs/BUSINESS_RULES.md §1): própria da caixa →
+        da CEG para o tipo → padrão do GOM para o tipo → chave geral da CEG → padrão do GOM (itens).
+        """
+        own_key = getattr(self, f'pix_key_{kind}')
+        if own_key:
+            return own_key, getattr(self, f'pix_instructions_{kind}')
+        cegs = list(self.cegs.all())
+        for ceg in cegs:
+            if getattr(ceg, f'pix_key_{kind}'):
+                return getattr(ceg, f'pix_key_{kind}'), getattr(ceg, f'pix_instructions_{kind}')
+        if getattr(self.gom, f'default_pix_key_{kind}'):  # padrão do GOM específico do tipo
+            return getattr(self.gom, f'default_pix_key_{kind}'), getattr(self.gom, f'default_pix_instructions_{kind}')
+        for ceg in cegs:
+            if ceg.pix_key:
+                return ceg.pix_key, ceg.pix_instructions
+        return self.gom.pix_for('item')
+
     def get_pix_key_frete(self) -> str:
-        if self.pix_key_frete:
-            return self.pix_key_frete
-        for ceg in self.cegs.all():
-            k = ceg.pix_key_frete or ceg.pix_key
-            if k:
-                return k
-        return ""
+        return self._resolve_pix('frete')[0] or ''
 
     def get_pix_instructions_frete(self) -> str:
-        if self.pix_instructions_frete:
-            return self.pix_instructions_frete
-        for ceg in self.cegs.all():
-            inst = ceg.pix_instructions_frete or ceg.pix_instructions
-            if inst:
-                return inst
-        return ""
+        return self._resolve_pix('frete')[1] or ''
 
     def get_pix_key_taxa(self) -> str:
-        if self.pix_key_taxa:
-            return self.pix_key_taxa
-        for ceg in self.cegs.all():
-            k = ceg.pix_key_taxa or ceg.pix_key
-            if k:
-                return k
-        return ""
+        return self._resolve_pix('taxa')[0] or ''
 
     def get_pix_instructions_taxa(self) -> str:
-        if self.pix_instructions_taxa:
-            return self.pix_instructions_taxa
-        for ceg in self.cegs.all():
-            inst = ceg.pix_instructions_taxa or ceg.pix_instructions
-            if inst:
-                return inst
-        return ""
+        return self._resolve_pix('taxa')[1] or ''
 
 
 class CaixaItemRate(models.Model):
     """Valores unitários e prazos de frete internacional e taxa aduaneira por tipo de item em uma Caixa."""
+    objects = scoped_manager('caixa__gom')  # Multi-GOM: dono via caixa
+
     caixa = models.ForeignKey(
         Caixa,
         on_delete=models.CASCADE,
@@ -457,6 +462,11 @@ class CaixaItemRate(models.Model):
 
 
 class CEG(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='cegs',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono da CEG.')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Rascunho'
         POLLING = 'POLLING', 'Em Enquete / Sondagem de Demanda'
@@ -566,6 +576,16 @@ class CEG(models.Model):
         blank=True,
         help_text='Data e hora limite para pagamento do frete internacional (opcional).'
     )
+    # Custo da CEG para o GOM (Relatórios → Lucro por CEG): o que pagou pelos itens, na moeda da compra.
+    CUSTO_MOEDAS = [('BRL', 'R$ (real)'), ('KRW', '₩ (won)'), ('JPY', '¥ (iene)'), ('USD', 'US$ (dólar)'), ('CNY', '¥ (yuan)')]
+    custo_moeda = models.CharField('Moeda da compra', max_length=3, choices=CUSTO_MOEDAS, default='BRL')
+    custo_valor = models.DecimalField('Valor pago pelos itens', max_digits=14, decimal_places=2, null=True, blank=True)
+    custo_cambio = models.DecimalField('Câmbio (R$ por 1 unidade)', max_digits=12, decimal_places=6, null=True, blank=True,
+                                       help_text='Ex.: 1 won = R$ 0,0041. Em reais, deixe em branco.')
+    custo_taxas_brl = models.DecimalField('Taxas extras (R$)', max_digits=10, decimal_places=2, null=True, blank=True,
+                                          help_text='Proxy, IOF, tarifa do cartão…')
+    custo_obs = models.CharField('Anotação do custo', max_length=200, blank=True)
+
     prazo_pagamento_taxa_aduaneira = models.DateTimeField(
         'Prazo de Pagamento da Taxa Aduaneira',
         null=True,
@@ -616,31 +636,53 @@ class CEG(models.Model):
         """Título amigável para exibição em cards onde a tag do grupo já está presente."""
         return self.clean_title()
 
+    @property
+    def custo_brl(self):
+        """Custo dos itens em reais (valor × câmbio + taxas), ou None se o GOM não informou."""
+        from decimal import Decimal
+        if self.custo_valor is None:
+            return None
+        rate = Decimal('1') if self.custo_moeda == 'BRL' else self.custo_cambio
+        if rate is None:
+            return None
+        return (self.custo_valor * rate + (self.custo_taxas_brl or Decimal('0'))).quantize(Decimal('0.01'))
+
+    def _resolve_pix(self, kind: str) -> tuple[str, str]:
+        """
+        Hierarquia de chaves (docs/BUSINESS_RULES.md §1). Itens: CEG → padrão do GOM (itens).
+        Frete/taxa: caixa → CEG (do tipo) → padrão do GOM (do tipo) → CEG (geral) → GOM (itens).
+        """
+        if kind == 'item':
+            if self.pix_key:
+                return self.pix_key, self.pix_instructions
+            return self.gom.pix_for('item')
+        if self.caixa and getattr(self.caixa, f'pix_key_{kind}'):
+            return getattr(self.caixa, f'pix_key_{kind}'), getattr(self.caixa, f'pix_instructions_{kind}')
+        if getattr(self, f'pix_key_{kind}'):
+            return getattr(self, f'pix_key_{kind}'), getattr(self, f'pix_instructions_{kind}')
+        if getattr(self.gom, f'default_pix_key_{kind}'):  # padrão do GOM específico do tipo
+            return getattr(self.gom, f'default_pix_key_{kind}'), getattr(self.gom, f'default_pix_instructions_{kind}')
+        if self.pix_key:
+            return self.pix_key, self.pix_instructions
+        return self.gom.pix_for('item')
+
     def get_pix_key_item(self) -> str:
-        return self.pix_key or ''
+        return self._resolve_pix('item')[0] or ''
 
     def get_pix_instructions_item(self) -> str:
-        return self.pix_instructions or ''
+        return self._resolve_pix('item')[1] or ''
 
     def get_pix_key_frete(self) -> str:
-        if self.caixa and self.caixa.pix_key_frete:
-            return self.caixa.pix_key_frete
-        return self.pix_key_frete or self.pix_key or ''
+        return self._resolve_pix('frete')[0] or ''
 
     def get_pix_instructions_frete(self) -> str:
-        if self.caixa and self.caixa.pix_instructions_frete:
-            return self.caixa.pix_instructions_frete
-        return self.pix_instructions_frete or self.pix_instructions or ''
+        return self._resolve_pix('frete')[1] or ''
 
     def get_pix_key_taxa(self) -> str:
-        if self.caixa and self.caixa.pix_key_taxa:
-            return self.caixa.pix_key_taxa
-        return self.pix_key_taxa or self.pix_key or ''
+        return self._resolve_pix('taxa')[0] or ''
 
     def get_pix_instructions_taxa(self) -> str:
-        if self.caixa and self.caixa.pix_instructions_taxa:
-            return self.caixa.pix_instructions_taxa
-        return self.pix_instructions_taxa or self.pix_instructions or ''
+        return self._resolve_pix('taxa')[1] or ''
 
     @property
     def display_image_url(self) -> str:
@@ -971,6 +1013,8 @@ class CEG(models.Model):
 
 
 class CEGItemDefinition(models.Model):
+    objects = scoped_manager('ceg__gom')  # Multi-GOM: dono via ceg
+
     class ItemType(models.TextChoices):
         PHOTOCARD = 'PHOTOCARD', 'Photocard'
         POB = 'POB', 'Pre-Order Benefit (POB)'
@@ -1074,6 +1118,8 @@ class CEGItemDefinition(models.Model):
 
 
 class CEGSet(models.Model):
+    objects = scoped_manager('ceg__gom')  # Multi-GOM: dono via ceg
+
     ceg = models.ForeignKey(
         CEG,
         on_delete=models.CASCADE,
@@ -1155,6 +1201,11 @@ class CEGSet(models.Model):
 
 
 class PacoteNacional(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='pacotes_nacionais',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM que envia o pacote (um pacote = um GOM).')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         SOLICITADO = 'SOLICITADO', 'Solicitado pelo Joiner'
         EM_PREPARACAO = 'EM_PREPARACAO', 'Em Preparação / Embalando'
@@ -1182,9 +1233,14 @@ class PacoteNacional(models.Model):
         default=Status.EM_PREPARACAO,
         db_index=True
     )
-    endereco_destinatario = models.TextField('Endereço de Destino Informado', blank=True)
-    cep_destinatario = models.CharField('CEP de Destino', max_length=15, blank=True)
+    # Dados pessoais criptografados em repouso (LGPD) — ver apps/core/crypto.py
+    endereco_destinatario = EncryptedTextField('Endereço de Destino Informado', blank=True)
+    cep_destinatario = EncryptedTextField('CEP de Destino', blank=True)
     observacoes_joiner = models.TextField('Observações / Preferências do Joiner', blank=True)
+    # Forma de envio escolhida pelo joiner (C3). O nome fica copiado para o histórico.
+    metodo_envio = models.ForeignKey('cegs.MetodoEnvio', on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='pacotes', verbose_name='Forma de envio')
+    metodo_nome = models.CharField('Forma de envio (nome)', max_length=60, blank=True)
     solicitado_em = models.DateTimeField('Data da Solicitação pelo Joiner', null=True, blank=True)
     codigo_rastreio = models.CharField(
         'Código de Rastreio',
@@ -1245,6 +1301,26 @@ class PacoteNacional(models.Model):
         verbose_name_plural = 'Pacotes de Envios Nacionais'
         ordering = ['-created_at']
 
+    def get_pix_frete_nacional(self) -> tuple[str, str]:
+        """Chave/instruções para pagar o frete nacional: padrão do GOM (frete nacional → itens)."""
+        return self.gom.pix_for('frete_nacional')
+
+    # Etapas mostradas ao joiner (painel Envios): Solicitado → Embalando → Enviado → Entregue.
+    JOINER_STEPS = [('SOLICITADO', 'Solicitado'), ('EM_PREPARACAO', 'Embalando'), ('ENVIADO', 'Enviado'), ('ENTREGUE', 'Entregue')]
+
+    @property
+    def step_number(self) -> int:
+        """Posição (1 a 4) do status nas etapas do joiner."""
+        return next((i for i, (code, _label) in enumerate(self.JOINER_STEPS, 1) if code == self.status), 1)
+
+    @property
+    def pix_key_frete_nacional(self) -> str:
+        return self.get_pix_frete_nacional()[0] or ''
+
+    @property
+    def pix_instructions_frete_nacional(self) -> str:
+        return self.get_pix_frete_nacional()[1] or ''
+
     def __str__(self):
         return f"{self.identificador or f'Pacote #{self.id}'} - {self.participant.display_name} [{self.get_status_display()}]"
 
@@ -1294,6 +1370,7 @@ class PacoteNacional(models.Model):
         # Audit Log
         try:
             AuditLog.objects.create(
+                gom_id=self.gom_id,
                 event_type=AuditLog.EventType.PACKAGE_SENT,
                 actor=actor,
                 actor_name=actor.get_full_name() or actor.username if actor else 'Sistema / Admin',
@@ -1353,6 +1430,7 @@ class PacoteNacional(models.Model):
         try:
             actor_display = actor.get_full_name() or actor.username if actor else (self.participant.display_name if by == 'JOINER' else 'Sistema / Admin')
             AuditLog.objects.create(
+                gom_id=self.gom_id,
                 event_type=AuditLog.EventType.PACKAGE_DELIVERED,
                 actor=actor,
                 actor_name=actor_display,
@@ -1376,6 +1454,8 @@ class PacoteNacional(models.Model):
 
 
 class ItemSlot(models.Model):
+    objects = scoped_manager('set__ceg__gom')  # Multi-GOM: dono via set__ceg
+
     class Status(models.TextChoices):
         AVAILABLE = 'AVAILABLE', 'Disponível'
         RESERVED = 'RESERVED', 'Reservado'
@@ -1622,6 +1702,8 @@ class CEGInterestVote(models.Model):
     Voto / Demonstração de interesse de um participante em um item/membro de uma CEG em fase de enquete.
     O timestamp possui precisão de microssegundos para critério de desempate inquestionável.
     """
+    objects = scoped_manager('ceg__gom')  # Multi-GOM: dono via ceg
+
     ceg = models.ForeignKey(
         'cegs.CEG',
         on_delete=models.CASCADE,
@@ -1678,6 +1760,8 @@ class CEGInterestVote(models.Model):
 
 
 class ClaimAttemptLog(models.Model):
+    objects = scoped_manager('slot__set__ceg__gom')  # Multi-GOM: dono via slot__set__ceg
+
     class Result(models.TextChoices):
         SUCCESS = 'SUCCESS', '1º Lugar (Reserva Garantida)'
         AUTO_FALLBACK = 'AUTO_FALLBACK', 'Venceu via Auto-Fallback (Próximo Set)'
@@ -1711,6 +1795,8 @@ class ClaimAttemptLog(models.Model):
 
 
 class ItemWaitingList(models.Model):
+    objects = scoped_manager('item_definition__ceg__gom')  # Multi-GOM: dono via item_definition__ceg
+
     class Status(models.TextChoices):
         WAITING = 'WAITING', 'Aguardando Vaga'
         PROMOTED = 'PROMOTED', 'Promovido para Reserva'
@@ -1756,6 +1842,11 @@ class ItemWaitingList(models.Model):
 
 
 class ItemIndividual(models.Model):
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='itens_individuais',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono do item.')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         COMPRADO = 'COMPRADO', 'Comprado'
         WAREHOUSE = 'WAREHOUSE', 'Na Warehouse (Armazém)'
@@ -1981,6 +2072,11 @@ class ItemIndividual(models.Model):
 
 
 class AuditLog(models.Model):
+    # Multi-GOM: eventos de plataforma (sem GOM) ficam com gom=None.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.SET_NULL, null=True, blank=True,
+                            related_name='audit_logs', verbose_name='GOM')
+    objects = scoped_manager('gom')
+
     class EventType(models.TextChoices):
         ACCOUNT_CREATED = 'ACCOUNT_CREATED', 'Cadastro de Participante'
         CLAIM_ATTEMPT = 'CLAIM_ATTEMPT', 'Tentativa de Claim'
@@ -1997,6 +2093,10 @@ class AuditLog(models.Model):
         SLOT_RELEASED = 'SLOT_RELEASED', 'Slot Desvinculado Manualmente'
         POLLING_VOTE = 'POLLING_VOTE', 'Voto em Enquete de Demanda'
         POLLING_CONVERTED = 'POLLING_CONVERTED', 'Conversão de Enquete em Set'
+        PII_ACCESS = 'PII_ACCESS', 'Acesso a Dados Pessoais (LGPD)'
+        DATA_EXPORT = 'DATA_EXPORT', 'Exportação de Dados pelo Titular (LGPD)'
+        DATA_DELETION_REQUEST = 'DATA_DELETION_REQUEST', 'Pedido de Exclusão de Dados (LGPD)'
+        DATA_ANONYMIZED = 'DATA_ANONYMIZED', 'Conta Anonimizada (LGPD)'
         OTHER = 'OTHER', 'Outra Operação'
 
     event_type = models.CharField('Tipo de Evento', max_length=40, choices=EventType.choices, db_index=True)
@@ -2063,6 +2163,19 @@ class AuditLog(models.Model):
         verbose_name_plural = 'Logs de Auditoria'
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        # Multi-GOM: evento sem GOM explícito herda o GOM da CEG/item/pacote relacionado.
+        if self.gom_id is None:
+            for related in (self.ceg, self.item_individual, self.pacote_nacional):
+                if related is not None and getattr(related, 'gom_id', None):
+                    self.gom_id = related.gom_id
+                    break
+            else:
+                slot = self.slot
+                if slot is not None:
+                    self.gom_id = slot.set.ceg.gom_id
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"[{self.get_event_type_display()}] {self.action_label} ({self.created_at.strftime('%d/%m/%Y %H:%M')})"
 
@@ -2072,6 +2185,11 @@ class ConfiguracaoEnvio(models.Model):
     Configuração singleton de envio nacional gerenciada pela GOM.
     Permite configurar o formulário externo (Google Forms) para coleta de endereços e regras.
     """
+    # Multi-GOM: uma configuração de envio por GOM (antes era singleton).
+    gom = models.OneToOneField('goms.Gom', on_delete=models.CASCADE, related_name='configuracao_envio',
+                               default=default_gom_id, verbose_name='GOM')
+    objects = scoped_manager('gom')
+
     link_formulario_google = models.URLField(
         'Link do Formulário de Envio (Google Forms)',
         max_length=500,
@@ -2093,9 +2211,40 @@ class ConfiguracaoEnvio(models.Model):
         return "Configuração de Envio Nacional"
 
     @classmethod
-    def get_solo(cls):
-        config, _ = cls.objects.get_or_create(id=1)
+    def get_for_gom(cls, gom):
+        """Configuração de envio do GOM (criada vazia na primeira vez)."""
+        config, _ = cls.objects.get_or_create(gom=gom)
         return config
+
+    @classmethod
+    def get_solo(cls):
+        """Legado (telas do joiner até a M3): configuração do GOM padrão (ValCegs)."""
+        config, _ = cls.objects.get_or_create(gom_id=default_gom_id())
+        return config
+
+
+class MetodoEnvio(models.Model):
+    """
+    Forma de envio nacional oferecida pelo GOM (C3, docs/GOM_CUSTOMIZATION_PLAN.md). Sem preço: o frete
+    continua cotado à mão em cada pacote. `pede_endereco=False` (ex.: retirada) dispensa o formulário.
+    """
+    gom = models.ForeignKey('goms.Gom', on_delete=models.CASCADE, related_name='metodos_envio', verbose_name='GOM')
+    nome = models.CharField('Nome', max_length=60)
+    descricao = models.CharField('Descrição', max_length=160, blank=True,
+                                 help_text='Ex.: 5 a 10 dias úteis; só pacotes de até 300 g.')
+    pede_endereco = models.BooleanField('Pede endereço', default=True,
+                                        help_text='Desligue para retirada em mãos.')
+    ativo = models.BooleanField('Ativo', default=True)
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+    objects = scoped_manager('gom')
+
+    class Meta:
+        verbose_name = 'Forma de envio'
+        verbose_name_plural = 'Formas de envio'
+        ordering = ['ordem', 'id']
+
+    def __str__(self):
+        return f'{self.nome} ({self.gom})'
 
 
 class ItemVitrine(models.Model):
@@ -2104,6 +2253,11 @@ class ItemVitrine(models.Model):
     Pode ser cadastrado diretamente pela GOM ou transferido a partir de
     slots não claimados de Caixas internacionais que chegaram na casa da GOM.
     """
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='itens_vitrine',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM dono do item de pronta entrega.')
+    objects = scoped_manager('gom')
+
     class Status(models.TextChoices):
         DISPONIVEL = 'DISPONIVEL', 'Disponível à Pronta Entrega'
         RESERVADO = 'RESERVADO', 'Reservado'
@@ -2249,6 +2403,11 @@ class GOMNotification(models.Model):
     Notificação operacional para a GOM (administração).
     Categoriza eventos em tempo real como Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros.
     """
+    # Multi-GOM: dono do registro (docs/MULTI_GOM_DESIGN.md). Views informam o GOM ativo.
+    gom = models.ForeignKey('goms.Gom', on_delete=models.PROTECT, related_name='notificacoes',
+                            default=default_gom_id, verbose_name='GOM', help_text='GOM que recebe a notificação.')
+    objects = scoped_manager('gom')
+
     class NotificationType(models.TextChoices):
         CLAIM = 'CLAIM', 'Claim / Reserva de Photocard'
         PACKAGE_REQUEST = 'PACKAGE_REQUEST', 'Solicitação de Envio Nacional'

@@ -1,0 +1,17 @@
+{% comment %}Dentro do formulário "Prontos para enviar": onde entregar (endereços do joiner, S2). Retirada não precisa.{% endcomment %}
+<fieldset class="space-y-2" aria-describedby="endereco-ajuda">
+    <legend class="ui-label mb-1.5">Entregar em</legend>
+    {% for e in enderecos %}
+        <label class="ui-well p-3 flex items-start gap-3 cursor-pointer">
+            <input type="radio" name="endereco_id" value="{{ e.id }}" class="w-5 h-5 mt-0.5 accent-[var(--ui-accent)]" {% if e.padrao %}checked{% endif %}>
+            <span class="min-w-0"><b class="block text-[15px]">{{ e.apelido|default:e.nome_destinatario }}</b>
+                <span class="ui-muted text-sm">{{ e.linha_curta }} · CEP {{ e.cep_formatado }}</span></span>
+        </label>
+    {% empty %}
+        <p class="ui-well p-3 text-sm">Você ainda não tem endereço cadastrado.</p>
+    {% endfor %}
+    <p id="endereco-ajuda" class="ui-muted text-[13px]">
+        <a href="#enderecos" class="font-semibold text-ui-accent-text hover:underline" @click="$dispatch('endereco-novo')">Adicionar endereço</a>
+        · Retirada em mãos não precisa de endereço.
+    </p>
+</fieldset>

@@ -1,0 +1,12 @@
+{% comment %}Opções da página pública (aba Perfil): seções visíveis e a CEG fixada no topo. `pagina_form`.{% endcomment %}
+<section class="ui-card p-5 space-y-4" aria-labelledby="pagina-opcoes-title">
+    <input type="hidden" name="pagina_form" value="1">
+    <div class="space-y-1">
+        <h2 id="pagina-opcoes-title" class="ui-disp text-xl">O que aparece na sua página</h2>
+        <p class="ui-muted text-sm">As CEGs abertas sempre aparecem. Escolha o resto e, se quiser, fixe uma CEG no topo.</p>
+    </div>
+    <label class="flex items-center gap-3 text-[15px] cursor-pointer">{{ pagina_form.pagina_mostrar_agendadas }}<span>{{ pagina_form.pagina_mostrar_agendadas.label }}</span></label>
+    <label class="flex items-center gap-3 text-[15px] cursor-pointer">{{ pagina_form.pagina_mostrar_vitrine }}<span>{{ pagina_form.pagina_mostrar_vitrine.label }}</span></label>
+    <div class="sm:w-2/3">{% include 'goms/partials/_profile_field.html' with field=pagina_form.pagina_ceg_destaque %}</div>
+    <p class="ui-muted text-[13px]">A CEG fixada sai do topo sozinha quando fecha.</p>
+</section>

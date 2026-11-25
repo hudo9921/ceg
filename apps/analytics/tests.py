@@ -149,6 +149,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('CEG tripleS Withmuu', ceg_titles)
 
     def test_dashboard_view_renders_successfully(self):
+        self.client.force_login(self.staff_user)
         # Acesso ao dashboard legado
         response = self.client.get('/analytics/dashboard/')
         self.assertEqual(response.status_code, 200)
@@ -330,6 +331,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertEqual(data['summary']['unique_participants'], 2)
 
     def test_analytics_new_api_endpoints(self):
+        self.client.force_login(self.staff_user)
         # API de status das CEGs
         res_cegs = self.client.get('/analytics/api/cegs/')
         self.assertEqual(res_cegs.status_code, 200)
@@ -345,6 +347,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertIn('monthly_flow', data_sales)
 
     def test_analytics_api_endpoint(self):
+        self.client.force_login(self.staff_user)
         response = self.client.get('/analytics/api/')
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -404,7 +407,7 @@ class AnalyticsServiceAndDashboardTests(TestCase):
         self.assertEqual(summary['avg_ticket_per_buyer'], 40.00)
 
         # Script do Chart.js
-        self.assertContains(res, 'chart.umd.min.js')
+        self.assertContains(res, 'vendor/chartjs-4.4.1.umd.min.js')
 
         # JSON dos gráficos no script tag
         content = res.content.decode('utf-8')

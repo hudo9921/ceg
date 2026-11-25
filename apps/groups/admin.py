@@ -4,14 +4,18 @@ from .models import KpopGroup, Era, GroupMember
 
 class GroupMemberInline(admin.TabularInline):
     model = GroupMember
+    fk_name = 'group'
     extra = 1
-    fields = ('name', 'order')
+    fields = ('name', 'name_native', 'order', 'is_former', 'solo')
+    autocomplete_fields = ('solo',)
 
 
 @admin.register(KpopGroup)
 class KpopGroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'members_count_display', 'eras_count', 'created_at')
-    search_fields = ('name',)
+    list_display = ('name', 'kind', 'popularity_rank', 'members_count_display', 'eras_count', 'source', 'created_at')
+    list_filter = ('kind', 'source', 'status')
+    search_fields = ('name', 'name_native', 'aliases', 'search_key')
+    autocomplete_fields = ('parent',)
     prepopulated_fields = {'slug': ('name',)}
     inlines = [GroupMemberInline]
 
@@ -34,8 +38,8 @@ class GroupMemberAdmin(admin.ModelAdmin):
 
 @admin.register(Era)
 class EraAdmin(admin.ModelAdmin):
-    list_display = ('name', 'group', 'release_date', 'cegs_count', 'created_at')
-    list_filter = ('group',)
+    list_display = ('name', 'group', 'kind', 'release_date', 'cegs_count', 'source', 'created_at')
+    list_filter = ('kind', 'source')
     search_fields = ('name', 'group__name')
     prepopulated_fields = {'slug': ('name',)}
 

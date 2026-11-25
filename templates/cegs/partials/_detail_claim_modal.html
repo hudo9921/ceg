@@ -4,7 +4,13 @@
      ========================================== -->
 
 <!-- 1. Barra Suspensa de Checkout / Seleção de Slots -->
+{% if is_gom_staff %}
 {% include 'cegs/partials/_detail_claim_bar.html' %}
+{% else %}
+<!-- Joiner: lista + "Pegar meus X" num toque (competitivo, DESIGN_SYSTEM §7.6) -->
+{% include 'cegs/partials/_detail_buybar.html' %}
+{% include 'cegs/partials/_detail_result_sheet.html' %}
+{% endif %}
 
 <!-- 2. Modal de Confirmação de Checkout Multi-Slot -->
 {% include 'cegs/partials/_detail_claim_bulk_modal.html' %}

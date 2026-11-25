@@ -1,18 +1,18 @@
 <!-- Estado Inicial: Nenhum Participante Selecionado -> Tabela Geral de Joiners e Dívidas -->
-<div class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 p-6 shadow-sm space-y-6">
+<div class="ui-card p-6 space-y-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div class="space-y-1">
             <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-pink-600 dark:text-cyber-neon uppercase tracking-wide">Visão Geral dos Participantes</span>
-                <span class="px-2 py-0.5 bg-slate-100 dark:bg-cyber-elevated text-slate-700 dark:text-slate-300 font-black text-[10px] rounded-full border border-slate-200 dark:border-white/5"
+                <span class="px-2 py-0.5 bg-slate-100 dark:bg-cyber-elevated font-black text-[10px] rounded-full border border-slate-200 dark:border-white/5"
                       x-text="filteredParticipants.length + ' participante(s)'">
                     {{ all_participants|length }} participante(s)
                 </span>
             </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 class="ui-disp text-xl">
                 Auditoria Financeira Geral de Joiners
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Consulte o saldo devedor de itens, fretes e taxas aduaneiras e quanto cada joiner já quitou na loja.
             </p>
         </div>

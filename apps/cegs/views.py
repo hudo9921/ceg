@@ -11,14 +11,15 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Q, Count, Prefetch
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.cache import cache
 from apps.groups.models import Era
 from .models import Caixa, CEG, CEGSet, ItemSlot, ItemWaitingList, ClaimAttemptLog, CEGItemDefinition, TipoItem, HomeBannerConfig
 from apps.participants.models import Participant, Claim
 from .services import ClaimService, CEGError, AddedToWaitingListError, enrich_cegs_with_availability
-from .creations_views import StaffRequiredMixin
+from apps.core.permissions import (PlatformAdminRequiredMixin, StaffRequiredMixin, deny_gom_permission,
+                                   has_gom_permission, pix_fields)
+from apps.goms.access import can_manage
 from .image_utils import process_image_upload, crop_image_from_coordinates
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ class HomeView(View):
         raw_open_cegs = list(
             CEG.objects.filter(
                 Q(status=CEG.Status.OPEN) | Q(status=CEG.Status.SCHEDULED, opens_at__lte=now)
-            ).select_related('era__group').order_by('-created_at')
+            ).select_related('era__group', 'gom').order_by('-created_at')
         )
         enrich_cegs_with_availability(raw_open_cegs)
 
@@ -74,7 +75,7 @@ class HomeView(View):
             CEG.objects.filter(
                 status=CEG.Status.SCHEDULED,
                 opens_at__gt=now
-            ).select_related('era__group').order_by('opens_at')
+            ).select_related('era__group', 'gom').order_by('opens_at')
         )
         enrich_cegs_with_availability(scheduled_cegs)
 
@@ -124,6 +125,13 @@ class HomeView(View):
             ceg.available_members_str = ' '.join(ceg_members)
 
         open_groups = sorted(open_groups_dict.values(), key=lambda g: g['name'])
+        # Multi-GOM: filtro e selo por GOM só aparecem quando há CEGs de mais de um GOM.
+        open_goms_dict = {}
+        for ceg in list(active_cegs) + list(full_cegs):
+            entry = open_goms_dict.setdefault(ceg.gom_id, {'id': ceg.gom_id, 'name': ceg.gom.name,
+                                                           'slug': ceg.gom.slug, 'cegs_count': 0})
+            entry['cegs_count'] += 1
+        open_goms = sorted(open_goms_dict.values(), key=lambda g: g['name'])
         open_eras = sorted(open_eras_dict.values(), key=lambda e: (e['group_name'], e['name']))
         open_members = sorted(open_members_set, key=lambda m: m.lower())
 
@@ -137,9 +145,9 @@ class HomeView(View):
             pool_tipos_item.append(t)
 
         ceg_share_map = {}
-        if request.user.is_authenticated and request.user.is_staff:
+        if getattr(request, 'is_gom_staff', False):
             for c in list(active_cegs) + list(full_cegs) + list(scheduled_cegs):
-                if hasattr(c, 'share_data'):
+                if hasattr(c, 'share_data') and can_manage(request, c):
                     ceg_share_map[c.id] = c.share_data
 
         home_banner = HomeBannerConfig.get_active()
@@ -148,6 +156,8 @@ class HomeView(View):
             'active_cegs': active_cegs,
             'full_cegs': full_cegs,
             'open_groups': open_groups,
+            'open_goms': open_goms,
+            'multi_gom': len(open_goms) > 1,
             'open_eras': open_eras,
             'open_members': open_members,
             'pool_tipos_item': pool_tipos_item,
@@ -161,8 +171,8 @@ class HomeView(View):
         })
 
 
-class UpdateHomeBannerView(StaffRequiredMixin, View):
-    """Atualiza as imagens de banner da tela inicial (Modo Claro e Modo Escuro)."""
+class UpdateHomeBannerView(PlatformAdminRequiredMixin, View):
+    """Atualiza os banners da home compartilhada (só a plataforma)."""
     def post(self, request):
         banner_config = HomeBannerConfig.objects.filter(is_active=True).first()
         if not banner_config:
@@ -216,12 +226,20 @@ class UpdateHomeBannerView(StaffRequiredMixin, View):
         return redirect('home')
 
 
+def _ceg_staff_can(request):
+    keys = {'editar': 'ceg.editar', 'excluir': 'ceg.excluir', 'pagar': 'pag.confirmar', 'pedidos': 'pedidos.editar',
+            'espera': 'ceg.espera', 'valores': 'caixas.valores'}
+    return {name: has_gom_permission(request, key) for name, key in keys.items()}
+
+
 class CEGDetailView(View):
     def get(self, request, slug):
         ceg = get_object_or_404(
-            CEG.objects.select_related('era__group', 'caixa'),
+            CEG.objects.select_related('era__group', 'caixa', 'gom'),
             slug=slug
         )
+        # Controles de gestão só para a equipe do GOM dono desta CEG.
+        manage = can_manage(request, ceg)
 
         now = timezone.now()
         if ceg.status == CEG.Status.SCHEDULED and ceg.opens_at and ceg.opens_at <= now:
@@ -289,9 +307,10 @@ class CEGDetailView(View):
                     'is_frete_nacional_paid': s.is_frete_nacional_paid,
                     'frete_inter': float(s.frete_inter) if s.frete_inter is not None else None,
                     'taxa_aduaneira': float(s.taxa_aduaneira) if s.taxa_aduaneira is not None else None,
-                    'claimed_by_id': s.claimed_by_id,
+                    'claimed_by_id': s.claimed_by_id if manage else None,
                     'claimed_by_name': s.claimed_by.display_name if s.claimed_by else '',
-                    'claimed_by_whatsapp': s.claimed_by.whatsapp if s.claimed_by else '',
+                    # Contato do joiner só para a equipe do GOM (a página é pública).
+                    'claimed_by_whatsapp': s.claimed_by.whatsapp if (manage and s.claimed_by) else '',
                     'claimed_by_social': s.claimed_by.social_handle if s.claimed_by else '',
                 })
             avulso_items_data.append({
@@ -319,14 +338,14 @@ class CEGDetailView(View):
             {'code': code, 'label': label}
             for code, label in CEGItemDefinition.ItemType.choices
         ]
-        if request.user.is_authenticated and request.user.is_staff:
-            from apps.participants.models import Participant
+        if manage:
+            gom = request.active_gom
             all_participants = list(
-                Participant.objects.all().order_by('name').values(
+                Participant.objects.for_gom(gom).order_by('name').values(
                     'id', 'name', 'username', 'whatsapp', 'social_handle'
                 )
             )
-            all_caixas = Caixa.objects.all().order_by('-created_at')
+            all_caixas = Caixa.objects.for_gom(gom).order_by('-created_at')
             all_eras = list(Era.objects.select_related('group').all().order_by('group__name', 'name'))
             status_choices = CEG.Status.choices
             tipo_item_list = list(TipoItem.objects.all().order_by('nome').values('id', 'nome', 'descricao'))
@@ -361,13 +380,11 @@ class CEGDetailView(View):
         logged_participant = None
         participant_id = request.session.get('participant_id')
         if participant_id:
-            from apps.participants.models import Participant
             try:
                 logged_participant = Participant.objects.get(id=participant_id)
             except Participant.DoesNotExist:
                 request.session.pop('participant_id', None)
         if not logged_participant and request.user.is_authenticated:
-            from apps.participants.models import Participant
             logged_participant = Participant.objects.filter(username=request.user.username).first()
 
         prefilled_name = ''
@@ -445,8 +462,15 @@ class CEGDetailView(View):
         else:
             ceg_price_display = ""
 
+        from apps.goms.rules import rules_context
+
         return render(request, 'cegs/detail.html', {
+            **rules_context(request, ceg.gom),
+            'brand_gom': ceg.gom,
             'ceg': ceg,
+            'is_gom_staff': manage,
+            # O que este admin pode fazer nesta CEG (apps.goms.permissions); o servidor confere de novo.
+            'staff_can': _ceg_staff_can(request) if manage else {},
             'sets': regular_sets,
             'avulso_set': avulso_set,
             'avulso_slots': avulso_slots,
@@ -496,7 +520,8 @@ class ClaimSlotView(View):
         )
 
         logged_id = request.session.get('participant_id')
-        is_staff = request.user.is_authenticated and request.user.is_staff
+        # poderes de staff só na CEG do próprio GOM e com permissão de editar pedidos
+        is_staff = can_manage(request, ceg) and has_gom_permission(request, 'pedidos.editar')
 
         # 1. Se não estiver logado via telefone e não for staff, bloqueia
         if not logged_id and not is_staff:
@@ -521,7 +546,9 @@ class ClaimSlotView(View):
             from apps.participants.models import Participant
             try:
                 p = Participant.objects.get(id=logged_id)
-                if not whatsapp:
+                # Joiner comum: a identidade (WhatsApp) vem SEMPRE da sessão autenticada por OTP.
+                # Somente o staff pode reservar em nome de outro número.
+                if not is_staff or not whatsapp:
                     whatsapp = p.whatsapp
                 if not name:
                     name = p.name
@@ -540,6 +567,15 @@ class ClaimSlotView(View):
                     }, status=401)
                 messages.error(request, 'Sessão expirada. Por favor, autentique novamente.')
                 return redirect(f"/me/login/?next=/ceg/{ceg.slug}/")
+            # Regras do GOM (C1): o estreante aceita antes do primeiro claim.
+            if not is_staff:
+                from apps.goms.rules import rules_gate
+                gate = rules_gate(p, ceg.gom, accept=request.POST.get('accept_rules') == '1')
+                if gate is not None:
+                    if is_ajax:
+                        return gate
+                    messages.error(request, f'Leia e aceite as regras do {ceg.gom.name} antes do primeiro claim.')
+                    return redirect('ceg_detail', slug=ceg.slug)
 
         try:
             claim = ClaimService.claim_slot(
@@ -551,10 +587,6 @@ class ClaimSlotView(View):
                 username=username,
                 bypass_status_check=is_staff,  # Admin pode reservar em qualquer status de CEG
             )
-            # Salva o participante na sessão se não for o admin realizando a reserva em nome de terceiro
-            if not is_staff:
-                request.session['participant_id'] = claim.participant.id
-
             if hasattr(claim, 'auto_fallback_from_set') and claim.auto_fallback_from_set:
                 success_msg = (
                     f"🎉 Reserva realizada com sucesso via Auto-Fallback! "
@@ -573,7 +605,7 @@ class ClaimSlotView(View):
                     'message': success_msg,
                     'claim_id': claim.id,
                     'total_price': str(claim.total_price),
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_item(),
                 })
 
             messages.success(request, success_msg)
@@ -616,7 +648,8 @@ class BulkClaimView(View):
     def post(self, request, slug):
         ceg = get_object_or_404(CEG, slug=slug)
         logged_id = request.session.get('participant_id')
-        is_staff = request.user.is_authenticated and request.user.is_staff
+        # poderes de staff só na CEG do próprio GOM e com permissão de editar pedidos
+        is_staff = can_manage(request, ceg) and has_gom_permission(request, 'pedidos.editar')
 
         if not logged_id and not is_staff:
             return JsonResponse({
@@ -651,7 +684,9 @@ class BulkClaimView(View):
             from apps.participants.models import Participant
             try:
                 p = Participant.objects.get(id=logged_id)
-                if not whatsapp:
+                # Joiner comum: a identidade (WhatsApp) vem SEMPRE da sessão autenticada por OTP.
+                # Somente o staff pode reservar em nome de outro número.
+                if not is_staff or not whatsapp:
                     whatsapp = p.whatsapp
                 if not name:
                     name = p.name
@@ -667,6 +702,12 @@ class BulkClaimView(View):
                     'redirect_url': f"/me/login/?next=/ceg/{ceg.slug}/",
                     'message': 'Sessão expirada. Por favor, autentique novamente.'
                 }, status=401)
+            # Regras do GOM (C1): o estreante aceita antes do primeiro claim; staff reservando por alguém não passa aqui.
+            if not is_staff:
+                from apps.goms.rules import rules_gate
+                gate = rules_gate(p, ceg.gom, accept=bool(body.get('accept_rules')))
+                if gate is not None:
+                    return gate
         elif is_staff and not whatsapp:
             # Fallback para staff autenticado quando nenhum joiner for selecionado na lista
             from apps.participants.models import Participant
@@ -694,7 +735,6 @@ class BulkClaimView(View):
                 social_handle = social_handle or staff_part.social_handle
 
         results = []
-        participant_saved = False
 
         # 1. Processa slots regulares por ID específico
         for slot_id in slot_ids:
@@ -727,10 +767,6 @@ class BulkClaimView(View):
                     username=username,
                     bypass_status_check=is_staff,
                 )
-                if not is_staff and not participant_saved:
-                    request.session['participant_id'] = claim.participant.id
-                    participant_saved = True
-
                 results.append({
                     'slot_id': slot_id,
                     'item_name': item_name,
@@ -740,7 +776,7 @@ class BulkClaimView(View):
                     'message': f"🎉 Reservado com sucesso!",
                     'result': 'SUCCESS',
                     'total_price': str(claim.total_price),
-                    'pix_key': ceg.pix_key,
+                    'pix_key': ceg.get_pix_key_item(),
                 })
 
             except AddedToWaitingListError as e:
@@ -811,10 +847,6 @@ class BulkClaimView(View):
                     username=username,
                     bypass_status_check=is_staff,
                 )
-                if not is_staff and not participant_saved and claims:
-                    request.session['participant_id'] = claims[0].participant.id
-                    participant_saved = True
-
                 for c in claims:
                     results.append({
                         'slot_id': c.slot.id,
@@ -826,7 +858,7 @@ class BulkClaimView(View):
                         'message': f"🎉 Unidade #{c.slot.unit_number} reservada com sucesso!",
                         'result': 'SUCCESS',
                         'total_price': str(c.total_price),
-                        'pix_key': ceg.pix_key,
+                        'pix_key': ceg.get_pix_key_item(),
                     })
 
                 if len(claims) < qty:
@@ -873,13 +905,12 @@ class BulkClaimView(View):
                 'succeeded': successes,
                 'waiting_list': waiting,
                 'failed': len(results) - successes - waiting,
-                'pix_key': ceg.pix_key,
+                'pix_key': ceg.get_pix_key_item(),
             }
         })
 
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ToggleSlotPaymentView(View):
     """
     Endpoint para o Organizador (Staff) alternar check marks de pagamento por item:
@@ -889,13 +920,15 @@ class ToggleSlotPaymentView(View):
     - Frete Nacional pago (is_frete_nacional_paid)
     """
     def post(self, request, slot_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({
                 'success': False,
                 'message': 'Acesso restrito: apenas o organizador pode alterar status de pagamento.'
             }, status=403)
+        if not has_gom_permission(request, 'pag.confirmar'):
+            return deny_gom_permission(request, as_json=True)
 
-        slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg', 'claimed_by'), id=slot_id)
+        slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg', 'claimed_by'), id=slot_id)
 
         try:
             if request.content_type == 'application/json':
@@ -947,7 +980,7 @@ class ToggleSlotPaymentView(View):
             return JsonResponse({'success': False, 'message': f'Erro ao atualizar status: {e}'}, status=500)
 
 
-class UpdateCEGFeesView(View):
+class UpdateCEGFeesView(StaffRequiredMixin, View):
     """
     Permite ao organizador atualizar valores e prazos da CEG:
     - Prazo Pagamento Item
@@ -956,12 +989,9 @@ class UpdateCEGFeesView(View):
     - Prazo Pagamento Frete Inter
     - Prazo Pagamento Taxa Aduaneira
     """
+    gom_permission = 'caixas.valores'
     def post(self, request, slug):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            messages.error(request, "Acesso restrito ao organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         def parse_dt(dt_str):
             if not dt_str:
@@ -1010,7 +1040,7 @@ class UpdateCEGFeesView(View):
         if caixa_id is not None:
             if caixa_id.strip():
                 try:
-                    caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                    caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id.strip())).first()
                     ceg.caixa = caixa
                     if caixa:
                         ceg.shipping_status = caixa.status
@@ -1065,8 +1095,9 @@ class UpdateCEGView(StaffRequiredMixin, View):
     - Prazos e Datas (Abertura/Standby, Encerramento, Prazo do item)
     - Regras / Descrição e Chave Pix / Instruções
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         try:
             title = request.POST.get('title', '').strip()
@@ -1076,12 +1107,8 @@ class UpdateCEGView(StaffRequiredMixin, View):
             opens_at_str = request.POST.get('opens_at', '').strip()
             closes_at_str = request.POST.get('closes_at', '').strip()
             prazo_item_str = request.POST.get('prazo_pagamento_item', '').strip()
-            pix_key = request.POST.get('pix_key', '').strip()
-            pix_instructions = request.POST.get('pix_instructions', '').strip()
-            pix_key_frete = request.POST.get('pix_key_frete', '').strip()
-            pix_instructions_frete = request.POST.get('pix_instructions_frete', '').strip()
-            pix_key_taxa = request.POST.get('pix_key_taxa', '').strip()
-            pix_instructions_taxa = request.POST.get('pix_instructions_taxa', '').strip()
+            (pix_key, pix_instructions, pix_key_frete, pix_instructions_frete,
+             pix_key_taxa, pix_instructions_taxa) = pix_fields(request, ['pix_key', 'pix_instructions', 'pix_key_frete', 'pix_instructions_frete', 'pix_key_taxa', 'pix_instructions_taxa'], current=ceg)
             description = request.POST.get('description', '').strip()
             banner_url_input = request.POST.get('banner_url', '').strip()
             remove_banner = request.POST.get('remove_banner') in ('1', 'true', 'on')
@@ -1098,7 +1125,7 @@ class UpdateCEGView(StaffRequiredMixin, View):
             if caixa_id is not None:
                 if caixa_id.strip():
                     try:
-                        caixa = Caixa.objects.filter(id=int(caixa_id.strip())).first()
+                        caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id.strip())).first()
                         ceg.caixa = caixa
                         if caixa:
                             ceg.shipping_status = caixa.status
@@ -1179,10 +1206,12 @@ class ManageSlotView(View):
     - Trocar participante do claim ou atribuir a um novo participante
     """
     def post(self, request, slot_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'pedidos.editar'):
+            return deny_gom_permission(request, as_json=True)
 
-        slot = get_object_or_404(ItemSlot.objects.select_related('set__ceg', 'item_definition', 'claimed_by'), id=slot_id)
+        slot = get_object_or_404(ItemSlot.objects.for_gom(request.active_gom).select_related('set__ceg', 'item_definition', 'claimed_by'), id=slot_id)
 
         try:
             if request.content_type == 'application/json':
@@ -1327,7 +1356,7 @@ class ManageSlotView(View):
             # 5. Trocar ou Atribuir Participante
             elif participant_id:
                 try:
-                    new_participant = Participant.objects.get(id=participant_id)
+                    new_participant = Participant.objects.for_gom(request.active_gom).get(id=participant_id)
                     slot.claimed_by = new_participant
                     if not slot.claimed_at:
                         slot.claimed_at = timezone.now()
@@ -1388,6 +1417,13 @@ class ManageSlotView(View):
         })
 
 
+BULK_ACTION_PERMISSIONS = {
+    'update_type': 'ceg.editar', 'update_price': 'ceg.editar',
+    'delete_items': 'ceg.excluir', 'delete_slots': 'ceg.excluir',
+    'bulk_payment': 'pag.confirmar',
+}
+
+
 class BulkManageCEGItemsView(View):
     """
     Permite ao organizador (staff) realizar alterações e exclusões em massa de itens de uma CEG:
@@ -1397,10 +1433,9 @@ class BulkManageCEGItemsView(View):
     - Excluir múltiplos slots específicos de sets
     """
     def post(self, request, slug):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         try:
             if request.content_type == 'application/json':
@@ -1411,6 +1446,9 @@ class BulkManageCEGItemsView(View):
             data = request.POST
 
         action = data.get('action')
+        # Cada ação em lote exige a própria permissão (antes tudo passava com ceg.editar).
+        if not has_gom_permission(request, BULK_ACTION_PERMISSIONS.get(action, 'ceg.editar')):
+            return deny_gom_permission(request, as_json=True)
         slot_ids = data.get('slot_ids', [])
         item_def_ids = data.get('item_def_ids', [])
 
@@ -1592,20 +1630,15 @@ class BulkManageCEGItemsView(View):
                 return JsonResponse({'success': False, 'message': 'Ação em massa não reconhecida.'}, status=400)
 
 
-class DeleteSetView(View):
+class DeleteSetView(StaffRequiredMixin, View):
     """
     Permite ao organizador (staff) excluir um Set da CEG (por exemplo, quando o Set não fechou).
     Ao excluir o Set, todos os seus slots e eventuais reservas são permanentemente removidos.
     Além disso, notifica os participantes que estavam no set via WhatsApp Gateway.
     """
+    gom_permission = 'ceg.excluir'
     def post(self, request, set_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-            messages.error(request, "Acesso restrito ao organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-
-        ceg_set = get_object_or_404(CEGSet.objects.select_related('ceg'), id=set_id)
+        ceg_set = get_object_or_404(CEGSet.objects.for_gom(request.active_gom).select_related('ceg'), id=set_id)
         ceg = ceg_set.ceg
         set_number = ceg_set.set_number
 
@@ -1751,10 +1784,12 @@ class CEGLogsAndWaitingListView(View):
     e a Lista de Espera por Item na interface da CEG.
     """
     def get(self, request, slug):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'ceg.espera'):
+            return deny_gom_permission(request, as_json=True)
 
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         # 1. Logs de tentativas nos slots desta CEG
         logs_qs = ClaimAttemptLog.objects.filter(
@@ -1815,8 +1850,9 @@ class DeleteCEGView(StaffRequiredMixin, View):
     incluindo todos os seus sets, slots, claims, fila de espera e votos.
     Requer autenticação de segurança com a senha do administrador logado.
     """
+    gom_permission = 'ceg.excluir'
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         password = ''
@@ -1857,8 +1893,9 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
     - Gera os ItemSlots no container de avulsos da CEG (set_number=0)
     - Pré-reserva opcional de participante
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         name = request.POST.get('name', '').strip()
@@ -1942,7 +1979,7 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
                 # Se houver pré-reserva selecionada, vincula ao primeiro slot
                 if participant_id and created_slots:
                     try:
-                        participant = Participant.objects.get(id=int(participant_id))
+                        participant = Participant.objects.for_gom(request.active_gom).get(id=int(participant_id))
                         first_slot = created_slots[0]
                         now = timezone.now()
                         first_slot.claimed_by = participant
@@ -1961,6 +1998,7 @@ class CreateAvulsoItemView(StaffRequiredMixin, View):
                         try:
                             from .models import AuditLog
                             AuditLog.objects.create(
+                                gom_id=ceg.gom_id,
                                 event_type=AuditLog.EventType.SLOT_ASSIGNED,
                                 actor=request.user,
                                 actor_name=request.user.get_full_name() or request.user.username,
@@ -1997,8 +2035,9 @@ class UpdateAvulsoItemView(StaffRequiredMixin, View):
     - Nome, membro, tipo_item, preço padrão, imagem
     - Quantidade de unidades (expande adicionando slots ou contrai removendo apenas slots vagos)
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug, item_def_id):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
@@ -2119,8 +2158,9 @@ class DeleteAvulsoItemView(StaffRequiredMixin, View):
     - Impede exclusão se houver pagamentos confirmados (is_item_paid=True)
     - Deleta com segurança slots e a definição do item
     """
+    gom_permission = 'ceg.editar'
     def post(self, request, slug, item_def_id):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg, is_avulso=True)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
@@ -2167,10 +2207,12 @@ class CropCEGItemPhotoView(View):
     2. Coordenadas {x, y, width, height} para recorte via Pillow no backend.
     """
     def post(self, request, slug, item_def_id):
-        if not request.user.is_authenticated or not request.user.is_staff:
+        if not getattr(request, 'is_gom_staff', False):
             return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
+        if not has_gom_permission(request, 'ceg.editar'):
+            return deny_gom_permission(request, as_json=True)
 
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         item_def = get_object_or_404(CEGItemDefinition, id=item_def_id, ceg=ceg)
 
         try:

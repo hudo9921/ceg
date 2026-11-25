@@ -1,14 +1,14 @@
 <!-- Atualizar Foto / Proof com Dropzone e Ctrl+V -->
 <div class="p-3.5 bg-slate-50 dark:bg-cyber-obsidian border border-slate-200 dark:border-white/10 rounded-2xl space-y-2.5">
     <div class="flex items-center justify-between">
-        <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+        <label class="ui-label flex items-center gap-1">
             <i data-lucide="image" class="w-3.5 h-3.5 text-pink-500"></i>
             <span>Foto / Proof do Item</span>
         </label>
-        <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Ctrl+V, Arquivo ou URL</span>
+        <span class="text-[10px] ui-muted font-medium">Ctrl+V, Arquivo ou URL</span>
     </div>
 
-    <div class="relative border-2 border-dashed rounded-xl p-3 text-center transition-all bg-white dark:bg-cyber-surface"
+    <div class="ui-card relative border-dashed p-3 text-center transition-all"
          :class="itemDragOver ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-300' : 'border-slate-300 dark:border-white/10 hover:border-slate-400'"
          @dragover.prevent="itemDragOver = true"
          @dragleave.prevent="itemDragOver = false"
@@ -33,7 +33,7 @@
             <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
                 Dê <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10 rounded text-amber-700 dark:text-amber-400 font-mono font-black">Ctrl + V</kbd> nesta tela
             </p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400">
+            <p class="text-[10px] ui-muted">
                 Ou arraste e solte / clique para selecionar:
             </p>
             <input type="file" name="foto_arquivo" accept="image/*" @change="handleFileChange($event)"
@@ -42,9 +42,9 @@
     </div>
 
     <div>
-        <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Ou cole o link direto da imagem:</label>
+        <label class="block text-[10px] font-bold ui-muted mb-1">Ou cole o link direto da imagem:</label>
         <input type="text" name="foto_url" x-model="itemImageUrl" :value="editingItem.image_url" @input="handleUrlChange()"
                placeholder="https://exemplo.com/foto-proof.jpg"
-               class="w-full bg-white dark:bg-cyber-surface border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-amber-500 transition">
+               class="ui-input w-full">
     </div>
 </div>

@@ -1,0 +1,18 @@
+{% comment %}Quem organiza esta CEG: logo, nome, apresentação e link para a página do GOM (o joiner conhece antes de pegar).{% endcomment %}
+{% with g=ceg.gom %}
+<section class="ui-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4" aria-labelledby="gom-card-title">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
+        {% include 'components/_gom_avatar.html' with g=g size="w-12 h-12" %}
+        <div class="min-w-0 space-y-0.5">
+            <p class="ui-label">Organizado por</p>
+            <h2 id="gom-card-title" class="text-lg font-bold truncate">{{ g.name }}</h2>
+            {% if g.bio %}<p class="ui-muted text-sm line-clamp-2">{{ g.bio }}</p>{% endif %}
+        </div>
+    </div>
+    <div class="flex flex-wrap gap-2 flex-none">
+        {% if g.instagram %}<span class="ui-chip !h-9 !text-[13px]">{{ g.instagram }}</span>{% endif %}
+        {% include 'conversas/partials/_botao_mensagem.html' with g=g tipo='ceg' alvo_id=ceg.id label="Dúvida sobre esta CEG" %}
+        <a href="{% url 'gom_public' g.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">Ver página do GOM <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.75"></i></a>
+    </div>
+</section>
+{% endwith %}

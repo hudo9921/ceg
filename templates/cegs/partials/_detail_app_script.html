@@ -5,11 +5,12 @@
 <script>
 function cegDetailApp() {
     return {
+         ...cegBuyMixin(),
          isStandby: {{ ceg.is_standby|yesno:'true,false' }},
          secondsLeft: {{ ceg.countdown_seconds }},
          timer: null,
-         isLoggedIn: {{ logged_participant|yesno:'true,false' }} || {{ user.is_staff|yesno:'true,false' }},
-         isAdmin: {{ user.is_staff|yesno:'true,false' }},
+         isLoggedIn: {{ logged_participant|yesno:'true,false' }} || {{ is_gom_staff|yesno:'true,false' }},
+         isAdmin: {{ is_gom_staff|yesno:'true,false' }},
          allParticipants: JSON.parse('{{ all_participants_json|default:'[]'|escapejs }}'),
          itemTypeChoices: JSON.parse('{{ item_type_choices_json|default:'[]'|escapejs }}'),
          tipoItemList: JSON.parse('{{ tipo_item_list_json|default:'[]'|escapejs }}'),
@@ -481,6 +482,10 @@ function cegDetailApp() {
                      }
                  }
                  const data = await res.json();
+                 if (res.status === 409 && data.needs_rules) {  // estreante no GOM: regras antes do claim
+                     window.dispatchEvent(new CustomEvent('rules-needed', { detail: { retry: () => this.submitBulkClaim() } }));
+                     return;
+                 }
                  if (data.success) {
                      this.bulkClaimResults = data.results;
                      this.bulkClaimSummary = data.summary;
@@ -588,6 +593,10 @@ function cegDetailApp() {
                      })
                  });
                  const data = await res.json();
+                 if (data.requires_auth) {
+                     window.location.href = data.redirect_url || '/me/login/';
+                     return;
+                 }
                  if (data.success) {
                      alert(data.message || 'Voto(s) registrado(s) com sucesso!');
                      window.location.reload();
@@ -1396,6 +1405,10 @@ function cegDetailApp() {
     body: formData
     });
     const data = await res.json();
+    if (res.status === 409 && data.needs_rules) {
+    window.dispatchEvent(new CustomEvent('rules-needed', { detail: { retry: () => this.submitClaimForm() } }));
+    return;
+    }
     if (data.success) {
     this.claimResult = { ok: true, message: data.message, pixKey: data.pix_key || null, isWaiting: data.is_waiting_list
     || false };
@@ -1677,17 +1690,22 @@ function cegDetailApp() {
                 }
             });
             if (this.secondsLeft > 0) {
-                this.timer = setInterval(() => {
-                    if (this.secondsLeft > 0) {
-                        this.secondsLeft--;
-                        if (this.secondsLeft <= 0) {
-                            this.isStandby = false;
-                            clearInterval(this.timer);
-                            window.dispatchEvent(new CustomEvent('standby-ended'));
-                        }
+                // Contagem por horário-alvo: não atrasa com aba em segundo plano nem com travadas do navegador.
+                const openAt = Date.now() + this.secondsLeft * 1000;
+                const tick = () => {
+                    const left = Math.max(0, Math.ceil((openAt - Date.now()) / 1000));
+                    if (left !== this.secondsLeft) this.secondsLeft = left;
+                    if (left <= 0) {
+                        this.isStandby = false;
+                        clearInterval(this.timer);
+                        document.removeEventListener('visibilitychange', tick);
+                        window.dispatchEvent(new CustomEvent('standby-ended'));
                     }
-                }, 1000);
+                };
+                this.timer = setInterval(tick, 250);
+                document.addEventListener('visibilitychange', tick);
             }
+            if (!this.isAdmin) this.initSavedList();
         }
     };
 }

@@ -5,30 +5,12 @@ from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 
 from apps.cegs.models import GOMNotification
 from apps.cegs.audit_service import AuditService
-
-
-class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    login_url = '/admin/login/'
-
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_staff
-
-    def handle_no_permission(self):
-        is_ajax = (
-            self.request.headers.get('x-requested-with') == 'XMLHttpRequest'
-            or 'application/json' in self.request.headers.get('accept', '')
-            or self.request.content_type == 'application/json'
-        )
-        if is_ajax:
-            if not self.request.user.is_authenticated:
-                return JsonResponse({'success': False, 'error': 'Autenticação necessária.'}, status=401)
-            return JsonResponse({'success': False, 'error': 'Acesso restrito à equipe GOM.'}, status=403)
-        return super().handle_no_permission()
+from apps.core.permissions import StaffRequiredMixin
+from apps.goms.permissions import ANY
 
 
 class GOMNotificationsView(StaffRequiredMixin, View):
@@ -36,11 +18,12 @@ class GOMNotificationsView(StaffRequiredMixin, View):
     Central de Notificações Operacionais da GOM.
     Exibe feed filtrável por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).
     """
+    gom_permission = ANY
     def get(self, request):
         # Auto-sincronização de eventos retroativos caso ainda não existam notificações
         AuditService.sync_recent_gom_notifications(50)
 
-        qs = GOMNotification.objects.select_related(
+        qs = GOMNotification.objects.for_gom(request.active_gom).select_related(
             'participant',
             'ceg__era__group',
             'slot__item_definition',
@@ -79,7 +62,7 @@ class GOMNotificationsView(StaffRequiredMixin, View):
             )
 
         # Contadores para as abas
-        all_notifs = GOMNotification.objects.all()
+        all_notifs = GOMNotification.objects.for_gom(request.active_gom)
         total_notifications = all_notifs.count()
         total_unread = all_notifs.filter(is_read=False).count()
         count_claims = all_notifs.filter(notification_type__in=[
@@ -120,13 +103,13 @@ class GOMNotificationsView(StaffRequiredMixin, View):
         })
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class MarkGOMNotificationReadView(StaffRequiredMixin, View):
     """Marca uma notificação individual como lida via AJAX."""
+    gom_permission = ANY
     def post(self, request, notification_id):
-        notif = get_object_or_404(GOMNotification, id=notification_id)
+        notif = get_object_or_404(GOMNotification.objects.for_gom(request.active_gom), id=notification_id)
         notif.mark_as_read()
-        unread_count = GOMNotification.objects.filter(is_read=False).count()
+        unread_count = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False).count()
         return JsonResponse({
             'success': True,
             'notification_id': notif.id,
@@ -138,12 +121,12 @@ class MarkGOMNotificationReadView(StaffRequiredMixin, View):
         return self.post(request, notification_id)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class MarkAllGOMNotificationsReadView(StaffRequiredMixin, View):
     """Marca todas as notificações (ou filtradas por tipo) como lidas via AJAX."""
+    gom_permission = ANY
     def post(self, request):
         action_type = (request.POST.get('action_type') or request.GET.get('action_type', 'all')).strip().lower()
-        qs = GOMNotification.objects.filter(is_read=False)
+        qs = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False)
 
         if action_type == 'claims':
             qs = qs.filter(notification_type__in=[
@@ -160,7 +143,7 @@ class MarkAllGOMNotificationsReadView(StaffRequiredMixin, View):
             qs = qs.filter(notification_type=GOMNotification.NotificationType.ACCOUNT)
 
         updated_count = qs.update(is_read=True, read_at=timezone.now())
-        remaining_unread = GOMNotification.objects.filter(is_read=False).count()
+        remaining_unread = GOMNotification.objects.for_gom(request.active_gom).filter(is_read=False).count()
 
         return JsonResponse({
             'success': True,

@@ -1,0 +1,33 @@
+{% comment %}
+Seção Pagar (P3): tudo o que o joiner deve, agrupado por GOM, cada cobrança com a chave Pix certa
+(apps/participants/charges.py). Substitui a Central de Pagamento Rápido e o Semáforo de Prazos.
+{% endcomment %}
+<section id="pagar" x-show="activeMainTab === 'pagar'" class="space-y-5 scroll-mt-20" aria-labelledby="pagar-title">
+    {% if charges.count %}
+        <header class="space-y-1.5">
+            <p class="ui-label">Pagar</p>
+            <h1 id="pagar-title" class="ui-disp text-3xl sm:text-4xl">Você deve <span class="ui-chrome ui-mono">R$ {{ charges.total|floatformat:2 }}</span></h1>
+            <p class="ui-muted text-[15px] flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>{{ charges.count }} cobrança{{ charges.count|pluralize }} em {{ charges.goms|length }} GOM{{ charges.goms|length|pluralize }}</span>
+                {% if charges.overdue_count %}
+                    <span class="ui-status ui-danger">{{ charges.overdue_count }} vencida{{ charges.overdue_count|pluralize }}</span>
+                {% elif charges.urgent_count %}
+                    <span class="ui-status ui-danger">{{ charges.urgent_count }} vence{{ charges.urgent_count|pluralize:"m" }} em até 24 h</span>
+                {% endif %}
+            </p>
+        </header>
+
+        {% for group in charges.goms %}
+            {% include 'participants/partials/_pagar_gom.html' %}
+        {% endfor %}
+
+        <p class="ui-muted text-sm">Marque o que quer pagar e gere o Pix com o valor exato. Depois de pagar, toque em "Já paguei": o GOM confere e a cobrança sai daqui.</p>
+        {% include 'participants/partials/_pagar_pix_script.html' %}
+    {% else %}
+        <div class="ui-card p-8 text-center space-y-3">
+            <h1 id="pagar-title" class="ui-disp text-2xl">Tudo pago</h1>
+            <p class="ui-muted text-[15px]">Você não tem nenhuma cobrança em aberto agora.</p>
+            <button type="button" class="ui-btn ui-btn-ghost" @click="activeMainTab = 'reservas'">Ver meus itens</button>
+        </div>
+    {% endif %}
+</section>

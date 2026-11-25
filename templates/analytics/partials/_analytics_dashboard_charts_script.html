@@ -1,5 +1,5 @@
 <!-- Scripts do Chart.js para o Dashboard de Analytics -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'vendor/chartjs-4.4.1.umd.min.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const rawData = JSON.parse('{{ chart_data_json|escapejs }}');

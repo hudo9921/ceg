@@ -2,9 +2,9 @@
      TOOLBAR DE AÇÕES EM MASSA (ORGANIZADOR)
      Sticky bar com 100% Lucide Icons
      ========================================== -->
-{% if user.is_staff %}
+{% if is_gom_staff %}
 <div x-show="selectedSlotIds.length > 0" x-cloak
-     class="sticky top-20 z-40 bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-glass border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in backdrop-blur-xl">
+     class="sticky top-20 z-40 ui-well text-white rounded-2xl p-4 shadow-glass border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 animate-fade-in backdrop-blur-xl">
     <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-xl bg-purple-500/30 flex items-center justify-center text-purple-300">
             <i data-lucide="zap" class="w-4 h-4"></i>
@@ -22,6 +22,7 @@
     </div>
 
     <div class="flex items-center gap-2 flex-wrap">
+        {% if staff_can.pagar %}
         <!-- Ações Rápidas de Pagamento em Massa (Item, Inter, Taxa) -->
         <div class="flex items-center gap-1.5 bg-black/30 p-1 rounded-xl border border-white/10 shadow-inner">
             <span class="text-[11px] text-purple-200 font-bold px-1.5 hidden sm:inline flex items-center gap-1">
@@ -29,19 +30,19 @@
                 <span>Pagar:</span>
             </span>
             <button type="button" @click="bulkSetPayment('item', true)" :disabled="bulkLoading"
-                    class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95"
+                    class="ui-btn ui-btn-primary cursor-pointer"
                     title="Marcar Item Pago para as vagas selecionadas">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 <span>Item Pago</span>
             </button>
             <button type="button" @click="bulkSetPayment('inter', true)" :disabled="bulkLoading"
-                    class="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95"
+                    class="ui-btn ui-btn-primary cursor-pointer"
                     title="Marcar Frete Inter Pago para as vagas selecionadas">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 <span>Inter Pago</span>
             </button>
             <button type="button" @click="bulkSetPayment('taxa', true)" :disabled="bulkLoading"
-                    class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95"
+                    class="ui-btn ui-btn-primary cursor-pointer"
                     title="Marcar Taxa Aduaneira Paga para as vagas selecionadas">
                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 <span>Taxa Paga</span>
@@ -56,7 +57,7 @@
                 </button>
                 <div x-show="openPayOptions" x-cloak
                      class="absolute right-0 mt-2 w-52 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 text-xs text-white space-y-1 animate-fade-in">
-                    <div class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 px-2 py-1 border-b border-slate-800">
+                    <div class="ui-label">
                         Reverter para Pendente
                     </div>
                     <button type="button" @click="bulkSetPayment('item', false); openPayOptions = false;"
@@ -77,30 +78,37 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
+        {% if staff_can.pedidos %}
         <button type="button" @click="claimSelectedSlotsAsStaff()"
-                class="px-3 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer active:scale-95"
+                class="ui-btn ui-btn-primary cursor-pointer"
                 title="Comprar / Reservar os itens selecionados">
             <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
             <span>Comprar Selecionados</span>
         </button>
+        {% endif %}
+        {% if staff_can.editar %}
         <button type="button" @click="openBulkTypeModal()"
-                class="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer active:scale-95">
+                class="ui-btn ui-btn-primary cursor-pointer">
             <i data-lucide="tag" class="w-3.5 h-3.5"></i>
             <span>Tipo em Massa</span>
         </button>
         <button type="button" @click="openBulkPriceModal()"
-                class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer active:scale-95">
+                class="ui-btn ui-btn-primary cursor-pointer">
             <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i>
             <span>Preço em Massa</span>
         </button>
+        {% endif %}
+        {% if staff_can.excluir %}
         <button type="button" @click="bulkDeleteItems()" :disabled="bulkLoading"
-                class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5 cursor-pointer active:scale-95">
+                class="ui-btn ui-btn-primary cursor-pointer">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             <span>Excluir Itens</span>
         </button>
+        {% endif %}
         <button type="button" @click="clearSelection()"
-                class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition border border-white/20 cursor-pointer flex items-center gap-1 active:scale-95">
+                class="ui-btn ui-btn-ghost cursor-pointer">
             <i data-lucide="x" class="w-3 h-3"></i>
             <span>Desmarcar</span>
         </button>

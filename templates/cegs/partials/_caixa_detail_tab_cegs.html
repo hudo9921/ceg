@@ -1,25 +1,25 @@
 <!-- Seção de CEGs Vinculadas a esta Caixa -->
 {% if is_staff_user %}
 <div x-show="currentTab === 'all' || currentTab === 'cegs'"
-     class="bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-sm p-6 sm:p-8 space-y-6">
+     class="ui-card p-6 sm:p-8 space-y-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/10">
         <div class="space-y-1">
             <div class="flex items-center gap-2">
-                <h2 class="text-lg font-black text-slate-900 dark:text-white">
+                <h2 class="ui-disp text-xl">
                     CEGs Consolidadas nesta Caixa
                 </h2>
                 <span class="bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 text-xs font-black px-2.5 py-0.5 rounded-full font-mono">
                     {{ cegs|length }} CEG(s)
                 </span>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Todas as compras em grupo abaixo estão embaladas e sendo transportadas nesta remessa.
             </p>
         </div>
 
         {% if cegs_sem_caixa %}
             <button type="button" @click="linkModalOpen = true"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold transition shadow-xs cursor-pointer">
+                    class="ui-btn ui-btn-ghost cursor-pointer">
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
                 <span>Vincular Outras CEGs</span>
             </button>
@@ -46,7 +46,7 @@
                             <td class="py-3 px-3 w-16">
                                 <div class="relative group w-12 h-12">
                                     {% if ceg.display_image_url %}
-                                        <img src="{{ ceg.display_image_url }}"
+                                        <img loading="lazy" decoding="async" src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}"
                                              alt="{{ ceg.title }}"
                                              @click="openZoom('{{ ceg.display_image_url }}')"
                                              class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer group-hover:opacity-80 transition">
@@ -55,7 +55,7 @@
                                             <i data-lucide="zoom-in" class="w-4 h-4"></i>
                                         </div>
                                     {% else %}
-                                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-2xs">
+                                        <div class="w-12 h-12 rounded-xl bg-ui-accent text-white flex items-center justify-center text-white text-lg font-black shadow-2xs">
                                             <i data-lucide="disc" class="w-6 h-6"></i>
                                         </div>
                                     {% endif %}
@@ -63,25 +63,21 @@
                             </td>
 
                             <td class="py-3 px-3">
-                                <div class="font-bold text-slate-900 dark:text-white leading-snug">
+                                <div class="font-bold leading-snug">
                                     <a href="{% url 'ceg_detail' slug=ceg.slug %}" class="hover:text-sky-600 dark:hover:text-sky-400 hover:underline" title="{{ ceg.title }}">
                                         {{ ceg.display_title }}
                                     </a>
                                 </div>
-                                <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
-                                    <span class="font-bold text-slate-700 dark:text-slate-300">{{ ceg.era.group.name }}</span>
+                                <div class="text-[11px] ui-muted flex items-center gap-1.5 mt-0.5">
+                                    <span class="font-bold">{{ ceg.era.group.name }}</span>
                                     {% if ceg.era.name %}
                                         <span>&bull;</span>
-                                        <span class="text-slate-500 dark:text-slate-400">{{ ceg.era.name }}</span>
+                                        <span class="ui-muted">{{ ceg.era.name }}</span>
                                     {% endif %}
                                 </div>
                             </td>
                             <td class="py-3 px-3">
-                                <span class="inline-block text-[10px] font-black px-2 py-0.5 rounded-full
-                                    {% if ceg.status == 'OPEN' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
-                                    {% elif ceg.status == 'CLOSED' %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300
-                                    {% elif ceg.status == 'SCHEDULED' %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300
-                                    {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                                <span class="inline-block text-[10px] font-black px-2 py-0.5 rounded-full {% if ceg.status == 'OPEN' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 {% elif ceg.status == 'CLOSED' %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 {% elif ceg.status == 'SCHEDULED' %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
                                     {{ ceg.get_status_display }}
                                 </span>
                             </td>
@@ -125,12 +121,12 @@
             <div class="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-500 mx-auto flex items-center justify-center">
                 <i data-lucide="archive" class="w-6 h-6"></i>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
+            <p class="text-xs ui-muted">
                 Nenhuma CEG vinculada a esta caixa ainda.
             </p>
             {% if cegs_sem_caixa %}
                 <button type="button" @click="linkModalOpen = true"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition shadow-sm cursor-pointer">
+                        class="ui-btn ui-btn-primary cursor-pointer">
                     <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
                     <span>Vincular Primeira CEG</span>
                 </button>

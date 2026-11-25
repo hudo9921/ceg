@@ -1,0 +1,76 @@
+{% comment %}
+Um GOM na seção Pagar: total e cada cobrança (item, frete, taxa, frete nacional).
+GOM com Pix por QR configurado (S1): o joiner marca o que quer pagar e gera o Pix com o valor exato (pixPay).
+Sem isso, cada linha mostra a chave Pix para copiar, como antes.
+{% endcomment %}
+<section class="ui-card overflow-hidden" aria-label="Cobranças de {{ group.gom.name }}"
+         {% if group.pix_ready %}x-data="pixPay({{ group.gom.id }})" data-refs="{% for c in group.cobrancas %}{{ c.referencia }} {% endfor %}"
+         x-init="const r = new URLSearchParams(location.search).get('pix'); if (r && $el.dataset.refs.split(' ').includes(r)) abrir(r)"{% endif %}>
+    <div class="flex items-center gap-3 p-4 sm:p-5">
+        {% include 'components/_gom_avatar.html' with g=group.gom size="w-10 h-10" %}
+        <div class="flex-1 min-w-0">
+            <h2 class="ui-disp text-xl truncate"><a href="{% url 'gom_public' group.gom.slug %}" class="no-underline text-ui-text hover:underline" title="Ver a página de {{ group.gom.name }}">{{ group.gom.name }}</a></h2>
+            <p class="ui-muted text-sm">{{ group.count }} cobrança{{ group.count|pluralize }}</p>
+        </div>
+        <span class="ui-mono text-xl font-bold">R$ {{ group.total|floatformat:2 }}</span>
+    </div>
+
+    {% if group.pix_ready and group.cobrancas %}{% include 'participants/partials/_pagar_pix_andamento.html' %}{% endif %}
+
+    {% for line in group.lines %}
+        <div class="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-4 border-t" style="border-color: var(--ui-line)">
+            {% if line.selectable %}
+                <input type="checkbox" class="w-5 h-5 flex-none accent-[var(--ui-accent)] cursor-pointer" value="{{ line.group }}" data-amount="{{ line.amount|stringformat:'.2f' }}"
+                       x-model="picked" aria-label="Pagar {{ line.kind_label }}: {{ line.title }}">
+            {% endif %}
+            <div class="flex-[1_1_240px] min-w-0 space-y-1">
+                <p class="ui-label">{{ line.kind_label }}{% if line.count > 1 %} · {{ line.count }} itens{% endif %}</p>
+                {% if line.url %}
+                    <a href="{{ line.url }}" class="block text-base font-semibold hover:underline">{{ line.title }}</a>
+                {% else %}
+                    <p class="text-base font-semibold">{{ line.title }}</p>
+                {% endif %}
+                {% if line.in_charge %}
+                    <p class="ui-status ui-warn">Pagamento em análise</p>
+                {% else %}
+                    <p class="ui-status {% if line.urgency == 'VENCIDO' or line.urgency == 'HOJE' %}ui-danger{% elif line.urgency == 'EM_BREVE' %}ui-warn{% else %}ui-muted{% endif %}">{{ line.due_label }}</p>
+                {% endif %}
+            </div>
+            {% if not line.copy_mode %}
+                <span class="ui-mono text-[17px] font-bold">R$ {{ line.amount|floatformat:2 }}</span>
+            {% else %}
+                <div class="ui-well flex-[1_1_260px] min-w-0 flex items-center gap-3 py-2 pl-3.5 pr-2">
+                    <span class="flex-1 min-w-0">
+                        <span class="block ui-mono text-[17px] font-bold">R$ {{ line.amount|floatformat:2 }}</span>
+                        {% if line.pix_key %}
+                            <span class="block ui-mono ui-muted text-xs truncate select-all" title="{{ line.pix_key }}">Pix: {{ line.pix_key }}</span>
+                        {% else %}
+                            <span class="block ui-muted text-xs">Chave Pix ainda não cadastrada. A GOM vai te passar.</span>
+                        {% endif %}
+                    </span>
+                    {% if line.pix_key %}
+                        <button type="button" class="ui-btn ui-btn-sm flex-none" style="background: var(--ui-surface); color: var(--ui-text)"
+                                data-pix="{{ line.pix_key }}"
+                                @click="copyPix($el.dataset.pix, 'charge-{{ forloop.parentloop.counter }}-{{ forloop.counter }}')"
+                                aria-label="Copiar chave Pix: {{ line.kind_label }}"
+                                x-text="copiedPixCegId === 'charge-{{ forloop.parentloop.counter }}-{{ forloop.counter }}' ? 'Copiado!' : 'Copiar Pix'">Copiar Pix</button>
+                    {% endif %}
+                </div>
+                {% if line.pix_instructions %}
+                    <p class="basis-full ui-muted text-[13px] whitespace-pre-line">{{ line.pix_instructions }}</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    {% if group.pix_ready %}
+        <div x-show="picked.length" x-cloak class="sticky bottom-20 lg:bottom-4 m-3 ui-card p-3 flex flex-wrap items-center gap-3" role="status">
+            <span class="flex-1 min-w-0">
+                <span class="block ui-mono text-xl font-bold" x-text="'R$ ' + brl(totalPicked())"></span>
+                <span class="block ui-muted text-[13px]" x-text="picked.length + (picked.length === 1 ? ' cobrança escolhida' : ' cobranças escolhidas')"></span>
+            </span>
+            <button type="button" class="ui-btn ui-btn-primary" @click="gerar()" :disabled="busy">Gerar Pix</button>
+        </div>
+        {% include 'participants/partials/_pagar_pix_sheet.html' %}
+    {% endif %}
+</section>

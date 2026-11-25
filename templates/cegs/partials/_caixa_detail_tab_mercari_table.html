@@ -19,7 +19,7 @@
                     <!-- Foto / Proof -->
                     <td class="py-3 px-3">
                         <div class="relative group w-12 h-12">
-                            <img src="{{ item.image_display_url }}"
+                            <img loading="lazy" decoding="async" src="{{ item.image_display_url|thumb }}" data-full="{{ item.image_display_url }}"
                                  alt="{{ item.nome }}"
                                  @click="openZoom('{{ item.image_display_url }}')"
                                  class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-white/10 shadow-2xs cursor-pointer group-hover:opacity-80 transition">
@@ -33,7 +33,7 @@
                     <!-- Nome & Link do Pedido -->
                     <td class="py-3 px-3">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-bold text-slate-900 dark:text-white">{{ item.nome }}</span>
+                            <span class="font-bold">{{ item.nome }}</span>
                             {% if item.tipo_item %}
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                                     <i data-lucide="tag" class="w-2.5 h-2.5"></i>
@@ -57,8 +57,8 @@
 
                     <!-- Comprador -->
                     <td class="py-3 px-3">
-                        <div class="font-bold text-slate-900 dark:text-white">{{ item.comprador.display_name }}</div>
-                        <div class="flex flex-col text-[10px] text-slate-500 dark:text-slate-400">
+                        <div class="font-bold">{{ item.comprador.display_name }}</div>
+                        <div class="flex flex-col text-[10px] ui-muted">
                             {% if item.comprador.social_handle %}
                                 <span class="text-pink-600 dark:text-pink-400 font-semibold">{{ item.comprador.social_handle }}</span>
                             {% endif %}
@@ -77,15 +77,7 @@
 
                     <!-- Status do Item -->
                     <td class="py-3 px-3">
-                        <span class="inline-block text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider
-                            {% if item.status == 'COMPRADO' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300
-                            {% elif item.status == 'WAREHOUSE' %}bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300
-                            {% elif item.status == 'EM_CONSOLIDACAO' %}bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300
-                            {% elif item.status == 'ENVIADO' %}bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300
-                            {% elif item.status == 'NO_BRASIL' %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300
-                            {% elif item.status == 'NA_GOM' %}bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300
-                            {% elif item.status == 'FINALIZADO' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
-                            {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                        <span class="ui-label">
                             {{ item.get_status_display }}
                         </span>
                     </td>
@@ -94,10 +86,9 @@
                     <td class="py-3 px-3">
                         {% if item.frete_inter %}
                             <div class="space-y-1">
-                                <span class="font-bold text-slate-900 dark:text-white block font-mono">R$ {{ item.frete_inter }}</span>
+                                <span class="font-bold block font-mono">R$ {{ item.frete_inter }}</span>
                                 <button type="button" @click="togglePayment({{ item.id }}, 'frete')"
-                                        class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer flex items-center gap-1
-                                        {% if item.frete_inter_pago %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200{% else %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-200{% endif %}">
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer flex items-center gap-1 {% if item.frete_inter_pago %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200{% else %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-200{% endif %}">
                                     <span>{% if item.frete_inter_pago %}✓ Frete Pago{% else %}⏳ Falta Frete{% endif %}</span>
                                 </button>
                                 {% if item.prazo_frete_inter %}
@@ -113,10 +104,9 @@
                     <td class="py-3 px-3">
                         {% if item.taxa_aduaneira %}
                             <div class="space-y-1">
-                                <span class="font-bold text-slate-900 dark:text-white block font-mono">R$ {{ item.taxa_aduaneira }}</span>
+                                <span class="font-bold block font-mono">R$ {{ item.taxa_aduaneira }}</span>
                                 <button type="button" @click="togglePayment({{ item.id }}, 'taxa')"
-                                        class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer flex items-center gap-1
-                                        {% if item.taxa_aduaneira_paga %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200{% else %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-200{% endif %}">
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer flex items-center gap-1 {% if item.taxa_aduaneira_paga %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200{% else %}bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-200{% endif %}">
                                     <span>{% if item.taxa_aduaneira_paga %}✓ Taxa Paga{% else %}⏳ Falta Taxa{% endif %}</span>
                                 </button>
                                 {% if item.prazo_taxa_aduaneira %}
@@ -132,7 +122,7 @@
                     <td class="py-3 px-3 text-right space-x-1 whitespace-nowrap">
                         <button type="button"
                                 @click="openEditItem({{ item.id }})"
-                                class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-lg transition cursor-pointer text-[11px]"
+                                class="ui-btn ui-btn-ghost cursor-pointer"
                                 title="Editar Detalhes do Item">
                             <i data-lucide="edit" class="w-3 h-3"></i>
                             <span>Editar</span>

@@ -1,71 +1,23 @@
-<!-- GRID VISUAL DE PHOTOCARDS E ITENS PRONTOS PARA ENVIO NA CAIXINHA -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+{% comment %}Photocards prontos na caixinha: tocar escolhe/desescolhe para o pedido de envio (ui-pick).{% endcomment %}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4" role="group" aria-label="Itens prontos para envio">
     {% for item in itens_caixinha_prontos %}
-    <div class="border rounded-2xl p-3.5 transition cursor-pointer flex items-start gap-3 select-none group"
-         @click="toggleCaixinhaItem('{{ item.uid }}')"
-         :class="selectedCaixinhaUids.includes('{{ item.uid }}') 
-             ? 'border-pink-400 bg-pink-50/40 dark:bg-pink-950/20 dark:border-pink-500/50 shadow-xs ring-1 ring-pink-300 dark:ring-pink-500/30' 
-             : 'border-slate-200/80 dark:border-white/10 bg-white dark:bg-cyber-surface hover:bg-slate-50/60 dark:hover:bg-white/[0.03]'">
-        
-        <!-- Checkbox de Seleção -->
-        <input type="checkbox" :value="'{{ item.uid }}'"
-               :checked="selectedCaixinhaUids.includes('{{ item.uid }}')"
-               @click.stop="toggleCaixinhaItem('{{ item.uid }}')"
-               class="mt-1 rounded text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer">
-
-        <!-- Miniatura Vertical do Photocard com Botão de Preview/Zoom -->
-        <div class="w-16 h-24 aspect-[2/3] rounded-xl overflow-hidden border border-slate-200/80 dark:border-white/10 bg-slate-100 dark:bg-white/5 shrink-0 relative group/photo shadow-2xs">
-            {% if item.imagem %}
-            <img src="{{ item.imagem }}" alt="{{ item.titulo }}" loading="lazy"
-                 class="w-full h-full object-cover transition-transform duration-300 group-hover/photo:scale-105">
-            <button type="button"
-                    @click.stop="openPreview({ title: '{{ item.titulo|escapejs }}', image: '{{ item.imagem|escapejs }}', ceg: '{{ item.origem|escapejs }}', price: '{{ item.preco }}', set: '{{ item.set_number|default:'' }}' })"
-                    class="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
-                    title="Ampliar foto do photocard">
-                <i data-lucide="zoom-in" class="w-4 h-4" stroke-width="1.75"></i>
-            </button>
-            {% else %}
-            <div class="w-full h-full flex flex-col items-center justify-center text-pink-400 bg-pink-50/50 dark:bg-pink-950/30 p-1 text-center">
-                <i data-lucide="sparkles" class="w-5 h-5 opacity-70 mb-1" stroke-width="1.75"></i>
-                <span class="text-[9px] font-bold text-slate-500 dark:text-cyber-silver leading-tight line-clamp-2">{{ item.titulo }}</span>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Detalhes do Photocard / Item -->
-        <div class="flex-1 min-w-0 space-y-1">
-            <div class="flex items-center justify-between gap-1">
-                <span class="px-1.5 py-0.2 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-cyber-silver text-[10px] font-black rounded uppercase">
-                    {{ item.tipo_item }}
+        <button type="button" class="ui-pick is-free text-left" :class="selectedCaixinhaUids.includes('{{ item.uid }}') && 'is-on'"
+                :aria-pressed="selectedCaixinhaUids.includes('{{ item.uid }}').toString()" @click="toggleCaixinhaItem('{{ item.uid }}')">
+            <span class="ui-pc block">
+                {% if item.imagem %}
+                    <img src="{{ item.imagem|thumb }}" data-full="{{ item.imagem }}" alt="" loading="lazy" decoding="async">
+                {% else %}
+                    <span class="ui-pc-empty text-sm font-bold px-2 text-center">{{ item.integrante|default:item.titulo }}</span>
+                {% endif %}
+                <span class="ui-tick" x-show="selectedCaixinhaUids.includes('{{ item.uid }}')" x-cloak aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
                 </span>
-                <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                    <i data-lucide="check" class="w-3 h-3" stroke-width="1.75"></i>
-                    <span>Pronto</span>
-                </span>
-            </div>
-
-            <h4 class="text-xs font-black text-slate-900 dark:text-white truncate" title="{{ item.titulo }}">
-                {{ item.titulo }}
-            </h4>
-
-            {% if item.integrante %}
-            <div class="text-[11px] font-bold text-pink-600 dark:text-pink-400 truncate flex items-center gap-1">
-                <i data-lucide="user" class="w-3 h-3 shrink-0" stroke-width="1.75"></i>
-                <span>{{ item.integrante }}</span>
-            </div>
-            {% endif %}
-
-            <p class="text-[11px] text-slate-500 dark:text-cyber-silver truncate flex items-center gap-1" title="{{ item.origem }}">
-                <i data-lucide="disc-3" class="w-3 h-3 text-slate-400 shrink-0" stroke-width="1.75"></i>
-                <span class="truncate">{{ item.origem }}</span>
-            </p>
-
-            {% if item.set_number %}
-            <span class="inline-block text-[9px] font-bold text-slate-400 dark:text-cyber-silver bg-slate-100 dark:bg-white/5 px-1.5 py-0.2 rounded">
-                Set #{{ item.set_number }}
             </span>
-            {% endif %}
-        </div>
-    </div>
+            <span class="block px-1 pb-1">
+                <span class="block text-[15px] font-bold truncate" title="{{ item.titulo }}">{{ item.integrante|default:item.titulo }}</span>
+                <span class="block ui-muted text-[13px] truncate" title="{{ item.origem }}">{% if item.set_number %}Set {{ item.set_number }} · {% endif %}{{ item.origem }}</span>
+                {% if goms_list|length > 1 %}<span class="block ui-label truncate">{{ item.gom_name }}</span>{% endif %}
+            </span>
+        </button>
     {% endfor %}
 </div>

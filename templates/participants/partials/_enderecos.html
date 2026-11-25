@@ -1,0 +1,30 @@
+{% comment %}
+Seus endereços (S2): lista, editar, excluir e adicionar (folha com busca pelo CEP). Usado na aba Envios.
+Os dados vão criptografados para o banco; o GOM só vê a cópia no pacote, e cada visualização fica na Auditoria.
+{% endcomment %}
+<section id="enderecos" class="ui-card p-4 sm:p-5 space-y-3 scroll-mt-20" aria-labelledby="enderecos-title">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h2 id="enderecos-title" class="ui-disp text-xl">Seus endereços</h2>
+            <p class="ui-muted text-sm">Para onde os GOMs mandam seus pacotes. Só a equipe do GOM vê, e só no pacote.</p>
+        </div>
+        <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="$dispatch('endereco-novo')">
+            <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i>Adicionar</button>
+    </div>
+    {% for e in enderecos %}
+        <div class="ui-well p-3 flex flex-wrap items-start gap-3">
+            <span class="flex-1 min-w-[200px]">
+                <b class="block">{{ e.apelido|default:"Endereço" }}{% if e.padrao %} <span class="ui-status ui-ok !text-[12px]">principal</span>{% endif %}</b>
+                <span class="block ui-muted text-sm">{{ e.nome_destinatario }} · {{ e.linha_curta }} · CEP {{ e.cep_formatado }}</span>
+            </span>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm"
+                    data-endereco="{{ e.id }}|{{ e.apelido }}|{{ e.nome_destinatario }}|{{ e.cep_formatado }}|{{ e.logradouro }}|{{ e.numero }}|{{ e.complemento }}|{{ e.bairro }}|{{ e.cidade }}|{{ e.uf }}|{{ e.padrao|yesno:'1,' }}"
+                    @click="$dispatch('endereco-editar', $el.dataset.endereco)">Editar</button>
+            <form method="post" action="{% url 'endereco_excluir' e.id %}" onsubmit="return confirm('Excluir este endereço?')">
+                {% csrf_token %}<button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm ui-danger">Excluir</button>
+            </form>
+        </div>
+    {% empty %}
+        <p class="ui-muted text-sm">Nenhum endereço ainda. Cadastre um para pedir o envio pelo correio.</p>
+    {% endfor %}
+</section>

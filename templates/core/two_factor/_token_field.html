@@ -1,0 +1,10 @@
+{% comment %}Campo do código de 6 dígitos (ou código de recuperação quando allow_backup) e o botão de envio.{% endcomment %}
+<label for="token" class="block space-y-1.5">
+    <span class="ui-label">{% if allow_backup %}Código do aplicativo ou de recuperação{% else %}Código de 6 dígitos do aplicativo{% endif %}</span>
+    <input id="token" type="text" name="token" required autofocus autocomplete="one-time-code"
+           {% if allow_backup %}maxlength="16" inputmode="text"{% else %}maxlength="6" inputmode="numeric" pattern="[0-9]{6}"{% endif %}
+           placeholder="{% if allow_backup %}123456 ou abcd2345{% else %}000000{% endif %}"
+           class="ui-input w-full text-center ui-mono !text-2xl !min-h-[60px] tracking-[.2em]">
+</label>
+<input type="hidden" name="next" value="{{ next_url }}">
+<button type="submit" class="ui-btn ui-btn-primary w-full">{{ submit_label|default:"Verificar" }}</button>

@@ -21,16 +21,39 @@ class ImageSizeError(ValueError):
     pass
 
 
+class InvalidImageError(ImageSizeError):
+    """
+    Arquivo enviado não é uma imagem que o Pillow consegue abrir.
+    Herda de ImageSizeError para que os handlers existentes já exibam a mensagem ao usuário.
+    """
+    pass
+
+
+INVALID_IMAGE_MESSAGE = "O arquivo enviado não é uma imagem válida (use JPG, PNG, WebP ou GIF)."
+
+
+def _saved_with_thumbnail(saved_path: str, image_bytes: bytes) -> str:
+    """URL pública do arquivo salvo, já com a miniatura de listas gerada (apps.core.thumbnails)."""
+    from apps.core.thumbnails import ensure_thumbnail
+
+    url = default_storage.url(saved_path)
+    ensure_thumbnail(url, raw=image_bytes)
+    return url
+
+
 def _optimize_image_bytes(raw_bytes: bytes, max_dimension: int = 1920, quality: int = 85) -> tuple[bytes, str]:
     """
     Otimiza e redimensiona imagem usando Pillow.
     - Corrige rotação/orientação com EXIF (fotos tiradas em celular de lado/de cabeça para baixo).
     - Redimensiona proporcionalmente fotos gigantes (máx 1920px no maior lado).
     - Converte para JPEG ou WebP com compressão de alta qualidade.
-    - Se falhar ou Pillow indisponível, devolve os bytes originais com extensão segura.
+    - Arquivos que o Pillow não abre são recusados (InvalidImageError): nunca salvamos
+      bytes arbitrários no storage.
     """
-    if not HAS_PIL or not raw_bytes:
-        return raw_bytes, '.png'
+    if not raw_bytes:
+        raise InvalidImageError(INVALID_IMAGE_MESSAGE)
+    if not HAS_PIL:
+        raise InvalidImageError("Processamento de imagens indisponível no servidor (Pillow ausente).")
 
     try:
         with Image.open(io.BytesIO(raw_bytes)) as img:
@@ -58,8 +81,8 @@ def _optimize_image_bytes(raw_bytes: bytes, max_dimension: int = 1920, quality: 
 
             return out_io.getvalue(), ext
     except Exception as e:
-        logger.warning(f"Otimização Pillow falhou, preservando bytes originais: {e}")
-        return raw_bytes, '.png'
+        logger.warning(f"Upload recusado: arquivo não é uma imagem válida ({e})")
+        raise InvalidImageError(INVALID_IMAGE_MESSAGE) from e
 
 
 def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallback_url='', max_size_mb: int = 5) -> str:
@@ -97,7 +120,9 @@ def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallb
             optimized_bytes, ext = _optimize_image_bytes(raw_bytes)
             safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
             saved_path = default_storage.save(safe_filename, ContentFile(optimized_bytes))
-            return default_storage.url(saved_path)
+            return _saved_with_thumbnail(saved_path, optimized_bytes)
+        except ImageSizeError:
+            raise
         except Exception as e:
             logger.error(f"Erro ao salvar arquivo de imagem no storage: {e}")
 
@@ -123,7 +148,7 @@ def process_image_upload(file_obj=None, base64_str=None, folder='uploads', fallb
                 optimized_bytes, ext = _optimize_image_bytes(decoded_bytes)
                 safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
                 saved_path = default_storage.save(safe_filename, ContentFile(optimized_bytes))
-                return default_storage.url(saved_path)
+                return _saved_with_thumbnail(saved_path, optimized_bytes)
         except ImageSizeError:
             raise
         except Exception as e:
@@ -173,15 +198,10 @@ def crop_image_from_coordinates(
                 logger.warning(f"Falha ao decodificar base64 em crop_image: {e}")
         elif cleaned_src.startswith('http://') or cleaned_src.startswith('https://'):
             try:
-                import urllib.request
-                import ssl
-                req = urllib.request.Request(cleaned_src, headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+                from apps.core.net import fetch_public_url
+                raw_bytes = fetch_public_url(cleaned_src, timeout=15, headers={
+                    'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8'
                 })
-                ctx = ssl.create_default_context()
-                with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
-                    raw_bytes = resp.read()
             except Exception as e:
                 logger.warning(f"Falha ao baixar imagem remota para crop ({cleaned_src}): {e}")
         else:
@@ -231,7 +251,7 @@ def crop_image_from_coordinates(
             prefix = 'item_'
             safe_filename = f"{folder}/{prefix}{uuid.uuid4().hex[:8]}_{int(time.time())}{ext}"
             saved_path = default_storage.save(safe_filename, ContentFile(out_io.getvalue()))
-            return default_storage.url(saved_path)
+            return _saved_with_thumbnail(saved_path, out_io.getvalue())
     except Exception as e:
         logger.error(f"Erro ao recortar imagem com Pillow: {e}")
         return ''

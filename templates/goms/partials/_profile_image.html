@@ -1,0 +1,10 @@
+{% comment %}Imagem do perfil do GOM: arquivo (tem prioridade) ou link.{% endcomment %}
+<div class="space-y-1.5">
+    <span class="ui-label">{{ label }}</span>
+    {% if current %}
+        <img src="{{ current|thumb }}" data-full="{{ current }}" alt="{{ label }} atual" class="h-16 rounded-ui-ctl object-cover" loading="lazy" decoding="async">
+    {% endif %}
+    <input type="file" name="{{ input_name }}" accept="image/*" class="ui-input w-full !py-2 text-sm" aria-label="Enviar {{ label|lower }}">
+    {{ field }}
+    <span class="block ui-muted text-[13px]">Envie um arquivo (até 5 MB) ou cole o link da imagem.</span>
+</div>

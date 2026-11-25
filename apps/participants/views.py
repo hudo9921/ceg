@@ -8,21 +8,17 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
+from .charges import attach_pix_state, build_charges
+from .models import UF_CHOICES
+from .items_panel import build_items, stage_options
+from .gom_panel import gom_pix_defaults, goms_summary, mercari_pix_by_gom, shipping_configs_by_gom
 from .services import BulkParticipantService
 from apps.auth_otp.models import WhatsAppOTP
 from apps.auth_otp.services import OTPService
-
-
-class StaffRequiredMixin(AccessMixin):
-    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-        return super().dispatch(request, *args, **kwargs)
+from .session_auth import (
+    login_participant, logout_participant, safe_next_url, get_client_ip, can_expose_dev_otp,
+)
+from apps.core.permissions import StaffRequiredMixin
 
 
 class BulkParticipantCreateView(StaffRequiredMixin, View):
@@ -31,11 +27,13 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
     Permite colar linhas (Excel, Sheets, CSV, TSV) ou usar grade dinâmica interativa,
     com suporte robusto a números brasileiros (DDD 9 dígitos) e internacionais (+DDI).
     """
+    gom_permission = 'pedidos.editar'
 
     def get(self, request):
-        recent_participants = Participant.objects.all().order_by('-created_at')[:25]
-        total_participants = Participant.objects.count()
-        with_twitter = Participant.objects.exclude(social_handle='').count()
+        known = Participant.objects.for_gom(request.active_gom)
+        recent_participants = known.order_by('-created_at')[:25]
+        total_participants = known.count()
+        with_twitter = known.exclude(social_handle='').count()
 
         return render(request, 'participants/bulk_create.html', {
             'recent_participants': recent_participants,
@@ -95,6 +93,7 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
             items=items,
             update_existing=update_existing,
             default_ddi=default_ddi,
+            gom=request.active_gom,
         )
 
         created_c = report['created_count']
@@ -127,11 +126,9 @@ class BulkParticipantCreateView(StaffRequiredMixin, View):
 
 class LoginOtpView(View):
     def get(self, request):
-        next_url = request.GET.get('next', '').strip()
+        next_url = safe_next_url(request, request.GET.get('next', ''), default='')
         if request.session.get('participant_id'):
-            if next_url and next_url.startswith('/'):
-                return redirect(next_url)
-            return redirect('my_claims')
+            return redirect(next_url or 'my_claims')
         phone = request.GET.get('phone', '').strip()
         step = request.GET.get('step', 'phone')
 
@@ -142,7 +139,7 @@ class LoginOtpView(View):
             formatted_phone_display = dummy.formatted_phone
 
         dev_code = None
-        if settings.DEBUG and step == 'verify' and phone:
+        if can_expose_dev_otp() and step == 'verify' and phone:
             cleaned = clean_phone_number(phone)
             latest = WhatsAppOTP.objects.filter(phone=cleaned, is_used=False).first()
             if latest and latest.is_valid():
@@ -159,13 +156,18 @@ class LoginOtpView(View):
     def post(self, request):
         action = request.POST.get('action')
         phone = request.POST.get('phone', '').strip()
-        next_url = request.POST.get('next', '').strip() or request.GET.get('next', '').strip()
+        next_url = safe_next_url(
+            request, request.POST.get('next', '') or request.GET.get('next', ''), default=''
+        )
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if action == 'send_otp':
-            success, msg, dev_code = OTPService.send_otp(phone)
+            success, msg, dev_code = OTPService.send_otp(phone, ip_address=get_client_ip(request))
             if is_ajax:
-                return JsonResponse({'success': success, 'message': msg, 'dev_code': dev_code})
+                payload = {'success': success, 'message': msg}
+                if can_expose_dev_otp():
+                    payload['dev_code'] = dev_code
+                return JsonResponse(payload)
             if success:
                 messages.success(request, msg)
                 query = f"step=verify&phone={clean_phone_number(phone)}"
@@ -181,20 +183,18 @@ class LoginOtpView(View):
             code = request.POST.get('code', '').strip()
             success, msg, participant = OTPService.verify_otp(phone, code)
 
-            target_redirect = next_url if (next_url and next_url.startswith('/')) else '/me/'
+            target_redirect = next_url or '/me/'
 
             if is_ajax:
                 if success and participant:
-                    request.session['participant_id'] = participant.id
+                    login_participant(request, participant)
                     return JsonResponse({'success': True, 'message': msg, 'redirect_url': target_redirect})
                 return JsonResponse({'success': False, 'message': msg})
 
             if success and participant:
-                request.session['participant_id'] = participant.id
+                login_participant(request, participant)
                 messages.success(request, f"Bem-vindo(a), {participant.display_name}!")
-                if next_url and next_url.startswith('/'):
-                    return redirect(next_url)
-                return redirect('my_claims')
+                return redirect(target_redirect)
             else:
                 messages.error(request, msg)
                 return render(request, 'participants/login_otp.html', {
@@ -254,6 +254,7 @@ class MyClaimsView(View):
         claims = participant.claims.select_related(
             'slot__set__ceg__era__group',
             'slot__set__ceg__caixa',
+            'slot__set__ceg__gom',
             'slot__item_definition__tipo_item',
             'slot__pacote_nacional'
         ).order_by('-claimed_at')
@@ -264,12 +265,12 @@ class MyClaimsView(View):
         paid_claims_count = sum(1 for c in claims_list if c.status == Claim.Status.PAID)
 
         # Itens Individuais (Mercari) vinculados ao participante
-        itens_individuais = participant.itens_individuais.select_related('caixa', 'pacote_nacional').order_by('-created_at')
+        itens_individuais = participant.itens_individuais.select_related('caixa', 'pacote_nacional', 'gom').order_by('-created_at')
         itens_individuais_list = list(itens_individuais)
         itens_individuais_count = len(itens_individuais_list)
 
         # Pacotes Nacionais de envio do participante
-        pacotes_nacionais = list(participant.pacotes_nacionais.prefetch_related(
+        pacotes_nacionais = list(participant.pacotes_nacionais.select_related('gom').prefetch_related(
             'slots__item_definition__tipo_item',
             'slots__set__ceg__era__group',
             'itens_individuais__tipo_item'
@@ -315,6 +316,7 @@ class MyClaimsView(View):
             'total_geral_pendente': Decimal('0.00'),
             'pix_key': '',
             'pix_instructions': '',
+            'gom_ids': set(),  # se tiver itens de mais de um GOM, não há chave Pix única
         }
 
         for claim in claims_list:
@@ -327,6 +329,8 @@ class MyClaimsView(View):
                     caixas_dict[c.id] = {
                         'id': str(c.id),
                         'caixa_obj': c,
+                        'gom_id': str(c.gom_id),
+                        'gom_name': c.gom.name,
                         'nome': c.nome,
                         'slug': c.slug,
                         'origem': c.origem,
@@ -358,6 +362,7 @@ class MyClaimsView(View):
             else:
                 itens_sem_caixa_count += 1
                 sem_caixa_dict['items_count'] += 1
+                sem_caixa_dict['gom_ids'].add(ceg.gom_id)
                 sem_caixa_dict['cegs_ids'].add(ceg.id)
                 sem_caixa_dict['cegs_names'].add(ceg.title)
                 if not sem_caixa_dict['pix_key'] and ceg.pix_key:
@@ -377,6 +382,8 @@ class MyClaimsView(View):
                 cegs_dict[ceg.id] = {
                     'ceg': ceg,
                     'group': group,
+                    'gom': ceg.gom,
+                    'gom_id': str(ceg.gom_id),
                     'caixa': ceg.caixa,
                     'caixa_id': str(ceg.caixa_id) if ceg.caixa_id else '',
                     'claims': [],
@@ -519,13 +526,8 @@ class MyClaimsView(View):
                 active_ceg_keys.append(c_data['pix_key_taxa'])
             c_data['has_distinct_pix_keys'] = len(set(active_ceg_keys)) > 1
 
-        default_pix_key = ''
-        default_pix_instructions = ''
-        for c_data in cegs_dict.values():
-            if c_data['ceg'].pix_key:
-                default_pix_key = c_data['ceg'].pix_key
-                default_pix_instructions = c_data['ceg'].pix_instructions or ''
-                break
+        # Chave Pix padrão de CADA GOM (nunca a de outro GOM): apps/participants/gom_panel.py
+        gom_pix = gom_pix_defaults(list(cegs_dict.values()), itens_individuais_list)
 
         for item in itens_individuais_list:
             qtd = item.quantidade or 1
@@ -535,6 +537,8 @@ class MyClaimsView(View):
                     caixas_dict[c.id] = {
                         'id': str(c.id),
                         'caixa_obj': c,
+                        'gom_id': str(c.gom_id),
+                        'gom_name': c.gom.name,
                         'nome': c.nome,
                         'slug': c.slug,
                         'origem': c.origem,
@@ -562,6 +566,7 @@ class MyClaimsView(View):
             else:
                 itens_sem_caixa_count += qtd
                 sem_caixa_dict['items_count'] += qtd
+                sem_caixa_dict['gom_ids'].add(item.gom_id)
                 sem_caixa_dict['mercari_count'] += qtd
                 target_caixa = sem_caixa_dict
 
@@ -578,8 +583,7 @@ class MyClaimsView(View):
             c_data['cegs_count'] = len(c_data['cegs_ids'])
             c_data['cegs_names_list'] = sorted(list(c_data['cegs_names']))
             if not c_data['pix_key']:
-                c_data['pix_key'] = default_pix_key
-                c_data['pix_instructions'] = default_pix_instructions
+                c_data['pix_key'], c_data['pix_instructions'] = gom_pix.get(c_data['caixa_obj'].gom_id, ('', ''))
             c_data['total_geral_pendente'] = (
                 c_data['total_items_pending'] +
                 c_data['total_frete_pending'] +
@@ -616,9 +620,13 @@ class MyClaimsView(View):
 
         sem_caixa_dict['cegs_count'] = len(sem_caixa_dict['cegs_ids'])
         sem_caixa_dict['cegs_names_list'] = sorted(list(sem_caixa_dict['cegs_names']))
-        if not sem_caixa_dict['pix_key']:
-            sem_caixa_dict['pix_key'] = default_pix_key
-            sem_caixa_dict['pix_instructions'] = default_pix_instructions
+        sem_caixa_dict['mixed_goms'] = len(sem_caixa_dict['gom_ids']) > 1
+        if sem_caixa_dict['mixed_goms']:
+            # Itens de GOMs diferentes: sem chave única; o joiner paga por CEG/GOM.
+            sem_caixa_dict['pix_key'] = sem_caixa_dict['pix_instructions'] = ''
+        elif not sem_caixa_dict['pix_key'] and sem_caixa_dict['gom_ids']:
+            only_gom = next(iter(sem_caixa_dict['gom_ids']))
+            sem_caixa_dict['pix_key'], sem_caixa_dict['pix_instructions'] = gom_pix.get(only_gom, ('', ''))
         sem_caixa_dict['total_geral_pendente'] = (
             sem_caixa_dict['total_items_pending'] +
             sem_caixa_dict['total_frete_pending'] +
@@ -628,6 +636,16 @@ class MyClaimsView(View):
         sem_caixa_dict['pix_instructions_frete'] = sem_caixa_dict['pix_instructions']
         sem_caixa_dict['pix_key_taxa'] = sem_caixa_dict['pix_key']
         sem_caixa_dict['pix_instructions_taxa'] = sem_caixa_dict['pix_instructions']
+        if not sem_caixa_dict['mixed_goms'] and sem_caixa_dict['gom_ids']:
+            # Um único GOM: frete e taxa usam as chaves padrão do GOM para cada tipo.
+            only_gom_id = next(iter(sem_caixa_dict['gom_ids']))
+            sem_gom = (next((c['ceg'].gom for c in cegs_dict.values() if c['ceg'].gom_id == only_gom_id), None)
+                       or next((it.gom for it in itens_individuais_list if it.gom_id == only_gom_id), None))
+            if sem_gom is not None:
+                for kind in ('frete', 'taxa'):
+                    key, inst = sem_gom.pix_for(kind)
+                    if key:
+                        sem_caixa_dict[f'pix_key_{kind}'], sem_caixa_dict[f'pix_instructions_{kind}'] = key, inst
         sem_caixa_dict['pix_key_item'] = sem_caixa_dict['pix_key']
         sem_caixa_dict['pix_instructions_item'] = sem_caixa_dict['pix_instructions']
         sem_caixa_dict['has_distinct_pix_keys'] = False
@@ -678,9 +696,13 @@ class MyClaimsView(View):
             'total_frete_pendente': mercari_total_frete_pendente,
             'total_taxa_pendente': mercari_total_taxa_pendente,
             'total_geral_pendente': mercari_total_geral_pendente,
-            'pix_key': default_pix_key,
-            'pix_instructions': default_pix_instructions,
+            # Cada GOM com a própria chave; com um GOM só, a chave fica no topo como antes.
+            'por_gom': mercari_pix_by_gom(mercari_items_pending, gom_pix),
         }
+        mercari_pendencias['pix_key'] = (mercari_pendencias['por_gom'][0]['pix_key']
+                                         if len(mercari_pendencias['por_gom']) == 1 else '')
+        mercari_pendencias['pix_instructions'] = (mercari_pendencias['por_gom'][0]['pix_instructions']
+                                                  if len(mercari_pendencias['por_gom']) == 1 else '')
         total_geral_pendente_mercari = mercari_total_geral_pendente
 
         total_pending_all = sum(c['total_pending'] for c in cegs_dict.values())
@@ -692,6 +714,8 @@ class MyClaimsView(View):
                 'title': c_data['ceg'].title,
                 'group_id': c_data['group'].id,
                 'group_name': c_data['group'].name,
+                'gom_id': c_data['gom_id'],
+                'gom_name': c_data['gom'].name,
                 'caixa_id': c_data['caixa_id'],
                 'items_count': len(c_data['claims']),
                 'count_pending': c_data['count_pending'],
@@ -717,6 +741,7 @@ class MyClaimsView(View):
         mercari_filter_list = [
             {
                 'id': it.id,
+                'gom_id': str(it.gom_id),
                 'caixa_id': str(it.caixa_id) if it.caixa_id else '',
                 'status': it.status,
                 'frete_inter': float(it.frete_inter or 0),
@@ -853,7 +878,7 @@ class MyClaimsView(View):
                         'valor': item.frete_inter,
                         'itens_count': 1,
                         'prazo': p_frete,
-                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else default_pix_key),
+                        'pix_key': (item.caixa.get_pix_key_frete() if item.caixa else item.gom.pix_for('frete')[0]),
                         'pix_instructions': (item.caixa.get_pix_instructions_frete() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
@@ -876,7 +901,7 @@ class MyClaimsView(View):
                         'valor': item.taxa_aduaneira,
                         'itens_count': 1,
                         'prazo': p_taxa,
-                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else default_pix_key),
+                        'pix_key': (item.caixa.get_pix_key_taxa() if item.caixa else item.gom.pix_for('taxa')[0]),
                         'pix_instructions': (item.caixa.get_pix_instructions_taxa() if item.caixa else default_pix_instructions),
                         'urgencia': urg,
                         'urgencia_badge': badge,
@@ -924,6 +949,9 @@ class MyClaimsView(View):
                 'preco': slot.price,
                 'motivo_bloqueio': motivo,
                 'pode_empacotar': pode,
+                'gom_id': ceg.gom_id,
+                'gom_name': ceg.gom.name,
+                'chegou_em': ceg.caixa.data_recebimento if ceg.caixa_id else None,
             }
             if pode:
                 itens_caixinha_prontos.append(item_data)
@@ -945,12 +973,20 @@ class MyClaimsView(View):
                 'preco': item.preco_produto or 0,
                 'motivo_bloqueio': motivo,
                 'pode_empacotar': pode,
+                'gom_id': item.gom_id,
+                'gom_name': item.gom.name,
+                'chegou_em': item.caixa.data_recebimento if item.caixa_id else None,
             }
             if pode:
                 itens_caixinha_prontos.append(item_data)
             else:
                 if not item.pacote_nacional or item.pacote_nacional.status not in [PacoteNacional.Status.ENVIADO, PacoteNacional.Status.ENTREGUE]:
                     itens_caixinha_bloqueados.append(item_data)
+
+        goms_list = goms_summary(list(cegs_dict.values()), itens_individuais_list, pacotes_nacionais,
+                                 mercari_items_pending)
+        goms_by_id = {c['ceg'].gom_id: c['ceg'].gom for c in cegs_dict.values()}
+        goms_by_id.update({it.gom_id: it.gom for it in itens_individuais_list})
 
         pacotes_em_andamento = [p for p in pacotes_nacionais if p.status != PacoteNacional.Status.ENTREGUE]
         pacotes_recebidos = [p for p in pacotes_nacionais if p.status == PacoteNacional.Status.ENTREGUE]
@@ -972,7 +1008,7 @@ class MyClaimsView(View):
                     'badgeClass': claim.lifecycle.get('badge_class', ''),
                     'detail': claim.lifecycle.get('detail', ''),
                 },
-                'pixKey': claim.slot.set.ceg.pix_key or '',
+                'pixKey': claim.slot.set.ceg.get_pix_key_item(),
                 'cegId': str(claim.slot.set.ceg.id),
                 'isItemPaid': bool(claim.status == Claim.Status.PAID or claim.slot.is_item_paid),
                 'freteInter': f"{(claim.slot.frete_inter or 0):.2f}",
@@ -1017,10 +1053,22 @@ class MyClaimsView(View):
             'pacotes_em_andamento': pacotes_em_andamento,
             'pacotes_recebidos': pacotes_recebidos,
             'itens_caixinha_prontos': itens_caixinha_prontos,
+            'enderecos': list(participant.enderecos.all()),
+            'ufs': [uf for uf, _label in UF_CHOICES],
             'itens_caixinha_bloqueados': itens_caixinha_bloqueados,
             'total_caixinha_disponivel': len(itens_caixinha_prontos),
-            'configuracao_envio': ConfiguracaoEnvio.get_solo(),
+            # Multi-GOM: resumo por GOM (filtro/visão por GOM) e envio de cada GOM na Caixinha
+            'goms_list': goms_list,
+            'envio_por_gom': shipping_configs_by_gom(itens_caixinha_prontos, goms_by_id),
             'prazos_proximos': prazos_proximos,
+            # Seção Pagar (P3): cobranças em aberto agrupadas por GOM, com a chave Pix de cada uma.
+            'charges': attach_pix_state(build_charges(
+                list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais,
+                vitrine=participant.reservas_vitrine.filter(status='RESERVADA').select_related('item__gom')), participant),
+            # Seção Meus itens (P3b): claims + avulsos numa lista, com etapa para agrupar e filtrar.
+            'items_panel': build_items(claims_list, itens_individuais_list),
+            'item_stages': stage_options(),
+            'pacote_steps': PacoteNacional.JOINER_STEPS,
             'prazos_urgentes_count': prazos_urgentes_count,
             'total_any_unpaid_count': total_any_unpaid_count,
             'cegs_com_pendencias': cegs_com_pendencias,
@@ -1085,7 +1133,7 @@ class MarkAllNotificationsReadView(View):
 
 class LogoutView(View):
     def get(self, request):
-        request.session.pop('participant_id', None)
+        logout_participant(request)
         messages.info(request, "Você encerrou sua sessão com sucesso.")
         return redirect('home')
 
@@ -1147,68 +1195,83 @@ class SolicitarEnvioNacionalView(View):
             messages.error(request, "Por favor, selecione ao menos um item da sua caixinha para solicitar o envio.")
             return redirect('my_claims')
 
-        pacote = PacoteNacional.objects.create(
-            participant=participant,
-            status=PacoteNacional.Status.SOLICITADO,
-            observacoes_joiner=observacoes,
-            solicitado_em=timezone.now()
-        )
-
-        slots_vinculados = 0
-        mercari_vinculados = 0
-
+        # Resolve os itens válidos primeiro e agrupa por GOM: cada GOM envia o próprio pacote.
+        por_gom = {}
         for uid in selected_uids:
+            obj = None
             if uid.startswith('slot_'):
-                slot_id = uid.replace('slot_', '')
-                try:
-                    slot = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').get(
-                        id=slot_id, claimed_by=participant
-                    )
-                    if not slot.pode_empacotar:
-                        continue
-                    slot.pacote_nacional = pacote
-                    slot.save(update_fields=['pacote_nacional'])
-                    slots_vinculados += 1
-                except ItemSlot.DoesNotExist:
-                    continue
+                obj = ItemSlot.objects.select_related('set__ceg__caixa', 'pacote_nacional').filter(
+                    id=uid.replace('slot_', ''), claimed_by=participant).first()
+                gom_id = obj.set.ceg.gom_id if obj else None
             elif uid.startswith('mercari_'):
-                item_id = uid.replace('mercari_', '')
-                try:
-                    item = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').get(
-                        id=item_id, comprador=participant
-                    )
-                    if not item.pode_empacotar:
-                        continue
-                    item.pacote_nacional = pacote
-                    item.save(update_fields=['pacote_nacional'])
-                    mercari_vinculados += 1
-                except ItemIndividual.DoesNotExist:
-                    continue
+                obj = ItemIndividual.objects.select_related('caixa', 'pacote_nacional').filter(
+                    id=uid.replace('mercari_', ''), comprador=participant).first()
+                gom_id = obj.gom_id if obj else None
+            if obj is not None and obj.pode_empacotar:
+                por_gom.setdefault(gom_id, []).append(obj)
 
-        total = slots_vinculados + mercari_vinculados
-
+        total = sum(len(objs) for objs in por_gom.values())
         if total == 0:
-            pacote.delete()
             messages.error(request, "Nenhum dos itens selecionados pôde ser solicitado (itens já empacotados, com pendências financeiras ou em trânsito).")
             return redirect('my_claims')
 
-        # Registra auditoria
-        try:
-            AuditLog.objects.create(
-                event_type=AuditLog.EventType.PACKAGE_REQUESTED,
-                participant=participant,
-                participant_name=participant.name,
-                participant_phone=participant.whatsapp,
-                pacote_nacional=pacote,
-                action_label=f"Solicitação de envio nacional ({total} itens) via Minha Caixinha",
-                new_value=pacote.identificador,
-            )
-        except Exception:
-            pass
+        # Forma de envio por GOM (C3): obrigatória quando o GOM tem formas ativas; validada antes de criar nada.
+        from apps.cegs.models import MetodoEnvio
+        metodos = {}
+        for gom_id in por_gom:
+            ativos = list(MetodoEnvio.objects.filter(gom_id=gom_id, ativo=True))
+            if not ativos:
+                continue
+            escolhido = next((m for m in ativos if str(m.id) == request.POST.get(f'metodo_{gom_id}', '')), None)
+            if escolhido is None:
+                messages.error(request, "Escolha como você quer receber antes de pedir o envio.")
+                return redirect('my_claims')
+            metodos[gom_id] = escolhido
 
+        # Endereço (S2): obrigatório se algum GOM vai mandar pelo correio (forma que pede endereço ou sem formas).
+        precisa_endereco = any(metodos.get(gid) is None or metodos[gid].pede_endereco for gid in por_gom)
+        endereco = participant.enderecos.filter(pk=request.POST.get('endereco_id') or 0).first()
+        if precisa_endereco and endereco is None:
+            messages.error(request, "Escolha (ou cadastre) o endereço de entrega antes de pedir o envio.")
+            return redirect('/me/?tab=envios#enderecos')
+
+        identificadores = []
+        for gom_id, objs in por_gom.items():
+            metodo = metodos.get(gom_id)
+            vai_pelo_correio = metodo is None or metodo.pede_endereco
+            pacote = PacoteNacional.objects.create(
+                gom_id=gom_id,
+                participant=participant,
+                status=PacoteNacional.Status.SOLICITADO,
+                observacoes_joiner=observacoes,
+                solicitado_em=timezone.now(),
+                metodo_envio=metodo,
+                metodo_nome=metodo.nome if metodo else '',
+                endereco_destinatario=endereco.texto_completo() if vai_pelo_correio and endereco else '',
+                cep_destinatario=endereco.cep_formatado if vai_pelo_correio and endereco else '',
+            )
+            for obj in objs:
+                obj.pacote_nacional = pacote
+                obj.save(update_fields=['pacote_nacional'])
+            identificadores.append(pacote.identificador)
+            try:
+                AuditLog.objects.create(
+                    gom_id=gom_id,
+                    event_type=AuditLog.EventType.PACKAGE_REQUESTED,
+                    participant=participant,
+                    participant_name=participant.name,
+                    participant_phone=participant.whatsapp,
+                    pacote_nacional=pacote,
+                    action_label=f"Solicitação de envio nacional ({len(objs)} itens) via Minha Caixinha",
+                    new_value=pacote.identificador,
+                )
+            except Exception:
+                pass
+
+        pacotes_txt = ', '.join(identificadores)
         messages.success(
             request,
-            f"🎉 Solicitação de envio do pacote {pacote.identificador} ({total} item(ns)) realizada com sucesso! "
+            f"🎉 Solicitação de envio ({total} item(ns)) realizada com sucesso! Pacote(s): {pacotes_txt}. "
             "A GOM foi notificada e em breve cotará seu frete nacional."
         )
         return redirect('/me/?tab=caixinha')

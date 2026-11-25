@@ -9,11 +9,7 @@ from apps.cegs.models import CEG
 from apps.groups.models import KpopGroup, Era
 from apps.participants.models import Participant
 from .services_allocator import BulkJoinerAllocatorService
-
-
-class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_staff
+from apps.core.permissions import StaffRequiredMixin
 
 
 class CEGBulkAllocatorView(StaffRequiredMixin, View):
@@ -22,12 +18,13 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
     Pode ser acessada com uma CEG pré-selecionada (/ceg/<slug>/alocar-massa/)
     ou de forma geral (/cegs/alocar-joiners/), selecionando a CEG desejada.
     """
+    gom_permission = 'pedidos.editar'
     def get(self, request, slug=None):
         search_query = request.GET.get('q', '').strip()
         group_id = request.GET.get('group_id', '').strip()
         era_id = request.GET.get('era_id', '').strip()
 
-        cegs_qs = CEG.objects.select_related('era__group').all().order_by('-created_at')
+        cegs_qs = CEG.objects.for_gom(request.active_gom).select_related('era__group').order_by('-created_at')
         if search_query:
             cegs_qs = cegs_qs.filter(
                 Q(title__icontains=search_query) |
@@ -44,11 +41,11 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
         ceg = None
 
         if slug:
-            ceg = get_object_or_404(CEG, slug=slug)
+            ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
         else:
             ceg_id = request.GET.get('ceg_id')
             if ceg_id and ceg_id.isdigit():
-                ceg = CEG.objects.filter(id=int(ceg_id)).first()
+                ceg = CEG.objects.for_gom(request.active_gom).filter(id=int(ceg_id)).first()
 
             if not ceg:
                 # Prioriza CEGs abertas ou em andamento
@@ -70,7 +67,7 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
 
         matrix_data = BulkJoinerAllocatorService.get_ceg_matrix(ceg)
 
-        participants_qs = Participant.objects.all().order_by('name')
+        participants_qs = Participant.objects.for_gom(request.active_gom).order_by('name')
         participants_data = [
             {
                 'id': p.id,
@@ -116,8 +113,9 @@ class CEGBulkAllocatorAPIView(StaffRequiredMixin, View):
     """
     Endpoints AJAX JSON para processamento de colagem, execução em lote e gravação da matriz.
     """
+    gom_permission = 'pedidos.editar'
     def post(self, request, slug):
-        ceg = get_object_or_404(CEG, slug=slug)
+        ceg = get_object_or_404(CEG.objects.for_gom(request.active_gom), slug=slug)
 
         try:
             if request.content_type == 'application/json':

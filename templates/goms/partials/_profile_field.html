@@ -1,0 +1,7 @@
+{% comment %}Campo do formulário de perfil do GOM (rótulo, campo, erro).{% endcomment %}
+<label for="{{ field.id_for_label }}" class="block space-y-1.5">
+    <span class="ui-label">{{ field.label }}</span>
+    {{ field }}
+    {% if field.help_text %}<span class="block text-[12px] ui-muted">{{ field.help_text }}</span>{% endif %}
+    {% if field.errors %}<span class="block text-[13px] ui-danger">{{ field.errors|join:" " }}</span>{% endif %}
+</label>

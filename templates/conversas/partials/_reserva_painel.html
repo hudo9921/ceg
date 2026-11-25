@@ -1,0 +1,27 @@
+{% comment %}Reservas da Vitrine nesta conversa (S5b). `reservas`, `lado`. O GOM cancela ou marca como pago; o joiner paga em Pagar ou cancela.{% endcomment %}
+{% if reservas %}
+<div class="px-4 py-3 border-b border-ui-line space-y-2" aria-label="Reservas">
+    {% for r in reservas %}
+        <div class="ui-well p-3 flex flex-wrap items-center gap-3">
+            <span class="flex-1 min-w-[180px]">
+                <b class="block text-[15px]">{{ r.item.titulo }} · R$ {{ r.preco|floatformat:2 }}</b>
+                <span class="ui-status {% if r.status == 'PAGA' %}ui-ok{% elif r.status == 'CANCELADA' %}ui-muted{% else %}ui-warn{% endif %} !text-[13px]">
+                    {% if r.status == 'RESERVADA' %}Reservado · falta pagar{% else %}{{ r.get_status_display }}{% endif %} · {{ r.criada_em|date:"d/m H:i" }}</span>
+            </span>
+            {% if r.status == 'RESERVADA' %}
+                {% if lado == 'gom' %}
+                    <form method="post" action="{% url 'gom_reserva_acao' r.id 'paga' %}">{% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">Marcar como pago</button></form>
+                    <form method="post" action="{% url 'gom_reserva_acao' r.id 'cancelar' %}" onsubmit="return confirm('Cancelar esta reserva? O item volta para a Vitrine.')">{% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm ui-danger">Cancelar reserva</button></form>
+                {% else %}
+                    <a href="{% url 'my_claims' %}?tab=pagar" class="ui-btn ui-btn-primary ui-btn-sm">Pagar com Pix</a>
+                    <form method="post" action="{% url 'joiner_reserva_cancelar' r.id %}" onsubmit="return confirm('Cancelar sua reserva?')">{% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm ui-danger">Cancelar</button></form>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}

@@ -1,0 +1,27 @@
+{% extends 'core/two_factor/_layout.html' %}
+
+{% block title %}Ativar verificação em duas etapas — ValCegs{% endblock %}
+{% block heading %}Proteja sua conta{% endblock %}
+{% block lead %}Contas da equipe usam um segundo fator. Configure uma vez; depois, cada login pede o código do celular.{% endblock %}
+
+{% block body %}
+<ol class="space-y-4 text-[15px]">
+    <li class="flex gap-3"><span class="ui-num">1</span><span>Instale um aplicativo autenticador: Google Authenticator, Microsoft Authenticator, Authy ou 1Password.</span></li>
+    <li class="flex gap-3">
+        <span class="ui-num">2</span>
+        <div class="space-y-3 flex-1 min-w-0">
+            <span>No aplicativo, adicione uma conta lendo este QR code:</span>
+            <div class="bg-white p-3 rounded-ui-card w-fit mx-auto"><img src="{{ qr_data_uri }}" alt="QR code para o aplicativo autenticador" class="w-44 h-44"></div>
+            <details class="text-sm">
+                <summary class="cursor-pointer font-semibold">Não consegue ler? Digite a chave</summary>
+                <code class="ui-well block mt-2 p-2.5 ui-mono break-all select-all">{{ secret }}</code>
+            </details>
+        </div>
+    </li>
+    <li class="flex gap-3"><span class="ui-num">3</span><span>Digite o código de 6 dígitos que aparece no aplicativo.</span></li>
+</ol>
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% include 'core/two_factor/_token_field.html' with allow_backup=False submit_label="Ativar verificação" %}
+</form>
+{% endblock %}

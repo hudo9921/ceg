@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.html import format_html
 from django.utils import timezone
 import urllib.parse
@@ -10,6 +10,24 @@ class ParticipantAdmin(admin.ModelAdmin):
     list_display = ('name', 'username', 'formatted_phone', 'social_handle', 'active_claims_count', 'total_spent', 'created_at')
     search_fields = ('name', 'username', 'whatsapp', 'social_handle')
     ordering = ['name']
+    actions = ['anonymize_lgpd']
+
+    @admin.action(description='Anonimizar (LGPD) — apaga nome, WhatsApp, @ e endereços')
+    def anonymize_lgpd(self, request, queryset):
+        from apps.core.privacy import AnonymizationBlocked, anonymize_participant
+        done, blocked = 0, []
+        for participant in queryset:
+            label = participant.display_name
+            try:
+                anonymize_participant(participant, actor=request.user)
+                done += 1
+            except AnonymizationBlocked as exc:
+                blocked.append(f"{label}: {exc}")
+        if done:
+            self.message_user(request, f"{done} participante(s) anonimizado(s).", messages.SUCCESS)
+        for msg in blocked:
+            self.message_user(request, f"Não anonimizado — {msg}. Conclua as pendências antes.",
+                              messages.WARNING)
 
     def formatted_phone(self, obj):
         return obj.formatted_phone
@@ -75,8 +93,8 @@ class ClaimAdmin(admin.ModelAdmin):
             f"📦 *Item:* {obj.slot.item_definition.name} (Set {obj.slot.set.set_number})\n"
             f"💰 *Valor:* R$ {obj.total_price:.2f}\n"
         )
-        if obj.status == Claim.Status.PENDING and ceg.pix_key:
-            msg += f"🔑 *Chave Pix:* {ceg.pix_key}\n"
+        if obj.status == Claim.Status.PENDING and ceg.get_pix_key_item():
+            msg += f"🔑 *Chave Pix:* {ceg.get_pix_key_item()}\n"
             msg += f"Assim que fizer o Pix, por favor envie o comprovante por aqui!"
         elif obj.status == Claim.Status.PAID:
             msg += f"✅ Pagamento confirmado com sucesso!"

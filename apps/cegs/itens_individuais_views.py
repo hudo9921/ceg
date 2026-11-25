@@ -1,3 +1,4 @@
+from apps.goms.joiners import apply_profile_updates, remember
 import base64
 import json
 import logging
@@ -9,26 +10,14 @@ from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils.dateparse import parse_datetime
 
 from apps.cegs.models import Caixa, ItemIndividual, TipoItem
 from apps.participants.models import Participant, clean_phone_number
+from apps.core.permissions import StaffRequiredMixin
 
 logger = logging.getLogger(__name__)
-
-
-class StaffRequiredMixin(AccessMixin):
-    """Garante que apenas usuários autenticados e com permissão de staff (admin/organizador) tenham acesso."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_staff:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return JsonResponse({'success': False, 'message': 'Acesso restrito ao organizador.'}, status=403)
-            messages.error(request, "Acesso restrito: Você precisa estar autenticado como Administrador/Organizador.")
-            return redirect(f"/admin/login/?next={request.path}")
-        return super().dispatch(request, *args, **kwargs)
 
 
 def parse_optional_decimal(v_str):
@@ -48,6 +37,7 @@ def parse_optional_decimal(v_str):
 
 class ParticipantLookupAPIView(StaffRequiredMixin, View):
     """Retorna dados de participante existente pelo telefone para preenchimento ágil."""
+    gom_permission = ('pedidos.ver', 'pedidos.editar')
 
     def get(self, request):
         phone_raw = request.GET.get('phone', '').strip()
@@ -57,9 +47,10 @@ class ParticipantLookupAPIView(StaffRequiredMixin, View):
         cleaned = clean_phone_number(phone_raw)
         p = None
         if cleaned:
-            p = Participant.objects.filter(whatsapp=cleaned).first()
+            known = Participant.objects.for_gom(request.active_gom)  # só joiners que este GOM conhece
+            p = known.filter(whatsapp=cleaned).first()
             if not p and len(cleaned) >= 8:
-                p = Participant.objects.filter(whatsapp__endswith=cleaned[-8:]).first()
+                p = known.filter(whatsapp__endswith=cleaned[-8:]).first()
 
         if p:
             return JsonResponse({
@@ -76,6 +67,7 @@ class ParticipantLookupAPIView(StaffRequiredMixin, View):
 
 class CreateItemIndividualView(StaffRequiredMixin, View):
     """Cadastra um novo Item Individual (Mercari, Surugaya, etc.)."""
+    gom_permission = 'pedidos.editar'
 
     def post(self, request):
         nome = request.POST.get('nome', '').strip()
@@ -111,7 +103,7 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
 
         if participant_id:
             try:
-                comprador = Participant.objects.filter(id=int(participant_id)).first()
+                comprador = Participant.objects.for_gom(request.active_gom).filter(id=int(participant_id)).first()
             except (ValueError, TypeError):
                 comprador = None
 
@@ -139,42 +131,26 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
                 }
             )
             if not created:
-                updated = False
-                if comprador_nome and comprador.name != comprador_nome:
-                    comprador.name = comprador_nome
-                    updated = True
-                if comprador_username and comprador.username != comprador_username:
-                    comprador.username = comprador_username
-                    updated = True
+                social_fmt = ''
                 if comprador_social:
                     social_fmt = comprador_social if comprador_social.startswith('@') else f"@{comprador_social}"
-                    if comprador.social_handle != social_fmt:
-                        comprador.social_handle = social_fmt
-                        updated = True
-                if updated:
-                    comprador.save()
+                # Cadastro de quem já fez login é do joiner (apps.goms.joiners).
+                apply_profile_updates(comprador, name=comprador_nome, username=comprador_username,
+                                      social_handle=social_fmt)
+            remember(comprador, request.active_gom)
         else:
-            # Participante já existente selecionado via dropdown ou lookup
-            updated = False
-            if comprador_nome and comprador.name != comprador_nome:
-                comprador.name = comprador_nome
-                updated = True
-            if comprador_username and comprador.username != comprador_username:
-                comprador.username = comprador_username
-                updated = True
+            # Participante já existente selecionado via dropdown ou lookup (já conhecido pelo GOM)
+            social_fmt = ''
             if comprador_social:
                 social_fmt = comprador_social if comprador_social.startswith('@') else f"@{comprador_social}"
-                if comprador.social_handle != social_fmt:
-                    comprador.social_handle = social_fmt
-                    updated = True
-            if updated:
-                comprador.save()
+            apply_profile_updates(comprador, name=comprador_nome, username=comprador_username,
+                                  social_handle=social_fmt)
 
         # Localiza Caixa
         caixa = None
         if caixa_id:
             try:
-                caixa = Caixa.objects.filter(id=int(caixa_id)).first()
+                caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id)).first()
             except (ValueError, TypeError):
                 caixa = None
 
@@ -218,6 +194,7 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
 
         try:
             item = ItemIndividual.objects.create(
+                gom=request.active_gom,
                 caixa=caixa,
                 comprador=comprador,
                 tipo_item=tipo_item,
@@ -265,9 +242,10 @@ class CreateItemIndividualView(StaffRequiredMixin, View):
 
 class UpdateItemIndividualView(StaffRequiredMixin, View):
     """Atualiza dados, status e valores de um Item Individual existente."""
+    gom_permission = 'pedidos.editar'
 
     def post(self, request, item_id):
-        item = get_object_or_404(ItemIndividual, id=item_id)
+        item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)
         next_url = request.POST.get('next_url', '').strip()
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
@@ -295,7 +273,7 @@ class UpdateItemIndividualView(StaffRequiredMixin, View):
             caixa_id = request.POST.get('caixa_id', '').strip()
             if caixa_id:
                 try:
-                    item.caixa = Caixa.objects.filter(id=int(caixa_id)).first()
+                    item.caixa = Caixa.objects.for_gom(request.active_gom).filter(id=int(caixa_id)).first()
                 except ValueError:
                     pass
             else:
@@ -376,12 +354,12 @@ class UpdateItemIndividualView(StaffRequiredMixin, View):
         return redirect('/creations/?tab=mercari')
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ToggleItemPaymentView(StaffRequiredMixin, View):
     """Alterna rapidamente o status de pagamento de item (produto), frete internacional ou taxa aduaneira."""
+    gom_permission = 'pag.confirmar'
 
     def post(self, request, item_id):
-        item = get_object_or_404(ItemIndividual, id=item_id)
+        item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
         if request.content_type == 'application/json':
@@ -458,9 +436,10 @@ class ToggleItemPaymentView(StaffRequiredMixin, View):
 
 class DeleteItemIndividualView(StaffRequiredMixin, View):
     """Remove um Item Individual."""
+    gom_permission = 'pedidos.editar'
 
     def post(self, request, item_id):
-        item = get_object_or_404(ItemIndividual, id=item_id)
+        item = get_object_or_404(ItemIndividual.objects.for_gom(request.active_gom), id=item_id)
         nome = item.nome
         caixa = item.caixa
         item.delete()

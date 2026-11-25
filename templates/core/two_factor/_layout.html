@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% comment %}Moldura das telas de acesso da equipe (login, convite e 2FA) no visual novo (P5a).{% endcomment %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-6 sm:py-10 space-y-5">
+    <header class="space-y-2">
+        <p class="ui-label">Painel dos GOMs</p>
+        <h1 class="ui-disp text-3xl sm:text-4xl">{% block heading %}{% endblock %}</h1>
+        <p class="ui-muted text-[15px]">{% block lead %}{% endblock %}</p>
+    </header>
+
+    <section class="ui-card p-5 sm:p-6 space-y-5">
+        {% block body %}{% endblock %}
+    </section>
+
+    {% if request.user.is_authenticated %}
+        <form method="post" action="{% url 'admin:logout' %}" class="text-center">
+            {% csrf_token %}
+            <button type="submit" class="ui-muted text-sm hover:underline cursor-pointer">Sair da conta {{ request.user.get_username }}</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

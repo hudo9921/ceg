@@ -1,0 +1,29 @@
+{% comment %}Componente enderecoForm (S2): fora do <template x-if> da aba Envios, onde <script> não roda.{% endcomment %}
+<script>
+function enderecoForm() {
+    const vazio = () => ({ id: '', apelido: '', nome: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '', padrao: false });
+    return {
+        open: false, f: vazio(), cepMsg: '',
+        novo() { this.f = vazio(); this.cepMsg = ''; this.open = true; },
+        editar(raw) {
+            const [id, apelido, nome, cep, logradouro, numero, complemento, bairro, cidade, uf, padrao] = raw.split('|');
+            this.f = { id, apelido, nome, cep, logradouro, numero, complemento, bairro, cidade, uf, padrao: padrao === '1' };
+            this.cepMsg = ''; this.open = true;
+        },
+        async buscarCep() {
+            const digits = (this.f.cep || '').replace(/\D/g, '');
+            if (digits.length !== 8) { this.cepMsg = ''; return; }
+            this.cepMsg = 'Buscando…';
+            try {
+                const res = await fetch('/me/cep/' + digits + '/');
+                const data = await res.json();
+                if (!data.success) { this.cepMsg = data.message || 'CEP não encontrado.'; return; }
+                Object.assign(this.f, { logradouro: data.logradouro || this.f.logradouro, bairro: data.bairro || this.f.bairro,
+                                        cidade: data.cidade || this.f.cidade, uf: data.uf || this.f.uf });
+                this.cepMsg = '';
+                this.$nextTick(() => this.$refs.numero && this.$refs.numero.focus());
+            } catch (e) { this.cepMsg = 'Sem conexão: preencha à mão.'; }
+        },
+    };
+}
+</script>

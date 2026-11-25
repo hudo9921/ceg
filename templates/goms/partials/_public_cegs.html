@@ -1,0 +1,26 @@
+{% comment %}CEGs na página pública do GOM. Parâmetros: titulo, cegs, vazio.{% endcomment %}
+<section class="space-y-3">
+    <h2 class="ui-disp text-2xl">{{ titulo }}</h2>
+    {% if cegs %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for ceg in cegs %}
+                <a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-lift overflow-hidden block">
+                    {% if ceg.display_image_url %}
+                        <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt="" loading="lazy" decoding="async" class="w-full aspect-[16/9] object-cover">
+                    {% else %}
+                        <span class="block w-full aspect-[16/9]" style="background: var(--ui-holo)"></span>
+                    {% endif %}
+                    <span class="block p-4 space-y-1">
+                        <span class="block ui-label truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</span>
+                        <span class="block text-base font-bold leading-snug">{{ ceg.title }}</span>
+                        <span class="ui-status {% if ceg.status == 'SCHEDULED' %}ui-warn{% else %}ui-ok{% endif %}">
+                            {% if ceg.status == 'SCHEDULED' and ceg.opens_at %}Abre {{ ceg.opens_at|date:"d/m \à\s H:i" }}{% else %}{{ ceg.available_slots_count }} vaga{{ ceg.available_slots_count|pluralize }} livre{{ ceg.available_slots_count|pluralize }}{% endif %}
+                        </span>
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    {% elif vazio %}
+        <p class="ui-card p-6 text-center ui-muted">{{ vazio }}</p>
+    {% endif %}
+</section>

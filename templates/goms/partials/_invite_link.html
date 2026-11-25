@@ -1,0 +1,17 @@
+{% comment %}Link de convite recém-criado: exibido uma única vez (só o hash fica no banco).{% endcomment %}
+{% if new_link %}
+<section x-data="{ copied: false }" class="ui-card p-5 space-y-3" role="status" aria-labelledby="new-link-title">
+    <p id="new-link-title" class="flex items-center gap-2 text-[15px] font-bold ui-ok">
+        <i data-lucide="link" class="w-4 h-4" stroke-width="1.75"></i>Convite criado. Envie este link (vale 7 dias, uso único)
+    </p>
+    <div class="flex flex-wrap gap-2">
+        <input type="text" readonly value="{{ new_link }}" x-ref="link" aria-label="Link do convite"
+               class="ui-input flex-1 min-w-0 ui-mono !text-[13px]">
+        <button type="button" class="ui-btn ui-btn-primary"
+                @click="navigator.clipboard.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 2000)">
+            <i data-lucide="copy" class="w-4 h-4" stroke-width="1.75"></i><span x-text="copied ? 'Copiado!' : 'Copiar link'">Copiar link</span>
+        </button>
+    </div>
+    <p class="ui-muted text-[13px]">O link não aparece de novo. Se perder, cancele e gere outro.</p>
+</section>
+{% endif %}

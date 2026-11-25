@@ -1,0 +1,15 @@
+{% comment %}Uma forma de envio no formset da aba Envio (`f`). A última linha vazia serve para adicionar.{% endcomment %}
+<div class="py-4 first:pt-0 last:pb-0 space-y-3" role="group" aria-label="{% if f.instance.pk %}{{ f.instance.nome }}{% else %}Nova forma de envio{% endif %}">
+    {{ f.id }}{{ f.ordem }}
+    {% if not f.instance.pk %}<p class="ui-label">Adicionar forma de envio</p>{% endif %}
+    <div class="grid sm:grid-cols-[1fr_1.4fr] gap-3">
+        <label class="block space-y-1.5"><span class="ui-label">Nome</span>{{ f.nome }}</label>
+        <label class="block space-y-1.5"><span class="ui-label">Descrição para o joiner</span>{{ f.descricao }}</label>
+    </div>
+    {% if f.errors %}<p class="text-[13px] ui-danger" role="alert">{% for e in f.errors.values %}{{ e|join:" " }} {% endfor %}</p>{% endif %}
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px]">
+        <label class="flex items-center gap-2 cursor-pointer">{{ f.ativo }}<span>Ativa</span></label>
+        <label class="flex items-center gap-2 cursor-pointer">{{ f.pede_endereco }}<span>Pede endereço <span class="ui-muted">(desligue para retirada)</span></span></label>
+        {% if f.instance.pk %}<label class="flex items-center gap-2 cursor-pointer ui-danger">{{ f.DELETE }}<span>Remover</span></label>{% endif %}
+    </div>
+</div>

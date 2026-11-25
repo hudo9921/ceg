@@ -1,0 +1,34 @@
+{% comment %}Barra superior (celular/tablet, abaixo de lg): marca, tema, atalhos da equipe e conta. DESIGN_SYSTEM.md §7.{% endcomment %}
+<header class="ui-topbar lg:hidden">
+    <a href="{% url 'home' %}" class="ui-disp ui-chrome text-2xl no-underline">ValCegs</a>
+    <div class="flex items-center">
+        <div x-data="themeApp()" x-init="init()">
+            <button type="button" @click="toggleTheme()" class="ui-icon-btn" :aria-label="isDark ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'" aria-label="Alternar tema">
+                <i data-lucide="moon" x-show="!isDark" class="w-5 h-5" stroke-width="1.75"></i>
+                <i data-lucide="sun" x-show="isDark" x-cloak class="w-5 h-5" stroke-width="1.75"></i>
+            </button>
+        </div>
+        {% if is_gom_staff %}
+            <a href="{% url 'gom_notifications' %}" class="ui-icon-btn relative" aria-label="Notificações do GOM">
+                <i data-lucide="bell" class="w-5 h-5" stroke-width="1.75"></i>
+                {% if gom_unread_notifications_count > 0 %}
+                    <span class="gom-unread-badge absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-ui-danger text-white text-[10px] font-bold flex items-center justify-center">{{ gom_unread_notifications_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'backoffice_home' %}" class="ui-icon-btn" aria-label="Gestão do GOM">
+                <i data-lucide="layout-dashboard" class="w-5 h-5" stroke-width="1.75"></i>
+            </a>
+        {% elif is_gom_member %}
+            <a href="{% url 'gom_team' %}" class="ui-icon-btn" aria-label="Equipe do GOM">
+                <i data-lucide="users" class="w-5 h-5" stroke-width="1.75"></i>
+            </a>
+        {% endif %}
+        {% if logged_participant %}
+            <a href="{% url 'my_claims' %}" class="ui-icon-btn" aria-label="Minha conta">
+                <span class="w-8 h-8 rounded-ui-pill bg-ui-accent text-white flex items-center justify-center text-sm font-bold">{{ logged_participant.display_name|slice:":1"|upper }}</span>
+            </a>
+        {% else %}
+            <a href="{% url 'login_otp' %}" class="ui-btn ui-btn-ghost ui-btn-sm ml-1">Entrar</a>
+        {% endif %}
+    </div>
+</header>

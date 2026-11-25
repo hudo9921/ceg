@@ -151,9 +151,13 @@ class MinhaCaixinhaTests(TestCase):
         session['participant_id'] = self.participant.id
         session.save()
 
+        from apps.participants.models import Endereco
+        endereco = Endereco.objects.create(participant=self.participant, nome_destinatario='Test', cep='01001-000',
+                                           logradouro='Rua A', numero='1', bairro='Centro', cidade='SP', uf='SP')
         response = self.client.post('/me/envios/solicitar/', {
             'selected_uids': f'slot_{self.slot_nat.id}',
-            'observacoes': 'Por favor embalar com carinho!'
+            'observacoes': 'Por favor embalar com carinho!',
+            'endereco_id': endereco.id,
         })
         self.assertEqual(response.status_code, 302)
         self.assertIn('tab=caixinha', response.url)
@@ -197,15 +201,13 @@ class MinhaCaixinhaTests(TestCase):
     def test_configuracao_envio_google_form(self):
         self.client.force_login(self.staff_user)
 
-        response = self.client.post('/envios/configuracao/', {
-            'link_formulario_google': 'https://forms.google.com/test-form-link',
-            'instrucoes_envio': 'Preencha com o mesmo nome do WhatsApp'
+        response = self.client.post(reverse('gom_settings_tab', args=['envio']), {
+            'instrucoes_envio': 'Confira o endereço antes de pedir'
         })
         self.assertEqual(response.status_code, 302)
 
         config = ConfiguracaoEnvio.get_solo()
-        self.assertEqual(config.link_formulario_google, 'https://forms.google.com/test-form-link')
-        self.assertEqual(config.instrucoes_envio, 'Preencha com o mesmo nome do WhatsApp')
+        self.assertEqual(config.instrucoes_envio, 'Confira o endereço antes de pedir')
 
     def test_empacotar_itens_rejects_ineligible_items(self):
         self.client.force_login(self.staff_user)

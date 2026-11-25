@@ -1,43 +1,30 @@
 {% extends 'base.html' %}
 
-{% block title %}Meus Claims — {{ participant.display_name }} | K-pop CEG Manager{% endblock %}
+{% block title %}Minha conta — {{ participant.display_name }} | ValCegs{% endblock %}
 
 {% block content %}
-<div class="space-y-8" x-data="myClaimsApp()">
-
+<div class="space-y-8 max-w-[1120px] mx-auto" x-data="myClaimsApp({{ charges.count|default:0 }})">
 
     {% include 'participants/partials/_header_notices.html' %}
     {% include 'participants/partials/_tabs_nav.html' %}
 
-    <!-- ABA 1: MINHAS RESERVAS / CEGS -->
-    <div x-show="activeMainTab === 'reservas'" class="space-y-8">
-        {% include 'participants/partials/_header_metrics.html' %}
-        <!-- Central de Pagamento Rápido e Semáforo de Prazos (Lado a lado no desktop, empilhados no mobile) -->
-        <div class="grid grid-cols-1 {% if prazos_proximos %}xl:grid-cols-2{% endif %} gap-4 items-start">
-            {% include 'participants/partials/_quick_pix.html' %}
-            {% include 'participants/partials/_semaforo_prazos.html' %}
-        </div>
-        {% include 'participants/partials/_filtro_caixas.html' %}
+    <!-- PAGAR (P3): cobranças por GOM com o Pix de cada uma -->
+    {% include 'participants/partials/_pagar_section.html' %}
 
-        <!-- Grupos de Reservas por CEG com Filtros de Grupo e CEG -->
-        <div x-show="categoryFilter === 'ALL'" class="space-y-6">
-            {% include 'participants/partials/_filtros_painel.html' %}
-            {% include 'participants/partials/_cegs_list.html' %}
-        </div>
+    <!-- MEUS ITENS (P3b): lista única agrupada por GOM/CEG/caixa -->
+    {% include 'participants/partials/_itens_section.html' %}
 
-        {% include 'participants/partials/_mercari_section.html' %}
-    </div>
-    <!-- FIM ABA 1 (RESERVAS) -->
-
-    <!-- ABA 2: MINHA CAIXINHA / PEDIR ENVIO -->
+    <!-- ENVIOS: caixinha e pacotes -->
     {% include 'participants/partials/_caixinha_tab.html' %}
 
     <!-- MODAIS DO PARTICIPANTE -->
     {% include 'participants/partials/_modais.html' %}
+    {% include 'participants/partials/_endereco_sheet.html' %}
 
 </div>
 
 
 {% include 'participants/partials/_my_claims_app_script.html' %}
+{% include 'participants/partials/_endereco_script.html' %}
 
 {% endblock %}

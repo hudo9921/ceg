@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Equipe — {{ gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}Equipe do GOM e permissões por admin (docs/MULTI_GOM_DESIGN.md §3.1). Só o dono altera.{% endcomment %}
+<script id="team-data" type="application/json">{{ team_data|json_embed:"{}" }}</script>
+{% include 'goms/partials/_team_script.html' %}
+
+<div class="max-w-[1120px] mx-auto space-y-6" x-data="teamApp()">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-2">
+            <p class="ui-label">GOM {{ gom.name }}</p>
+            <h1 class="ui-disp text-4xl">Equipe</h1>
+            <p class="ui-muted text-[15px]">
+                {% if is_owner %}Escolha o que cada admin pode fazer. Só o dono gerencia a equipe.{% else %}Veja quem faz parte da equipe e o que cada pessoa pode fazer. Só o dono altera.{% endif %}
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            {% include 'goms/partials/_gom_switcher.html' %}
+            {% if is_owner %}
+                <button type="button" class="ui-btn ui-btn-primary" @click="inviteOpen = true">
+                    <i data-lucide="user-plus" class="w-4 h-4" stroke-width="1.75"></i>Convidar admin
+                </button>
+            {% endif %}
+        </div>
+    </header>
+
+    {% include 'goms/partials/_invite_link.html' %}
+
+    <div class="grid gap-5 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] items-start">
+        {% include 'goms/partials/_team_members.html' %}
+        {% include 'goms/partials/_team_panel.html' %}
+    </div>
+
+    {% if is_owner %}
+        {% include 'goms/partials/_team_invites.html' %}
+        {% include 'goms/partials/_team_invite_sheet.html' %}
+    {% endif %}
+</div>
+{% endblock %}

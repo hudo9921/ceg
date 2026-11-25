@@ -1,0 +1,19 @@
+{% comment %}Lista da equipe (teamApp): escolher um membro abre as permissões dele no painel ao lado.{% endcomment %}
+<section class="ui-card overflow-hidden" aria-label="Membros da equipe">
+    <template x-for="m in members" :key="m.id">
+        <button type="button" @click="pick(m.id)" :aria-pressed="(m.id === selId).toString()"
+                class="w-full flex items-center gap-3 px-4 py-3.5 min-h-[64px] text-left border-b last:border-b-0 transition-colors cursor-pointer"
+                style="border-color: var(--ui-line)"
+                :style="m.id === selId ? 'background: var(--ui-surface-2); box-shadow: inset 3px 0 0 var(--ui-accent)' : ''">
+            <span class="w-10 h-10 flex-none flex items-center justify-center rounded-ui-pill text-[15px] font-extrabold text-[#1E1B26]"
+                  style="background: var(--ui-holo)" x-text="initial(m.name)" aria-hidden="true"></span>
+            <span class="flex-1 min-w-0">
+                <span class="block text-[15px] font-bold truncate">
+                    <span x-text="m.name"></span><span x-show="m.is_me" class="ui-muted font-normal text-[13px]"> (você)</span>
+                </span>
+                <span class="block ui-muted text-[13px]" x-text="summary(m)"></span>
+            </span>
+        </button>
+    </template>
+    <p x-show="!members.length" class="p-4 ui-muted text-sm">Nenhum membro ainda.</p>
+</section>

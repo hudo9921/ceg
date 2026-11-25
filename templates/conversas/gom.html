@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Mensagens — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}Mensagens do GOM com os joiners (S5, permissão mensagens.responder): lista + conversa.{% endcomment %}
+{% url 'gom_mensagens' as base %}
+<div class="max-w-6xl mx-auto space-y-5">
+    <header class="{% if cur %}hidden lg:block{% endif %} space-y-1.5">
+        <p class="ui-label">GOM {{ active_gom.name }}</p>
+        <h1 class="ui-disp text-4xl">Mensagens</h1>
+        <p class="ui-muted text-[15px]">Conversas dos joiners sobre pacotes, CEGs e Vitrine. Responder aqui avisa o joiner no site.</p>
+    </header>
+    <div class="grid lg:grid-cols-[minmax(280px,360px)_1fr] gap-5 items-start">
+        {% include 'conversas/partials/_lista.html' with base=base %}
+        {% if cur %}
+            {% url 'gom_mensagem_enviar' cur.id as url_enviar %}{% url 'gom_mensagens_novas' cur.id as url_novas %}
+            {% include 'conversas/partials/_thread.html' with base=base url_enviar=url_enviar url_novas=url_novas %}
+        {% else %}
+            <div class="hidden lg:flex ui-card p-10 items-center justify-center text-center ui-muted min-h-[40vh]">Escolha uma conversa.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

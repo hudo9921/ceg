@@ -1,101 +1,50 @@
-<!-- ==========================================
-     GRADE DE SETS & SLOTS FÍSICOS
-     100% Lucide Icons & Sleeve Card Design (< 200 linhas)
-     ========================================== -->
-<div class="space-y-8">
+{% comment %}
+Grade dos sets (DESIGN_SYSTEM §7.7): cada set é uma seção com título, barra de vagas e photocards 2:3.
+Ferramentas da equipe (selecionar/excluir set) ficam à direita do título.
+{% endcomment %}
+<div class="space-y-10">
     {% for set in sets %}
-    <div x-show="viewMode !== 'AVULSOS' && (activeSetTab === 'ALL' || activeSetTab === {{ set.set_number }})"
-         class="bg-white/95 dark:bg-cyber-surface/95 backdrop-blur-xl rounded-3xl border border-purple-100/80 dark:border-white/10 overflow-hidden shadow-soft transition-colors">
-        
-        <!-- Set Header -->
-        <div class="bg-purple-50/70 dark:bg-white/[0.03] px-6 py-4 border-b border-purple-100/80 dark:border-white/10 flex flex-wrap justify-between items-center gap-3">
-            <div class="flex items-center space-x-3">
-                <span class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 text-white font-black text-sm flex items-center justify-center shadow-xs">
-                    #{{ set.set_number }}
-                </span>
-                <div>
-                    <h2 class="text-base font-black text-slate-900 dark:text-white">Set {{ set.set_number }}</h2>
-                    {% if set.notes %}
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ set.notes }}</p>
-                    {% endif %}
-                </div>
+    <section x-show="viewMode !== 'AVULSOS' && (activeSetTab === 'ALL' || activeSetTab === {{ set.set_number }})"
+             class="space-y-4" aria-labelledby="set-{{ set.set_number }}-title">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+            <div class="min-w-0">
+                <h2 id="set-{{ set.set_number }}-title" class="ui-disp text-2xl m-0">Set {{ set.set_number }}</h2>
+                {% if set.notes %}<p class="m-0 mt-1 text-sm ui-muted">{{ set.notes }}</p>{% endif %}
             </div>
-
-            <div class="flex items-center space-x-3 text-xs">
-                <span class="font-bold text-slate-600 dark:text-slate-300 font-mono">
-                    {{ set.reserved_count }}/{{ set.slots_count }} preenchidos
-                </span>
-                {% if set.is_full %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-600 text-white font-black rounded-xl shadow-xs text-xs">
-                    <i data-lucide="check-circle" class="w-3.5 h-3.5" stroke-width="1.75"></i>
-                    <span>Set 100% Fechado</span>
-                </span>
-                {% else %}
-                <span class="px-3 py-1 bg-purple-100 dark:bg-white/10 text-purple-800 dark:text-slate-200 font-bold rounded-xl border border-purple-200/60 dark:border-white/10">
-                    {{ set.slots_count|add:"-"|add:set.reserved_count }} vagas restantes
-                </span>
-                {% endif %}
-
-                {% if user.is_staff %}
-                <!-- Botão Selecionar Todos deste Set -->
-                <button type="button" @click="selectAllInSet([
-                                {% for s in set.slots.all %}
-                                    { id: {{ s.id }}, itemDefId: {{ s.item_definition.id }} },
-                                {% endfor %}
-                            ])"
-                    class="px-2.5 py-1 bg-purple-100 dark:bg-white/[0.06] text-purple-700 dark:text-pink-300 hover:bg-purple-200 dark:hover:bg-white/10 rounded-xl border border-purple-200 dark:border-white/10 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs active:scale-95"
-                    title="Selecionar todos os itens deste Set para ações em lote">
-                    <i data-lucide="check-square" class="w-3.5 h-3.5" stroke-width="1.75"></i>
-                    <span class="hidden sm:inline">Selecionar Set</span>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="ui-label">{% if set.is_full %}Set completo{% else %}{{ set.reserved_count }} de {{ set.slots_count }} reservados{% endif %}</span>
+                <span class="ui-seg !w-36" aria-hidden="true">{% for s in set.slots.all %}<span{% if s.status != 'AVAILABLE' %} class="is-on"{% endif %}></span>{% endfor %}</span>
+                {% if staff_can.editar or staff_can.pagar or staff_can.excluir or staff_can.pedidos %}
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" title="Selecionar todos os itens deste set para ações em lote"
+                        @click="selectAllInSet([{% for s in set.slots.all %}{ id: {{ s.id }}, itemDefId: {{ s.item_definition.id }} },{% endfor %}])">
+                    <i data-lucide="check-square" class="w-4 h-4" stroke-width="1.75"></i><span class="hidden sm:inline">Selecionar set</span>
                 </button>
-
-                <!-- Botão Excluir Set -->
-                <button type="button" @click="openDeleteSetModal({
-                                id: {{ set.id }},
-                                setNumber: {{ set.set_number }},
-                                reservedCount: {{ set.reserved_count }},
-                                slotsCount: {{ set.slots_count }},
-                                isFull: {{ set.is_full|yesno:'true,false' }},
-                                claimedSlots: [
-                                    {% for slot in set.slots.all %}
-                                        {% if slot.claimed_by %}
-                                            {
-                                                id: {{ slot.id }},
-                                                name: '{{ slot.item_definition.name|escapejs }}',
-                                                price: '{{ slot.price|floatformat:2 }}',
-                                                isPaid: {{ slot.is_item_paid|yesno:'true,false' }},
-                                                participantName: '{{ slot.claimed_by.display_name|escapejs }}',
-                                                whatsapp: '{{ slot.claimed_by.whatsapp|default:''|escapejs }}',
-                                                formattedPhone: '{{ slot.claimed_by.formatted_phone|default:''|escapejs }}',
-                                                socialHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}'
-                                            },
-                                        {% endif %}
-                                    {% endfor %}
-                                ]
-                            })"
-                    class="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-800/60 transition font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-xs active:scale-95"
-                    title="Excluir Set #{{ set.set_number }} da CEG">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5" stroke-width="1.75"></i>
-                    <span class="hidden sm:inline">Excluir Set</span>
+                <button type="button" class="ui-icon-btn !w-9 !h-9 text-ui-danger" aria-label="Excluir o set {{ set.set_number }}"
+                        @click="openDeleteSetModal({
+                            id: {{ set.id }}, setNumber: {{ set.set_number }}, reservedCount: {{ set.reserved_count }},
+                            slotsCount: {{ set.slots_count }}, isFull: {{ set.is_full|yesno:'true,false' }},
+                            claimedSlots: [{% for slot in set.slots.all %}{% if slot.claimed_by %}{
+                                id: {{ slot.id }}, name: '{{ slot.item_definition.name|escapejs }}', price: '{{ slot.price|floatformat:2 }}',
+                                isPaid: {{ slot.is_item_paid|yesno:'true,false' }}, participantName: '{{ slot.claimed_by.display_name|escapejs }}',
+                                whatsapp: '{{ slot.claimed_by.whatsapp|default:''|escapejs }}', formattedPhone: '{{ slot.claimed_by.formatted_phone|default:''|escapejs }}',
+                                socialHandle: '{{ slot.claimed_by.social_handle|default:''|escapejs }}'
+                            },{% endif %}{% endfor %}]
+                        })">
+                    <i data-lucide="trash-2" class="w-4 h-4" stroke-width="1.75"></i>
                 </button>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Slots Grid (5 Cards por linha no Desktop) -->
-        <div class="p-4 sm:p-5 grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 sm:gap-3.5">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
             {% for slot in set.slots.all %}
                 {% include 'cegs/partials/_detail_slot_card.html' %}
             {% empty %}
-            <div class="col-span-full py-8 text-center text-slate-400 dark:text-slate-500 text-sm">
-                Nenhum slot gerado para este Set ainda.
-            </div>
+                <p class="col-span-full ui-well p-6 text-center ui-muted m-0">Nenhuma vaga gerada para este set ainda.</p>
             {% endfor %}
         </div>
-    </div>
+    </section>
     {% empty %}
-    <div class="bg-white/95 dark:bg-cyber-surface/95 rounded-3xl border border-purple-100/80 dark:border-white/10 p-8 text-center text-slate-500 dark:text-slate-400">
-        Nenhum Set disponível para esta CEG no momento.
-    </div>
+    <p class="ui-card p-8 text-center ui-muted m-0">Nenhum set disponível nesta CEG no momento.</p>
     {% endfor %}
 </div>

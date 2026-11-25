@@ -1,25 +1,87 @@
-name: Deploy to Oracle Cloud
+name: Test & Deploy to Oracle Cloud
 
 on:
   push:
     branches:
       - main
+      - develop   # só testa; o job de deploy roda apenas na main
+  pull_request:
+    branches:
+      - main
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DEBUG: "True"
+      SECRET_KEY: "ci-only-not-secret"
+      WHATSAPP_PROVIDER: "console"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Audit dependencies for known vulnerabilities
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --progress-spinner off
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Collect static files (manifest usado pelos templates, como em produção)
+        run: python manage.py collectstatic --noinput
+
+      - name: Run test suite
+        run: python manage.py test apps --noinput
+
+      - name: Django deploy security checklist
+        env:
+          DEBUG: "False"
+          SECRET_KEY: "ci-deploy-check-${{ github.run_id }}-not-a-real-secret-value-0123456789"
+          ALLOWED_HOSTS: "valcegs.duckdns.org"
+          FIELD_ENCRYPTION_KEY: "PvBl4dRZHZK0Xs-UbheEbyh495jHI5KleOOxXwgYGMs="  # chave descartável, só para o CI
+        run: python manage.py check --deploy --fail-level WARNING
+
+      - name: Validate Caddyfile and docker-compose.yml
+        run: |
+          docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:alpine caddy validate --config /etc/caddy/Caddyfile
+          POSTGRES_PASSWORD=ci touch .env && POSTGRES_PASSWORD=ci docker compose config --quiet
+
+      - name: Docker image builds (collectstatic, non-root user)
+        run: |
+          docker build -t ceg-ci .
+          docker run --rm --entrypoint sh ceg-ci -c '
+            test "$(whoami)" = app &&
+            test -f /app/staticfiles/staticfiles.json &&
+            grep -q "css/tailwind.css" /app/staticfiles/staticfiles.json &&
+            grep -q "js/lucide-subset.min.js" /app/staticfiles/staticfiles.json &&
+            test ! -e /app/.env && test ! -e /app/backups'
+
   deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          FIELD_ENCRYPTION_KEY: ${{ secrets.FIELD_ENCRYPTION_KEY }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         with:
-          host: 150.136.166.17
+          host: 129.213.164.99
           username: ubuntu
           key: ${{ secrets.ORACLE_SSH_KEY }}
+          envs: FIELD_ENCRYPTION_KEY,BACKUP_PASSPHRASE
           script: |
+            set -e
             cd /home/ubuntu/ceg
-            git reset --hard
-            git pull origin main
-            chmod +x entrypoint.sh scripts/*.sh || true
-            docker compose up -d --build
-            docker image prune -f
-
+            git fetch origin main
+            git reset --hard origin/main
+            bash scripts/deploy.sh

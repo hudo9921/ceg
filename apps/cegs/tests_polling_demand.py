@@ -67,8 +67,14 @@ class CEGPollingDemandTests(TestCase):
         self.p2 = Participant.objects.create(name="DIVE 2", whatsapp="5511999990002", username="dive2")
         self.p3 = Participant.objects.create(name="DIVE 3", whatsapp="5511999990003", username="dive3")
 
+    def _login_as(self, participant):
+        session = self.client.session
+        session['participant_id'] = participant.id
+        session.save()
+
     def test_multi_member_voting(self):
         """Participant can vote on multiple members in a single request."""
+        self._login_as(self.p1)
         url = reverse('ceg_vote', kwargs={'slug': self.ceg.slug})
         payload = {
             'item_definition_ids': [self.item_wonyoung.id, self.item_yujin.id],
@@ -228,6 +234,7 @@ class CEGPollingDemandTests(TestCase):
 
     def test_voting_on_non_polling_ceg_fails(self):
         """Attempting to vote on an OPEN or CLOSED CEG is rejected."""
+        self._login_as(self.p1)
         self.ceg.status = CEG.Status.OPEN
         self.ceg.save()
 
@@ -261,6 +268,7 @@ class CEGPollingDemandTests(TestCase):
         self.assertIn("ainda não abriu", str(ctx.exception))
 
         # 3. HTTP View attempt returns 400 with error message
+        self._login_as(self.p1)
         url = reverse('ceg_vote', kwargs={'slug': self.ceg.slug})
         payload = {
             'item_definition_ids': [self.item_wonyoung.id],

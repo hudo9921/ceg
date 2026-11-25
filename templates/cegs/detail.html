@@ -3,23 +3,24 @@
 {% block title %}{{ ceg.title }} — {{ ceg.era.group.name }} | K-pop CEG{% endblock %}
 
 {% block content %}
-<div class="space-y-8" x-data="cegDetailApp()"
+<div class="space-y-6 max-w-[1120px] mx-auto pb-36" x-data="cegDetailApp()"
      @standby-ended.window="isStandby = false"
      @slot-toggle.window="toggleParticipantSlot($event.detail)"
      @open-bulk-claim.window="participantSelectedSlots = $store.claimSelection.slots; openBulkClaimModal()"
      @sync-claim-selection.window="participantSelectedSlots = $store.claimSelection.slots">
 
-        <!-- Top Breadcrumb -->
-        <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <a href="{% url 'home' %}" class="hover:text-pink-600 dark:hover:text-cyber-neon transition">Home</a>
-            <span>/</span>
-            <span class="text-pink-600 dark:text-pink-400 font-bold">{{ ceg.era.group.name }}</span>
-            <span>/</span>
-            <span class="text-slate-800 dark:text-slate-200 truncate">{{ ceg.title }}</span>
-        </div>
+        <nav aria-label="Você está em" class="ui-label flex items-center gap-2 min-w-0">
+            <a href="{% url 'home' %}" class="no-underline text-ui-muted hover:text-ui-text">CEGs</a><span aria-hidden="true">/</span>
+            <span>{{ ceg.era.group.name }}</span><span aria-hidden="true">/</span>
+            <span class="truncate text-ui-text">{{ ceg.title }}</span>
+        </nav>
 
         <!-- CEG Header Banner (Deezer/Godly Style com Ambient Blur & Lucide Icons) -->
         {% include 'cegs/partials/_detail_header.html' %}
+
+        <!-- Quem organiza (GOM dono) e as regras dele (C1: aceite do estreante antes da abertura) -->
+        {% include 'cegs/partials/_detail_gom_card.html' %}
+        {% include 'goms/partials/_gom_rules.html' %}
 
         <!-- Sticky Bulk Actions Toolbar para o Organizador -->
         {% include 'cegs/partials/_detail_bulk_toolbar.html' %}
@@ -38,6 +39,9 @@
             {% include 'cegs/partials/_detail_avulsos_grid.html' %}
         {% endif %}
 
+        <!-- Como funciona o pagamento (etapas + Pix do item), recolhido -->
+        {% include 'cegs/partials/_detail_how_to_pay.html' %}
+
         <!-- Modal de Reserva & Checkout Multi-Slot (100% Lucide Icons & Suporte a Dark Mode) -->
         {% include 'cegs/partials/_detail_claim_modal.html' %}
 
@@ -46,7 +50,7 @@
 
         {% include 'cegs/partials/_detail_admin_modals.html' %}
 
-        {% if user.is_staff %}
+        {% if is_gom_staff %}
         <!-- Dados serializados das definições de itens da CEG para o Estúdio de Recorte -->
         <script id="ceg-items-definitions-data" type="application/json">
 [
@@ -99,6 +103,7 @@
 
 </div>
 
+{% include 'cegs/partials/_detail_buy_script.html' %}
 {% include 'cegs/partials/_detail_app_script.html' %}
 
 {% endblock %}

@@ -2,7 +2,7 @@
 <div x-show="activeModal === 'group'" x-cloak
      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
      @click.self="closeModal()">
-    <div class="bg-white dark:bg-[#14121B] w-full max-w-lg rounded-3xl shadow-2xl border border-purple-100 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="ui-card w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         
         <!-- Header do Modal -->
         <div class="p-5 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-50 via-pink-50 to-white dark:from-purple-950/30 dark:via-pink-950/30 dark:to-[#14121B]">
@@ -11,8 +11,8 @@
                     <i data-lucide="mic" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-black text-slate-900 dark:text-white">Cadastrar Grupo Novo</h3>
-                    <p class="text-[11px] text-slate-500 dark:text-cyber-silver">Adicione grupos ou solistas de K-pop ao catálogo.</p>
+                    <h3 class="ui-disp text-lg">Cadastrar Grupo Novo</h3>
+                    <p class="text-[11px] ui-muted">Adicione grupos ou solistas de K-pop ao catálogo.</p>
                 </div>
             </div>
             <button type="button" @click="closeModal()" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer">
@@ -24,21 +24,21 @@
               @submit="if (newGroupMemberInput && newGroupMemberInput.trim()) addGroupMember(false); if ($refs.newGroupMembersJson) $refs.newGroupMembersJson.value = JSON.stringify(newGroupMembers);">
             {% csrf_token %}
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nome do Grupo / Solista *</label>
+                <label class="ui-label block mb-1.5">Nome do Grupo / Solista *</label>
                 <input type="text" name="name" required
                        placeholder="Ex: LE SSERAFIM, Stray Kids, IU, aespa"
-                       class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                       class="ui-input w-full">
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Foto / Logo do Grupo</label>
+                <label class="ui-label block mb-1.5">Foto / Logo do Grupo</label>
 
                 <!-- Preview -->
                 <div x-show="groupImagePreview" class="relative rounded-2xl overflow-hidden border border-purple-200 dark:border-white/10 h-36 bg-slate-950 flex items-center justify-center group mb-2">
                     <img :src="groupImagePreview" alt="" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none">
                     <img :src="groupImagePreview" alt="Logo Preview" class="relative z-10 max-h-36 w-auto max-w-full object-contain mx-auto">
                     <button type="button" @click="clearGroupImage()"
-                            class="absolute top-2 right-2 z-20 px-2.5 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow transition flex items-center gap-1 cursor-pointer">
+                            class="ui-btn ui-btn-primary cursor-pointer">
                         <i data-lucide="trash-2" class="w-3 h-3"></i>
                         <span>Remover</span>
                     </button>
@@ -65,12 +65,12 @@
                 <input type="text" name="image_url" x-model="groupImageUrl"
                        @input="groupImagePreview = $event.target.value; groupImageBase64 = ''"
                        placeholder="Ou cole a URL direta da imagem (https://...)"
-                       class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                       class="ui-input w-full">
             </div>
 
             <!-- Cor Tema do Grupo -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                <label class="ui-label block mb-1.5 flex items-center justify-between">
                     <span class="flex items-center gap-1.5">
                         <i data-lucide="palette" class="w-3.5 h-3.5 text-purple-400"></i>
                         <span>Cor Tema do Grupo (Opcional)</span>
@@ -81,9 +81,9 @@
                     <input type="color" :value="groupColorHex || '#8B5CF6'" @input="groupColorHex = $event.target.value"
                            class="w-9 h-9 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-cyber-elevated shrink-0">
                     <input type="text" name="color_hex" x-model="groupColorHex" placeholder="Ex: #EC4899 (ou deixe vazio para automático)"
-                           class="flex-1 bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-cyber-surface transition">
+                           class="ui-input w-full flex-1 font-mono uppercase">
                     <button type="button" x-show="groupColorHex" @click="groupColorHex = ''"
-                            class="px-2.5 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                            class="ui-btn ui-btn-ghost"
                             title="Redefinir para detecção automática">
                         Auto
                     </button>
@@ -94,11 +94,11 @@
             <div class="bg-purple-50/50 dark:bg-cyber-elevated/40 p-4 rounded-2xl border border-purple-100/80 dark:border-white/10 space-y-3">
                 <div class="flex items-center justify-between">
                     <div>
-                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <label class="ui-label block flex items-center gap-1.5">
                             <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i>
                             <span>Integrantes do Grupo / Membros</span>
                         </label>
-                        <p class="text-[11px] text-slate-500 dark:text-cyber-silver">
+                        <p class="text-[11px] ui-muted">
                             Digite os nomes e aperte <kbd class="px-1 py-0.5 bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded text-[10px] font-mono">Enter</kbd> ou cole lista por vírgula.
                         </p>
                     </div>
@@ -111,16 +111,16 @@
                     <input type="text" name="newGroupMemberInput" x-model="newGroupMemberInput"
                            @keydown="handleMemberInputKeydown($event, false)"
                            placeholder="Ex: Sakura, Chaewon, Yunjin... (aperte Enter)"
-                           class="flex-1 bg-white dark:bg-cyber-surface border border-purple-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-purple-500 transition">
+                           class="ui-input w-full flex-1">
                     <button type="button" @click="addGroupMember(false)"
-                            class="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition shrink-0 cursor-pointer flex items-center gap-1">
+                            class="ui-btn ui-btn-primary shrink-0 cursor-pointer">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                         <span>Adicionar</span>
                     </button>
                 </div>
 
                 <!-- Pills / Tags dos Integrantes -->
-                <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-white/80 dark:bg-cyber-surface/60 rounded-xl border border-purple-100/70 dark:border-white/10"
+                <div class="ui-card flex flex-wrap gap-1.5 min-h-[32px] p-2"
                      x-show="newGroupMembers.length > 0">
                     <template x-for="(member, idx) in newGroupMembers" :key="idx">
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100/80 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border border-purple-200/60 dark:border-white/10 rounded-lg text-xs font-bold">
@@ -139,19 +139,19 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Descrição / Informações (opcional)</label>
+                <label class="ui-label block mb-1.5">Descrição / Informações (opcional)</label>
                 <textarea name="description" rows="3"
                           placeholder="Ex: Girl group da Source Music / HYBE composto por 5 integrantes."
-                          class="w-full bg-slate-50 dark:bg-cyber-elevated border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-cyber-surface transition"></textarea>
+                          class="ui-input w-full !py-3 p-3"></textarea>
             </div>
 
             <div class="pt-3 border-t border-slate-100 dark:border-white/10 flex justify-end gap-2">
                 <button type="button" @click="closeModal()"
-                        class="px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-cyber-silver font-bold text-xs rounded-xl transition cursor-pointer">
+                        class="ui-btn ui-btn-ghost cursor-pointer">
                     Cancelar
                 </button>
                 <button type="submit"
-                        class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5 hover:scale-[1.02]">
+                        class="ui-btn ui-btn-primary cursor-pointer">
                     <i data-lucide="check" class="w-3.5 h-3.5"></i>
                     <span>Salvar Grupo</span>
                 </button>

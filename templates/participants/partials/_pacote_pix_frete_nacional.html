@@ -1,0 +1,20 @@
+{% comment %}Pix do frete nacional do pacote: chave padrão do GOM que envia (frete nacional → itens).{% endcomment %}
+<div class="ui-well p-3 space-y-2">
+    <p class="ui-label">Frete nacional para {{ pacote.gom.name }}</p>
+    <div class="flex items-center gap-3">
+        <span class="flex-1 min-w-0">
+            <span class="block ui-mono text-[17px] font-bold">R$ {{ pacote.valor_frete_nacional|floatformat:2 }}</span>
+            {% if pacote.pix_key_frete_nacional %}
+                <span class="block ui-mono ui-muted text-xs truncate select-all">Pix: {{ pacote.pix_key_frete_nacional }}</span>
+            {% else %}
+                <span class="block ui-muted text-xs">Chave Pix ainda não cadastrada. A GOM vai te passar.</span>
+            {% endif %}
+        </span>
+        {% if pacote.pix_key_frete_nacional %}
+            <button type="button" class="ui-btn ui-btn-sm flex-none" style="background: var(--ui-surface); color: var(--ui-text)"
+                    data-pix="{{ pacote.pix_key_frete_nacional }}" @click="copyPix($el.dataset.pix, 'pacote_{{ pacote.id }}')"
+                    x-text="copiedPixCegId === 'pacote_{{ pacote.id }}' ? 'Copiado!' : 'Copiar Pix'">Copiar Pix</button>
+        {% endif %}
+    </div>
+    {% if pacote.pix_instructions_frete_nacional %}<p class="ui-muted text-[13px] whitespace-pre-line">{{ pacote.pix_instructions_frete_nacional }}</p>{% endif %}
+</div>

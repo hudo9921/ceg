@@ -14,6 +14,16 @@ from apps.auth_otp.services import OTPService
 from apps.analytics.services import AnalyticsService
 
 
+def _real_png_bytes():
+    """PNG válido gerado pelo Pillow (uploads inválidos agora são recusados)."""
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new('RGB', (8, 8), 'pink').save(buf, format='PNG')
+    return buf.getvalue()
+
+
+
 class CEGConcurrencyAndStandbyTests(TransactionTestCase):
     def setUp(self):
         ClaimService.reset_in_memory_counters()
@@ -519,13 +529,12 @@ class CreationsHubIntegrationTests(TestCase):
         # Usuário anônimo deve ser redirecionado para o login admin
         resp_anon = self.client.get('/creations/')
         self.assertEqual(resp_anon.status_code, 302)
-        self.assertIn('/admin/login/?next=/creations/', resp_anon.url)
+        self.assertIn('/entrar/?next=/creations/', resp_anon.url)
 
         # Usuário logado comum sem is_staff também é redirecionado
         self.client.force_login(self.regular_user)
         resp_reg = self.client.get('/creations/')
-        self.assertEqual(resp_reg.status_code, 302)
-        self.assertIn('/admin/login/?next=/creations/', resp_reg.url)
+        self.assertEqual(resp_reg.status_code, 403)
 
         # Usuário staff acessa perfeitamente
         self.client.force_login(self.admin_user)
@@ -643,7 +652,7 @@ class CreationsHubIntegrationTests(TestCase):
         from django.urls import reverse
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        tiny_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+        tiny_png = _real_png_bytes()
         uploaded_banner = SimpleUploadedFile("ceg_header.png", tiny_png, content_type="image/png")
 
         post_data = {
@@ -1471,7 +1480,7 @@ class DeleteSetViewTests(TestCase):
         """Usuário comum não tem permissão para excluir sets."""
         self.client.force_login(self.regular_user)
         res = self.client.post(f'/sets/{self.set_2.id}/delete/', data={'password': 'password123'})
-        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.status_code, 403)
         self.assertTrue(CEGSet.objects.filter(id=self.set_2.id).exists())
 
         res_ajax = self.client.post(
@@ -1614,7 +1623,7 @@ class DeleteCEGTests(TestCase):
             data={'password': 'password123'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
-        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.status_code, 403)
         self.assertTrue(CEG.objects.filter(id=self.ceg.id).exists())
 
 
@@ -1872,7 +1881,7 @@ class UpdateCEGViewTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.force_login(self.staff_user)
         # 1. Upload de imagem
-        image_file = SimpleUploadedFile("banner_teste.jpg", b"fake_image_content", content_type="image/jpeg")
+        image_file = SimpleUploadedFile("banner_teste.jpg", _real_png_bytes(), content_type="image/jpeg")
         res = self.client.post(f'/ceg/{self.ceg.slug}/edit/', {
             'title': self.ceg.title,
             'banner_file': image_file
@@ -2397,7 +2406,7 @@ class CEGShareGeneratorTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
 
-        self.assertIn('Copiar Vagas Abertas', content)
+        self.assertIn('Divulgar vagas', content)
         self.assertIn('openShareModal()', content)
         self.assertIn('shareModalOpen', content)
         self.assertIn('shareEmoji', content)

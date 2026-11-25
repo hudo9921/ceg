@@ -1,3 +1,4 @@
+from apps.goms.joiners import apply_profile_updates
 import logging
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
@@ -92,18 +93,9 @@ class PollingDemandService:
             )
 
             # Atualiza dados cadastrais se fornecidos
-            updated_fields = []
-            if name_clean and participant.name != name_clean:
-                participant.name = name_clean
-                updated_fields.append('name')
-            if username_clean and participant.username != username_clean:
-                participant.username = username_clean
-                updated_fields.append('username')
-            if social_clean and participant.social_handle != social_clean:
-                participant.social_handle = social_clean
-                updated_fields.append('social_handle')
-            if updated_fields:
-                participant.save(update_fields=updated_fields)
+            # Cadastro do joiner que já fez login é dele (apps.goms.joiners).
+            apply_profile_updates(participant, name=name_clean, username=username_clean,
+                                  social_handle=social_clean)
 
             # 2. Valida itens pertencentes a esta CEG
             valid_items = list(
@@ -343,7 +335,7 @@ class PollingDemandService:
                                 f"Item: {item_def.name} (Set #{target_set.set_number})\n"
                                 f"Valor: R$ {slot.price:.2f}\n"
                                 f"Prazo de Pagamento: {prazo_str}\n"
-                                f"Chave Pix: {ceg.pix_key or 'Ver no painel'}"
+                                f"Chave Pix: {ceg.get_pix_key_item() or 'Ver no painel'}"
                             )
                             notifications_to_create.append(
                                 ParticipantNotification(
@@ -362,7 +354,7 @@ class PollingDemandService:
                                     f"Com base na nossa enquete de demanda, seu voto garantiu o slot oficial na compra em grupo *{ceg.title}*:\n\n"
                                     f"📦 *Item:* {item_def.name} (Set #{target_set.set_number})\n"
                                     f"💰 *Valor:* R$ {slot.price:.2f}\n"
-                                    f"🔑 *Chave Pix:* {ceg.pix_key or 'A definir'}{pix_inst}\n"
+                                    f"🔑 *Chave Pix:* {ceg.get_pix_key_item() or 'A definir'}{pix_inst}\n"
                                     f"⏰ *Prazo de Pagamento:* {prazo_str}\n\n"
                                     f"Acesse o site para acompanhar seu pedido e enviar o comprovante de pagamento!\n"
                                     f"Agradecemos pela participação! 💖"
