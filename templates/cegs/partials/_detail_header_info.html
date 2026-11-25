@@ -26,23 +26,33 @@
 {% if is_gom_staff %}
 <div class="ui-well p-3 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Ferramentas da equipe">
     <span class="ui-label px-1 mr-auto">Equipe do GOM</span>
+    {% if staff_can.editar %}
     <button type="button" @click="editCegModalOpen = true" class="ui-btn ui-btn-sm bg-ui-surface text-ui-text">
         <i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i><span>Editar</span>
     </button>
     <button type="button" @click="openCropStudioFromDetail()" class="ui-btn ui-btn-sm bg-ui-surface text-ui-text" title="Recortar fotos dos integrantes a partir da imagem da CEG">
         <i data-lucide="scissors" class="w-4 h-4" stroke-width="1.75"></i><span>Recortar fotos</span>
     </button>
+    {% endif %}
+    {% if staff_can.valores %}
     <button type="button" @click="feeModalOpen = true" class="ui-btn ui-btn-sm bg-ui-surface text-ui-text">
         <i data-lucide="receipt" class="w-4 h-4" stroke-width="1.75"></i><span>Taxas e prazos</span>
     </button>
+    {% endif %}
+    {% if staff_can.pedidos %}
     <a href="{% url 'ceg_bulk_allocator' slug=ceg.slug %}" class="ui-btn ui-btn-sm bg-ui-surface text-ui-text" title="Alocar joiners em massa nos próximos sets">
         <i data-lucide="users" class="w-4 h-4" stroke-width="1.75"></i><span>Alocar joiners</span>
     </a>
+    {% endif %}
+    {% if staff_can.espera %}
     <button type="button" @click="openLogsModal()" class="ui-btn ui-btn-sm bg-ui-surface text-ui-text" title="Auditoria da concorrência e fila de espera">
         <i data-lucide="list-ordered" class="w-4 h-4" stroke-width="1.75"></i><span>Fila e logs</span>
     </button>
+    {% endif %}
+    {% if staff_can.excluir %}
     <button type="button" @click="openDeleteCegModal()" class="ui-icon-btn !w-9 !h-9 text-ui-danger" aria-label="Excluir esta CEG">
         <i data-lucide="trash-2" class="w-4 h-4" stroke-width="1.75"></i>
     </button>
+    {% endif %}
 </div>
 {% endif %}

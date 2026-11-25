@@ -14,7 +14,7 @@ Ferramentas da equipe (selecionar/excluir set) ficam à direita do título.
             <div class="flex flex-wrap items-center gap-3">
                 <span class="ui-label">{% if set.is_full %}Set completo{% else %}{{ set.reserved_count }} de {{ set.slots_count }} reservados{% endif %}</span>
                 <span class="ui-seg !w-36" aria-hidden="true">{% for s in set.slots.all %}<span{% if s.status != 'AVAILABLE' %} class="is-on"{% endif %}></span>{% endfor %}</span>
-                {% if is_gom_staff %}
+                {% if staff_can.editar or staff_can.pagar or staff_can.excluir or staff_can.pedidos %}
                 <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" title="Selecionar todos os itens deste set para ações em lote"
                         @click="selectAllInSet([{% for s in set.slots.all %}{ id: {{ s.id }}, itemDefId: {{ s.item_definition.id }} },{% endfor %}])">
                     <i data-lucide="check-square" class="w-4 h-4" stroke-width="1.75"></i><span class="hidden sm:inline">Selecionar set</span>

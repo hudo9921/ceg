@@ -22,6 +22,7 @@
     </div>
 
     <div class="flex items-center gap-2 flex-wrap">
+        {% if staff_can.pagar %}
         <!-- Ações Rápidas de Pagamento em Massa (Item, Inter, Taxa) -->
         <div class="flex items-center gap-1.5 bg-black/30 p-1 rounded-xl border border-white/10 shadow-inner">
             <span class="text-[11px] text-purple-200 font-bold px-1.5 hidden sm:inline flex items-center gap-1">
@@ -77,13 +78,17 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
+        {% if staff_can.pedidos %}
         <button type="button" @click="claimSelectedSlotsAsStaff()"
                 class="ui-btn ui-btn-primary cursor-pointer"
                 title="Comprar / Reservar os itens selecionados">
             <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
             <span>Comprar Selecionados</span>
         </button>
+        {% endif %}
+        {% if staff_can.editar %}
         <button type="button" @click="openBulkTypeModal()"
                 class="ui-btn ui-btn-primary cursor-pointer">
             <i data-lucide="tag" class="w-3.5 h-3.5"></i>
@@ -94,11 +99,14 @@
             <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i>
             <span>Preço em Massa</span>
         </button>
+        {% endif %}
+        {% if staff_can.excluir %}
         <button type="button" @click="bulkDeleteItems()" :disabled="bulkLoading"
                 class="ui-btn ui-btn-primary cursor-pointer">
             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             <span>Excluir Itens</span>
         </button>
+        {% endif %}
         <button type="button" @click="clearSelection()"
                 class="ui-btn ui-btn-ghost cursor-pointer">
             <i data-lucide="x" class="w-3 h-3"></i>

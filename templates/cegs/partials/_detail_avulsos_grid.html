@@ -10,7 +10,7 @@ Itens avulsos (estoque fixo, não se repetem a cada set): seção com título e 
         </div>
         <div class="flex items-center gap-3">
             <span class="ui-label">{{ avulso_definitions|length }} ite{{ avulso_definitions|length|pluralize:"m,ns" }} · {{ avulso_slots|length }} unidade{{ avulso_slots|length|pluralize }}</span>
-            {% if is_gom_staff %}
+            {% if staff_can.editar %}
             <button type="button" @click="openAddAvulsoModal()" class="ui-btn ui-btn-ghost ui-btn-sm">
                 <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i><span>Adicionar item avulso</span>
             </button>
@@ -28,7 +28,7 @@ Itens avulsos (estoque fixo, não se repetem a cada set): seção com título e 
     <div class="ui-well p-8 text-center space-y-3">
         <p class="m-0 font-semibold">Nenhum item avulso nesta CEG</p>
         <p class="m-0 text-sm ui-muted max-w-sm mx-auto">Itens avulsos têm estoque fixo e não se repetem quando novos sets são abertos.</p>
-        {% if is_gom_staff %}
+        {% if staff_can.editar %}
         <button type="button" @click="openAddAvulsoModal()" class="ui-btn ui-btn-primary ui-btn-sm">
             <i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i><span>Adicionar o primeiro item avulso</span>
         </button>

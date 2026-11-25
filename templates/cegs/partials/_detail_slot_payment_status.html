@@ -2,7 +2,7 @@
 Pagamentos da vaga. Equipe: alterna item/frete/taxa pago e abre o histórico de disputa.
 Joiner: linha discreta com o que já foi pago numa vaga reservada.
 {% endcomment %}
-{% if is_gom_staff %}
+{% if staff_can.pagar %}
 <div class="grid grid-cols-3 gap-1" role="group" aria-label="Pagamentos desta vaga">
     <button type="button" @click.stop="toggle('item')" :disabled="loading" class="ui-chip !h-8 !px-2 justify-center text-[12px]"
             :class="{ 'is-on': isItemPaid }" :aria-pressed="isItemPaid.toString()" title="Item: R$ {{ slot.price|floatformat:2 }}">Item</button>

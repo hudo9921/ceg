@@ -3,7 +3,7 @@
      Acordeão retrátil para conferência e toggles de pagamento
      100% Lucide Icons (`stroke-width="1.75"`) (< 200 linhas)
      ========================================== -->
-{% if is_gom_staff %}
+{% if staff_can.pagar or staff_can.pedidos %}
 <div class="pt-2 border-t border-slate-100 dark:border-white/5" x-data="{ staffUnitsOpen: false }">
     <button type="button" @click.stop="staffUnitsOpen = !staffUnitsOpen"
         class="ui-btn ui-btn-ghost w-full cursor-pointer">
