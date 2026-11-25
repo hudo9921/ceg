@@ -26,6 +26,14 @@ def _active_section(request):
     return ''
 
 
+def _ui_css_version():
+    from django.contrib.staticfiles import finders
+
+    path = finders.find('css/ui.css')
+    import os
+    return int(os.path.getmtime(path)) if path else ''
+
+
 def frontend(request):
     """Modo dos assets e a navegação principal do joiner (barra lateral e barra de abas)."""
     me = reverse('my_claims')
@@ -39,6 +47,9 @@ def frontend(request):
     active = _active_section(request)
     return {
         'frontend_build': settings.FRONTEND_MODE == 'build',
+        # Desenvolvimento: ?v=<data do arquivo> no ui.css para o navegador não usar cópia antiga.
+        # Em produção o ManifestStaticFilesStorage já põe o hash no nome do arquivo.
+        'ui_css_version': _ui_css_version() if settings.FRONTEND_MODE != 'build' else '',
         'nav_section': active,
         'nav_goms': getattr(getattr(request, 'resolver_match', None), 'url_name', '') in ('gom_directory', 'gom_public'),
         'joiner_nav': [

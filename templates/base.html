@@ -16,7 +16,7 @@
     <link rel="preload" href="{% static 'fonts/outfit-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
     <!-- Tokens e componentes do redesign (Pearl Y2K / Y3K Chrome) — DESIGN_SYSTEM.md §7 -->
-    <link rel="stylesheet" href="{% static 'css/ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/ui.css' %}{% if ui_css_version %}?v={{ ui_css_version }}{% endif %}">
     <!-- Assets: compilados em produção; Play CDN + Lucide completo no desenvolvimento (settings.FRONTEND_MODE) -->
     {% if frontend_build %}
     <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
