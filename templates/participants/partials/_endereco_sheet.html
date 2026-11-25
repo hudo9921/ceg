@@ -1,9 +1,14 @@
-{% comment %}Folha de cadastro/edição de endereço (enderecoForm): o CEP preenche rua, bairro, cidade e UF.{% endcomment %}
-<div x-show="open" x-cloak class="ui-scrim flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="open = false" @keydown.escape.window="open = false">
+{% comment %}
+Folha de cadastro/edição de endereço (enderecoForm), uma por página: abre pelos eventos `endereco-novo` e
+`endereco-editar` (Envios e Editar perfil). O CEP preenche rua, bairro, cidade e UF. Fica acima dos outros modais.
+{% endcomment %}
+<div x-data="enderecoForm()" @endereco-novo.window="novo()" @endereco-editar.window="editar($event.detail)">
+<div x-show="open" x-cloak class="ui-scrim !z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="open = false" @keydown.escape.window="open = false">
     <form method="post" action="{% url 'endereco_salvar' %}" class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-lg max-h-[92vh] overflow-y-auto space-y-3"
           role="dialog" aria-modal="true" aria-labelledby="endereco-sheet-title">
         {% csrf_token %}
         <input type="hidden" name="id" :value="f.id">
+        <input type="hidden" name="next" :value="location.pathname + location.search + location.hash">
         <h2 id="endereco-sheet-title" class="ui-disp text-2xl" x-text="f.id ? 'Editar endereço' : 'Novo endereço'">Novo endereço</h2>
         <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
             <label class="block space-y-1.5"><span class="ui-label">CEP</span>
@@ -32,4 +37,5 @@
             <button type="submit" class="ui-btn ui-btn-primary">Salvar endereço</button>
         </div>
     </form>
+</div>
 </div>

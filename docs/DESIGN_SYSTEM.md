@@ -282,3 +282,9 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
 - `components/_brand_style.html` redefine `--ui-accent`, `--ui-accent-text`, `--ui-accent-soft`, `--ui-focus`,
   `--ui-accent-on-soft`, `--ui-seg-on` e, no escuro, `--ui-holo`. Componentes novos devem usar esses tokens
   (nunca o hex do rosa/azul) para acompanhar a cor do GOM.
+
+## Contraste da página no modo claro (2026-11-25)
+
+- O fundo da página fica um tom de lavanda abaixo do branco (`--ui-bg: #E6E1F1`, degradês `#F2D0E4` e `#D2D8F6`), com
+  borda (`--ui-line` 11%) e sombra um pouco mais marcadas: os cards brancos se destacam sem depender de um modal
+  escurecer o fundo. Texto comum, `--ui-muted` e `--ui-accent-text` continuam ≥ 4,5:1 sobre o fundo.

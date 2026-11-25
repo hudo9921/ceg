@@ -12,9 +12,14 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import Endereco
-from .session_auth import get_session_participant
+from .session_auth import get_session_participant, safe_next_url
 
 BACK = '/me/?tab=envios#enderecos'
+
+
+def _back(request):
+    """Volta para onde o joiner estava (Envios ou Editar perfil); só caminhos do próprio site."""
+    return safe_next_url(request, request.POST.get('next'), BACK)
 
 
 class EnderecoForm(forms.ModelForm):
@@ -49,7 +54,7 @@ def salvar(request):
     if not form.is_valid():
         erros = '; '.join(f'{form.fields[k].label}: {" ".join(v)}' for k, v in form.errors.items() if k in form.fields)
         messages.error(request, f'Confira o endereço: {erros or "dados incompletos"}.')
-        return redirect(BACK)
+        return redirect(_back(request))
     endereco = form.save(commit=False)
     endereco.participant = participant
     if endereco.padrao or not participant.enderecos.exclude(pk=endereco.pk).exists():
@@ -57,7 +62,7 @@ def salvar(request):
         participant.enderecos.exclude(pk=endereco.pk).update(padrao=False)
     endereco.save()
     messages.success(request, 'Endereço salvo.')
-    return redirect(BACK)
+    return redirect(_back(request))
 
 
 @require_POST

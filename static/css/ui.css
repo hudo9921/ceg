@@ -8,13 +8,14 @@
 
 /* ------------------------------------------------------------------ tokens */
 :root {
-    --ui-bg: #F7F6FB;
-    --ui-page: radial-gradient(1100px 520px at 0% -10%, #FCE7F3 0%, rgba(252, 231, 243, 0) 60%),
-               radial-gradient(900px 480px at 100% -5%, #E0E7FF 0%, rgba(224, 231, 255, 0) 60%),
-               #F7F6FB;
+    /* Página um tom de lavanda abaixo do branco: os cards brancos se destacam sem precisar de modal (contraste ~1,3:1). */
+    --ui-bg: #E6E1F1;
+    --ui-page: radial-gradient(1100px 520px at 0% -10%, #F2D0E4 0%, rgba(242, 208, 228, 0) 60%),
+               radial-gradient(900px 480px at 100% -5%, #D2D8F6 0%, rgba(210, 216, 246, 0) 60%),
+               #E6E1F1;
     --ui-surface: #FFFFFF;
-    --ui-surface-2: #F2EFF8;
-    --ui-line: rgba(30, 27, 38, 0.09);
+    --ui-surface-2: #F3F0F9;
+    --ui-line: rgba(30, 27, 38, 0.11);
     --ui-text: #1E1B26;
     --ui-muted: #625C70;
     --ui-accent: #C8307A;
@@ -30,7 +31,7 @@
     --ui-font-body: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --ui-font-display: 'M PLUS Rounded 1c', 'Outfit', sans-serif;
     --ui-font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
-    --ui-shadow: 0 1px 2px rgba(30, 27, 38, 0.04), 0 10px 28px -16px rgba(124, 92, 255, 0.35);
+    --ui-shadow: 0 1px 2px rgba(30, 27, 38, 0.06), 0 12px 30px -14px rgba(88, 60, 170, 0.30);
     --ui-holo: linear-gradient(105deg, #F9A8D4, #C4B5FD 38%, #A5F3FC 68%, #FBCFE8);
     --ui-chrome: linear-gradient(180deg, #6D28D9 0%, #C8307A 100%);
     --ui-seg-gap: 0px;
