@@ -1,0 +1,22 @@
+{% comment %}Lista de conversas (S5). `lado`: joiner (mostra o GOM) ou gom (mostra o joiner). `base`: URL da página.{% endcomment %}
+<nav class="ui-card overflow-hidden {% if cur %}hidden lg:block{% endif %}" aria-label="Conversas">
+    {% for c in conversas %}
+        <a href="{{ base }}?c={{ c.id }}" class="flex items-center gap-3 px-4 py-3.5 no-underline text-ui-text {% if not forloop.first %}border-t border-ui-line{% endif %} {% if cur and cur.id == c.id %}bg-ui-surface-2{% endif %}"
+           {% if cur and cur.id == c.id %}aria-current="true"{% endif %}>
+            {% if lado == 'joiner' %}{% include 'components/_gom_avatar.html' with g=c.gom size="w-9 h-9" %}{% else %}
+                <span class="w-9 h-9 flex-none rounded-ui-pill bg-ui-accent text-white font-bold flex items-center justify-center" aria-hidden="true">{{ c.participant.display_name|slice:":1"|upper }}</span>{% endif %}
+            <span class="flex-1 min-w-0">
+                <b class="block truncate">{% if lado == 'joiner' %}{{ c.gom.name }}{% else %}{{ c.participant.display_name }}{% endif %}</b>
+                <span class="block ui-muted text-[13px] truncate">{{ c.assunto }}</span>
+            </span>
+            <span class="flex flex-col items-end gap-1 flex-none">
+                <span class="ui-muted text-[12px]">{{ c.atualizada_em|date:"d/m" }}</span>
+                {% if lado == 'joiner' and c.nao_lidas_joiner or lado == 'gom' and c.nao_lidas_gom %}
+                    <span class="min-w-[20px] h-5 px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold flex items-center justify-center" aria-label="mensagens novas">{% if lado == 'joiner' %}{{ c.nao_lidas_joiner }}{% else %}{{ c.nao_lidas_gom }}{% endif %}</span>
+                {% endif %}
+            </span>
+        </a>
+    {% empty %}
+        <p class="p-6 text-center ui-muted text-sm">{% if lado == 'joiner' %}Nenhuma conversa ainda. Fale com um GOM pela página da CEG, do pacote ou do GOM.{% else %}Nenhuma conversa ainda. Quando um joiner mandar mensagem, ela aparece aqui.{% endif %}</p>
+    {% endfor %}
+</nav>

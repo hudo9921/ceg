@@ -10,6 +10,8 @@ do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_me
             <span class="flex-1">{{ item.label }}</span>
             {% if item.key == 'avisos' and gom_unread_notifications_count > 0 %}
                 <span class="gom-unread-badge min-w-[22px] h-[22px] px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold flex items-center justify-center">{{ gom_unread_notifications_count }}</span>
+            {% elif item.key == 'mensagens' and gom_unread_mensagens > 0 %}
+                <span class="min-w-[22px] h-[22px] px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold flex items-center justify-center" aria-label="{{ gom_unread_mensagens }} conversas com mensagem nova">{{ gom_unread_mensagens }}</span>
             {% endif %}
         </a>
     {% endfor %}

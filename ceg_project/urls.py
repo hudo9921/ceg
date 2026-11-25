@@ -33,7 +33,8 @@ urlpatterns = [
     path('admin/whatsapp/', include('apps.auth_otp.urls')),
     path('admin/seguranca/2fa/', include('apps.core.urls')),
     path('admin/', admin.site.urls),
-    path('', include('apps.pagamentos.urls')),  # /me/pagar/... (antes de /me/) e /pagamentos/
+    path('', include('apps.pagamentos.urls')),
+    path('', include('apps.conversas.urls')),  # /me/mensagens/... e /mensagens/  # /me/pagar/... (antes de /me/) e /pagamentos/
     path('me/', include('apps.participants.urls')),
     path('privacidade/', PrivacyPolicyView.as_view(), name='privacy_policy'),
     path('', include('apps.goms.urls')),

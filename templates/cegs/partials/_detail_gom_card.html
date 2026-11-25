@@ -11,6 +11,7 @@
     </div>
     <div class="flex flex-wrap gap-2 flex-none">
         {% if g.instagram %}<span class="ui-chip !h-9 !text-[13px]">{{ g.instagram }}</span>{% endif %}
+        {% include 'conversas/partials/_botao_mensagem.html' with g=g tipo='ceg' alvo_id=ceg.id label="Dúvida sobre esta CEG" %}
         <a href="{% url 'gom_public' g.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">Ver página do GOM <i data-lucide="arrow-right" class="w-4 h-4" stroke-width="1.75"></i></a>
     </div>
 </section>
