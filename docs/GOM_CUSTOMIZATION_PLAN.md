@@ -46,9 +46,9 @@ Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "comp
 - Auditoria: `RULES_ACCEPTED` no `AuditLog` do GOM.
 
 ### C2 — Padrões de CEG
-- Campos no `Gom`: `padrao_prazo_item_dias` (dias depois do fechamento), `padrao_prazo_frete_dias`,
-  `padrao_prazo_taxa_dias`, `padrao_descricao` (modelo de texto com `{grupo}`, `{era}`), `padrao_caixa_aberta`
-  (vincular à caixa mais recente em aberto, sim/não).
+- Campos no `Gom`: `padrao_prazo_item_dias` (dias depois do fechamento), `padrao_horario_abertura`,
+  `padrao_descricao` (modelo de texto com `{grupo}`, `{era}`), `padrao_caixa_aberta` (vincular à caixa mais
+  recente em aberto, sim/não). Prazos de frete e taxa ficam fora: já vêm da caixa em cascata.
 - Só **pré-preenche** o Criar. Nada muda em CEGs já criadas. Em branco = como hoje.
 
 ### C3 — Opções de envio
@@ -91,7 +91,8 @@ Novas chaves entram no `CATALOG` de `apps/goms/permissions.py` e no preset "comp
 2. **C1** Regras. 3. **C2** Padrões de CEG. 4. **C3** Envio. 5. **C4** Cor. 6. **C5** Mensagens (por último:
    precisa de cron no servidor e é o de maior risco).
 
-Cada entrega: branch a partir de `develop`, testes, merge em `develop`. Telas novas passam pelo protótipo antes.
+Cada entrega: branch a partir de `develop`, testes, merge em `develop`. Telas novas passam pelo protótipo antes:
+board **ConfigV2** do canvas de design (Configurações com as 6 abas, CEG agendada do joiner estreante/veterano e Pedir envio).
 
 ## 5. Decisões
 - ✅ C1: o aceite só é pedido na primeira participação do joiner naquele GOM (claim sem aceite abre a folha).
