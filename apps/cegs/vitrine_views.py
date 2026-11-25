@@ -105,8 +105,12 @@ class VitrineListView(View):
             it.can_manage = can_manage(request, it)
 
         tipos_item = TipoItem.objects.all().order_by('nome')
-        groups = KpopGroup.objects.prefetch_related('members').all().order_by('name')
-        eras = Era.objects.select_related('group').order_by('group__name', 'name')
+        # Filtros só com o que existe na Vitrine (o catálogo inteiro tem centenas de grupos e milhares de eras).
+        usados = ItemVitrine.objects.values_list('group_id', 'era_id')
+        group_ids = {g for g, _ in usados if g}
+        era_ids = {e for _, e in usados if e}
+        groups = KpopGroup.objects.filter(id__in=group_ids).prefetch_related('members').order_by('name')
+        eras = Era.objects.filter(id__in=era_ids).select_related('group').order_by('group__name', 'name')
         is_staff_user = getattr(request, 'is_gom_staff', False)
 
         eras_by_group = {}
@@ -116,7 +120,7 @@ class VitrineListView(View):
         members_by_group = {}
         all_members_set = set()
         for g in groups:
-            m_list = list(g.members.values_list('name', flat=True))
+            m_list = [m.name for m in g.members.all()]
             members_by_group[g.id] = m_list
             all_members_set.update(m_list)
 
@@ -183,7 +187,7 @@ class VitrineItemCreateView(StaffRequiredMixin, View):
 
         members_by_group = {}
         for g in groups:
-            members_by_group[g.id] = list(g.members.values_list('name', flat=True))
+            members_by_group[g.id] = [m.name for m in g.members.all()]
 
         photocard_subcategories = ['Regulares', 'POB', 'Lucky Draw', 'Fansign', 'Broadcast', 'Inclusão', 'Outro']
 
@@ -294,7 +298,7 @@ class VitrineItemUpdateView(StaffRequiredMixin, View):
 
         members_by_group = {}
         for g in groups:
-            members_by_group[g.id] = list(g.members.values_list('name', flat=True))
+            members_by_group[g.id] = [m.name for m in g.members.all()]
 
         photocard_subcategories = ['Regulares', 'POB', 'Lucky Draw', 'Fansign', 'Broadcast', 'Inclusão', 'Outro']
 

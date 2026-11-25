@@ -62,6 +62,11 @@ fi
 
 # --- 5. Sobe a nova versão e confere a saúde (app + banco) -------------------------
 docker compose up -d
+# O Caddyfile é montado como arquivo: o `git reset` troca o arquivo e o container segue lendo o antigo.
+# Se o que o Caddy enxerga difere do repositório, reinicia só o Caddy (~1 s; certificados ficam no volume).
+if ! docker exec valcegs-caddy cat /etc/caddy/Caddyfile 2>/dev/null | cmp -s - Caddyfile; then
+    docker compose restart caddy >/dev/null && echo "✅ Caddy reiniciado com o Caddyfile novo"
+fi
 healthy=""
 for _ in $(seq 1 120); do
     if curl -fsS -o /dev/null --max-time 5 http://127.0.0.1:8000/health/; then

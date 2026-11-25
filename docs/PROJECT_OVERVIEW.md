@@ -125,6 +125,16 @@ chmod +x scripts/migrate_from_neon.sh
 
 ---
 
+### Desempenho na VM pequena (1 GB, fração de CPU)
+
+- **Cards de CEG** (`enrich_cegs_with_availability`): lê as vagas como linhas simples (`values_list`), sem objetos.
+- **Filtros nunca carregam o catálogo inteiro** (centenas de grupos, milhares de eras): Vitrine pública usa só grupos/eras
+  com item; Analytics e Alocador só os que têm CEG do GOM. Teste de número fixo de consultas em `tests_vitrine`.
+- **Caddy comprime o HTML** (`encode zstd gzip`). O Caddyfile é montado como arquivo, então o `deploy.sh` reinicia o
+  Caddy quando o conteúdo muda.
+- **Servidor:** `vm.swappiness=10` em `/etc/sysctl.d/99-valcegs.conf` (mantém o app na RAM em vez de cache de disco);
+  fwupd, ModemManager e udisks2 desligados.
+
 ## 📚 6. Índice da Documentação Modular
 
 Para evitar sobrecarga de contexto e arquivos excessivamente longos, a documentação é dividida em módulos temáticos especializados:
