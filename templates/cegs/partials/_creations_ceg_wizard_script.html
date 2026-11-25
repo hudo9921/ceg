@@ -1,0 +1,47 @@
+{% comment %}
+Nova CEG em 3 passos (P5, BackofficeV2): 1. Grupo e era · 2. Itens e sets · 3. Abertura, prazos e Pix.
+Componente aninhado no modal: lê `items`, `selectedEraId` e `cegStatus` do creationsHubApp (escopo pai).
+Os campos continuam todos no mesmo <form>; os passos só mostram/escondem e conferem o obrigatório.
+{% endcomment %}
+<script>
+function cegWizard() {
+    return {
+        step: 1,
+        stepError: '',
+        steps: [
+            { title: 'Grupo e era', hint: 'Escolha do catálogo, dê um título e, se quiser, uma capa.' },
+            { title: 'Itens e sets', hint: 'Os photocards com preço e quantos sets já abrir. Fotos podem ser recortadas depois.' },
+            { title: 'Abertura, prazos e Pix', hint: 'Quando abre, caixa, prazos e a chave Pix (em branco usa a padrão do GOM).' },
+        ],
+        init() {
+            this.$watch('activeModal', (v) => { if (v === 'ceg') { this.step = 1; this.stepError = ''; } });
+        },
+        problem() {
+            const form = this.$root.querySelector('form');
+            if (this.step === 1) {
+                if (!this.selectedEraId) return 'Escolha o grupo e a era.';
+                if (!(form.elements.title.value || '').trim()) return 'Dê um título para a CEG.';
+            }
+            if (this.step === 2 && !(this.items || []).some((it) => (it.name || '').trim())) {
+                return 'Adicione pelo menos um item.';
+            }
+            return '';
+        },
+        next() {
+            this.stepError = this.problem();
+            if (this.stepError) return;
+            this.step = Math.min(3, this.step + 1);
+            this.$root.querySelector('form').scrollTop = 0;
+        },
+        back() {
+            this.stepError = '';
+            this.step = Math.max(1, this.step - 1);
+            this.$root.querySelector('form').scrollTop = 0;
+        },
+        submitGuard(event) {
+            // Enter num campo não publica a CEG antes do passo 3.
+            if (this.step < 3) { event.preventDefault(); this.next(); }
+        },
+    };
+}
+</script>

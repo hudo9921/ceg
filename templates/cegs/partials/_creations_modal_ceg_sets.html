@@ -1,0 +1,20 @@
+{% comment %}Nova CEG, passo 2: quantos sets abrir já (enquete não gera sets agora).{% endcomment %}
+<div class="ui-well p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div x-show="cegStatus !== 'POLLING'">
+        <p class="font-bold text-[15px]">Quantos sets abrir agora?</p>
+        <p class="ui-muted text-sm">Cada set tem uma vaga de cada item. Dá para abrir mais sets depois.</p>
+    </div>
+    <div x-show="cegStatus === 'POLLING'">
+        <p class="font-bold text-[15px]">Modo enquete</p>
+        <p class="ui-muted text-sm">Nenhum set é gerado agora: os joiners votam nos itens e você abre os sets depois.</p>
+    </div>
+    <template x-if="cegStatus !== 'POLLING'">
+        <select name="initial_sets_count" x-model="initialSetsCount" class="ui-input sm:w-48" aria-label="Quantos sets abrir agora">
+            <option value="1">1 set</option>
+            <option value="2">2 sets</option>
+            <option value="3">3 sets</option>
+            <option value="4">4 sets</option>
+            <option value="5">5 sets</option>
+        </select>
+    </template>
+</div>

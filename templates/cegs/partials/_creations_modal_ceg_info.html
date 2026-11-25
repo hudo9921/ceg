@@ -1,10 +1,10 @@
 <!-- SEÇÕES 1 E 2: ERA, TÍTULO, CAPA, DATAS E STATUS DA CEG -->
 
-<!-- Seção 1: Era & Grupo -->
-<div class="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-3.5">
+<!-- Seção 1: Era & Grupo (passo 1) -->
+<div x-show="step === 1" class="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-3.5">
     <span class="ui-label flex items-center gap-1.5">
         <i data-lucide="disc" class="w-3.5 h-3.5"></i>
-        <span>1. Era e Título da Compra em Grupo</span>
+        <span>Era e Título da Compra em Grupo</span>
     </span>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
@@ -91,11 +91,11 @@
     </div>
 </div>
 
-<!-- Seção 2: Datas, Horário de Abertura & Status -->
-<div class="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-3.5">
+<!-- Seção 2: Datas, Horário de Abertura & Status (passo 3) -->
+<div x-show="step === 3" class="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-3.5">
     <span class="ui-label flex items-center gap-1.5">
         <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-        <span>2. Horário de Abertura (Standby / Countdown) & Status</span>
+        <span>Horário de Abertura (Standby / Countdown) & Status</span>
     </span>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
