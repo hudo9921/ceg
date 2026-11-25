@@ -38,7 +38,7 @@ PARTICIPANT_ROUTES = {
     'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion', 'gom_rules_accept',
     'pix_gerar', 'pix_ver', 'pix_paguei', 'pix_cancelar', 'endereco_salvar', 'endereco_excluir', 'endereco_cep',
     'joiner_mensagens', 'joiner_mensagem_nova', 'joiner_mensagem_enviar', 'joiner_mensagens_novas',
-    'vitrine_reservar', 'joiner_reserva_cancelar',
+    'vitrine_reservar', 'joiner_reserva_cancelar', 'vitrine_comprar',
 }
 LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
 LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')

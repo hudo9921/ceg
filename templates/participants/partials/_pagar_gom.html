@@ -4,7 +4,8 @@ GOM com Pix por QR configurado (S1): o joiner marca o que quer pagar e gera o Pi
 Sem isso, cada linha mostra a chave Pix para copiar, como antes.
 {% endcomment %}
 <section class="ui-card overflow-hidden" aria-label="Cobranças de {{ group.gom.name }}"
-         {% if group.pix_ready %}x-data="pixPay({{ group.gom.id }})"{% endif %}>
+         {% if group.pix_ready %}x-data="pixPay({{ group.gom.id }})" data-refs="{% for c in group.cobrancas %}{{ c.referencia }} {% endfor %}"
+         x-init="const r = new URLSearchParams(location.search).get('pix'); if (r && $el.dataset.refs.split(' ').includes(r)) abrir(r)"{% endif %}>
     <div class="flex items-center gap-3 p-4 sm:p-5">
         {% include 'components/_gom_avatar.html' with g=group.gom size="w-10 h-10" %}
         <div class="flex-1 min-w-0">
