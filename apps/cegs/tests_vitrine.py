@@ -55,6 +55,17 @@ class VitrineTests(TestCase):
         self.assertContains(response, 'Karina Armageddon POB')
         self.assertContains(response, '55,00')
 
+    def test_filtros_publicos_so_com_grupos_da_vitrine(self):
+        # O catálogo tem centenas de grupos: o filtro mostra só os que têm item, com poucas consultas.
+        for n in range(15):
+            outro = KpopGroup.objects.create(name=f'Catalogo {n}')
+            Era.objects.create(group=outro, name=f'Era {n}')
+        with self.assertNumQueries(10):  # fixo: não cresce com o número de grupos do catálogo
+            resp = self.client.get(reverse('vitrine_list'))
+        self.assertEqual([g.name for g in resp.context['groups']], ['aespa'])
+        self.assertEqual([e.name for e in resp.context['eras']], ['Armageddon'])
+        self.assertNotContains(resp, 'Catalogo 3')
+
     def test_vitrine_list_filters(self):
         # Filtro de busca por nome
         resp = self.client.get(reverse('vitrine_list') + '?q=Karina')

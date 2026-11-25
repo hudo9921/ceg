@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
-from django.db.models import Count, Sum, Q, F
+from django.db.models import Count, F, Prefetch, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from apps.cegs.models import CEG, CEGSet, ItemSlot, CEGItemDefinition, ItemIndividual
@@ -32,7 +32,10 @@ class AnalyticsService:
     @staticmethod
     def get_filter_options(gom=None):
         """Retorna os grupos, eras e meses disponíveis para alimentar os filtros do painel."""
-        groups = KpopGroup.objects.prefetch_related('eras').all().order_by('name')
+        # Só grupos/eras com CEG deste GOM (o catálogo inteiro tem centenas de grupos).
+        era_ids = set(_q(CEG, gom).values_list('era_id', flat=True))
+        groups = (KpopGroup.objects.filter(eras__id__in=era_ids).distinct().order_by('name')
+                  .prefetch_related(Prefetch('eras', queryset=Era.objects.filter(id__in=era_ids))))
         groups_data = []
         for g in groups:
             sorted_eras = sorted(g.eras.all(), key=lambda e: e.name.lower())
@@ -42,7 +45,7 @@ class AnalyticsService:
                 'eras': [{'id': str(e.id), 'name': e.name} for e in sorted_eras]
             })
 
-        eras = Era.objects.select_related('group').all().order_by('group__name', 'name')
+        eras = Era.objects.filter(id__in=era_ids).select_related('group').order_by('group__name', 'name')
         eras_data = [{
             'id': str(e.id),
             'name': e.name,
