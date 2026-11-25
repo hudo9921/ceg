@@ -24,6 +24,11 @@ class Gom(models.Model):
     logo_url = models.URLField('Logo', max_length=500, blank=True)
     banner_url = models.URLField('Banner', max_length=500, blank=True)
     bio = models.TextField('Apresentação', blank=True)
+    # Página pública (opções do GOM): seções visíveis e uma CEG fixada no topo.
+    pagina_mostrar_agendadas = models.BooleanField('Mostrar "Abrindo em breve"', default=True)
+    pagina_mostrar_vitrine = models.BooleanField('Mostrar a pronta entrega (Vitrine)', default=True)
+    pagina_ceg_destaque = models.ForeignKey('cegs.CEG', on_delete=models.SET_NULL, null=True, blank=True,
+                                            related_name='+', verbose_name='CEG fixada no topo')
     cor_marca = models.CharField('Cor da marca', max_length=20, default='padrao',
                                  choices=[('padrao', 'Padrão ValCegs'), ('lilas', 'Lilás'), ('azul', 'Azul'),
                                           ('verde', 'Verde-água'), ('laranja', 'Laranja'), ('vermelho', 'Vermelho')])

@@ -39,11 +39,35 @@ def gom_settings_index(request):
     return redirect(tabs[0]['url'])
 
 
+class PaginaPublicaForm(forms.ModelForm):
+    """Opções da página pública: seções visíveis e a CEG fixada no topo (só CEGs abertas/agendadas do GOM)."""
+    class Meta:
+        from .models import Gom
+        model = Gom
+        fields = ['pagina_mostrar_agendadas', 'pagina_mostrar_vitrine', 'pagina_ceg_destaque']
+
+    def __init__(self, *args, gom=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.cegs.models import CEG
+        field = self.fields['pagina_ceg_destaque']
+        field.queryset = CEG.objects.for_gom(gom).filter(
+            status__in=[CEG.Status.OPEN, CEG.Status.SCHEDULED]).order_by('-created_at')
+        field.empty_label = 'Nenhuma'
+        field.label_from_instance = lambda c: c.title
+        _style(self)
+        for name in ('pagina_mostrar_agendadas', 'pagina_mostrar_vitrine'):
+            self.fields[name].widget.attrs['class'] = 'w-5 h-5 accent-[var(--ui-accent)]'
+
+
 def _perfil(request, gom):
     from apps.cegs.image_utils import ImageSizeError, process_image_upload
 
     form = GomProfileForm(request.POST or None, instance=gom, can_edit_profile=True, can_edit_pix=False)
-    if request.method == 'POST' and form.is_valid():
+    # Opções da página só quando o bloco veio no POST (marcador), para não desligar caixas por omissão.
+    pagina_data = request.POST if request.method == 'POST' and request.POST.get('pagina_form') else None
+    pagina = PaginaPublicaForm(pagina_data, instance=gom, gom=gom)
+    extra = {'pagina_form': pagina}
+    if request.method == 'POST' and form.is_valid() and (pagina_data is None or pagina.is_valid()):
         profile = form.save(commit=False)
         try:
             for field, folder in (('logo', 'goms/logos'), ('banner', 'goms/banners')):
@@ -52,10 +76,10 @@ def _perfil(request, gom):
                     setattr(profile, f'{field}_url', process_image_upload(file_obj=upload, folder=folder))
         except ImageSizeError as exc:
             messages.error(request, str(exc))
-            return form, False, {}
-        profile.save()
-        return form, True, {}
-    return form, False, {}
+            return form, False, extra
+        profile.save()  # mesma instância: já leva as opções da página quando o bloco foi validado
+        return form, True, extra
+    return form, False, extra
 
 
 def _pix(request, gom):

@@ -1,7 +1,7 @@
 # Personalização por GOM — Plano
 
 > Status: **C0–C4 entregues** (2026-11-25); C5 espera a decisão do ritmo do bot. Escopo escolhido: Regras, Padrões de CEG, Opções de envio,
-> Cor da marca e Mensagens do bot. Ficam para depois: limites de joiner e opções da página pública.
+> Cor da marca e Mensagens do bot. Opções da página pública entregues em 2026-11-25 (aba Perfil: mostrar "Abrindo em breve" e Vitrine, CEG fixada no topo). Fica para depois: limites de joiner.
 
 ## 1. O que já é do GOM hoje
 

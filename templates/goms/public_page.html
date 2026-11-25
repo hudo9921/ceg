@@ -34,6 +34,8 @@
 
     {% include 'goms/partials/_gom_rules.html' %}
 
+    {% if destaque %}{% include 'goms/partials/_public_destaque.html' with ceg=destaque %}{% endif %}
+
     {% include 'goms/partials/_public_cegs.html' with titulo="CEGs abertas" cegs=abertas vazio="Nenhuma CEG aberta agora." %}
     {% if agendadas %}
         {% include 'goms/partials/_public_cegs.html' with titulo="Abrindo em breve" cegs=agendadas vazio="" %}
