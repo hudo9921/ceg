@@ -9,6 +9,9 @@
     <!-- Cabeçalho Principal -->
     {% include 'cegs/partials/_notificacoes_header.html' %}
 
+    <!-- Avisos no celular (push) para a equipe -->
+    {% include 'components/_push_card.html' with publico='gom' %}
+
     <!-- Abas e Filtros por Tipo de Ação -->
     {% include 'cegs/partials/_notificacoes_tabs.html' %}
 

@@ -1,0 +1,84 @@
+{% comment %}
+"Avisos no celular" (apps/avisos): liga/desliga o push neste aparelho e manda um teste. Usado em /me/ e no painel do GOM
+(`publico`: texto para joiner ou equipe). iPhone: só funciona com o site adicionado à Tela de Início (Safari ≥ 16.4).
+Estados: carregando · sem-suporte · ios · bloqueado · desligado · ligado.
+{% endcomment %}
+<div x-data="pushAvisos()" x-init="iniciar()" x-show="estado !== 'carregando'" x-cloak
+     class="ui-card p-4 flex flex-wrap items-center gap-3" aria-live="polite">
+    <span class="w-10 h-10 ui-well flex items-center justify-center flex-none"><i data-lucide="bell-ring" class="w-5 h-5" stroke-width="1.75"></i></span>
+    <div class="min-w-0 flex-[1_1_220px]">
+        <p class="font-semibold m-0">Avisos no celular</p>
+        <p class="text-sm ui-muted m-0" x-show="estado === 'desligado'">{% if publico == 'gom' %}Pix avisado, pedidos de envio, repasses e mensagens chegam na hora, mesmo com o site fechado.{% else %}Pagamento confirmado, caixa chegando, pacote enviado e respostas do GOM chegam na hora.{% endif %}</p>
+        <p class="text-sm m-0" x-show="estado === 'ligado'"><span class="ui-status ui-ok">Ligados neste aparelho</span></p>
+        <p class="text-sm ui-muted m-0" x-show="estado === 'ios'">No iPhone: toque em <b>Compartilhar</b> <i data-lucide="share" class="w-3.5 h-3.5 inline" stroke-width="1.75"></i> → <b>Adicionar à Tela de Início</b>, abra o CegManager por lá e ative aqui.</p>
+        <p class="text-sm ui-muted m-0" x-show="estado === 'bloqueado'">As notificações deste site estão bloqueadas no navegador. Libere nas configurações do site (ícone ao lado do endereço) e volte aqui.</p>
+        <p class="text-sm ui-muted m-0" x-show="estado === 'sem-suporte'">Este navegador não recebe notificações. No Android use o Chrome; no iPhone, adicione o site à Tela de Início.</p>
+        <p class="text-sm ui-danger m-0" x-show="erro" x-text="erro"></p>
+        <p class="text-sm ui-ok m-0" x-show="ok" x-text="ok"></p>
+    </div>
+    <div class="flex gap-2 flex-none">
+        <button type="button" x-show="estado === 'desligado'" class="ui-btn ui-btn-primary ui-btn-sm" :disabled="ocupado" @click="ativar()">
+            <i data-lucide="bell" class="w-4 h-4" stroke-width="1.75"></i>Ativar
+        </button>
+        <template x-if="estado === 'ligado'">
+            <span class="flex gap-2">
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" :disabled="ocupado" @click="testar()">Testar</button>
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" :disabled="ocupado" @click="desligar()">Desligar</button>
+            </span>
+        </template>
+    </div>
+</div>
+<script>
+window.pushAvisos = window.pushAvisos || function () {
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const post = async (url, body) => (await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })).json();
+    const chaveBytes = (b64) => { const p = '='.repeat((4 - b64.length % 4) % 4); const raw = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...raw].map((c) => c.charCodeAt(0))); };
+    const aparelho = () => { const ua = navigator.userAgent; return /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Navegador'; };
+    return {
+        estado: 'carregando', ocupado: false, erro: '', ok: '', reg: null,
+        async iniciar() {
+            const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const instalado = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+            if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+                this.estado = ios && !instalado ? 'ios' : 'sem-suporte'; return;
+            }
+            if (Notification.permission === 'denied') { this.estado = 'bloqueado'; return; }
+            try {
+                this.reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                const sub = await this.reg.pushManager.getSubscription();
+                this.estado = sub && Notification.permission === 'granted' ? 'ligado' : 'desligado';
+                if (sub) post('{% url "push_inscrever" %}', { subscription: sub.toJSON(), aparelho: aparelho() });  // mantém o servidor em dia
+            } catch (e) { this.estado = 'sem-suporte'; }
+            this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+        },
+        async ativar() {
+            this.ocupado = true; this.erro = ''; this.ok = '';
+            try {
+                const permissao = await Notification.requestPermission();
+                if (permissao !== 'granted') { this.estado = permissao === 'denied' ? 'bloqueado' : 'desligado'; return; }
+                const { chave } = await (await fetch('{% url "push_chave" %}')).json();
+                const sub = await this.reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveBytes(chave) });
+                const data = await post('{% url "push_inscrever" %}', { subscription: sub.toJSON(), aparelho: aparelho() });
+                if (!data.success) { this.erro = data.message || 'Não deu certo.'; await sub.unsubscribe(); return; }
+                this.estado = 'ligado'; this.ok = data.message;
+            } catch (e) { this.erro = 'Não deu para ativar neste navegador.'; } finally { this.ocupado = false; }
+        },
+        async desligar() {
+            this.ocupado = true; this.erro = ''; this.ok = '';
+            try {
+                const sub = await this.reg.pushManager.getSubscription();
+                if (sub) { await post('{% url "push_cancelar" %}', { endpoint: sub.endpoint }); await sub.unsubscribe(); }
+                this.estado = 'desligado';
+            } finally { this.ocupado = false; }
+        },
+        async testar() {
+            this.ocupado = true; this.erro = ''; this.ok = '';
+            try {
+                const sub = await this.reg.pushManager.getSubscription();
+                const data = await post('{% url "push_testar" %}', { endpoint: sub ? sub.endpoint : '' });
+                if (data.success) this.ok = 'Enviado! Deve chegar em alguns segundos.'; else this.erro = data.message;
+            } finally { this.ocupado = false; }
+        },
+    };
+};
+</script>
