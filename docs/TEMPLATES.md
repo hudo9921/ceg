@@ -209,7 +209,8 @@
 - **Navegação (redesign 2026, DESIGN_SYSTEM §7.4):**
   - `components/ui_sidebar.html`: barra lateral fixa no desktop (seções do joiner, menu do GOM, conta, tema).
   - `components/ui_topbar.html`: barra superior no celular (marca, tema, atalhos da equipe, conta).
-  - `components/ui_tabbar.html`: barra de 5 abas no celular.
+  - `components/ui_tabbar.html`: barra de abas no celular (seções do joiner + "Mais").
+  - `components/_menu_mais.html`: folha do "Mais" no celular com o que a barra lateral tem e não cabe nas abas (Repasses, GOMs, Seguindo, painel do GOM, plataforma, conta).
   - As seções e qual está ativa vêm de `apps/core/context_processors.frontend` (`joiner_nav`, `nav_section`).
 - **Cadastro em Massa de Participantes (`bulk_create.html` — 30 linhas):**
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
