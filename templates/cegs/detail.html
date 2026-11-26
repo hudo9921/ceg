@@ -39,6 +39,9 @@
             {% include 'cegs/partials/_detail_avulsos_grid.html' %}
         {% endif %}
 
+        <!-- Vagas que joiners deixaram para repasse (apps/repasses) -->
+        {% include 'repasses/partials/_ceg_secao.html' %}
+
         <!-- Como funciona o pagamento (etapas + Pix do item), recolhido -->
         {% include 'cegs/partials/_detail_how_to_pay.html' %}
 

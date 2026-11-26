@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Repasses — CegManager{% endblock %}
+
+{% block content %}
+{% comment %}
+/repasses/ (apps/repasses/views.py:lista_publica): vagas que joiners deixaram disponíveis. "Quero esta vaga" manda o
+pedido (já é o aceite) e o GOM aprova ou recusa. Cards em repasses/partials/_card.html; script em _script.html.
+{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6" x-data="repasses()">
+    <header class="space-y-2 max-w-2xl">
+        <p class="ui-label">Repasses</p>
+        <h1 class="ui-disp text-4xl">Vagas para repasse</h1>
+        <p class="ui-muted text-[15px]">Joiners que não podem mais ficar com o item. Peça a vaga: o GOM aprova e ela passa para você, com o que ainda falta pagar.</p>
+    </header>
+
+    {% if pagina.object_list %}
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for r in pagina.object_list %}{% include 'repasses/partials/_card.html' %}{% endfor %}
+        </div>
+        {% if pagina.has_other_pages %}
+            <nav class="flex items-center justify-center gap-3" aria-label="Páginas">
+                {% if pagina.has_previous %}<a class="ui-btn ui-btn-ghost ui-btn-sm" href="?pagina={{ pagina.previous_page_number }}"><i data-lucide="chevron-left" class="w-4 h-4" stroke-width="1.75"></i>Anterior</a>{% endif %}
+                <span class="ui-label">{{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+                {% if pagina.has_next %}<a class="ui-btn ui-btn-ghost ui-btn-sm" href="?pagina={{ pagina.next_page_number }}">Próxima<i data-lucide="chevron-right" class="w-4 h-4" stroke-width="1.75"></i></a>{% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="ui-card p-10 text-center space-y-2">
+            <i data-lucide="arrow-left-right" class="w-8 h-8 mx-auto ui-muted" stroke-width="1.75"></i>
+            <h2 class="ui-disp text-2xl">Nenhuma vaga para repasse agora</h2>
+            <p class="ui-muted text-[15px]">Quando um joiner deixar uma vaga disponível, ela aparece aqui.</p>
+        </div>
+    {% endif %}
+    {% include 'repasses/partials/_script.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% comment %}Card de vaga disponível para repasse (lista.html e página da CEG). `r` tem .a_pagar.{% endcomment %}
+{% with ceg=r.slot.set.ceg item=r.slot.item_definition %}
+<article class="ui-card overflow-hidden flex flex-col">
+    <a href="{% url 'ceg_detail' ceg.slug %}" class="flex gap-3 p-4 no-underline text-ui-text">
+        {% if ceg.display_image_url %}
+            <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt="" loading="lazy" decoding="async" class="w-16 h-16 rounded-[var(--ui-r-ctl)] object-cover flex-none">
+        {% endif %}
+        <span class="min-w-0 space-y-0.5">
+            <span class="block ui-label truncate">{{ ceg.era.group.name }} · {{ r.gom.name }}</span>
+            <span class="block font-bold truncate">{{ item.name }}{% if item.member_name %} · {{ item.member_name }}{% endif %}</span>
+            <span class="block text-sm ui-muted truncate">{{ ceg.title }}</span>
+        </span>
+    </a>
+    <div class="px-4 pb-4 space-y-3 mt-auto">
+        {% if r.recado %}<p class="ui-well p-2.5 text-sm m-0">“{{ r.recado }}”</p>{% endif %}
+        <p class="text-sm m-0">{% if r.a_pagar %}Falta pagar <b class="ui-mono">R$ {{ r.a_pagar }}</b>{% else %}<span class="ui-status ui-ok">Já pago</span> <span class="ui-muted">· combine o valor com quem repassa</span>{% endif %}</p>
+        {% if logged_participant and logged_participant.pk == r.de_id %}
+            <p class="ui-label m-0">Esta vaga é sua.</p>
+        {% else %}
+            <button type="button" class="ui-btn ui-btn-primary w-full" :disabled="enviando" @click="pedir({{ r.pk }}, $el)">
+                <i data-lucide="hand" class="w-4 h-4" stroke-width="1.75"></i>Quero esta vaga
+            </button>
+        {% endif %}
+    </div>
+</article>
+{% endwith %}

@@ -464,9 +464,12 @@ class CEGDetailView(View):
 
         from apps.goms.rules import rules_context
 
+        from apps.repasses.views import com_valores, disponiveis
+
         return render(request, 'cegs/detail.html', {
             **rules_context(request, ceg.gom),
             'brand_gom': ceg.gom,
+            'repasses': com_valores(disponiveis(ceg=ceg)[:12]),  # vagas que joiners deixaram para repasse
             'ceg': ceg,
             'is_gom_staff': manage,
             # O que este admin pode fazer nesta CEG (apps.goms.permissions); o servidor confere de novo.

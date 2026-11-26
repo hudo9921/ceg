@@ -1,0 +1,7 @@
+{% comment %}Linha de repasse em andamento ou do histórico (gom_fila.html).{% endcomment %}
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 border-t first:border-t-0 text-sm" style="border-color: var(--ui-line)">
+    <span class="min-w-0 flex-1 truncate"><b>{{ r.slot.item_definition.name }}</b> <span class="ui-muted">· {{ r.slot.set.ceg.title }}</span></span>
+    <span class="ui-muted">{{ r.de.display_name }} → {% if r.para %}{{ r.para.display_name }}{% elif r.publico %}qualquer pessoa{% else %}número novo{% endif %}</span>
+    <span class="ui-status {% if r.status == 'APROVADO' %}ui-ok{% elif r.ativo %}ui-warn{% else %}ui-danger{% endif %}">{{ r.get_status_display }}</span>
+    <span class="ui-label">{{ r.criado_em|date:"d/m H:i" }}</span>
+</div>

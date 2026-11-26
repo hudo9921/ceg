@@ -1,0 +1,14 @@
+{% comment %}Vagas desta CEG disponíveis para repasse (CEGDetailView: `repasses`). Cards e script de repasses/.{% endcomment %}
+{% if repasses %}
+<section class="space-y-3" aria-labelledby="ceg-repasses" x-data="repasses()">
+    <div class="flex items-end justify-between gap-3">
+        <h2 id="ceg-repasses" class="ui-disp text-2xl m-0">Vagas para repasse <span class="ui-mono ui-muted text-base">{{ repasses|length }}</span></h2>
+        <a href="{% url 'repasses_disponiveis' %}" class="ui-label hover:underline">Todos os repasses</a>
+    </div>
+    <p class="ui-muted text-sm m-0">Joiners que não podem mais ficar com o item. Peça a vaga e o GOM aprova.</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for r in repasses %}{% include 'repasses/partials/_card.html' %}{% endfor %}
+    </div>
+    {% include 'repasses/partials/_script.html' %}
+</section>
+{% endif %}

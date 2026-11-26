@@ -1,0 +1,38 @@
+{% comment %}Um repasse esperando o GOM (gom_fila.html). `r` tem .pendencias e .a_pagar (services.pendencias).{% endcomment %}
+<article class="ui-card p-5 space-y-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0 space-y-1">
+            <p class="ui-label m-0">{{ r.slot.set.ceg.title }}{% if r.publico %} · vaga pública{% endif %}</p>
+            <h3 class="font-bold text-lg m-0">{{ r.slot.item_definition.name }}{% if r.slot.item_definition.member_name %} · {{ r.slot.item_definition.member_name }}{% endif %}</h3>
+        </div>
+        <span class="ui-status ui-warn">desde {{ r.aceito_em|timesince }}</span>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 text-[15px]">
+        <span class="ui-chip !cursor-default">{{ r.de.display_name }}</span>
+        <i data-lucide="arrow-right" class="w-4 h-4 ui-muted" stroke-width="1.75"></i>
+        <span class="ui-chip is-on !cursor-default">{{ r.para.display_name }}</span>
+        <a href="{% url 'consulta_joiner' %}?q={{ r.para.whatsapp|urlencode }}" class="ui-label hover:underline">ver joiner</a>
+    </div>
+    {% if r.recado %}<p class="ui-well p-3 text-sm m-0">“{{ r.recado }}”</p>{% endif %}
+    <p class="text-sm m-0">
+        {% if r.pendencias %}
+            Vai junto para {{ r.para.display_name }}: {% for nome, valor in r.pendencias %}{{ nome }} R$ {{ valor }}{% if not forloop.last %} · {% endif %}{% endfor %}
+            (<b>R$ {{ r.a_pagar }}</b>).
+        {% else %}
+            <span class="ui-status ui-ok">Tudo pago</span> — o acerto entre os dois é com eles.
+        {% endif %}
+    </p>
+    <form method="post" class="flex flex-wrap gap-2 items-center" x-data="{ recusando: false }">
+        {% csrf_token %}
+        <input type="hidden" name="repasse" value="{{ r.pk }}">
+        <button type="submit" name="acao" value="aprovar" class="ui-btn ui-btn-primary" x-show="!recusando"><i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>Aprovar</button>
+        <button type="button" class="ui-btn ui-btn-ghost" x-show="!recusando" @click="recusando = true">Recusar</button>
+        <template x-if="recusando">
+            <div class="flex flex-wrap gap-2 items-center w-full">
+                <input type="text" name="motivo" maxlength="280" placeholder="Motivo (opcional, os dois veem)" class="ui-input flex-[1_1_240px]">
+                <button type="submit" name="acao" value="recusar" class="ui-btn">Recusar repasse</button>
+                <button type="button" class="ui-btn ui-btn-ghost" @click="recusando = false">Voltar</button>
+            </div>
+        </template>
+    </form>
+</article>
