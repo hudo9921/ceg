@@ -1,4 +1,4 @@
-"""Seguir grupos/integrantes: página e alternar, aviso de CEG nova (uma vez) e personalização da home e da loja."""
+"""Seguir grupos/integrantes: página e alternar, sem aviso de CEG nova, e personalização da home e da loja."""
 import json
 from decimal import Decimal
 
@@ -10,7 +10,7 @@ from apps.goms.models import Gom
 from apps.groups.models import Era, GroupMember, KpopGroup
 
 from .models import Participant, ParticipantNotification, Seguindo
-from .seguindo import avisar_seguidores, preferencias, relevancia
+from .seguindo import preferencias, relevancia
 
 
 class SeguirFixture(TestCase):
@@ -58,20 +58,10 @@ class SeguirTests(SeguirFixture):
         self.assertEqual(res.status_code, 401)
         self.assertRedirects(self.client.get(reverse('seguindo')), '/me/login/?next=/me/seguindo/', fetch_redirect_response=False)
 
-    def test_aviso_uma_vez_e_so_para_quem_segue(self):
+    def test_criar_ceg_nao_notifica_quem_segue(self):
         Seguindo.objects.create(participant=self.ana, group=self.aespa, member=self.karina)
-        bia = Participant.objects.create(whatsapp='5511922220000', name='Bia')
-        Seguindo.objects.create(participant=bia, group=self.ive)
-        ceg = self.ceg(self.aespa, 'Karina', 'karina-ceg')
-        self.ceg(self.aespa, 'Winter', 'winter-ceg')  # Ana segue só a Karina: não avisa
-        avisos = ParticipantNotification.objects.filter(notification_type='NOVA_CEG')
-        self.assertEqual([(a.participant, a.title) for a in avisos], [(self.ana, 'Nova CEG de aespa com Karina')])
-        self.assertEqual(avisar_seguidores(ceg), 0)  # já avisou
-
-    def test_rascunho_nao_avisa(self):
-        Seguindo.objects.create(participant=self.ana, group=self.aespa)
-        self.ceg(self.aespa, 'Karina', 'rascunho', status=CEG.Status.DRAFT)
-        self.assertFalse(ParticipantNotification.objects.filter(notification_type='NOVA_CEG').exists())
+        self.ceg(self.aespa, 'Karina', 'sem-spam')
+        self.assertFalse(ParticipantNotification.objects.filter(participant=self.ana).exists())
 
 
 class PersonalizacaoTests(SeguirFixture):

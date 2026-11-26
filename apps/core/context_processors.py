@@ -58,6 +58,7 @@ def frontend(request):
         # Em produção o ManifestStaticFilesStorage já põe o hash no nome do arquivo.
         'ui_css_version': _ui_css_version() if settings.FRONTEND_MODE != 'build' else '',
         'nav_section': active,
+        'nav_repasses': getattr(getattr(request, 'resolver_match', None), 'url_name', '') == 'repasses_disponiveis',
         'nav_goms': getattr(getattr(request, 'resolver_match', None), 'url_name', '') in ('gom_directory', 'gom_public'),
         'joiner_nav': [
             {'key': key, 'label': label, 'icon': icon, 'url': urls[key], 'active': key == active}

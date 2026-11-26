@@ -208,9 +208,9 @@ html.dark .ui-count-digits b { color: #E6ECFF; text-shadow: 0 0 18px rgba(42, 98
 .ui-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .ui-fact { padding: 14px 16px; border-radius: var(--ui-r-ctl); background: var(--ui-surface-2); display: flex; flex-direction: column; gap: 4px; }
 /* barra de filtros fixa ao rolar (abaixo da topbar no celular) */
-.ui-filters { position: sticky; top: 60px; z-index: 20; display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 10px 16px; margin: 0 -16px; background: var(--ui-bar); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom: 1px solid var(--ui-line); scrollbar-width: none; }
+.ui-filters { position: sticky; top: 68px; z-index: 20; display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 6px 8px; margin: 0; background: var(--ui-bar); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--ui-line-strong); border-radius: var(--ui-r-pill); box-shadow: var(--ui-shadow); scrollbar-width: none; }
 .ui-filters::-webkit-scrollbar { display: none; }
-@media (min-width: 1024px) { .ui-filters { top: 0; margin: 0; padding: 10px 0; } }
+@media (min-width: 1024px) { .ui-filters { top: 12px; } }
 /* sem rolagem lateral na página; "clip" (e não "hidden") para não quebrar os elementos sticky (barra de busca, abas) */
 html, body { overflow-x: clip; }
 /* busca flutuante (loja do GOM): pílula fixa no topo, não ocupa a largura toda; o campo (.ui-bare, fora da regra de inputs do modo escuro em base.html) não tem borda nem fundo próprios */

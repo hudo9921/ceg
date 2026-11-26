@@ -17,8 +17,11 @@ Com repasse em andamento, mostra a situação e "Cancelar repasse".
 
         <template x-if="it.repasse">
             <div class="space-y-3">
-                <p class="ui-well p-4 m-0"><span class="ui-status ui-warn" x-text="it.repasse.label"></span><br>
-                    <span class="text-sm" x-text="'Para ' + it.repasse.para + '. Nada muda até o GOM aprovar.'"></span></p>
+                <div class="ui-well p-4 space-y-1.5">
+                    <span class="ui-status ui-warn" x-text="it.repasse.label"></span>
+                    <p class="text-sm m-0" x-text="situacao(it.repasse)"></p>
+                    <p class="text-[13px] ui-muted m-0">O item continua seu até o GOM aprovar.</p>
+                </div>
                 <button type="button" class="ui-btn w-full" :disabled="enviando" @click="cancelar()">Cancelar repasse</button>
             </div>
         </template>
@@ -68,6 +71,14 @@ function repasseSheet() {
                 alert(data.message);
                 window.location.reload();
             } catch (e) { this.erro = 'Não deu certo. Tente de novo.'; } finally { this.enviando = false; }
+        },
+        situacao(r) {
+            const quem = r.para_nome || (r.para_numero ? 'o número ' + r.para_numero : 'a pessoa');
+            return {
+                DISPONIVEL: 'Está em Repasses, disponível para quem quiser. Quando alguém pedir, o GOM decide.',
+                AGUARDANDO_ACEITE: 'Esperando ' + quem + ' aceitar. Depois disso, o GOM decide.',
+                AGUARDANDO_GOM: quem + ' aceitou. Agora o GOM decide se aprova.',
+            }[r.status] || '';
         },
         enviar() { this.executar('{% url "repasse_criar" %}', { slot_id: this.it.slot_id, modo: this.modo, whatsapp: this.whatsapp, recado: this.recado }); },
         cancelar() { if (confirm('Cancelar este repasse?')) this.executar('/me/repasses/' + this.it.repasse.id + '/cancelar/'); },
