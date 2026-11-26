@@ -29,3 +29,17 @@ class Inscricao(models.Model):
 
     def como_webpush(self):
         return {'endpoint': self.endpoint, 'keys': {'p256dh': self.p256dh, 'auth': self.auth}}
+
+
+class Preferencia(models.Model):
+    """Categorias de push que a pessoa desligou (apps/avisos/preferencias.py). Sem linha = recebe tudo."""
+    participant = models.OneToOneField('participants.Participant', on_delete=models.CASCADE, null=True, blank=True,
+                                       related_name='preferencia_avisos')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
+                                related_name='preferencia_avisos')
+    desligados = models.JSONField(default=list, blank=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Preferência de avisos'
+        verbose_name_plural = 'Preferências de avisos'

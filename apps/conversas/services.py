@@ -83,9 +83,10 @@ def _avisar(conversa, autor, texto):
         GOMNotification.objects.create(
             gom=conversa.gom, participant=conversa.participant,
             notification_type=GOMNotification.NotificationType.SYSTEM,
-            title=f'Mensagem de {conversa.participant.display_name}', message=f'{conversa.assunto}: {preview}')
+            title=f'Mensagem de {conversa.participant.display_name}', message=f'{conversa.assunto}: {preview}',
+            metadata={'categoria': 'mensagens'})
     elif autor == Mensagem.Autor.GOM:
         from apps.participants.models import ParticipantNotification
         ParticipantNotification.objects.create(
             participant=conversa.participant, notification_type=ParticipantNotification.NotificationType.GENERAL,
-            title=f'{conversa.gom.name} respondeu', message=f'{conversa.assunto}: {preview}')
+            title=f'{conversa.gom.name} respondeu', message=f'{conversa.assunto}: {preview}', categoria='mensagens')

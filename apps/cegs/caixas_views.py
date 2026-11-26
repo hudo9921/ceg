@@ -987,7 +987,8 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
                     participant=p,
                     title=f"📦 Frete e/ou Taxa lançados: {caixa.nome}",
                     message=f"Os valores de frete internacional e/ou taxa aduaneira foram definidos para a remessa '{caixa.nome}'. Acesse suas reservas para conferir valores e prazos.",
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='pagamentos'
                 )
 
             for it in caixa.itens_individuais.select_related('comprador'):
@@ -999,7 +1000,8 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
                     participant=p,
                     title=f"📦 Frete e/ou Taxa lançados: {caixa.nome}",
                     message=f"Os valores de frete internacional e/ou taxa aduaneira foram definidos para seu pedido '{it.nome}' na remessa '{caixa.nome}'. Acesse suas reservas para conferir valores e prazos.",
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='pagamentos'
                 )
         except Exception:
             pass

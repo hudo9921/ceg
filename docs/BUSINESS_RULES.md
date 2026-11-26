@@ -258,6 +258,13 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 - **Equipe:** `GOMNotification` dos tipos `PAYMENT`, `PACKAGE_REQUEST`, `REPASSE` e `SYSTEM` (mensagens) vai para
   quem é da equipe daquele GOM. Reserva de vaga e voto em enquete não (seriam centenas no segundo zero).
 - **Nunca** há aviso de CEG nova para quem segue grupo/integrante.
+- **Escolher o que receber** (no card, quando ligado; `apps/avisos/preferencias.py`, model `Preferencia`): só filtra o
+  push, a central do site recebe tudo. Joiner: Pagamentos, Caixas e envios, Mensagens do GOM, Repasses (todos ligados
+  por padrão); **importante** (set cancelado, Pix não recebido, exclusão de dados) não desliga. Cada aviso diz a sua
+  categoria (`ParticipantNotification.categoria`; vazio = pelo tipo, e o que não tem categoria conta como importante).
+  Equipe: Pix avisado (`pag.confirmar`), Pedidos de envio (`envios.pacotes`), Repasses (`pedidos.editar`) e Mensagens
+  (`mensagens.responder`, marcadas em `GOMNotification.metadata['categoria']`): cada um só vai para quem tem a
+  permissão e não desligou.
 - Envio: fila única por processo, depois do commit (não atrasa quem clicou). 404/410 apaga a inscrição; 5 falhas
   seguidas também. Chave VAPID: `VAPID_PRIVATE_KEY` do .env ou derivada do `SECRET_KEY` (`apps/avisos/vapid.py`).
 - Service worker em `/sw.js` (só notificações, sem cache offline) e manifesto em `/manifest.webmanifest`
