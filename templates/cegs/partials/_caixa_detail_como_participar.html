@@ -1,0 +1,21 @@
+{% comment %}Caixa aberta para pedidos (apps/cegs/caixinhas.py): prazo e o texto "Como participar" da GOM, para qualquer visitante.{% endcomment %}
+<section class="ui-card p-5 sm:p-6 space-y-3" aria-labelledby="caixa-participar-title">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="caixa-participar-title" class="ui-disp text-xl flex items-center gap-2">
+            <i data-lucide="package-open" class="w-5 h-5" stroke-width="1.75"></i>Caixinha aberta para pedidos
+        </h2>
+        {% if caixa.pedidos_ate %}
+            <span class="ui-status ui-warn">Pedidos até {{ caixa.pedidos_ate|date:"d/m \à\s H:i" }}</span>
+        {% else %}
+            <span class="ui-status ui-ok">Aberta</span>
+        {% endif %}
+    </div>
+    {% if caixa.como_participar %}
+        <p class="m-0 text-[15px] whitespace-pre-line">{{ caixa.como_participar }}</p>
+    {% else %}
+        <p class="m-0 text-[15px] ui-muted">Fale com {{ caixa.gom.name }} para colocar um pedido nesta caixa.</p>
+    {% endif %}
+    <a href="{% url 'gom_public' caixa.gom.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+        <i data-lucide="user-round" class="w-4 h-4" stroke-width="1.75"></i>Ver página de {{ caixa.gom.name }}
+    </a>
+</section>

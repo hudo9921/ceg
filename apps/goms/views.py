@@ -265,8 +265,10 @@ def gom_public_page(request, slug):
         destaque = (CEG.objects.for_gom(gom).select_related('era__group')
                     .filter(pk=gom.pagina_ceg_destaque_id, status__in=[CEG.Status.OPEN, CEG.Status.SCHEDULED]).first())
     enrich_cegs_with_availability(agendadas + ([destaque] if destaque else []))
+    from apps.cegs import caixinhas
+    caixinhas_abertas = caixinhas.com_rotulos(caixinhas.abertas(gom=gom)[:8])
     return render(request, 'goms/public_page.html', {
-        'gom': gom, 'agendadas': agendadas, 'destaque': destaque, 'brand_gom': gom, **loja,
+        'gom': gom, 'agendadas': agendadas, 'destaque': destaque, 'caixinhas_abertas': caixinhas_abertas, 'brand_gom': gom, **loja,
         **rules_context(request, gom),
     })
 

@@ -4,11 +4,13 @@ os filtros (dá para compartilhar o link). "Carregar mais" busca ?parcial=mais e
 Sem JavaScript o formulário continua funcionando como GET comum.
 {% endcomment %}
 <script>
-function lojaGom() {
+function lojaGom(ativosNoInicio) {
     const PADRAO = { aba: 'cegs', vista: 'cegs', ordem: 'recentes' };
+    const NAO_E_FILTRO = ['aba', 'vista', 'ordem', 'pagina'];  // mesmos campos que Filtros.ativos (apps/goms/loja.py) ignora
     let pedido = 0;
     return {
         carregando: false,
+        ativos: !!ativosNoInicio,  // mostra o botão "Limpar filtros" da barra de busca
         maisFiltros: false,  // celular: tipo, preço e ordem ficam atrás de um botão
         form() { return document.getElementById('loja-form'); },
         consulta() {
@@ -38,6 +40,14 @@ function lojaGom() {
             });
             this.aplicar();
         },
+        limpar() {
+            // Zera busca, grupo, integrante, tipo e preço; mantém a aba, a vista e a ordem.
+            const form = this.form();
+            form.querySelectorAll('[name=q],[name=grupo],[name=grupo_mais],[name=integrante],[name=tipo],[name=preco_max]').forEach((el) => {
+                if (el.type === 'radio') el.checked = el.value === ''; else el.value = '';
+            });
+            this.aplicar();
+        },
         async buscar(url) {
             const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!res.ok) throw new Error('falhou');
@@ -45,6 +55,7 @@ function lojaGom() {
         },
         async aplicar() {
             const p = this.consulta();
+            this.ativos = [...p.keys()].some((k) => !NAO_E_FILTRO.includes(k));
             const base = this.form().getAttribute('action');
             const endereco = base + (p.toString() ? '?' + p : '');
             const meu = ++pedido;

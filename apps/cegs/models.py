@@ -125,6 +125,20 @@ class Caixa(models.Model):
         help_text='Orientações específicas para o pagamento da taxa aduaneira desta caixa.'
     )
     observacoes = models.TextField('Anotações Internas', blank=True)
+    # Caixinha aberta (apps/cegs/caixinhas.py): aparece em /caixinhas/ e na página do GOM enquanto está
+    # em consolidação, a GOM deixa marcada e o prazo de pedidos não passou. Nada muda sozinho na caixa.
+    aceita_pedidos = models.BooleanField(
+        'Aberta para pedidos', default=True,
+        help_text='Mostra a caixa em "Caixinhas abertas" enquanto ela está em consolidação.'
+    )
+    pedidos_ate = models.DateTimeField(
+        'Pedidos até', null=True, blank=True,
+        help_text='Depois desta data a caixa sai da lista de caixinhas abertas (a caixa em si não muda).'
+    )
+    como_participar = models.TextField(
+        'Como participar', blank=True, max_length=1500,
+        help_text='Texto público: o que dá para pedir (Mercari, sites, lojas) e como pedir para a GOM.'
+    )
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
     updated_at = models.DateTimeField('Atualizado em', auto_now=True)
 

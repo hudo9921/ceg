@@ -36,6 +36,7 @@ ceg/
 - **`ItemDefinition` & `TipoItem`:** Catálogo de tipos de itens (Photocard, POB, Álbum, etc.) com taxas de rateio diferenciadas.
 - **`Set` & `ItemSlot`:** Cada lote de compra forma um Set contendo slots individuais para cada membro da banda.
 - **`ItemIndividual`:** Itens avulsos comprados no Mercari Japão ou leilões.
+- **Caixinhas abertas:** caixas em consolidação que aceitam pedidos aparecem em `/caixinhas/` (todos os GOMs) e na página de cada GOM (`apps/cegs/caixinhas.py`).
 - **`ItemVitrine`:** Photocards e produtos à pronta entrega disponíveis na loja pública.
 - **`HomeBannerConfig`:** Configuração dinâmica dos banners da vitrine principal, com suporte a artes independentes para Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
 - **`GOMNotification`:** Central de notificações operacionais em tempo real para a GOM com categorização por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).

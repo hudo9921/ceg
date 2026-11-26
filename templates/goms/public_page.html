@@ -3,7 +3,7 @@
 {% block title %}{{ gom.name }} — CEGs e pronta entrega | ValCegs{% endblock %}
 
 {% block content %}
-{% comment %}Página pública do GOM: perfil, CEG fixada, "abrindo em breve" e a loja (busca, filtros e paginação no servidor, apps/goms/loja.py).{% endcomment %}
+{% comment %}Página pública do GOM: perfil, CEG fixada, "abrindo em breve", caixinhas abertas e a loja (busca, filtros e paginação no servidor, apps/goms/loja.py).{% endcomment %}
 <div class="max-w-[1120px] mx-auto space-y-8">
     <section class="ui-card overflow-hidden" aria-labelledby="gom-title">
         {% if gom.banner_url %}
@@ -38,8 +38,9 @@
     {% if destaque %}{% include 'goms/partials/_public_destaque.html' with ceg=destaque %}{% endif %}
 
     {% if agendadas %}{% include 'goms/partials/_loja_em_breve.html' %}{% endif %}
+    {% if caixinhas_abertas %}{% include 'goms/partials/_loja_caixinhas.html' %}{% endif %}
 
-    <section aria-label="Loja de {{ gom.name }}" x-data="lojaGom()" class="space-y-4">
+    <section aria-label="Loja de {{ gom.name }}" x-data="lojaGom({{ f.ativos|yesno:'true,false' }})" class="space-y-4">
         <form id="loja-form" method="get" action="{% url 'gom_public' gom.slug %}" @submit.prevent="aplicar()" @change="mudou($event)" class="space-y-4">
             <div class="ui-filters">
                 <div class="relative flex-1 min-w-[200px]">
@@ -48,6 +49,9 @@
                            placeholder="Buscar grupo, era, integrante ou item" class="ui-input w-full pl-11" autocomplete="off">
                     <i data-lucide="search" class="w-4 h-4 ui-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" stroke-width="1.75"></i>
                 </div>
+                <button type="button" class="ui-btn ui-btn-ghost shrink-0" x-show="ativos" @click="limpar()"{% if not f.ativos %} style="display:none"{% endif %}>
+                    <i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i><span>Limpar filtros</span>
+                </button>
             </div>
             <div id="loja-corpo" :aria-busy="carregando.toString()" :class="carregando && 'opacity-60 transition-opacity'">
                 {% include 'goms/partials/_loja_corpo.html' %}

@@ -1,0 +1,16 @@
+{% comment %}"Caixinhas abertas" na página do GOM: trilho com as caixas que aceitam pedidos (apps/cegs/caixinhas.py).{% endcomment %}
+<section class="space-y-2" aria-labelledby="loja-caixinhas-title">
+    <div class="flex items-end justify-between gap-3">
+        <h2 id="loja-caixinhas-title" class="ui-disp text-xl flex items-center gap-2">
+            <i data-lucide="package-open" class="w-5 h-5" stroke-width="1.75"></i>Caixinhas abertas
+        </h2>
+        <a href="{% url 'caixinhas_abertas' %}?gom={{ gom.slug }}" class="ui-label hover:underline flex items-center gap-1">
+            Ver todas<i data-lucide="arrow-right" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+        </a>
+    </div>
+    <div class="ui-rail-track">
+        {% for c in caixinhas_abertas %}
+            {% include 'cegs/partials/_caixinha_aberta_card.html' with c=c classe='w-[300px] shrink-0' %}
+        {% endfor %}
+    </div>
+</section>

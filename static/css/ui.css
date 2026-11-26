@@ -162,10 +162,10 @@ html.dark .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--u
 :root:not(.dark) .ui-sidebar .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--ui-accent-text); box-shadow: none; font-weight: 700; }
 :root:not(.dark) .ui-sidebar .ui-nav-item.is-on svg { color: var(--ui-accent); }
 :root:not(.dark) .ui-sidebar .ui-label { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
-.ui-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
-.ui-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; font-size: 11px; font-weight: 600; color: var(--ui-muted); text-decoration: none; }
+.ui-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 6px 4px calc(8px + env(safe-area-inset-bottom)); background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
+.ui-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; font-size: 11px; font-weight: 600; text-align: center; line-height: 1.15; color: var(--ui-muted); text-decoration: none; }
 .ui-tab.is-on { color: var(--ui-accent-text); }
-html.dark .ui-tab { font-family: var(--ui-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+html.dark .ui-tab { font-family: var(--ui-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .02em; }
 /* barra de compra do joiner na CEG (§7.6): acima da tab bar no celular, rodapé ao lado da sidebar no desktop */
 .ui-buybar { position: fixed; left: 0; right: 0; bottom: calc(67px + env(safe-area-inset-bottom)); z-index: 40; background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
 @media (min-width: 1024px) { .ui-buybar { left: 15rem; bottom: 0; } }
