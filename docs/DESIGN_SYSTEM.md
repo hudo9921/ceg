@@ -238,7 +238,7 @@ Cinco seções, as mesmas na barra lateral (desktop) e na barra de abas (celular
 5. **Envios**
 
 Até a fase P3, Pagar, Meus itens e Envios abrem as partes correspondentes do `/me/`.
-Sem login, o menu (barra lateral e abas) mostra só CEGs e Vitrine; Pagar, Meus itens e Envios aparecem depois que o joiner entra (`SECOES_COM_LOGIN` em `apps/core/context_processors.py`).
+Sem login, o menu (barra lateral e abas) mostra CEGs, Vitrine e Caixinhas (`/caixinhas/`); a barra de abas se ajusta ao número de seções; Pagar, Meus itens e Envios aparecem depois que o joiner entra (`SECOES_COM_LOGIN` em `apps/core/context_processors.py`).
 
 ### 7.5. Fases
 | Fase | Escopo |

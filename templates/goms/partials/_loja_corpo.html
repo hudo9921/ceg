@@ -39,8 +39,8 @@ Corpo da loja do GOM (abas, filtros, contagem e grade). É trocado inteiro a cad
             {{ total }} {% if f.aba == 'pronta' %}ite{{ total|pluralize:"m,ns" }} à pronta entrega{% elif f.vista == 'itens' %}ite{{ total|pluralize:"m,ns" }} com vaga{% else %}CEG{{ total|pluralize }}{% endif %}
         </p>
         {% if f.ativos %}
-            <a href="{% url 'gom_public' gom.slug %}{% if f.aba == 'pronta' %}?aba=pronta{% endif %}" data-loja-link class="ui-label hover:underline flex items-center gap-1">
-                <i data-lucide="x" class="w-3.5 h-3.5" stroke-width="1.75"></i>Limpar filtros
+            <a href="{% url 'gom_public' gom.slug %}{% if f.aba == 'pronta' %}?aba=pronta{% endif %}" @click.prevent="limpar()" class="ui-btn ui-btn-ghost ui-btn-sm">
+                <i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i>Limpar filtros
             </a>
         {% endif %}
     </div>

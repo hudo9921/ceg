@@ -67,6 +67,7 @@ from .allocator_views import (
     CEGBulkAllocatorAPIView,
 )
 from .audit_views import AuditDashboardView
+from .caixinhas_views import caixinhas_abertas
 from .vitrine_views import (
     VitrineListView,
     VitrineItemCreateView,
@@ -175,6 +176,7 @@ urlpatterns = [
 
     # Vitrine de Pronta Entrega
     path('vitrine/', VitrineListView.as_view(), name='vitrine_list'),
+    path('caixinhas/', caixinhas_abertas, name='caixinhas_abertas'),
     path('vitrine/novo/', VitrineItemCreateView.as_view(), name='vitrine_create'),
     path('vitrine/<slug:slug>/editar/', VitrineItemUpdateView.as_view(), name='vitrine_edit'),
     path('vitrine/<slug:slug>/excluir/', VitrineItemDeleteView.as_view(), name='vitrine_delete'),

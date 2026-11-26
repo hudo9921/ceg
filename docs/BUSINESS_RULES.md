@@ -46,6 +46,14 @@ Uma `Caixa` agrupa várias `CEG`s e vários `ItemIndividual` (Mercari Japão):
    - Alterar `prazo_frete` ou `prazo_taxa` na Caixa propaga em cascata para `ceg.prazo_pagamento_frete_inter`, `ceg.prazo_pagamento_taxa_aduaneira` e slots vinculados via `Caixa.propagar_taxas_e_prazos_em_cascata()`.
 3. **Notificações Automáticas:**
    - Participantes com itens na remessa recebem automaticamente uma `ParticipantNotification` em seu painel contextual.
+4. **Caixinha aberta para pedidos (`apps/cegs/caixinhas.py`):**
+   - A caixa aparece em `/caixinhas/` e na página do GOM enquanto está `EM_CONSOLIDACAO`, `aceita_pedidos` está marcado
+     (padrão ligado; a GOM desmarca no formulário), `pedidos_ate` (opcional) não passou e o GOM está ativo.
+   - `pedidos_ate` só tira a caixa da lista; o status e os itens da caixa não mudam sozinhos.
+   - `como_participar` é texto público (o que dá para pedir e como). O pedido em si continua sendo um `ItemIndividual`
+     lançado pela equipe.
+   - Atenção ao nome: "caixinha aberta" é a caixa internacional; a "Minha caixinha" do joiner (seção 5) é o que já
+     chegou no Brasil esperando envio nacional.
 
 ---
 

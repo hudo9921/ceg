@@ -10,6 +10,8 @@
     <!-- Cabeçalho, Ações e Rastreio da Caixa -->
     {% include 'cegs/partials/_caixa_detail_header.html' %}
 
+    {% if caixa_aberta %}{% include 'cegs/partials/_caixa_detail_como_participar.html' %}{% endif %}
+
     <!-- Resumo Financeiro do Participante / Joiner -->
     {% include 'cegs/partials/_caixa_detail_joiner_summary.html' %}
 

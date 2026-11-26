@@ -8,7 +8,11 @@
                 <a href="{% url 'caixa_update' slug=caixa.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">Editar caixa</a>
             </div>
         {% else %}
-            <a href="{% url 'my_claims' %}?tab=itens" class="ui-label hover:underline">← Meus itens</a>
+            {% if caixa_aberta %}
+                <a href="{% url 'caixinhas_abertas' %}" class="ui-label hover:underline">← Caixinhas abertas</a>
+            {% else %}
+                <a href="{% url 'my_claims' %}?tab=itens" class="ui-label hover:underline">← Meus itens</a>
+            {% endif %}
         {% endif %}
     </div>
 

@@ -467,6 +467,8 @@ class CaixaDetailView(View):
             ) if participant and (row[2] > 0 or row[3] > 0)],
             'brand_gom': caixa.gom,  # cor da marca do GOM dono da caixa (C4)
         }
+        from .caixinhas import esta_aberta
+        context['caixa_aberta'] = esta_aberta(caixa)
         return render(request, 'cegs/caixa_detail.html', context)
 
 
@@ -486,6 +488,21 @@ def parse_safe_decimal(val, field_label="Valor"):
         return d, None
     except (InvalidOperation, ValueError):
         return None, f"{field_label} possui formato numérico inválido."
+
+
+def campos_caixinha(request):
+    """Campos de "Caixinha aberta" do formulário da caixa: (aceita_pedidos, pedidos_ate, como_participar)."""
+    pedidos_ate = None
+    texto = request.POST.get('pedidos_ate', '').strip()
+    if texto:
+        try:
+            pedidos_ate = timezone.datetime.fromisoformat(texto)
+            if timezone.is_naive(pedidos_ate):
+                pedidos_ate = timezone.make_aware(pedidos_ate, timezone.get_current_timezone())
+        except ValueError:
+            pedidos_ate = None
+    return (request.POST.get('aceita_pedidos') == '1', pedidos_ate,
+            request.POST.get('como_participar', '').strip()[:1500])
 
 
 class CaixaCreateView(StaffRequiredMixin, View):
@@ -548,6 +565,7 @@ class CaixaCreateView(StaffRequiredMixin, View):
                     pix_instructions_taxa=pix_instructions_taxa,
                     observacoes=observacoes,
                 )
+                caixa.aceita_pedidos, caixa.pedidos_ate, caixa.como_participar = campos_caixinha(request)
                 caixa.full_clean()
                 caixa.save()
 
@@ -622,6 +640,7 @@ class CaixaUpdateView(StaffRequiredMixin, View):
             caixa.pix_key_taxa = pix_key_taxa
             caixa.pix_instructions_taxa = pix_instructions_taxa
             caixa.observacoes = observacoes
+            caixa.aceita_pedidos, caixa.pedidos_ate, caixa.como_participar = campos_caixinha(request)
 
             prazo_frete_str = request.POST.get('prazo_frete', '').strip()
             if prazo_frete_str:

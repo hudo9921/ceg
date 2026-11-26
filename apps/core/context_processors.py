@@ -1,16 +1,17 @@
 from django.conf import settings
 from django.urls import reverse
 
-# Seções do joiner (DESIGN_SYSTEM §7.4): CEGs e Vitrine separados; Pagar, Meus itens e Envios.
+# Seções do joiner (DESIGN_SYSTEM §7.4): CEGs, Vitrine e Caixinhas abertas separados; Pagar, Meus itens e Envios.
 # Pagar, Meus itens e Envios são abas do /me/ (P3); o painel mantém ?tab= e o destaque do menu em sincronia.
 JOINER_SECTIONS = (
     ('cegs', 'CEGs', 'sparkles'),
     ('vitrine', 'Vitrine', 'store'),
+    ('caixinhas', 'Caixinhas', 'package-open'),
     ('pagar', 'Pagar', 'wallet'),
     ('itens', 'Meus itens', 'package'),
     ('envios', 'Envios', 'truck'),
 )
-# Só aparecem para o joiner logado (sem login, o menu mostra apenas CEGs e Vitrine).
+# Só aparecem para o joiner logado (sem login, o menu mostra CEGs, Vitrine e Caixinhas).
 SECOES_COM_LOGIN = {'pagar', 'itens', 'envios'}
 
 
@@ -21,6 +22,8 @@ def _active_section(request):
         return 'cegs'
     if name and name.startswith('vitrine'):
         return 'vitrine'
+    if name == 'caixinhas_abertas':
+        return 'caixinhas'
     if name == 'my_claims':
         tab = request.GET.get('tab', '')
         return {'pagar': 'pagar', 'caixinha': 'envios', 'envios': 'envios', 'itens': 'itens',
@@ -42,6 +45,7 @@ def frontend(request):
     urls = {
         'cegs': reverse('home'),
         'vitrine': reverse('vitrine_list'),
+        'caixinhas': reverse('caixinhas_abertas'),
         'pagar': f'{me}?tab=pagar',
         'itens': f'{me}?tab=itens',
         'envios': f'{me}?tab=envios',

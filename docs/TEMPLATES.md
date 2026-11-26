@@ -132,6 +132,11 @@
   - `_caixa_form_identificacao.html`: Nome, código de rastreio, transportadora, status e país de origem.
   - `_caixa_form_custos_pix.html`: Frete internacional, imposto alfandegário, prazos e chaves Pix dedicadas.
   - `_caixa_form_cegs_picker.html`: Seletor com checkboxes de CEGs para vincular à remessa.
+  - `_caixa_form_caixinha.html`: "Caixinha aberta para pedidos" (mostrar na lista, pedidos até, como participar).
+- **Caixinhas abertas (`cegs/caixinhas.html`, `/caixinhas/`):** caixas de todos os GOMs que aceitam pedidos agora
+  (regra em `apps/cegs/caixinhas.py`), chips por origem (`?origem=JP`) e por GOM (`?gom=<slug>`), 24 por página. Card
+  `cegs/partials/_caixinha_aberta_card.html` (também no trilho `goms/partials/_loja_caixinhas.html` da página do GOM).
+  Na caixa aberta, `_caixa_detail_como_participar.html` mostra o prazo e o texto da GOM para qualquer visitante.
 - **Transferência para Vitrine (`caixa_transfer_vitrine.html` — 29 linhas):**
   - `_caixa_transfer_banner.html`: Banner da remessa com status e contador de itens disponíveis.
   - `_caixa_transfer_table.html`: Grade de itens não claimados com preços de venda editáveis e seleção em lote.
@@ -227,13 +232,14 @@
 - **Mensagens:** `conversas/joiner.html` (`/me/mensagens/`) e `conversas/gom.html` (`/mensagens/`), com `conversas/partials/_lista.html`, `_thread.html` (componente `chatThread`, busca a cada 8 s) e `_botao_mensagem.html` (botão do joiner em pacote, CEG e página do GOM).
 - **Reservas da Vitrine:** `conversas/partials/_reserva_painel.html` no topo da conversa (ações do GOM e do joiner); botão "Reservar" em `cegs/partials/_vitrine_modal_detail.html`.
 - **Página pública do GOM (loja):** `goms/public_page.html` (`/gom/<slug>/`): cabeçalho, regras, CEG fixada,
-  `_loja_em_breve.html` (trilho das agendadas) e a loja. Busca, filtros, ordenação e paginação são do servidor
+  `_loja_em_breve.html` (trilho das agendadas), `_loja_caixinhas.html` (caixinhas abertas do GOM) e a loja. Busca, filtros, ordenação e paginação são do servidor
   (`apps/goms/loja.py`); cada mudança troca só `_loja_corpo.html` (`?parcial=1`, componente `lojaGom` em
   `_loja_script.html`) e a URL acompanha os filtros. `_loja_filtros.html`: abas CEGs abertas / Pronta entrega, chips dos
   grupos com mais CEGs + "Mais grupos", integrantes depois do grupo, tipo, preço e ordem (no celular atrás de um botão).
   `_loja_cards.html` (+ "Carregar mais", `?parcial=mais`) usa `_loja_card_ceg.html`, `_loja_card_item.html` (vista
   "Itens": cada item livre vira produto e abre a CEG em `?item=<id>`, `cegs/partials/_detail_item_link_script.html`) e
   `_loja_card_pronta.html` (abre a ficha na Vitrine em `?item=<slug>`). Filtros só oferecem o que está à venda.
+  Com algum filtro ativo, "Limpar filtros" aparece na barra de busca fixa e na linha da contagem (`limpar()`).
 - **GOMs e Equipe (`templates/goms/`):**
   - `login.html`: login do backoffice (`/entrar/`).
   - `invite_accept.html`: aceitar convite.

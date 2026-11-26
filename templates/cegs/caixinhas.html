@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Caixinhas abertas — ValCegs{% endblock %}
+
+{% block content %}
+{% comment %}
+Caixinhas abertas (/caixinhas/): caixas de todos os GOMs que aceitam pedidos agora (Mercari, JP, KR, CN…).
+Regra de "aberta" em apps/cegs/caixinhas.py; filtro por origem e por GOM (?origem=JP&gom=<slug>) no servidor.
+{% endcomment %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <header class="space-y-2">
+        <p class="ui-label">Caixinhas</p>
+        <h1 class="ui-disp text-4xl">Caixinhas abertas</h1>
+        <p class="ui-muted text-[15px] max-w-2xl">Caixas que os GOMs ainda estão enchendo lá fora. Dá para pedir algo da Mercari, de lojas do Japão, da Coreia ou da China e vir junto, dividindo frete e taxa. Abra a caixinha para ver como pedir.</p>
+    </header>
+
+    <div class="flex flex-wrap items-center gap-2" aria-label="Filtrar por origem">
+        {% with gom_q=filtro_gom.slug|default:'' %}
+        <a href="?{% if gom_q %}gom={{ gom_q }}{% endif %}" class="ui-chip no-underline{% if not origem %} is-on{% endif %}"{% if not origem %} aria-current="true"{% endif %}>
+            Todas <span class="ui-mono ui-muted text-xs">{{ total }}</span>
+        </a>
+        {% for valor, nome, n in origens %}
+            <a href="?origem={{ valor }}{% if gom_q %}&gom={{ gom_q }}{% endif %}" class="ui-chip no-underline{% if origem == valor %} is-on{% endif %}"{% if origem == valor %} aria-current="true"{% endif %}>
+                {{ nome }} <span class="ui-mono ui-muted text-xs">{{ n }}</span>
+            </a>
+        {% endfor %}
+        {% if filtro_gom %}
+            <a href="?{% if origem %}origem={{ origem }}{% endif %}" class="ui-btn ui-btn-ghost ui-btn-sm ml-auto">
+                <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>Só {{ filtro_gom.name }} · ver de todos os GOMs
+            </a>
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    {% if caixas %}
+        <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
+            {% for c in caixas %}
+                {% include 'cegs/partials/_caixinha_aberta_card.html' with c=c mostrar_gom=True %}
+            {% endfor %}
+        </div>
+        {% if pagina.has_other_pages %}
+            <nav class="flex items-center justify-center gap-3" aria-label="Páginas">
+                {% if pagina.has_previous %}
+                    <a class="ui-btn ui-btn-ghost ui-btn-sm" href="?{% if origem %}origem={{ origem }}&{% endif %}{% if filtro_gom %}gom={{ filtro_gom.slug }}&{% endif %}pagina={{ pagina.previous_page_number }}">
+                        <i data-lucide="chevron-left" class="w-4 h-4" stroke-width="1.75"></i>Anterior
+                    </a>
+                {% endif %}
+                <span class="ui-label">{{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+                {% if pagina.has_next %}
+                    <a class="ui-btn ui-btn-ghost ui-btn-sm" href="?{% if origem %}origem={{ origem }}&{% endif %}{% if filtro_gom %}gom={{ filtro_gom.slug }}&{% endif %}pagina={{ pagina.next_page_number }}">
+                        Próxima<i data-lucide="chevron-right" class="w-4 h-4" stroke-width="1.75"></i>
+                    </a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="ui-card p-8 text-center space-y-2">
+            <i data-lucide="package-open" class="w-6 h-6 mx-auto ui-muted" stroke-width="1.75"></i>
+            <p class="m-0 font-semibold">Nenhuma caixinha aberta{% if origem or filtro_gom %} com esse filtro{% endif %} agora.</p>
+            <p class="m-0 text-sm ui-muted">Quando um GOM abrir uma caixa para pedidos, ela aparece aqui.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

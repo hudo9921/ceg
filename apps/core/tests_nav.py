@@ -11,8 +11,8 @@ class JoinerNavTests(TestCase):
         request.session = session
         return [item['key'] for item in frontend(request)['joiner_nav']]
 
-    def test_visitante_ve_so_cegs_e_vitrine(self):
-        self.assertEqual(self._keys({}), ['cegs', 'vitrine'])
+    def test_visitante_ve_so_as_secoes_publicas(self):
+        self.assertEqual(self._keys({}), ['cegs', 'vitrine', 'caixinhas'])
 
     def test_joiner_logado_ve_tudo(self):
-        self.assertEqual(self._keys({'participant_id': 1}), ['cegs', 'vitrine', 'pagar', 'itens', 'envios'])
+        self.assertEqual(self._keys({'participant_id': 1}), ['cegs', 'vitrine', 'caixinhas', 'pagar', 'itens', 'envios'])
