@@ -30,6 +30,7 @@ PROBLEMAS = {
     'sem_eras': ('Sem eras', Q(n_eras=0)),
     'sem_integrantes': ('Sem integrantes (grupos)', Q(n_membros=0) & ~Q(kind=KpopGroup.Kind.SOLISTA)),
     'eras_sem_capa': ('Com eras sem capa', Q(n_eras_sem_capa__gt=0)),
+    'parte_de': ('Singles que parecem parte de outra era', Q(n_eras_parte_de__gt=0)),
 }
 
 
@@ -42,7 +43,7 @@ class GrupoForm(forms.ModelForm):
 class EraForm(forms.ModelForm):
     class Meta:
         model = Era
-        fields = ('name', 'kind', 'release_date', 'banner_url')
+        fields = ('name', 'kind', 'release_date', 'banner_url', 'aliases')
 
 
 def dados_grupo(g):
@@ -56,12 +57,17 @@ def dados_grupo(g):
     }
 
 
-def dados_era(e):
+def dados_era(e, irmas=()):
+    """`irmas`: as outras eras do grupo, para o "Juntar com outra era" (a sugestão da importação vem marcada)."""
     return {
         'tipo': 'era', 'url': reverse('platform_catalogo_era_salvar', args=[e.pk]),
+        'juntar_url': reverse('platform_catalogo_era_juntar', args=[e.pk]),
         'admin': reverse('admin:groups_era_change', args=[e.pk]),
         'name': e.name, 'kind': e.kind, 'release_date': e.release_date.isoformat() if e.release_date else '',
-        'image_url': e.banner_url,
+        'image_url': e.banner_url, 'aliases': e.aliases, 'n_cegs': getattr(e, 'n_cegs', 0),
+        'parte_de': e.parte_de_id or '',
+        'irmas': [{'id': x.pk, 'nome': f'{x.name}' + (f' ({x.release_date.year})' if x.release_date else '')}
+                  for x in irmas if x.pk != e.pk],
     }
 
 
@@ -95,6 +101,30 @@ def catalogo_era_salvar(request, pk):
     return _salvar(request, EraForm(dados, instance=era), f'{era.group.name} · {era.name}')
 
 
+@platform_admin_required
+@require_POST
+def catalogo_era_juntar(request, pk):
+    """Junta a era (ex.: single "SWIM") em outra do mesmo grupo ("ARIRANG"), ou dispensa a sugestão ("manter")."""
+    from .eras import juntar_eras
+
+    era = get_object_or_404(Era.objects.select_related('group'), pk=pk)
+    volta = redirect(safe_next_url(request, request.POST.get('next', ''),
+                                   default=reverse('platform_catalogo_grupo', args=[era.group_id])))
+    if request.POST.get('acao') == 'manter':
+        Era.objects.filter(pk=era.pk).update(parte_de=None)
+        messages.success(request, f'{era.name} fica como era separada.')
+        return volta
+    destino = Era.objects.filter(pk=request.POST.get('destino') or 0, group_id=era.group_id).exclude(pk=era.pk).first()
+    if destino is None:
+        messages.error(request, 'Escolha outra era do mesmo grupo para juntar.')
+        return volta
+    nome = era.name
+    n = juntar_eras(era, destino)
+    messages.success(request, f'{nome} agora faz parte de {destino.name}'
+                              + (f' ({n} CEG{"s" if n != 1 else ""} mudou de era).' if n else '.'))
+    return volta
+
+
 def _numeros():
     return [
         ('Grupos e solistas', KpopGroup.objects.count()),
@@ -102,6 +132,7 @@ def _numeros():
         ('Integrantes', GroupMember.objects.count()),
         ('Grupos sem foto', KpopGroup.objects.filter(image_url='').count()),
         ('Eras sem capa', Era.objects.filter(banner_url='').count()),
+        ('Singles para revisar', Era.objects.filter(parte_de__isnull=False).count()),
         ('Vindos do catálogo', KpopGroup.objects.exclude(source=Source.MANUAL).count()),
     ]
 
@@ -121,6 +152,7 @@ def catalogo(request):
         n_membros=Count('members', distinct=True),
         n_cegs=Count('eras__cegs', distinct=True),
         n_eras_sem_capa=Count('eras', filter=Q(eras__banner_url=''), distinct=True),
+        n_eras_parte_de=Count('eras', filter=Q(eras__parte_de__isnull=False), distinct=True),
     )
     if q:
         chave = normalize_name(q)
@@ -154,9 +186,9 @@ def catalogo(request):
 @platform_admin_required
 def catalogo_grupo(request, pk):
     grupo = get_object_or_404(KpopGroup, pk=pk)
-    eras = list(grupo.eras.annotate(n_cegs=Count('cegs')).order_by('-release_date', 'name'))
+    eras = list(grupo.eras.select_related('parte_de').annotate(n_cegs=Count('cegs')).order_by('-release_date', 'name'))
     for e in eras:
-        e.dados = dados_era(e)
+        e.dados = dados_era(e, eras)
     membros = list(grupo.members.select_related('solo').order_by('is_former', 'order', 'name'))
     from apps.cegs.models import CEG
     cegs_por_gom = (CEG.objects.filter(era__group=grupo).values('gom__name')

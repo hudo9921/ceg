@@ -31,12 +31,15 @@ class Report:
     eras_criadas: int = 0
     imagens_copiadas: int = 0
     imagens_falharam: int = 0
+    eras_juntadas: int = 0
+    eras_para_revisar: int = 0
     avisos: list = field(default_factory=list)
 
     def resumo(self):
         return (f'{self.grupos_criados} grupos criados, {self.grupos_completados} completados, '
                 f'{self.integrantes_criados} integrantes e {self.eras_criadas} eras criados, '
-                f'{self.imagens_copiadas} imagens copiadas ({self.imagens_falharam} falharam)')
+                f'{self.imagens_copiadas} imagens copiadas ({self.imagens_falharam} falharam), '
+                f'{self.eras_juntadas} singles juntados ao álbum e {self.eras_para_revisar} para revisar')
 
 
 def _date(value):
@@ -191,7 +194,11 @@ class Loader:
 
     def eras(self, g, eras):
         atuais = list(g.eras.all())
+        from .eras import era_por_nome
+
         for e in eras:
+            if era_por_nome(g, e['name']) and not any(x for x in atuais if normalize_name(x.name) == normalize_name(e['name'])):
+                continue  # já foi juntada a outro comeback (é apelido dele): não recria
             achada = next((x for x in atuais if e.get('musicbrainz_id') and x.musicbrainz_id == e['musicbrainz_id']), None) \
                 or next((x for x in atuais if normalize_name(x.name) == normalize_name(e['name'])), None)
             if achada is None:
@@ -225,6 +232,27 @@ class Loader:
             if mudou:
                 achada.save(update_fields=mudou)
 
+    def dobrar(self, g, dobradas):
+        """
+        Singles que são parte de um comeback (seed: eras_dobradas). Sem CEG nem item da vitrine: junta ao álbum
+        (vira apelido dele). Com CEG: só marca `parte_de` e a plataforma decide no Catálogo ("Revisar").
+        """
+        from .eras import juntar_eras
+
+        for d in dobradas:
+            single = g.eras.filter(musicbrainz_id=d.get('musicbrainz_id') or '-').first()
+            album = g.eras.filter(musicbrainz_id=d.get('dentro_de') or '-').first()
+            if not single or not album or single.pk == album.pk:
+                continue
+            if single.cegs.exists() or single.itens_vitrine.exists():
+                if single.parte_de_id != album.pk:
+                    single.parte_de = album
+                    single.save(update_fields=['parte_de'])
+                    self.report.eras_para_revisar += 1
+                continue
+            juntar_eras(single, album)
+            self.report.eras_juntadas += 1
+
     # --- tudo --------------------------------------------------------------------------------
     def carregar(self, artistas):
         por_wd = {}
@@ -234,6 +262,7 @@ class Loader:
                     g = self.grupo(a)
                     self.integrantes(g, a.get('members') or [])
                     self.eras(g, a.get('eras') or [])
+                    self.dobrar(g, a.get('eras_dobradas') or [])
                 if a.get('wikidata_id'):
                     por_wd[a['wikidata_id']] = g
             except Exception as exc:

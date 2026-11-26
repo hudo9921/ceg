@@ -64,6 +64,8 @@
                         <span class="block p-2.5 space-y-0.5">
                             <span class="block text-sm font-semibold truncate">{{ e.name }}</span>
                             <span class="block ui-label truncate">{{ e.get_kind_display }}{% if e.release_date %} · {{ e.release_date|date:"Y" }}{% endif %}{% if e.n_cegs %} · {{ e.n_cegs }} CEG{{ e.n_cegs|pluralize }}{% endif %}</span>
+                            {% if e.aliases %}<span class="block text-[12px] ui-muted truncate" title="{{ e.aliases }}">inclui {{ e.aliases }}</span>{% endif %}
+                            {% if e.parte_de %}<span class="ui-status ui-warn !text-[11px] mt-1 max-w-full truncate">Parte de {{ e.parte_de.name }}?</span>{% endif %}
                         </span>
                     </button>
                 {% empty %}

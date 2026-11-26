@@ -44,7 +44,7 @@ def grupo_json(g):
             'id': e.id, 'name': e.name, 'slug': e.slug, 'kind': e.kind, 'kind_display': e.get_kind_display(),
             'release_date': e.release_date.strftime('%Y-%m-%d') if e.release_date else '',
             'banner_url': e.banner_url, 'color_hex': e.color_hex or '', 'description': e.description or '',
-            'group_id': g.id, 'group_name': g.name,
+            'group_id': g.id, 'group_name': g.name, 'aliases': e.aliases,
         } for e in g.eras.all()],
     }
 
@@ -149,14 +149,15 @@ def catalogo_grupo_novo(request):
 @staff_required('ceg.editar')
 def catalogo_era_nova(request):
     """Adiciona uma era a um grupo do catálogo (sem duplicar pelo nome)."""
-    from apps.groups.models import Era, KpopGroup, normalize_name
+    from apps.groups.eras import era_por_nome
+    from apps.groups.models import Era, KpopGroup
 
     grupo = get_object_or_404(KpopGroup, pk=request.POST.get('group_id') or 0)
     nome = (request.POST.get('name') or '').strip()[:150]
     if not nome:
         return JsonResponse({'success': False, 'message': 'Digite o nome da era.'}, status=400)
     kind = request.POST.get('kind') if request.POST.get('kind') in Era.Kind.values else Era.Kind.OUTRO
-    existente = next((e for e in grupo.eras.all() if normalize_name(e.name) == normalize_name(nome)), None)
+    existente = era_por_nome(grupo, nome)  # pelo nome ou por um apelido: "SWIM" usa a era "ARIRANG"
     if existente is None:
         lancamento = parse_date(request.POST.get('release_date') or '') if request.POST.get('release_date') else None
         existente = Era.objects.create(group=grupo, name=nome, kind=kind, release_date=lancamento,

@@ -135,6 +135,23 @@ Detalhes de qualidade tratados no build: grupos fictícios ficam de fora (ex.: g
 nome de palco em letras latinas (rótulo curto > pseudônimo > sem sobrenome > título da Wikipedia), lançamentos
 "Japanese ver." contam como japoneses e singles só entram com edição física (photocard).
 
+### Era = comeback (`apps/groups/catalog_mb.py`, desde 2026-11-26)
+
+- **Era é o comeback** que vende com photocard: álbum, EP (mini) ou single físico. Um single cuja música está num
+  álbum/EP lançado até **90 dias** antes ou depois é **parte daquele comeback** (faixa-título, pré-lançamento) e não
+  vira era. Ex.: BTS "SWIM" → "ARIRANG", "Yet to Come" → "Proof". Compara pela gravação do MusicBrainz e, se faltar,
+  pelo título da faixa. O seed traz esses singles em `eras_dobradas` (e o relatório lista todos).
+- **Coletânea** entra só se for física, tiver música inédita e não for "best of" (ex.: "Proof").
+- **Só singles digitais:** o artista fica com os 3 mais recentes (melhor que nenhuma era).
+- **Sem ID do MusicBrainz no Wikidata:** procura pelo nome (latino, depois Hangul). Aceita se o MusicBrainz aponta
+  para o mesmo item do Wikidata, ou se é o único candidato coreano do tipo certo (grupo/pessoa) com o mesmo nome.
+  O relatório lista cada um ("ID do MusicBrainz achado pelo nome") para conferir.
+- **Na carga:** single dobrado **sem CEG nem item da vitrine** é juntado ao álbum (o nome vira apelido da era,
+  `Era.aliases`; a capa passa se o álbum não tiver). **Com CEG**, só ganha `Era.parte_de` e aparece no Catálogo em
+  "Revisar → Singles que parecem parte de outra era"; a plataforma decide no modal da era ("Juntar com outra era" move
+  CEGs e itens da vitrine e apaga o single, ou "Manter separada"). Função: `apps.groups.eras.juntar_eras`.
+- GOM que cria na Nova CEG uma era com o nome de um apelido (ex.: "SWIM") recebe a era principal ("ARIRANG").
+
 ### Quem entra (ranking)
 
 - **Popularidade** = fusão de posições (RRF) entre visualizações da Wikipedia (en + ko, 60 dias) e vendas de álbum

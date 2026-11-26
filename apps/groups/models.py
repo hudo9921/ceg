@@ -153,6 +153,11 @@ class Era(models.Model):
     kind = models.CharField('Tipo de lançamento', max_length=8, choices=Kind.choices, default=Kind.OUTRO)
     musicbrainz_id = models.CharField('MusicBrainz', max_length=36, null=True, blank=True, unique=True)
     source = models.CharField('Origem', max_length=10, choices=Source.choices, default=Source.MANUAL)
+    aliases = models.CharField('Outros nomes', max_length=300, blank=True, default='',
+                               help_text='Singles e nomes que fazem parte deste comeback (ex.: a faixa-título), separados por vírgula.')
+    # Sugestão da importação: este single parece ser parte de outro comeback (só a plataforma decide juntar).
+    parte_de = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='possiveis_partes', verbose_name='Parece parte de')
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 
     class Meta:

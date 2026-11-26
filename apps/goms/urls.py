@@ -18,6 +18,7 @@ urlpatterns = [
     path('plataforma/catalogo/<int:pk>/', plataforma_views.catalogo_grupo, name='platform_catalogo_grupo'),
     path('plataforma/catalogo/<int:pk>/salvar/', plataforma_views.catalogo_grupo_salvar, name='platform_catalogo_grupo_salvar'),
     path('plataforma/catalogo/era/<int:pk>/salvar/', plataforma_views.catalogo_era_salvar, name='platform_catalogo_era_salvar'),
+    path('plataforma/catalogo/era/<int:pk>/juntar/', plataforma_views.catalogo_era_juntar, name='platform_catalogo_era_juntar'),
     path('goms/', views.gom_directory, name='gom_directory'),
     # Depois das rotas fixas de /gom/ (equipe, trocar): slugs reservados em services.RESERVED_SLUGS.
     path('gom/<slug:slug>/', views.gom_public_page, name='gom_public'),

@@ -5,8 +5,8 @@ Gera o seed do catálogo (docs/CATALOG_IMPORT_PLAN.md §4.1). Roda no PC de dese
 2. Detalhes (wbgetentities): nomes en/ko, apelidos, estreia, agência, fim, imagem, IDs, integrantes, subunidades.
 3. Popularidade: pageviews dos últimos 60 dias na Wikipedia en + ko (API em lotes de 50).
 4. Top N grupos (incluindo subunidades) e top N solistas (só quem tem álbum/EP solo no MusicBrainz).
-5. Eras no MusicBrainz (1 req/s): álbum, EP e single físico; sem coletânea/ao vivo/remix/trilha.
-   Janela: últimos 5 anos + os 3 mais recentes. Japonês = lançado no Japão ou título em kana.
+5. Eras no MusicBrainz (1 req/s), regras em catalog_mb.py: era = comeback (álbum/EP; single só se físico e
+   fora de um álbum). Sem ID do MusicBrainz no Wikidata, procura pelo nome (só aceita casamento seguro).
 6. Créditos das imagens do Commons e cor do grupo.
 
 Respostas ficam em cache (`.catalog_cache/`), então rodar de novo é rápido. Nada de dados pessoais nas requisições.
@@ -22,14 +22,12 @@ import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
 
+from .catalog_mb import buscar_mbid, mb_eras
+
 logger = logging.getLogger(__name__)
 
 UA = 'kpop-catalog-seed/1.0 (open data research script; python-urllib)'
 KPOP = 'Q213665'
-SKIP_SECONDARY = {'Compilation', 'Live', 'Remix', 'Soundtrack', 'DJ-mix', 'Mixtape/Street', 'Demo',
-                  'Interview', 'Audiobook', 'Audio drama', 'Spokenword', 'Field recording'}
-KANA = re.compile(r'[぀-ヿ]')
-JP_TITLE = re.compile(r'japanese|jp\.? ?ver|japan ver', re.I)
 LATIN = re.compile(r'^[ -~À-ɏ]+$')
 FICTIONAL = 'Q14897293'  # entidade fictícia (ex.: grupos de filmes/animações)
 # Sobrenomes comuns: "Kim Chaewon" → "Chaewon", "Minatozaki Sana" → "Sana", "Hanni Pham" → "Hanni".
@@ -193,46 +191,6 @@ def _pageviews_lote(http, lang, lote, total):
         total[t] = max(total.get(t, 0), sum(v or 0 for v in (p.get('pageviews') or {}).values()))
 
 
-# --- MusicBrainz -------------------------------------------------------------------------------
-def mb_eras(http, mbid, hoje):
-    releases, offset = [], 0
-    while offset < 600:
-        q = urllib.parse.urlencode({'artist': mbid, 'inc': 'release-groups+media', 'type': 'album|ep|single',
-                                    'status': 'official', 'limit': 100, 'offset': offset, 'fmt': 'json'})
-        body = http.get('https://musicbrainz.org/ws/2/release?' + q, interval=1.1) or {}
-        page = body.get('releases') or []
-        releases += page
-        offset += 100
-        if offset >= (body.get('release-count') or 0) or not page:
-            break
-    grupos = {}
-    for r in releases:
-        rg = r.get('release-group') or {}
-        if not rg.get('id') or set(rg.get('secondary-types') or []) & SKIP_SECONDARY:
-            continue
-        g = grupos.setdefault(rg['id'], {'rg': rg, 'jp': 0, 'n': 0, 'fisico': False})
-        g['n'] += 1
-        g['jp'] += r.get('country') == 'JP' or ((r.get('text-representation') or {}).get('language') == 'jpn')
-        g['fisico'] |= any((m.get('format') or 'Digital Media') != 'Digital Media' for m in r.get('media') or [])
-    eras = []
-    for rgid, g in grupos.items():
-        rg = g['rg']
-        tipo = rg.get('primary-type')
-        if tipo == 'Single' and not g['fisico']:
-            continue  # single só digital não tem photocard
-        kind = {'Album': 'ALBUM', 'EP': 'MINI', 'Single': 'SINGLE'}.get(tipo)
-        if not kind or not rg.get('first-release-date'):
-            continue
-        if g['jp'] * 2 > g['n'] or KANA.search(rg.get('title', '')) or JP_TITLE.search(rg.get('title', '')):
-            kind = 'JAPONES'
-        eras.append({'musicbrainz_id': rgid, 'name': rg['title'][:150], 'kind': kind,
-                     'release_date': rg['first-release-date'],
-                     'cover_url': f'https://coverartarchive.org/release-group/{rgid}/front-500'})
-    eras.sort(key=lambda e: e['release_date'], reverse=True)
-    limite = (hoje - timedelta(days=5 * 365)).isoformat()
-    return [e for i, e in enumerate(eras) if i < 3 or e['release_date'] >= limite]
-
-
 # --- Commons -----------------------------------------------------------------------------------
 def commons_info(http, files):
     out = {}
@@ -382,6 +340,11 @@ def ler_obrigatorios(caminho):
     return [l.split('#', 1)[0].strip() for l in linhas if l.split('#', 1)[0].strip()]
 
 
+def nomes_crus(e):
+    """Nomes do item como estão (en, ko e apelidos em inglês), para buscar no MusicBrainz."""
+    return [n for n in [label(e), label(e, 'ko'), *[a['value'] for a in (e.get('aliases') or {}).get('en', [])]] if n]
+
+
 def nomes_de(e):
     from .models import normalize_name
     nomes = [label(e), label(e, 'ko'), *[a['value'] for a in (e.get('aliases') or {}).get('en', [])]]
@@ -502,10 +465,28 @@ def build(cache_dir, n_grupos=500, n_solistas=100, log=print, obrigatorios=(), n
                   and (first(ents[i], 'P571') or first(ents[i], 'P2031') or '') >= limite_estreia][:n_estreantes]
     grupos += estreantes
     log(f'MusicBrainz: eras de {len(grupos)} grupos ({len(estreantes)} estreantes; 1 req/s)...')
-    eras = {}
+    eras, dobradas, mbids, por_nome_mb = {}, {}, {}, []
+    usados = {first(e, 'P434') for e in ents.values()} - {None}
+
+    def mbid_de(i, pessoa):
+        """ID do MusicBrainz: do Wikidata ou, se faltar, buscado pelo nome (casamento seguro, ver catalog_mb)."""
+        if i not in mbids:
+            mb = first(ents[i], 'P434')
+            if not mb:
+                mb, como = buscar_mbid(http, [nome(ents[i]), *nomes_crus(ents[i])], i, pessoa, usados)
+                if mb:
+                    usados.add(mb)
+                    por_nome_mb.append(f'{nome(ents[i])} → {mb} ({como})')
+            mbids[i] = mb
+        return mbids[i]
+
+    def eras_de(i, pessoa):
+        mb = mbid_de(i, pessoa)
+        eras[i], dobradas[i] = mb_eras(http, mb, hoje) if mb else ([], [])
+        return eras[i]
+
     for n, i in enumerate(grupos, 1):
-        mb = first(ents[i], 'P434')
-        eras[i] = mb_eras(http, mb, hoje) if mb else []
+        eras_de(i, False)
         if n % 50 == 0:
             log(f'  {n}/{len(grupos)}')
 
@@ -515,11 +496,8 @@ def build(cache_dir, n_grupos=500, n_solistas=100, log=print, obrigatorios=(), n
     for i in pessoas_ordem:
         if i not in forcados and (len(solistas) >= n_solistas or (views[i] == 0 and i not in vendas)):
             continue
-        mb = first(ents[i], 'P434')
-        lista = mb_eras(http, mb, hoje) if mb else []
-        if lista or i in forcados:
+        if eras_de(i, True) or i in forcados:
             solistas.append(i)
-            eras[i] = lista
 
     escolhidos = set(grupos) | set(solistas)
     log('Wikidata: integrantes, agências e imagens...')
@@ -547,14 +525,14 @@ def build(cache_dir, n_grupos=500, n_solistas=100, log=print, obrigatorios=(), n
         img = imagens.get(_arquivo(e)) or {}
         agencia = ents.get(first(e, 'P264') or '') or {}
         a = {
-            'wikidata_id': i, 'musicbrainz_id': first(e, 'P434'), 'name': nome(e), 'name_native': label(e, 'ko'),
+            'wikidata_id': i, 'musicbrainz_id': mbids.get(i) or first(e, 'P434'), 'name': nome(e), 'name_native': label(e, 'ko'),
             'aliases': [x['value'] for x in (e.get('aliases') or {}).get('en', []) if len(x['value']) <= 40][:4],
             'kind': 'SOLISTA' if i in solistas else ('SUBUNIDADE' if pai else 'GRUPO'),
             'parent_wikidata_id': pai, 'rank': rank, 'views_60d': views.get(i, 0), 'vendas_3a': vendas.get(i, 0),
             'debut_date': first(e, 'P571') or first(e, 'P2031'),
             'status': 'ENCERRADO' if first(e, 'P576') or first(e, 'P2032') else 'ATIVO',
             'agency': label(agencia), 'image_url': img.get('url', ''), 'image_credit': img.get('credit', ''),
-            'eras': eras.get(i, []), 'members': [],
+            'eras': eras.get(i, []), 'eras_dobradas': dobradas.get(i, []), 'members': [],
         }
         for m, info in sorted((membros.get(i) or {}).items(), key=lambda kv: (bool(kv[1]['fim']), kv[1]['inicio'] or '9999')):
             me = ents.get(m) or {}
@@ -574,6 +552,9 @@ def build(cache_dir, n_grupos=500, n_solistas=100, log=print, obrigatorios=(), n
         'top200_sem_eras': [a['name'] for a in principais if not a['eras']],
         'por_tipo': {t: sum(1 for i in grupos if tipo_grupo(ents[i]) == t) for t in ('girl', 'boy', 'outro')},
         'estreantes': len(estreantes),
+        'musicbrainz_por_nome': por_nome_mb,
+        'singles_dobrados': [f"{a['name']}: {d['name']} → {d['dentro_de_nome']}" for a in artistas
+                             for d in a['eras_dobradas']],
     }
     return {'version': 1, 'generated_at': hoje.isoformat(), 'relatorio': relatorio,
             'sources': 'Wikidata (CC0), Wikipedia pageviews, MusicBrainz (CC0), Cover Art Archive, Wikimedia Commons',
