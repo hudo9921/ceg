@@ -279,4 +279,5 @@
 - `participants/seguindo.html` (`/me/seguindo/`, `seguindoApp`): busca e lista de quem o joiner segue; card em `participants/partials/_seguindo_grupo.html`.
 - CEG: botão "Seguir <grupo>" em `cegs/partials/_detail_seguir.html` (no `_detail_header_info.html`). Home: trilho "Para você" em `cegs/partials/_home_para_voce.html` (ou convite para seguir) e marca "seguindo" no título do trilho do grupo.
 - Push (`apps/avisos`): card `components/_push_card.html` (`pushAvisos()`, estados carregando/sem-suporte/ios/bloqueado/desligado/ligado; `publico='joiner'|'gom'` muda o texto) em `/me/`, `goms/inicio.html` e `cegs/notificacoes.html`. Service worker e manifesto são templates em `templates/avisos/` (`sw.js`, `manifest.webmanifest`); `base.html` liga o manifesto, o ícone e o `theme-color`.
+- Ajuda dos avisos: `avisos/ajuda.html` (`/ajuda/notificacoes/`, público) com abas Android / iPhone / Computador (abre na do aparelho), passos em `avisos/partials/_ajuda_passo.html`, "Apareceu bloqueadas?" e o card de ativar no fim. Link no card de push ("Como ativar no Android e no iPhone" / "Ver o passo a passo") e no rodapé ("Avisos no celular").
 

@@ -79,3 +79,11 @@ class PushTests(TestCase):
         chave = self.client.get(reverse('push_chave')).json()['chave']
         bruto = base64.urlsafe_b64decode(chave + '=' * (-len(chave) % 4))
         self.assertEqual((len(bruto), bruto[0], chave), (65, 4, chave_publica()))  # ponto P-256 não comprimido, estável
+
+    def test_ajuda_android_iphone(self):
+        res = self.client.get(reverse('ajuda_notificacoes'))
+        self.assertContains(res, 'Adicionar à Tela de Início')
+        self.assertContains(res, 'Entrar para ativar')
+        self.entrar()
+        self.assertContains(self.client.get(reverse('my_claims')), reverse('ajuda_notificacoes'))
+

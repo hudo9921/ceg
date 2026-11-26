@@ -1,0 +1,8 @@
+{% comment %}Um passo do tutorial de avisos (ajuda.html): número, ícone Lucide, título e texto.{% endcomment %}
+<div class="ui-card p-4 flex items-start gap-4">
+    <span class="w-10 h-10 rounded-full bg-ui-accent text-white flex items-center justify-center font-bold flex-none" aria-hidden="true">{{ n }}</span>
+    <div class="min-w-0 space-y-0.5">
+        <p class="font-semibold m-0 flex items-center gap-2"><i data-lucide="{{ icone }}" class="w-4 h-4 ui-muted" stroke-width="1.75"></i>{{ titulo }}</p>
+        <p class="text-sm ui-muted m-0">{{ texto }}</p>
+    </div>
+</div>

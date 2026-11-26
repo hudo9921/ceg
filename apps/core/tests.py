@@ -29,7 +29,7 @@ from apps.participants.models import Participant, ParticipantNotification
 PUBLIC_ROUTES = {
     'health_check', 'home', 'ceg_detail', 'ceg_polling_summary_api', 'caixa_detail',
     'vitrine_list', 'caixinhas_abertas', 'repasses_disponiveis', 'login_otp',
-    'service_worker', 'webmanifest', 'push_chave', 'push_inscrever', 'push_cancelar', 'push_testar', 'logout_participant', 'privacy_policy',
+    'service_worker', 'webmanifest', 'ajuda_notificacoes', 'push_chave', 'push_inscrever', 'push_cancelar', 'push_testar', 'logout_participant', 'privacy_policy',
     'backoffice_login', 'gom_invite_accept', 'gom_public', 'gom_directory',
 }
 # Rotas do joiner: anônimo precisa ser mandado para o login OTP; joiner logado pode usar.

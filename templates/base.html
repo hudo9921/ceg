@@ -667,7 +667,10 @@
     <footer class="border-t border-ui-line py-6 mt-8 pb-28 lg:pb-6 text-xs text-ui-muted">
         <div class="max-w-7xl mx-auto px-4 lg:px-10 flex flex-col sm:flex-row justify-between items-center gap-2">
             <p class="m-0"><span class="ui-disp ui-chrome text-sm">CegManager</span> · compras em grupo de K-pop</p>
-            <a href="{% url 'privacy_policy' %}" class="text-ui-muted hover:text-ui-text">Política de privacidade</a>
+            <span class="flex gap-4">
+                <a href="{% url 'ajuda_notificacoes' %}" class="text-ui-muted hover:text-ui-text">Avisos no celular</a>
+                <a href="{% url 'privacy_policy' %}" class="text-ui-muted hover:text-ui-text">Política de privacidade</a>
+            </span>
         </div>
     </footer>
 
