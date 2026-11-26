@@ -36,6 +36,7 @@ ceg/
 - **`ItemDefinition` & `TipoItem`:** Catálogo de tipos de itens (Photocard, POB, Álbum, etc.) com taxas de rateio diferenciadas.
 - **`Set` & `ItemSlot`:** Cada lote de compra forma um Set contendo slots individuais para cada membro da banda.
 - **`ItemIndividual`:** Itens avulsos comprados no Mercari Japão ou leilões.
+- **Caixinhas abertas:** caixas em consolidação que aceitam pedidos aparecem em `/caixinhas/` (todos os GOMs) e na página de cada GOM (`apps/cegs/caixinhas.py`).
 - **`ItemVitrine`:** Photocards e produtos à pronta entrega disponíveis na loja pública.
 - **`HomeBannerConfig`:** Configuração dinâmica dos banners da vitrine principal, com suporte a artes independentes para Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
 - **`GOMNotification`:** Central de notificações operacionais em tempo real para a GOM com categorização por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).
@@ -124,6 +125,16 @@ chmod +x scripts/migrate_from_neon.sh
 ```
 
 ---
+
+### Desempenho na VM pequena (1 GB, fração de CPU)
+
+- **Cards de CEG** (`enrich_cegs_with_availability`): lê as vagas como linhas simples (`values_list`), sem objetos.
+- **Filtros nunca carregam o catálogo inteiro** (centenas de grupos, milhares de eras): Vitrine pública usa só grupos/eras
+  com item; Analytics e Alocador só os que têm CEG do GOM. Teste de número fixo de consultas em `tests_vitrine`.
+- **Caddy comprime o HTML** (`encode zstd gzip`). O Caddyfile é montado como arquivo, então o `deploy.sh` reinicia o
+  Caddy quando o conteúdo muda.
+- **Servidor:** `vm.swappiness=10` em `/etc/sysctl.d/99-valcegs.conf` (mantém o app na RAM em vez de cache de disco);
+  fwupd, ModemManager e udisks2 desligados.
 
 ## 📚 6. Índice da Documentação Modular
 

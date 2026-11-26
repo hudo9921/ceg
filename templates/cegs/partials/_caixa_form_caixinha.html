@@ -1,0 +1,32 @@
+{% comment %}
+Formulário da caixa: "Caixinha aberta". Enquanto a caixa está em consolidação e isto está marcado, ela aparece em
+/caixinhas/ e na página do GOM (apps/cegs/caixinhas.py). O prazo só tira a caixa da lista; nada muda sozinho.
+{% endcomment %}
+<div class="space-y-4 pt-5 border-t border-slate-100 dark:border-slate-800">
+    <div class="ui-label flex items-center gap-2">
+        <i data-lucide="package-open" class="w-3.5 h-3.5" stroke-width="1.75"></i>
+        <span>Caixinha aberta para pedidos</span>
+    </div>
+
+    <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" name="aceita_pedidos" value="1" class="mt-1 w-4 h-4 accent-pink-500"
+               {% if not caixa or caixa.aceita_pedidos %}checked{% endif %}>
+        <span class="space-y-0.5">
+            <span class="block font-semibold text-[15px]">Mostrar em "Caixinhas abertas"</span>
+            <span class="block text-sm ui-muted">Joiners veem a caixa na lista pública e na sua página enquanto ela estiver em consolidação.</span>
+        </span>
+    </label>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="space-y-1.5">
+            <label for="caixa-pedidos-ate" class="ui-label block">Pedidos até (opcional)</label>
+            <input type="datetime-local" id="caixa-pedidos-ate" name="pedidos_ate"
+                   value="{{ caixa.pedidos_ate|date:'Y-m-d\TH:i'|default:'' }}" class="ui-input w-full">
+        </div>
+        <div class="sm:col-span-2 space-y-1.5">
+            <label for="caixa-como-participar" class="ui-label block">Como participar (público)</label>
+            <textarea id="caixa-como-participar" name="como_participar" rows="3" maxlength="1500" class="ui-input w-full !h-auto py-2"
+                      placeholder="Ex: Aceito pedidos da Mercari e Suruga-ya. Mande o link no direct do Instagram até sexta.">{{ caixa.como_participar|default:'' }}</textarea>
+        </div>
+    </div>
+</div>

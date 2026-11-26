@@ -36,8 +36,10 @@ class CEGBulkAllocatorView(StaffRequiredMixin, View):
         if era_id.isdigit():
             cegs_qs = cegs_qs.filter(era_id=int(era_id))
 
-        groups = KpopGroup.objects.all().order_by('name')
-        eras = Era.objects.select_related('group').all().order_by('group__name', 'name')
+        # Filtros só com grupos/eras que têm CEG deste GOM.
+        era_ids = CEG.objects.for_gom(request.active_gom).values('era_id')
+        eras = Era.objects.filter(id__in=era_ids).select_related('group').order_by('group__name', 'name')
+        groups = KpopGroup.objects.filter(eras__id__in=era_ids).distinct().order_by('name')
         ceg = None
 
         if slug:

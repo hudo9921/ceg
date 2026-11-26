@@ -1,0 +1,90 @@
+{% comment %}
+Loja do GOM: cada mudança de filtro busca ?parcial=1 e troca o #loja-corpo (sem recarregar a página); a URL acompanha
+os filtros (dá para compartilhar o link). "Carregar mais" busca ?parcial=mais e troca o próprio botão pelos novos cards.
+Sem JavaScript o formulário continua funcionando como GET comum.
+{% endcomment %}
+<script>
+function lojaGom(ativosNoInicio) {
+    const PADRAO = { aba: 'cegs', vista: 'cegs', ordem: 'recentes' };
+    const NAO_E_FILTRO = ['aba', 'vista', 'ordem', 'pagina'];  // mesmos campos que Filtros.ativos (apps/goms/loja.py) ignora
+    let pedido = 0;
+    return {
+        carregando: false,
+        ativos: !!ativosNoInicio,  // mostra o botão "Limpar filtros" da barra de busca
+        maisFiltros: false,  // celular: tipo, preço e ordem ficam atrás de um botão
+        form() { return document.getElementById('loja-form'); },
+        consulta() {
+            const dados = new FormData(this.form());
+            const mais = dados.get('grupo_mais');
+            if (mais) dados.set('grupo', mais);
+            dados.delete('grupo_mais');
+            const p = new URLSearchParams();
+            for (const [k, v] of dados.entries()) {
+                const valor = String(v).trim();
+                if (valor && PADRAO[k] !== valor && !p.has(k)) p.set(k, valor);
+            }
+            return p;
+        },
+        mudou(e) {
+            const alvo = e.target;
+            if (!alvo || !alvo.name || alvo.name === 'q') return;
+            const form = this.form();
+            if (alvo.name === 'grupo' || alvo.name === 'grupo_mais') {
+                // Trocar de grupo zera a integrante; o "Mais grupos" e os chips não valem ao mesmo tempo.
+                form.querySelectorAll('[name=integrante]').forEach((el) => { if (el.type === 'radio') el.checked = el.value === ''; else el.value = ''; });
+                if (alvo.name === 'grupo_mais') form.querySelectorAll('input[name=grupo]').forEach((el) => { el.checked = false; });
+                else { const sel = form.querySelector('[name=grupo_mais]'); if (sel) sel.value = ''; }
+            }
+            if (alvo.name === 'aba') form.querySelectorAll('[name=grupo],[name=integrante],[name=tipo]').forEach((el) => {
+                if (el.type === 'radio') el.checked = el.value === ''; else el.value = '';
+            });
+            this.aplicar();
+        },
+        limpar() {
+            // Zera busca, grupo, integrante, tipo e preço; mantém a aba, a vista e a ordem.
+            const form = this.form();
+            form.querySelectorAll('[name=q],[name=grupo],[name=grupo_mais],[name=integrante],[name=tipo],[name=preco_max]').forEach((el) => {
+                if (el.type === 'radio') el.checked = el.value === ''; else el.value = '';
+            });
+            this.aplicar();
+        },
+        async buscar(url) {
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) throw new Error('falhou');
+            return res.text();
+        },
+        async aplicar() {
+            const p = this.consulta();
+            this.ativos = [...p.keys()].some((k) => !NAO_E_FILTRO.includes(k));
+            const base = this.form().getAttribute('action');
+            const endereco = base + (p.toString() ? '?' + p : '');
+            const meu = ++pedido;
+            this.carregando = true;
+            try {
+                p.set('parcial', '1');
+                const html = await this.buscar(base + '?' + p);
+                if (meu !== pedido) return;  // chegou resposta de um filtro mais novo
+                document.getElementById('loja-corpo').innerHTML = html;
+                history.replaceState(null, '', endereco);
+                this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+            } catch (e) {
+                window.location.href = endereco;  // sem conexão com o fetch: navega normalmente
+            } finally {
+                if (meu === pedido) this.carregando = false;
+            }
+        },
+        async carregarMais(botao) {
+            const caixa = botao.closest('[data-loja-mais]');
+            botao.disabled = true;
+            try {
+                const url = new URL(botao.dataset.url, window.location.href);
+                url.searchParams.set('parcial', 'mais');
+                caixa.outerHTML = await this.buscar(url.toString());
+                this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+            } catch (e) {
+                botao.disabled = false;
+            }
+        },
+    };
+}
+</script>

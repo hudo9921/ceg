@@ -1,0 +1,30 @@
+{% comment %}Card de CEG na loja do GOM: foto, grupo · era, título, primeiras vagas livres, preço e barra de reservas.{% endcomment %}
+<a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-lift overflow-hidden flex flex-col no-underline text-ui-text h-full"
+   style="--era-accent: {{ ceg.theme_color|default:'#F472B6' }};">
+    <span class="relative block aspect-[16/10] overflow-hidden" style="background: var(--ui-holo)">
+        {% if ceg.display_image_url %}
+            <img src="{{ ceg.display_image_url|thumb }}" data-full="{{ ceg.display_image_url }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">
+        {% endif %}
+        <span class="ui-tag absolute top-2 right-2">
+            {% if ceg.available_slots_count %}<span class="ui-mono">{{ ceg.available_slots_count }}</span> vaga{{ ceg.available_slots_count|pluralize }}{% else %}Esgotada{% endif %}
+        </span>
+    </span>
+    <span class="p-4 flex-1 flex flex-col gap-1.5">
+        <span class="ui-label truncate">{{ ceg.era.group.name }} · {{ ceg.era.name }}</span>
+        <span class="text-[17px] font-bold leading-snug line-clamp-2">{{ ceg.title }}</span>
+        {% if ceg.preview_chips %}
+            <span class="text-[13px] ui-muted truncate">
+                {% for item in ceg.preview_chips %}{{ item.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if ceg.preview_remaining_count > 0 %} e +{{ ceg.preview_remaining_count }}{% endif %}
+            </span>
+        {% endif %}
+        <span class="mt-auto pt-2 space-y-2">
+            <span class="flex items-baseline justify-between gap-2">
+                <span class="ui-mono text-[15px] font-bold">{% if ceg.min_price %}<span class="ui-muted text-[12px] font-medium">a partir de </span>R$ {{ ceg.min_price|floatformat:2 }}{% endif %}</span>
+                <span class="ui-label">{{ ceg.progress_percentage|default:0 }}% reservado</span>
+            </span>
+            <span class="block h-1.5 overflow-hidden" style="background: var(--ui-seg-off); border-radius: var(--ui-r-pill)" aria-hidden="true">
+                <span class="block h-full" style="width: {{ ceg.progress_percentage|default:0 }}%; background: var(--ui-seg-on)"></span>
+            </span>
+        </span>
+    </span>
+</a>

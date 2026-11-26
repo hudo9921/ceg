@@ -238,7 +238,7 @@ Cinco seções, as mesmas na barra lateral (desktop) e na barra de abas (celular
 5. **Envios**
 
 Até a fase P3, Pagar, Meus itens e Envios abrem as partes correspondentes do `/me/`.
-Sem login, o menu (barra lateral e abas) mostra só CEGs e Vitrine; Pagar, Meus itens e Envios aparecem depois que o joiner entra (`SECOES_COM_LOGIN` em `apps/core/context_processors.py`).
+Sem login, o menu (barra lateral e abas) mostra CEGs, Vitrine e Caixinhas (`/caixinhas/`); a barra de abas se ajusta ao número de seções; Pagar, Meus itens e Envios aparecem depois que o joiner entra (`SECOES_COM_LOGIN` em `apps/core/context_processors.py`).
 
 ### 7.5. Fases
 | Fase | Escopo |
@@ -307,3 +307,8 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
   O escuro não muda.
 - Chip selecionado no claro: mesma pílula do item ativo da barra lateral (`--ui-accent-soft`, borda rosa 45%,
   texto `--ui-accent-text`). O degradê holográfico ficou só nas barras de progresso e enfeites.
+
+### Barras fixas (sticky)
+`html` e `body` usam `overflow-x: clip` (em `ui.css`), nunca `overflow-x-hidden`: `hidden` transforma o `body` em
+contêiner de rolagem e nenhum `position: sticky` gruda. Busca da loja do GOM: `.ui-searchbar` (pílula de até 560px
+com o campo `.ui-bare`, que fica fora da regra de inputs do modo escuro em `base.html`).

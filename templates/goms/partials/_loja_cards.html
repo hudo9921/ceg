@@ -1,0 +1,19 @@
+{% comment %}
+Cards de uma página da loja + botão "Carregar mais" (?parcial=mais devolve só este arquivo, que substitui o botão).
+{% endcomment %}
+{% for r in resultados %}
+    {% if f.aba == 'pronta' %}
+        {% include 'goms/partials/_loja_card_pronta.html' with item=r %}
+    {% elif f.vista == 'itens' %}
+        {% include 'goms/partials/_loja_card_item.html' with it=r %}
+    {% else %}
+        {% include 'goms/partials/_loja_card_ceg.html' with ceg=r %}
+    {% endif %}
+{% endfor %}
+{% if tem_mais %}
+    <div class="col-span-full flex justify-center pt-2" data-loja-mais>
+        <button type="button" class="ui-btn ui-btn-ghost" data-url="{{ proxima_url }}" @click="carregarMais($el)">
+            <i data-lucide="chevrons-down" class="w-4 h-4" stroke-width="1.75"></i><span>Carregar mais</span>
+        </button>
+    </div>
+{% endif %}

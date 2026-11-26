@@ -1,0 +1,59 @@
+{% comment %}
+Corpo da loja do GOM (abas, filtros, contagem e grade). É trocado inteiro a cada mudança de filtro
+(?parcial=1, lojaGom em _loja_script.html); a busca fica fora para não perder o foco enquanto a pessoa digita.
+{% endcomment %}
+<div class="space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex gap-2" role="radiogroup" aria-label="O que ver">
+            <label class="ui-chip{% if f.aba == 'cegs' %} is-on{% endif %}">
+                <input type="radio" name="aba" value="cegs" class="sr-only"{% if f.aba == 'cegs' %} checked{% endif %}>
+                <i data-lucide="sparkles" class="w-4 h-4" stroke-width="1.75"></i>CEGs abertas
+                <span class="ui-mono ui-muted text-xs">{{ total_abertas }}</span>
+            </label>
+            {% if total_pronta %}
+            <label class="ui-chip{% if f.aba == 'pronta' %} is-on{% endif %}">
+                <input type="radio" name="aba" value="pronta" class="sr-only"{% if f.aba == 'pronta' %} checked{% endif %}>
+                <i data-lucide="store" class="w-4 h-4" stroke-width="1.75"></i>Pronta entrega
+                <span class="ui-mono ui-muted text-xs">{{ total_pronta }}</span>
+            </label>
+            {% endif %}
+        </div>
+        {% if f.aba == 'cegs' %}
+        <div class="flex gap-1 ui-well p-1" role="radiogroup" aria-label="Mostrar como">
+            <label class="ui-chip !h-8 !border-0{% if f.vista == 'cegs' %} is-on{% endif %}" title="Uma CEG por card">
+                <input type="radio" name="vista" value="cegs" class="sr-only"{% if f.vista == 'cegs' %} checked{% endif %}>
+                <i data-lucide="layout-grid" class="w-4 h-4" stroke-width="1.75"></i>CEGs
+            </label>
+            <label class="ui-chip !h-8 !border-0{% if f.vista == 'itens' %} is-on{% endif %}" title="Cada item livre como um produto">
+                <input type="radio" name="vista" value="itens" class="sr-only"{% if f.vista == 'itens' %} checked{% endif %}>
+                <i data-lucide="gallery-vertical-end" class="w-4 h-4" stroke-width="1.75"></i>Itens
+            </label>
+        </div>
+        {% endif %}
+    </div>
+
+    {% include 'goms/partials/_loja_filtros.html' %}
+
+    <div class="flex items-center justify-between gap-3">
+        <p class="ui-label m-0" aria-live="polite">
+            {{ total }} {% if f.aba == 'pronta' %}ite{{ total|pluralize:"m,ns" }} à pronta entrega{% elif f.vista == 'itens' %}ite{{ total|pluralize:"m,ns" }} com vaga{% else %}CEG{{ total|pluralize }}{% endif %}
+        </p>
+        {% if f.ativos %}
+            <a href="{% url 'gom_public' gom.slug %}{% if f.aba == 'pronta' %}?aba=pronta{% endif %}" @click.prevent="limpar()" class="ui-btn ui-btn-ghost ui-btn-sm">
+                <i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i>Limpar filtros
+            </a>
+        {% endif %}
+    </div>
+
+    {% if resultados %}
+        <div id="loja-grade" class="grid gap-3 sm:gap-4 {% if f.aba == 'cegs' and f.vista == 'cegs' %}grid-cols-1 sm:grid-cols-2 lg:grid-cols-3{% else %}grid-cols-2 sm:grid-cols-3 lg:grid-cols-5{% endif %}">
+            {% include 'goms/partials/_loja_cards.html' %}
+        </div>
+    {% else %}
+        <div class="ui-card p-8 text-center space-y-2">
+            <i data-lucide="{% if f.ativos %}search-x{% else %}inbox{% endif %}" class="w-6 h-6 mx-auto ui-muted" stroke-width="1.75"></i>
+            <p class="m-0 font-semibold">{% if f.ativos %}Nada com esses filtros.{% elif f.aba == 'pronta' %}Nenhum item à pronta entrega agora.{% else %}Nenhuma CEG aberta agora.{% endif %}</p>
+            {% if f.ativos %}<p class="m-0 text-sm ui-muted">Tente outro grupo ou tire algum filtro.</p>{% endif %}
+        </div>
+    {% endif %}
+</div>

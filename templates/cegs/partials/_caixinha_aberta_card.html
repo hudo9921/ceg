@@ -1,0 +1,26 @@
+{% comment %}
+Card de uma caixinha aberta (/caixinhas/ e página do GOM). `c` vem de apps/cegs/caixinhas.py (abertas + com_rotulos).
+`mostrar_gom` põe "por <GOM>" (na página do próprio GOM não precisa).
+{% endcomment %}
+<a href="{% url 'caixa_detail' c.slug %}" class="ui-card ui-lift p-4 flex gap-4 no-underline text-ui-text {{ classe|default:'' }}">
+    <span class="ui-well shrink-0 w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-0.5" aria-hidden="true">
+        <i data-lucide="package-open" class="w-5 h-5 ui-muted" stroke-width="1.75"></i>
+        <span class="ui-mono font-bold text-sm">{{ c.origem_sigla }}</span>
+    </span>
+    <span class="min-w-0 flex-1 space-y-1.5">
+        <span class="block ui-label truncate">{{ c.origem_nome }}{% if mostrar_gom %} · por {{ c.gom.name }}{% endif %}</span>
+        <span class="block text-[15px] font-bold leading-snug line-clamp-2">{{ c.nome }}</span>
+        {% if c.como_participar %}
+            <span class="block text-[13px] ui-muted line-clamp-2">{{ c.como_participar }}</span>
+        {% endif %}
+        <span class="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {% if c.pedidos_ate %}
+                <span class="ui-status ui-warn">Pedidos até {{ c.pedidos_ate|date:"d/m \à\s H:i" }}</span>
+            {% else %}
+                <span class="ui-status ui-ok">Aberta</span>
+            {% endif %}
+            {% if c.n_cegs %}<span class="ui-tag"><span class="ui-mono">{{ c.n_cegs }}</span> CEG{{ c.n_cegs|pluralize }}</span>{% endif %}
+            {% if c.n_itens %}<span class="ui-tag"><span class="ui-mono">{{ c.n_itens }}</span> pedido{{ c.n_itens|pluralize }}</span>{% endif %}
+        </span>
+    </span>
+</a>

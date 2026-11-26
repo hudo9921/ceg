@@ -2,10 +2,11 @@ import logging
 import threading
 import time
 from collections import defaultdict
+from typing import NamedTuple
 from decimal import Decimal
 from django.db import transaction, OperationalError
 from django.utils import timezone
-from apps.cegs.models import ItemSlot, CEG, ClaimAttemptLog, ItemWaitingList
+from apps.cegs.models import CEGItemDefinition, ItemSlot, CEG, ClaimAttemptLog, ItemWaitingList
 from apps.goms.joiners import apply_profile_updates
 from apps.participants.models import Participant, Claim, clean_phone_number
 
@@ -719,6 +720,19 @@ class ClaimService:
             LAST_CLAIM_DISPUTES.clear()
 
 
+class _SlotRow(NamedTuple):
+    status: str
+    price: Decimal
+    item_definition_id: int
+    set_number: int
+    name: str
+    member_name: str
+    item_type: str
+    tipo_id: int | None
+    tipo_nome: str | None
+    tipo_label: str
+
+
 def enrich_cegs_with_availability(cegs_list):
     """
     Enriquece uma lista de objetos CEG com informações sobre vagas restantes,
@@ -740,17 +754,19 @@ def enrich_cegs_with_availability(cegs_list):
     cegs_list = list(cegs_list)
     ceg_ids = [c.id for c in cegs_list]
 
-    slots = list(
-        ItemSlot.objects.filter(
-            set__ceg_id__in=ceg_ids,
-            set__is_active=True
-        ).select_related('item_definition__tipo_item', 'set')
+    # Linhas simples (values) em vez de objetos: é a parte mais pesada da Home e das páginas de GOM.
+    tipo_labels = dict(CEGItemDefinition._meta.get_field('item_type').flatchoices)
+    rows = (
+        ItemSlot.objects.filter(set__ceg_id__in=ceg_ids, set__is_active=True)
         .order_by('set__set_number', 'item_definition__order_index', 'item_definition__name')
+        .values_list('status', 'price', 'item_definition_id', 'set__set_number', 'set__ceg_id',
+                     'item_definition__name', 'item_definition__member_name', 'item_definition__item_type',
+                     'item_definition__tipo_item_id', 'item_definition__tipo_item__nome')
     )
-
     slots_by_ceg = defaultdict(list)
-    for s in slots:
-        slots_by_ceg[s.set.ceg_id].append(s)
+    for st, price, def_id, set_number, ceg_id, name, member, item_type, tipo_id, tipo_nome in rows:
+        slots_by_ceg[ceg_id].append(_SlotRow(st, price, def_id, set_number, name, member or '', item_type,
+                                             tipo_id, tipo_nome, tipo_labels.get(item_type, item_type)))
 
     for ceg in cegs_list:
         ceg_slots = slots_by_ceg[ceg.id]
@@ -784,15 +800,12 @@ def enrich_cegs_with_availability(cegs_list):
         tipo_names_set = set()
 
         for s in ceg_slots:
-            item_def = s.item_definition
-            t = item_def.tipo_item
-            if t:
-                tipos_set.add(t)
-                tipo_ids_set.add(t.id)
-                tipo_names_set.add(t.nome)
+            if s.tipo_id:
+                tipos_set.add((s.tipo_id, s.tipo_nome))
+                tipo_ids_set.add(s.tipo_id)
+                tipo_names_set.add(s.tipo_nome)
             else:
-                label = item_def.get_item_type_display() if hasattr(item_def, 'get_item_type_display') else str(item_def.item_type)
-                tipo_names_set.add(label)
+                tipo_names_set.add(str(s.tipo_label))
 
         is_mista = (len(tipo_names_set) > 1) or (len(tipos_set) > 1)
         ceg.is_mista = is_mista
@@ -801,9 +814,7 @@ def enrich_cegs_with_availability(cegs_list):
         ceg.tipo_names_str = ", ".join(sorted(tipo_names_set))
 
         if not is_mista and len(tipos_set) == 1:
-            only_t = list(tipos_set)[0]
-            ceg.exclusive_tipo_id = only_t.id
-            ceg.primary_tipo_name = only_t.nome
+            ceg.exclusive_tipo_id, ceg.primary_tipo_name = next(iter(tipos_set))
         elif not is_mista and len(tipo_names_set) == 1:
             ceg.exclusive_tipo_id = None
             ceg.primary_tipo_name = list(tipo_names_set)[0]
@@ -814,34 +825,33 @@ def enrich_cegs_with_availability(cegs_list):
         # Mapeamento para desambiguação de nomes se houver o mesmo member_name em múltiplos itens da CEG
         member_item_defs = defaultdict(set)
         for s in ceg_slots:
-            if s.item_definition.member_name:
-                member_item_defs[s.item_definition.member_name].add(s.item_definition_id)
+            if s.member_name:
+                member_item_defs[s.member_name].add(s.item_definition_id)
 
         items_map = {}
         for s in available_slots:
-            item_def = s.item_definition
-            key = item_def.id
+            key = s.item_definition_id
             if key not in items_map:
-                if item_def.member_name:
-                    if len(member_item_defs.get(item_def.member_name, set())) > 1:
-                        display_name = f"{item_def.member_name} ({item_def.name})"
+                if s.member_name:
+                    if len(member_item_defs.get(s.member_name, set())) > 1:
+                        display_name = f"{s.member_name} ({s.name})"
                     else:
-                        display_name = item_def.member_name
+                        display_name = s.member_name
                 else:
-                    display_name = item_def.name
+                    display_name = s.name
 
                 items_map[key] = {
-                    'id': item_def.id,
+                    'id': key,
                     'display_name': display_name,
-                    'item_name': item_def.name,
-                    'member_name': item_def.member_name,
-                    'item_type': item_def.item_type,
+                    'item_name': s.name,
+                    'member_name': s.member_name,
+                    'item_type': s.item_type,
                     'price': s.price,
                     'sets': [],
                 }
 
-            if s.set.set_number not in items_map[key]['sets']:
-                items_map[key]['sets'].append(s.set.set_number)
+            if s.set_number not in items_map[key]['sets']:
+                items_map[key]['sets'].append(s.set_number)
 
         grouped_items = []
         for item_data in items_map.values():
@@ -868,8 +878,8 @@ def enrich_cegs_with_availability(cegs_list):
             if def_id not in ceg_share_items:
                 ceg_share_items[def_id] = {
                     'id': def_id,
-                    'name': slot.item_definition.name,
-                    'member_name': slot.item_definition.member_name or slot.item_definition.name,
+                    'name': slot.name,
+                    'member_name': slot.member_name or slot.name,
                     'available_count': 0,
                     'total_count': 0,
                 }
