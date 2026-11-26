@@ -162,7 +162,7 @@ nome de palco em letras latinas (rótulo curto > pseudônimo > sem sobrenome > t
   depois até 100 estreantes dos últimos 3 anos. Solistas: os 100 mais populares com lançamento solo + forçados.
 - `data/catalog_relatorio.md` lista o que faltou: obrigatórios não encontrados, quem vende no Circle Chart sem
   correspondência no Wikidata, e top 200 sem integrantes/foto/eras. Corrija o `.txt` e rode o build de novo (usa cache).
-- Seed de 2026-11-25: 740 artistas (546 grupos, 194 solistas), 1.988 eras, 1.707 integrantes. Grupo que falte
+- Seed de 2026-11-26: 740 artistas (546 grupos, 194 solistas), 2.116 eras (449 singles dobrados em álbuns), 1.707 integrantes. Grupo que falte
   continua podendo ser adicionado pelo GOM na Nova CEG (§9).
 
 ## 12. Muitos grupos na interface (regra)

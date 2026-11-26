@@ -1,4 +1,4 @@
-# Relatório do catálogo (2026-11-25)
+# Relatório do catálogo (2026-11-26)
 
 - Artistas: 740 · grupos por tipo: {'girl': 225, 'boy': 226, 'outro': 95} · estreantes: 7
 - Lista obrigatória: 161 nomes, 0 não encontrados
@@ -19,6 +19,488 @@ Plave, Rescene, KickFlip, Nexz, Xikers, idntt, Lngshot, Nouera, 82Major, Even of
 
 Plave, MODYSSEY, 황영웅, Hojoong Kim, Even of Day, NCT JNJM, One Pact, Heejae Kim
 
-## Top 200 sem eras no MusicBrainz (17)
+## Top 200 sem eras no MusicBrainz (9)
 
-Park Ji-hyun, Heeseung, A2O Lite, Suga, Lee Chan-won, Young Tak, MODYSSEY, 황영웅, Hojoong Kim, NCT U, NCT JNJM, Jung Jin-young, Jung Dong-won, Heejae Kim, ViVi, Lee Seung-yun, Sung Han-bin
+Heeseung, Lee Chan-won, Young Tak, 황영웅, Hojoong Kim, Jung Jin-young, Heejae Kim, ViVi, Lee Seung-yun
+
+## ID do MusicBrainz achado pelo nome (confira) (27)
+
+- MODYSSEY → c073262d-c631-44c1-9bfd-7f7efda32e4b (nome)
+- NCT JNJM → a261b70b-1e0c-4669-8a91-1a307d7190b2 (wikidata)
+- AxMxP → d52f600b-f02f-4d04-8f59-527eecf211da (nome)
+- NAZE → 32f33d72-ee2b-4246-99a4-e32ca9d04562 (nome)
+- Heart Of Woman → df2f77c0-8cd3-430f-b523-eb0b94466388 (nome)
+- A2O Lite → d0ebbbd9-eae8-4469-8ecb-9dcde740d343 (wikidata)
+- Baby Vox Re.V → c16fec4c-6c7a-4a93-a7ec-ffd8a3e8e934 (nome)
+- Global Icon → ed7b6feb-e179-4ad2-8c08-59eedb1ba2f6 (nome)
+- O-24 → ac16004e-844a-498c-aabf-a45f1915122c (nome)
+- GSA → 0bf74ce1-81e4-45c0-be9f-ba38392b5acc (nome)
+- AM8IC → 0d8a99b0-32ab-44d7-a575-81fa2a54cb19 (nome)
+- Yada → 7af66e04-f65f-4e6f-9e5e-e2319d220f72 (nome)
+- 나몰라패밀리 → c065a76c-908e-4553-9b0d-443c2ca788e6 (nome)
+- Troy → 26ed2fcd-950c-43e9-86e3-3e06f1aec3cc (nome)
+- Tritops → 0217557a-f72d-4897-a0ee-86e02c01248d (nome)
+- The CrewOne → e9af4787-88a9-464b-b963-d2568d29fd89 (nome)
+- NTB (band) → 32057ee5-3998-413e-a8a1-3df4dc17d763 (nome)
+- Park Ji-hyun → d3508f83-c331-44a5-80e2-620d7be04f19 (nome)
+- Heejae Kim → 95e67903-218b-47da-bc59-445257afdd37 (nome)
+- Sung Han-bin → 106573ab-00df-48fe-a022-7cced047923e (nome)
+- Park Jae-chan → ef57fbf7-5e4a-4f5f-9d4b-1fcde60fcf6e (nome)
+- Park Sung-jin → 6befe295-64ed-412d-b7a2-6770c12cdaa9 (nome)
+- Jung Dae-hyun → b71b0d48-3217-44fb-ab2c-5a5cc6d11052 (nome)
+- Gosegu → de5b9df3-331d-4e2d-9660-c7806c2db203 (nome)
+- Sung-Hoon Ahn → 6f6e40fd-9980-4bb2-85b3-3ccf218ef36f (nome)
+- Satbyeol → f6cb1fc3-29ba-4814-835d-901640498a7f (nome)
+- Olívio Pires Pitta → 76967a4c-33ab-4942-bb37-f2c96b7f9a4e (nome)
+
+## Singles que viraram parte de um álbum (449)
+
+- BTS: Yet to Come (The Most Beautiful Moment) → Proof
+- BTS: SWIM → ARIRANG
+- BTS: Come Over → ARIRANG
+- Stray Kids: Social Path → Social Path / Super Bowl -Japanese ver.-
+- Stray Kids: CASE 143 -Japanese ver.- → THE SOUND
+- Stray Kids: Hollow → Hollow
+- Stray Kids: RUN IT → THIS & THAT
+- Stray Kids: Falling Up → GIANT
+- Stray Kids: SUIATSU → SUIATSU
+- Ateez: Drip → GOLDEN HOUR : Part.6
+- Ateez: Royal → Birthday
+- Ateez: Choose → GOLDEN HOUR : Part.4
+- Ateez: Ice on My Teeth (English ver.) → GOLDEN HOUR : Part.2
+- Cortis: What You Want → COLOR OUTSIDE THE LINES
+- Cortis: REDRED → GREENGREEN
+- Blackpink: Lovesick Girls -JP ver.- → THE ALBUM -JP ver.-
+- Blackpink: Pink Venom → BORN PINK
+- Blackpink: Pretty Savage -JP ver.- → THE ALBUM -JP ver.-
+- Blackpink: How You Like That -JP ver.- → THE ALBUM -JP ver.-
+- Blackpink: You Never Know -JP ver.- → THE ALBUM -JP ver.-
+- Le Sserafim: CRAZY → CRAZY
+- Le Sserafim: 이브, 프시케 그리고 푸른 수염의 아내 → UNFORGIVEN
+- Le Sserafim: CRAZY (English ver.) → CRAZY
+- Le Sserafim: EASY (English ver.) → EASY
+- Le Sserafim: Chasing Lightning → CRAZY
+- Le Sserafim: DIFFERENT → HOT
+- Le Sserafim: Come Over → HOT
+- Le Sserafim: HOT → HOT
+- Le Sserafim: HOT (English ver.) → HOT
+- Le Sserafim: CELEBRATION → ‘PUREFLOW’ pt.1
+- Le Sserafim: BOOMPALA → ‘PUREFLOW’ pt.1
+- Enhypen: Brought the Heat Back → ROMANCE : UNTOLD
+- Enhypen: Loose → DESIRE : UNLEASH
+- Enhypen: 結 -YOU- → DARK BLOOD
+- Enhypen: Make the change → 定め
+- Enhypen: 宵 -YOI- → DESIRE : UNLEASH
+- Enhypen: Bloody Paradise (English ver.) → THE SIN : BLISS
+- Aespa: Better Things → Drama
+- Aespa: 도깨비불 (Illusion) → Girls
+- Aespa: Life’s Too Short → Girls
+- Aespa: Supernova → Armageddon
+- Aespa: Drama → Drama
+- Aespa: Rich Man (English version) → Rich Man
+- Aespa: WDA (Whole Different Animal) → LEMONADE
+- Aespa: LEMONADE → LEMONADE
+- Jung Kook: 3D → GOLDEN
+- Jung Kook: Standing Next to You → GOLDEN
+- Illit: jellyous → bomb
+- Katseye: Debut → SIS (Soft Is Strong)
+- Katseye: Gabriela → BEAUTIFUL CHAOS
+- Katseye: Touch → SIS (Soft Is Strong)
+- Katseye: Gnarly → BEAUTIFUL CHAOS
+- Katseye: Animal → WILD
+- Katseye: Unloveu → WILD
+- Jennie: Less Than a Lover → Fallen Angel
+- Jennie: Love Hangover → Ruby
+- Jennie: Damn Right → Ruby
+- Jennie: like JENNIE → Ruby
+- Jennie: ExtraL → Ruby
+- Jennie: Intro : JANE → Ruby
+- Jennie: Handlebars → Ruby
+- Seventeen: Sara Sara → Always Yours
+- Seventeen: Darl+ing → Face the Sun
+- Seventeen: 경음악의 신 → SEVENTEENTH HEAVEN
+- Twice: Celebrate → Celebrate
+- Twice: SCIENTIST -Japanese ver.- → #TWICE4
+- Twice: MOONLIGHT SUNRISE → READY TO BE
+- Twice: I GOT YOU → With YOU‐th
+- Twice: ONE SPARK → With YOU‐th
+- Twice: DIVE → DIVE
+- Twice: Talk that Talk (Japanese ver.) → #TWICE5
+- Twice: ENEMY → ENEMY
+- Twice: Like 1 → ENEMY
+- NewJeans: Super Shy → Get Up
+- Ive: Off the Record → I’VE MINE
+- Ive: Kitsch → I’ve IVE
+- Ive: Either Way → I’VE MINE
+- Ive: WAVE → WAVE
+- Ive: BANG BANG → REVIVE+
+- Ive: Looks Can Kill → Looks Can Kill
+- Ive: Be Alright → Be Alright
+- Ive: REBEL HEART → IVE EMPATHY
+- Ive: LUCID DREAM → LUCID DREAM
+- Ive: CRUSH → ALIVE
+- Ive: Fashion → LUCID DREAM
+- Rosé: APT. → rosie
+- Rosé: number one girl → rosie
+- Tomorrow X Together: Back for More → Back For More (More Edition)
+- Tomorrow X Together: Beautiful Strangers (Japanese Ver.) → The Star Chapter: TOGETHER
+- Babymonster: BATTER UP (JP Ver.) → DRIP
+- Babymonster: Stuck in the Middle → BABYMONS7ER
+- I-dle: I DO → HEAT
+- I-dle: Crow → We made
+- I-dle: Wife → 2
+- I-dle: 傷つくのは嫌いだから → i‐dle
+- Jin: Falling → Happy
+- Jin: I’ll Be There → Happy
+- IU: Love wins all → The Winning
+- V: Layover → Layover
+- V: Slow Dancing → Layover
+- BoyNextDoor: AND, → HOW?
+- BoyNextDoor: Boom Boom Boom → HOME
+- BoyNextDoor: ddok ddok ddok → HOME
+- BoyNextDoor: 부모님 관람불가 → 19.99
+- BoyNextDoor: Earth, Wind & Fire (Japanese Ver.) → HOW?
+- NCT Wish: Dunk Shot → Steady
+- NCT Wish: Dreamcatcher → WISHLIST
+- NCT Wish: Surf → COLOR
+- Zerobaseone: SWEAT → You had me at HELLO
+- Zerobaseone: SLAM DUNK → NEVER SAY NEVER
+- Zerobaseone: Feel the POP (Japanese ver.) → You had me at HELLO
+- Zerobaseone: Doctor! Doctor! → BLUE PARADISE
+- Zerobaseone: ROSES → RE-FLOW
+- Zerobaseone: Running to Future → RE-FLOW
+- Plave: Merry PLListmas → ASTERUM : 134-1
+- Plave: 흥흥흥 → Caligo Pt.2
+- Riize: Impossible → RIIZING
+- Riize: Siren → RIIZING
+- RM: Come back to me → Right Place, Wrong Person
+- &TEAM: Blind Love → First Howling : WE
+- &TEAM: Beat the odds → 雪明かり (Yukiakari)
+- &TEAM: Extraordinary day → Go in Blind (月狼)
+- &TEAM: 十五夜 (Jyuugoya) → 雪明かり (Yukiakari)
+- &TEAM: We on Fire (Days of Youth ver.) → We on Fire
+- &TEAM: Back to Life (Japanese ver.) → Back to Life
+- &TEAM: Under the skin → First Howling : ME
+- &TEAM: Sakura-iro Yell → We on Fire
+- Rescene: Heart Drop → lip bomb
+- Rescene: Glow Up (English version) → Glow Up
+- NCT Dream: iScreaM, Vol.31 : Smoothie Remix → DREAM( )SCAPE
+- NCT Dream: Broken Melodies → ISTJ
+- NCT Dream: Rains in Heaven → DREAMSCAPE
+- Jun: Tell → Gallery
+- J-Hope: MORE → Jack in the Box
+- EXO: Hear Me Out → EXIST
+- EXO: Let Me In → EXIST
+- EXO: I'm Home → REVERXE
+- Itzy: LOCO -Japanese ver.- → IT’z ITZY
+- Itzy: Boys Like You → CHESHIRE
+- Itzy: RINGO → RINGO
+- Itzy: Trust Me (MIDZY) -Japanese ver.- → RINGO
+- Itzy: Sugar‐holic → RINGO
+- Itzy: GOLD (English ver.) → GOLD
+- Alpha Drive One: No School Tomorrow → UNBREAKABLE : 少年BEAST
+- Alpha Drive One: FORMULA → EUPHORIA
+- TripleS: tripleS ∞! <Password> → tripleS ∞! < SecretHimitsuBimil >
+- TripleS: +(KR)ystal Eyes <Touch+> → +(KR)ystal Eyes <AESTHETIC>
+- TripleS: Baby Flower (Japanese Version) → <LOVE&POP> pt.1
+- Treasure: BONA BONA → REBOOT
+- Meovv: HANDS UP → MY EYES OPEN VVIDE
+- Red Velvet: Bloom → Bloom
+- TWS: hey! hey! → SUMMER BEAT!
+- TWS: Oh Mymy : 7s → Sparkling Blue
+- TWS: Head Shoulders Knees Toes → play hard
+- Byun Baek-hyun: Chocolate → Essence of Reverie
+- Song Yuqi: Could It Be → YUQ1
+- WayV: High Five → FREQUENCY
+- Nmixx: Soñar (Breaker) → Fe3O4: BREAK
+- Nmixx: Young, Dumb, Stupid → expérgo
+- Nmixx: Blue Valentine (MIXX ver.) → Blue Valentine
+- Nmixx: High Horse → Fe3O4: FORWARD
+- Nmixx: Blue Valentine -Japanese ver.- → N=MIXX
+- KickFlip: Twenty → My First Kick
+- Monsta X: growing pains → Unfold
+- P1Harmony: Do It Like This (English version) → DISHARMONY : FIND OUT
+- P1Harmony: Jump (English version) → HARMONY : ALL IN
+- Nexz: Keep on Moving (Korean ver.) → Ride the Vibe (Japanese ver.) / Keep on Moving
+- Nexz: Simmer (Japanese ver.) → One Bite
+- Nexz: Beat‐Boxer (English version) → Beat‐Boxer
+- Nexz: Ride the Vibe (Japanese ver.) → Ride the Vibe (Japanese ver.) / Keep on Moving
+- CLOSE YOUR EYES: Open Your Eyes → 256th Note
+- Im Nayeon: ABCD → Na
+- XG: TGIF → NEW DNA
+- XG: GRL GVNG → NEW DNA
+- XG: HYPNOTIZE → THE CORE - 核
+- XG: IYKYK → AWE
+- XG: NEW DANCE → NEW DNA
+- XG: 4 SEASONS → THE CORE - 核
+- Cravity: Cheese → SUN SEEKER
+- Cravity: Boogie Woogie → NEW WAVE
+- Hearts2Hearts: Pretty Please → FOCUS
+- Hearts2Hearts: ICONIC HEART → Lemon Tang
+- Taeyeon: Can’t Control Myself → INVU
+- Cho Mi-yeon: Reno → MY, Lover
+- Xdinary Heroes: Open ♭eta v6.4 → LIVE and FALL
+- Xdinary Heroes: X room → DEAD AND
+- Xdinary Heroes: Open ♭eta v6.3 → LIVE and FALL
+- AHOF: Sugar High → RUN TO YOU
+- Bestie: 별처럼 (Like a Star) → Hot Baby
+- Got7: Breath (넌 날 숨 쉬게 해) → Breath of Love : Last Piece
+- Fifty Fifty: Starry Night → Love Tune
+- Fifty Fifty: STARSTRUCK → Imperfect-I'mperfect
+- Fifty Fifty: Perfect Crime → Day & Night
+- Jackson Wang: DWAY! → MIRRORS
+- Jackson Wang: BULLET TO THE HEART → MIRRORS
+- Jackson Wang: BUCK → MAGICMAN 2
+- Jackson Wang: Cruel → MAGIC MAN
+- Jackson Wang: Hate to Love → MAGICMAN 2
+- Doh Kyung-soo: Popcorn → 성장 (BLOSSOM)
+- Doh Kyung-soo: I Do → 기대
+- Jay Park: Jay Park Season 3: Dedicated 2 U → THE ONE YOU WANTED
+- Mark Tuan: imysm → the other side
+- Mark Tuan: hold still → Silhouette
+- Lngshot: Saucin’ → SHOT CALLERS
+- Lngshot: Masterpiece → S.W.I.S.H.
+- Park Ji-hoon: Moon&Back → THE ANSWER
+- Kang Daniel: TPIR → Joy Ride
+- Onew: Who sings? Vol.1 → Life goes on
+- Onew: 만세 → CONNECTION
+- Onew: キラキラ → Life goes on
+- Onew: 鱗(うろこ) → Life goes on
+- Onew: MAD → PERCENT
+- Onew: 월화수목금토일 → FLOW
+- Onew: Confidence → PERCENT
+- Onew: Life goes on → Life goes on
+- Girls' Generation: PARTY → Lion Heart
+- Psy: Daddy → 칠집싸이다
+- 82Major: Choke (Sped Up) → BEAT by 82
+- Jaehyun: Roses/Dandelion → J
+- NiziU: ♡Emotion → New Emotion
+- NiziU: Buddy Buddy → AWAKE
+- NiziU: RISE UP (English & Korean ver.) → RISE UP (English & Korean ver.)
+- NiziU: RISE UP → RISE UP (English & Korean ver.)
+- NiziU: Blue Moon → Blue Moon
+- NiziU: What if -Japanese version- → New Emotion
+- NiziU: Dear… → GOOD GIRL BUT NOT FOR YOU
+- NiziU: COCONUT → COCONUT
+- ARTMS: <BURN> → <Club Icarus>
+- ARTMS: <Born Stunner> → <Hyper-Ego>
+- ARTMS: <Pre3 : Candy Crush> → <Dall>
+- ARTMS: <Pre1 : Birth> → <Dall>
+- ARTMS: <Pre2 : Flower Rhythm> → <Dall>
+- ARTMS: <Pre4 : Air> → <Dall>
+- Epex: Graduation Day → Youth Chapter 1 : YOUTH DAYS
+- Kim Jae-joong: I AM U → FLOWER GARDEN
+- Kai: Adult Swim → Wait on Me
+- QWER: FAKE IDOL → Algorithm’s Blossom
+- QWER: SHOW DOWN → To Be Continued
+- N.SSign: Higher → BIRTH OF COSMO
+- TVXQ: SWEET SURRENDER → ZONE
+- TVXQ: DEAREST → ZONE
+- I.O.I: 웃으며 안녕 → I.O.I : LOOP
+- Kiss of Life: Lucky (Korean ver.) → TOKYO MISSION START
+- Kiss of Life: BREAK IT → SWEAT -JAPANESE EP-
+- Kiss of Life: R.E.M → Lose Yourself
+- Say My Name: ShaLala (Japanese version) → My Name Is…
+- Lun8: My Tune → Evergreen
+- Kep1er: <FLY‐UP> → DOUBLAST
+- Kep1er: <FLY‐HIGH> → Magic Hour
+- Kep1er: Straight Line → Kep1going
+- Kep1er: Yum → AGAINST THE WORLD
+- KiiiKiii: To Me From Me → Delulu Pack
+- KiiiKiii: I DO ME → UNCUT GEM
+- Jessica Jung: Get it? Got it? Good → BEEP BEEP
+- All(H)Ours: Graffiti → Smoke Point
+- Joy: Je t'aime → 안녕 (Hello)
+- Choi Ye-na: 착하다는 말이 제일 싫어 (Chinese ver.) → Blooming Wings
+- Woodz: CINEMA → Archive. 1
+- Woodz: ABYSS → OO‐LI
+- Hanroro: 도망 → 자몽살구클럽
+- Hanroro: 생존법 → 집
+- Hanroro: 먹이사슬 → 집
+- BamBam: Who Are You → B
+- BamBam: Dancing By Myself → HOMETOWN
+- Tempest: In the Dark (暮色独白) → As I am
+- Tempest: Unfreeze (Chinese version) → RE: Full of Youth
+- Jeon Somi: DUMB DUMB → XOXO
+- Jeon Somi: EXTRA → Chaotic & Confused
+- Nowz: Fly to the youth → IGNITION
+- Nowz: Fly to the youth (Chinese ver.) → IGNITION
+- EXO-M: HISTORY → MAMA
+- EXO-M: What Is Love → MAMA
+- STAYC: MEOW / Cheeky Icy Thang (Japanese ver.) → Metamorphic
+- STAYC: STEREOTYPE (Chinese ver.) → STAY ALIVE
+- Yook Sung-jae: 3x2=6 Part 3 → YOOK O'clock
+- Yook Sung-jae: 3x2=6 Part 2 → YOOK O'clock
+- Yook Sung-jae: 3x2=6 Part 1 → YOOK O'clock
+- Moonbyul: 머리에서 발끝까지 (Shutdown) → 6equence
+- Moonbyul: G999 → 6equence
+- Moonbyul: ICY BBY → laundri
+- Yunho: Body Language → I-KNOW
+- Yezi: CRAZY DOG → Foresight Dream
+- Verivery: Undercover (Japanese ver.) → SERIES ’O’ [ROUND 3 : WHOLE]
+- Verivery: SERIES ’O’ [ROUND 0 : WHO] → SERIES ’O’ [ROUND 3 : WHOLE]
+- Yesung: Winds of Time → Where We Are
+- Yesung: C.h.a.o.s.m.y.t.h. → 君という桜の花びらが僕の心に舞い降りた。
+- AB6IX: So Sweet (0522) → SEVEN : CRIMSON HORIZON
+- AB6IX: CHANCE → TAKE A CHANCE
+- AB6IX: GRAB ME - Japanese ver. - → TRAP / GRAB ME - Japanese ver. -
+- NCT: Golden Age → Golden Age
+- GFriend: 回:LABYRINTH ~Crossroads~ → 回:Walpurgis Night
+- GFriend: 回:Song of the Sirens 〜Apple〜 → 回:Walpurgis Night
+- AllDay Project: ONE MORE TIME → ALLDAY PROJECT
+- Iz*One: Beware → Twelve
+- BtoB: Hi Beautiful → BTODAY
+- Yves: White cat → Soft Error
+- Yves: Hysteric / Adam → Cute & Anxiety
+- Yves: Tik Tok → I Did
+- Red Velvet - Irene & Seulgi: Naughty → Monster
+- Oneus: 루퍼트의 눈물 (Rupert’s drop) → Dear.M
+- Oneus: TIME MACHINE → 5x
+- Yunchan Lim: The Seasons, Op. 37a: X. October. Autumn Song. Andante doloroso e molto cantabile → The Seasons
+- Chen: FREE WORLD → ポラリス (Polaris)
+- Chen: My Sunshine → ポラリス (Polaris)
+- Chen: On the road → ポラリス (Polaris)
+- Chen: Mirage of Flower → ポラリス (Polaris)
+- Chen: Break Out → ポラリス (Polaris)
+- CNBLUE: Synchronize → PLEASURES
+- Ourbirthday: HUNGRY (Side A) → Our Birthday
+- Bang Ye-dam: Miss You → ONLY ONE
+- Wave to Earth: heaven and hell → bad pieces
+- Oh My Girl: Real Love Japanese ver. → Real Love
+- Onewe: 線 : The Wake → 面 : Unknown Atlas
+- Onewe: 點 : The Quiver → 面 : Unknown Atlas
+- Billlie‎: DANG! (hocus pocus) - Japanese ver. - → Knock‐on Effect
+- Billlie‎: trampoline → Of All We Have Lost
+- Trendz: BAD ENOUGH → CANVAS
+- B.I: Loved → Love or Loved Part.2
+- Pow: Favorite → Favorite
+- AxMxP: 24 Hours → HELLO AxMxP
+- ASC2NT: Replay → STILL : I
+- The Rose: You’re Beautiful → DUAL
+- The Rose: Utopia → ROSE
+- The Rose: Back To Me / Alive → DUAL
+- Younha: 계절범죄 → 써브캐릭터 원
+- Xodiac: CALLING → THROW A DICE
+- Xodiac: THROW A DICE → THROW A DICE
+- Xodiac: MIDNIGHT SKY → THROW A DICE
+- Xodiac: SPECIAL LOVE → THROW A DICE
+- Xodiac: ALWAYS → THROW A DICE
+- Sunmi: BLUE! → HEART MAID
+- Park Jae-chan: Time → JCFACTORY
+- Jo Yu-ri: 개와 고양이의 시간 → Episode 25
+- Purple Kiss: I Miss My… → OUR NOW
+- The Black Skirts: 어린양 → TEEN TROUBLES
+- B1A4: Like a Movie → Origine
+- Kihyun: So Good (English ver.) → BORDERLINE
+- Wonho: Good Liar → Syndrome
+- MAMAMOO+: 지구에 혼자 남게 된다면 (Save Me) → TWO RABBITS
+- Kim Yu-gyeom: I Want U Around → Point Of View: U
+- Kim Yu-gyeom: LA SOL MI → TRUST ME
+- Lee Jooheon: Push → 光 (INSANITY)
+- H1-Key: 세상은 영화 같지 않더라 → LOVECHAPTER
+- H1-Key: Time to Shine → Seoul Dreaming
+- H1-Key: 君は夏だった → Lovestruck (Japanese ver.)
+- F.T. Island: BURN IT → Serious
+- KARD: Without You → ICKY
+- 2PM: 僕とまた → WITH ME AGAIN
+- Seo Eun-kwang: Last Light → UNFOLD
+- Kino: Freaky Love → If this is love, I want a refund
+- Kino: DIRTY BOY → EVERYBODY’S GUILTY, BUT NO ONE’S TO BLAME
+- Baby Dont Cry: Shapeshifter → AFTER CRY
+- ARrC: dummy → AR^C
+- Song Ga-in: 눈물이 난다 → GAIN;DAL
+- Chen Zhuoxuan: Mareasía - Single → 深海之息 Mareasía
+- Dxmon: BURN UP → HYPERSPACE
+- Jung Dae-hyun: Why Am I Still Here → PUZZL(OV)E
+- Wooah: BLUSH → UNFRAMED
+- AtHeart: Good Girl (AtHeart) → Plot Twist
+- AtHeart: Plot Twist (English ver.) → Plot Twist
+- Latency: It Was Love → LATE O’ CLOCK
+- LA POEM: Anchor → The Alchemist
+- Silica Gel: Mercurial → Machine Boy
+- Silica Gel: Molecular Gastronomy → Ballad of You
+- JUST B: GOING SOUTH → SNOW ANGEL
+- Mamamoo: 딩가딩가 (Dingga) → TRAVEL
+- Mamamoo: WANNA BE MYSELF → TRAVEL
+- Mamamoo: Dingga -Japanese ver.- → TRAVEL
+- Mamamoo: AYA -Japanese ver.- → TRAVEL
+- Genblue: 哎呀呀 → For You
+- Genblue: TRIP → For You
+- Genblue: OH! → ACT LIKE THAT
+- Genblue: 夢想塗鴉冊 (Color Paper) → For You
+- Genblue: SLOW DOWN → For You
+- Waker: DASH → Mission of School
+- Keyveatz: Key Beats → OXY_GEN
+- Kiiras: KILL MA BO$$ → KILL MA BO$$
+- ICHILLIN': Glass Heart → Wild Cherry
+- ICHILLIN': SIREN → I’M ON IT!
+- ICHILLIN': BITE ME → Feelin’ Hot
+- ICHILLIN': DEMIGOD → Feelin’ Hot
+- Kim Jin-hwan: We Can′t Explain → 207
+- After School: Shh → Dress to kill
+- ILY:1: Thanks to… → A Dream of Ily:1
+- Kim Dong-hyuk: LTNS → NAKSEO[戀]
+- Zico: SEOUL DRIFT → Grown Ass Kid
+- ZE:A: PHOENIX → PHOENIX
+- Ladies' Code: Hate You → CODE#02 Pretty! Pretty!
+- Orange Caramel: クッキークリーム&ミント → ORANGE CARAMEL
+- Wanna One: 약속해요 (I.P.U.) → 0+1=1 (I PROMISE YOU)
+- iKon: 딴따라 → TAKE OFF
+- Winner: 뜸 → Remember
+- Chungha: Sparkling → Bare&Rare Pt.1
+- Shinhwa: 아는 사이 → UNCHANGING PART1
+- Lightsum: どうして → Re:idol
+- god: 미운오리새끼 → Chapter 8
+- Sechs Kies: THREE WORDS → 2016 Re-ALBUM
+- SuperM: Tiger Inside → Super One
+- SuperM: 100 → Super One
+- SuperM: One (Monster & Infinity) → Super One
+- Brown Eyed Girls: 레시피 → Black Box
+- 4Minute: 추운 비 → Crazy
+- CLC: To the sky → BLACK DRESS
+- 10cm: HELP → 4.0
+- Hiipe Princess: Stolen → 17.7
+- Hiipe Princess: DAISY / gOOd! (H//PE P ver.) [KR ver.] → 17.7
+- Crayon Pop: Dancing All Night → CRAYON POP
+- Crayon Pop: 부릉부릉 (Vroom Vroom) → Evolution Pop_Vol.1
+- Sugar: ひまわり／LOVEACCELE → COLORS 4 WISHES
+- Hori7on: Lovey Dovey → Friend‐SHIP
+- Mark Lee: +82 Pressin’ → The Firstfruit
+- F-ve Dolls: Since 1971 → First Love
+- Speed: ZOMBIE PARTY! → SPEED Circus
+- Speed: Speed of Light → Superior SPEED
+- Spica: 독하게 → 러시안룰렛 (Russian Roulette)
+- 15&: 티가 나나봐 → Sugar
+- VVUP: House Party → VVON
+- Berry Good: 함께 떠나요 (Accio) → UNDYING LOVE
+- Hi-Fi Un!corn: PHANTOM PAIN → FANTASIA
+- SM the Ballad: Set Me Free → Breath
+- SM the Ballad: 하루 (A Day Without You) → Breath
+- SM the Ballad: 숨소리 → Breath
+- Chocolat: 2nd Single Album → I Like It
+- Busters: 별 헤는 밤 → Pinky Promise
+- CSR: L’heure Bleue : Prologue → L’heure Bleue
+- F.CUZ: Jiggy → No One
+- 100%: Grand Bleu → Sunshine
+- Cross Gene: White Mind → MIRROR
+- Cross Gene: Black Mind → MIRROR
+- Exo-SC: 척 → 1 Billion Views
+- Supernova: 폭풍속으로 (SHE’S GONE) → GO FOR IT!
+- Wassup: Hotter than a Summer → Nom Nom Nom
+- N-sonic: 미치겠네 → Reset
+- D-Unit: 살아남아 → Affirmative Chapter. 1
+- Global Icon: 너 때문에 → Tremendous
+- M.O.N.T: 겨울이 되면 → Somewhere Out There
+- The SeeYa: Good To Seeya → LOVE U
+- Double A: 뒹굴뒹굴 → Come Back
+- Melody Day: 바빠 보여요 → KISS ON THE LIPS
+- Spectrum: Dear My → Timeless Moment
+- ROMEO: 악몽 → MIRO
+- ToHeart: Tell Me Why → Toheart
+- M&D: 나르시스 (Narcissus) → 종합선물세트
+- High4: 해요 말고 해 → HI HIGH
+- AlphaBat: 깜짝파티 → ATTENTION
+- AlphaBat: Always → ATTENTION
+- BtoB 4U: Show Your Love (Japanese ver.) → INSIDE
+- Secret Number: LIKE IT LIKE IT → LIKE IT LIKE IT
+- BeBe Mignon: 키도 작고, 예쁘지 않지만.. → 잘해준 것 밖에 없는데

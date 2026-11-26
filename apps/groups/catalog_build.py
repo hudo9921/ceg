@@ -12,6 +12,7 @@ Gera o seed do catálogo (docs/CATALOG_IMPORT_PLAN.md §4.1). Roda no PC de dese
 Respostas ficam em cache (`.catalog_cache/`), então rodar de novo é rápido. Nada de dados pessoais nas requisições.
 """
 import hashlib
+import http.client
 import json
 import logging
 import re
@@ -79,7 +80,7 @@ class Http:
                     time.sleep(min(espera, 120))
                     continue
                 raise
-            except (urllib.error.URLError, TimeoutError) as e:
+            except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as e:
                 self.log(f'  {host}: {e}, tentando de novo ({tentativa + 1})')
                 time.sleep(3 * (tentativa + 1))
         raise RuntimeError(f'Falhou: {url}')
