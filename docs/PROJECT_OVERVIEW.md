@@ -21,7 +21,8 @@ A plataforma atende a dois perfis principais:
 ceg/
 ├── apps/
 │   ├── cegs/             # Modelos e regras de CEG, Caixas, Sets, Slots, Itens Mercari, Vitrine
-│   ├── participants/     # Portal do participante (/me/), reservas, caixinha, pacotes nacionais
+│   ├── participants/     # Portal do participante (/me/), reservas, caixinha, pacotes nacionais, seguir grupos
+│   ├── repasses/         # Repasse de vaga entre joiners (aceite + aprovação do GOM)
 │   ├── analytics/        # Dashboards gerenciais, DRE de vendas, ocupação e velocidade de claims
 │   ├── auth_otp/         # Autenticação sem senha via WhatsApp (Evolution API v2.3.0)
 │   └── core/             # Controle de acesso único (permissions.py) + matriz de permissões das rotas
@@ -37,6 +38,8 @@ ceg/
 - **`Set` & `ItemSlot`:** Cada lote de compra forma um Set contendo slots individuais para cada membro da banda.
 - **`ItemIndividual`:** Itens avulsos comprados no Mercari Japão ou leilões.
 - **Caixinhas abertas:** caixas em consolidação que aceitam pedidos aparecem em `/caixinhas/` (todos os GOMs) e na página de cada GOM (`apps/cegs/caixinhas.py`).
+- **Repasses (`apps/repasses`):** joiner passa a vaga para outra pessoa (ou deixa pública em `/repasses/`); quem recebe aceita e o GOM aprova em `/gom/repasses/`. Regras em [BUSINESS_RULES.md](BUSINESS_RULES.md).
+- **Seguir (`Seguindo`, `apps/participants/seguindo.py`):** joiner segue grupos/integrantes em `/me/seguindo/`; personaliza home ("Para você") e lojas e avisa quando abre CEG.
 - **`ItemVitrine`:** Photocards e produtos à pronta entrega disponíveis na loja pública.
 - **`HomeBannerConfig`:** Configuração dinâmica dos banners da vitrine principal, com suporte a artes independentes para Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
 - **`GOMNotification`:** Central de notificações operacionais em tempo real para a GOM com categorização por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).

@@ -2430,6 +2430,7 @@ class GOMNotification(models.Model):
         POLLING = 'POLLING', 'Voto / Demanda em Enquete'
         ACCOUNT = 'ACCOUNT', 'Novo Cadastro de Joiner'
         SYSTEM = 'SYSTEM', 'Aviso Operacional'
+        REPASSE = 'REPASSE', 'Repasse de item para aprovar'
 
     notification_type = models.CharField(
         'Tipo de Notificação',

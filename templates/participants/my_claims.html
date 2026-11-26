@@ -6,7 +6,13 @@
 <div class="space-y-8 max-w-[1120px] mx-auto" x-data="myClaimsApp({{ charges.count|default:0 }})">
 
     {% include 'participants/partials/_header_notices.html' %}
-    {% include 'participants/partials/_tabs_nav.html' %}
+    <div class="flex flex-wrap items-center gap-3">
+        {% include 'participants/partials/_tabs_nav.html' %}
+        <a href="{% url 'seguindo' %}" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="heart" class="w-4 h-4" stroke-width="1.75"></i>Seguindo</a>
+    </div>
+
+    <!-- REPASSES: pedidos para aceitar (apps/repasses) -->
+    {% include 'participants/partials/_repasses_recebidos.html' %}
 
     <!-- PAGAR (P3): cobranças por GOM com o Pix de cada uma -->
     {% include 'participants/partials/_pagar_section.html' %}
@@ -20,6 +26,7 @@
     <!-- MODAIS DO PARTICIPANTE -->
     {% include 'participants/partials/_modais.html' %}
     {% include 'participants/partials/_endereco_sheet.html' %}
+    {% include 'participants/partials/_repasse_sheet.html' %}
 
 </div>
 

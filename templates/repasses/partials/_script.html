@@ -1,0 +1,24 @@
+{% comment %}repasses(): "Quero esta vaga" (POST /repasses/<pk>/pedir/). Sem login, manda para o login do joiner.{% endcomment %}
+<script>
+function repasses() {
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    return {
+        enviando: false,
+        async pedir(pk, botao) {
+            if (!confirm('Pedir esta vaga? O que falta pagar passa para você quando o GOM aprovar.')) return;
+            this.enviando = true;
+            try {
+                const res = await fetch(`/repasses/${pk}/pedir/`, { method: 'POST', headers: { 'X-CSRFToken': csrf() } });
+                const data = await res.json();
+                if (data.requires_auth) { window.location = '/me/login/?next=' + encodeURIComponent(location.pathname); return; }
+                alert(data.message);
+                if (data.success) botao.closest('article').remove();
+            } catch (e) {
+                alert('Não deu certo. Tente de novo.');
+            } finally {
+                this.enviando = false;
+            }
+        },
+    };
+}
+</script>

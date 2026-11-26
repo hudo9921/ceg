@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Repasses — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Repasses do GOM (apps/repasses/views.py:gom_fila, permissão pedidos.editar): joiners passando vagas para outra pessoa.
+Só chega aqui depois que quem recebe aceitou (ou pediu uma vaga pública). Aprovar troca o dono da vaga; o que falta
+pagar vai junto. Recusar um repasse público devolve a vaga para "disponível".
+{% endcomment %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <header class="space-y-2 max-w-2xl">
+        <p class="ui-label">GOM {{ active_gom.name }}</p>
+        <h1 class="ui-disp text-4xl">Repasses</h1>
+        <p class="ui-muted text-[15px]">Joiners passando a vaga para outra pessoa. Quem recebe já aceitou; aprovar troca o dono e o que falta pagar vai junto.</p>
+    </header>
+
+    <section class="space-y-3" aria-labelledby="rep-pendentes">
+        <h2 id="rep-pendentes" class="ui-disp text-xl m-0">Para aprovar <span class="ui-mono ui-muted text-base">{{ pendentes|length }}</span></h2>
+        {% for r in pendentes %}
+            {% include 'repasses/partials/_gom_pendente.html' %}
+        {% empty %}
+            <div class="ui-card p-8 text-center ui-muted">Nenhum repasse esperando você.</div>
+        {% endfor %}
+    </section>
+
+    {% if andamento %}
+        <section class="space-y-3" aria-labelledby="rep-andamento">
+            <h2 id="rep-andamento" class="ui-disp text-xl m-0">Em andamento</h2>
+            <div class="ui-card overflow-hidden">
+                {% for r in andamento %}{% include 'repasses/partials/_gom_linha.html' %}{% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if historico %}
+        <section class="space-y-3" aria-labelledby="rep-historico">
+            <h2 id="rep-historico" class="ui-disp text-xl m-0">Histórico</h2>
+            <div class="ui-card overflow-hidden">
+                {% for r in historico %}{% include 'repasses/partials/_gom_linha.html' %}{% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

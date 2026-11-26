@@ -1,0 +1,36 @@
+{% comment %}
+"Para você" na home: CEGs abertas ou agendadas de grupos/integrantes que o joiner segue (HomeView: `para_voce`,
+mais relevantes primeiro; "com Karina" quando tem item de integrante seguido). Logado sem seguir ninguém: convite.
+{% endcomment %}
+{% if para_voce %}
+<section aria-labelledby="pv-title" class="space-y-3" x-data="uiRail()">
+    <div class="flex items-end justify-between gap-3">
+        <h2 id="pv-title" class="ui-disp text-2xl m-0 flex items-center gap-2"><i data-lucide="heart" class="w-5 h-5" stroke-width="1.75"></i>Para você</h2>
+        <a href="{% url 'seguindo' %}" class="ui-label hover:underline">Quem eu sigo</a>
+    </div>
+    <div x-ref="track" class="ui-rail-track"
+         @pointerdown="down($event)" @pointermove.window="move($event)" @pointerup.window="up()" @pointercancel.window="up()"
+         @click.capture="guardClick($event)" @dragstart.prevent>
+        {% for ceg in para_voce %}
+        {% firstof ceg.banner_url ceg.era.banner_url ceg.era.group.image_url as pv_img %}
+        <a href="{% url 'ceg_detail' ceg.slug %}" class="ui-card ui-lift overflow-hidden no-underline text-ui-text flex flex-col w-[70vw] sm:w-64">
+            <div class="relative aspect-[16/10] overflow-hidden" style="background: var(--ui-holo)">
+                {% if pv_img %}<img src="{{ pv_img|thumb }}" data-full="{{ pv_img }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">{% endif %}
+                {% if ceg.status == 'SCHEDULED' %}<span class="ui-status ui-warn absolute left-3 top-3">abre {{ ceg.opens_at|date:"d/m H:i" }}</span>{% endif %}
+            </div>
+            <div class="p-3.5 flex flex-col gap-1">
+                <p class="ui-label m-0 truncate">{{ ceg.era.group.name }} · {{ ceg.gom.name }}</p>
+                <p class="m-0 font-bold leading-snug line-clamp-2">{{ ceg.title }}</p>
+                {% if ceg.seguidos_nomes %}<p class="m-0 text-sm text-ui-accent-text font-semibold truncate">com {{ ceg.seguidos_nomes|join:", " }}</p>{% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% elif logged_participant and not segue_alguem %}
+<a href="{% url 'seguindo' %}" class="ui-card p-4 flex items-center gap-3 no-underline text-ui-text">
+    <span class="w-10 h-10 ui-well flex items-center justify-center flex-none"><i data-lucide="heart" class="w-5 h-5" stroke-width="1.75"></i></span>
+    <span class="min-w-0"><b>Siga seus grupos e integrantes</b><br><span class="text-sm ui-muted">As CEGs deles aparecem primeiro e você é avisado quando abrir uma nova.</span></span>
+    <i data-lucide="chevron-right" class="w-5 h-5 ml-auto ui-muted flex-none" stroke-width="1.75"></i>
+</a>
+{% endif %}

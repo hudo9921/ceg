@@ -269,3 +269,12 @@
 - `components/_sidebar_gom_menu.html`: menu do painel montado em `apps/goms/menu.py` (`GOM_MENU`) e filtrado pelas permissões; seção Plataforma para o superusuário.
 - **Backoffice no visual novo (P5d–P5h):** caixas (lista, formulário, transferência para a Vitrine, abas da equipe na caixa), Vitrine (formulário), Envios, Consulta Joiner, Avisos, Auditoria, Relatórios (status das CEGs, vendas, métricas), Criar (hub e modais), cadastro em massa, alocador, bot do WhatsApp, ferramentas da equipe na página da CEG e modais da home. Telas grandes migraram por papel do elemento: campos `ui-input`, rótulos `ui-label`, cartões `ui-card`, botões `ui-btn`, cabeçalhos `ui-disp`, degradês trocados por `bg-ui-accent`/`ui-well`. Topos reescritos à mão no padrão "rótulo · título · descrição".
 - `admin/base_site.html`: Django Admin com as cores do design system (variáveis do próprio admin, claro e escuro) e fonte local; atalho "Painel".
+
+### Repasses e Seguindo
+
+- `repasses/lista.html` (`/repasses/`, público): vagas disponíveis para repasse; cards em `repasses/partials/_card.html`, "Quero esta vaga" em `repasses/partials/_script.html` (`repasses()`). A página da CEG mostra as da CEG em `repasses/partials/_ceg_secao.html`.
+- `repasses/gom_fila.html` (`/gom/repasses/`, `pedidos.editar`): "Para aprovar" (`_gom_pendente.html`, aprovar/recusar com motivo), "Em andamento" e "Histórico" (`_gom_linha.html`).
+- `/me/`: botão "Repassar"/"Ver repasse" em cada item (`_itens_section.html`, evento `repassar`), folha `participants/partials/_repasse_sheet.html` (`repasseSheet`, também define `repassesRecebidos`) e "Querem repassar para você" em `_repasses_recebidos.html`. Link "Seguindo" ao lado das abas.
+- `participants/seguindo.html` (`/me/seguindo/`, `seguindoApp`): busca e lista de quem o joiner segue; card em `participants/partials/_seguindo_grupo.html`.
+- CEG: botão "Seguir <grupo>" em `cegs/partials/_detail_seguir.html` (no `_detail_header_info.html`). Home: trilho "Para você" em `cegs/partials/_home_para_voce.html` (ou convite para seguir) e marca "seguindo" no título do trilho do grupo.
+

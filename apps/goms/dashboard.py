@@ -51,6 +51,14 @@ def _tasks(request, granted, pending, upcoming, now):
                       'hint': (f'{brl(_sum(pending, "total_price"))} em aberto. Confira os comprovantes e marque como pago.'
                                if n else 'Nada em aberto.'),
                       'cta': 'Ver CEGs', 'url': reverse('cegs_status')})
+    if 'pedidos.editar' in granted:  # só aparece quando há repasse esperando
+        from apps.repasses.models import Repasse
+        n = Repasse.objects.for_gom(request.active_gom).filter(status=Repasse.Status.AGUARDANDO_GOM).count()
+        if n:
+            tasks.append({'tag': 'Repasses', 'cls': 'ui-warn', 'n': n,
+                          'what': 'repasse para aprovar' if n == 1 else 'repasses para aprovar',
+                          'hint': 'Joiners passando a vaga para outra pessoa; quem recebe já aceitou.',
+                          'cta': 'Ver repasses', 'url': reverse('gom_repasses')})
     if 'envios.pacotes' in granted:
         n = PacoteNacional.objects.for_gom(request.active_gom).filter(status=PacoteNacional.Status.SOLICITADO).count()
         tasks.append({'tag': 'Envios', 'cls': 'ui-warn' if n else 'ui-ok', 'n': n,

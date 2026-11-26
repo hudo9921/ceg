@@ -124,7 +124,15 @@ class HomeView(View):
                     ceg_members.append(m_clean.lower())
             ceg.available_members_str = ' '.join(ceg_members)
 
-        open_groups = sorted(open_groups_dict.values(), key=lambda g: g['name'])
+        # Seguir (apps/participants/seguindo.py): quem o joiner segue vem primeiro e ganha o trilho "Para você".
+        from apps.participants.seguindo import marcar, preferencias
+        from apps.participants.session_auth import get_session_participant
+        prefs = preferencias(get_session_participant(request))
+        para_voce = marcar(list(active_cegs) + list(scheduled_cegs), prefs)[:12]
+        active_cegs.sort(key=lambda c: -getattr(c, 'para_voce', 0))  # estável: segue recentes primeiro
+        for gid, entry in open_groups_dict.items():
+            entry['seguindo'] = gid in prefs.todos_grupos
+        open_groups = sorted(open_groups_dict.values(), key=lambda g: (not g['seguindo'], g['name']))
         # Multi-GOM: filtro e selo por GOM só aparecem quando há CEGs de mais de um GOM.
         open_goms_dict = {}
         for ceg in list(active_cegs) + list(full_cegs):
@@ -167,6 +175,8 @@ class HomeView(View):
             'ceg_share_map': ceg_share_map,
             'ceg_share_map_json': json.dumps(ceg_share_map),
             'home_banner': home_banner,
+            'para_voce': para_voce,
+            'segue_alguem': bool(prefs),
             'now': now,
         })
 
@@ -224,6 +234,13 @@ class UpdateHomeBannerView(PlatformAdminRequiredMixin, View):
 
         messages.success(request, 'Banners da Tela Inicial atualizados com sucesso!')
         return redirect('home')
+
+
+def _segue_grupo(request, ceg):
+    """O joiner logado segue o grupo desta CEG (o grupo todo)?"""
+    from apps.participants.models import Seguindo
+    pid = request.session.get('participant_id')
+    return bool(pid) and Seguindo.objects.filter(participant_id=pid, group_id=ceg.era.group_id, member__isnull=True).exists()
 
 
 def _ceg_staff_can(request):
@@ -464,9 +481,13 @@ class CEGDetailView(View):
 
         from apps.goms.rules import rules_context
 
+        from apps.repasses.views import com_valores, disponiveis
+
         return render(request, 'cegs/detail.html', {
             **rules_context(request, ceg.gom),
             'brand_gom': ceg.gom,
+            'repasses': com_valores(disponiveis(ceg=ceg)[:12]),  # vagas que joiners deixaram para repasse
+            'segue_grupo': _segue_grupo(request, ceg),
             'ceg': ceg,
             'is_gom_staff': manage,
             # O que este admin pode fazer nesta CEG (apps.goms.permissions); o servidor confere de novo.
