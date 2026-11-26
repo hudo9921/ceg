@@ -22,6 +22,16 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { /* sem as sugestões, o envio manual continua funcionando */ }
             finally { this.carregando = false; setTimeout(() => window.dispatchEvent(new Event('icons-refresh')), 50); }
         },
+        capasPara(titulo) {
+            // Palavras do título (sem "CEG" e sem palavras de 1 letra) que aparecem no nome da CEG de origem.
+            // A capa da era (catálogo) fica sempre; se nenhuma CEG bate, mostra todas para não sumir tudo.
+            const palavras = norm(titulo).split(/[^a-z0-9]+/).filter((p) => p.length > 1 && p !== 'ceg');
+            if (!palavras.length) return { lista: this.capas, filtrado: false };
+            const pontos = (c) => palavras.filter((p) => norm(c.origem).includes(p)).length;
+            const achadas = this.capas.filter((c) => c.gom && pontos(c) > 0).sort((a, b) => pontos(b) - pontos(a));
+            if (!achadas.length) return { lista: this.capas, filtrado: false };
+            return { lista: this.capas.filter((c) => !c.gom).concat(achadas), filtrado: true };
+        },
         doIntegrante(nome) {
             const n = norm(nome);
             return n ? this.itens.filter((f) => norm(f.integrante) === n) : [];
