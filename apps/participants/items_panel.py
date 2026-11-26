@@ -55,8 +55,8 @@ def _claim_entry(claim, repasse=None):
         # Repasse: dá para repassar enquanto não está num pacote nacional; `repasse` = o que está em andamento.
         'slot_id': slot.id, 'repassavel': not slot.pacote_nacional_id and claim.status != 'CANCELLED',
         'repasse': {'id': repasse.pk, 'status': repasse.status, 'label': repasse.get_status_display(),
-                    'para': repasse.para.display_name if repasse.para else
-                    ('qualquer pessoa' if repasse.publico else f'•••• {repasse.para_whatsapp[-4:]}')}
+                    'para_nome': repasse.para.display_name if repasse.para else '',
+                    'para_numero': f'•••• {repasse.para_whatsapp[-4:]}' if repasse.para_whatsapp else ''}
         if repasse else None,
     }
 

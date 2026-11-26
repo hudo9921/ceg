@@ -499,7 +499,6 @@ class ParticipantNotification(models.Model):
         CLAIM_UPDATE = 'CLAIM_UPDATE', 'Atualização de Reserva'
         GENERAL = 'GENERAL', 'Aviso Geral'
         ENVIO_NACIONAL = 'ENVIO_NACIONAL', 'Envio Nacional Despachado'
-        NOVA_CEG = 'NOVA_CEG', 'Nova CEG de quem você segue'
 
     participant = models.ForeignKey(
         Participant,
@@ -588,8 +587,8 @@ class Endereco(models.Model):
 class Seguindo(models.Model):
     """
     Grupo ou integrante que o joiner segue (docs/BUSINESS_RULES.md, "Seguir"). `member` vazio = o grupo inteiro.
-    Personaliza a home e a loja dos GOMs (quem ele segue aparece primeiro) e avisa quando abre CEG
-    (apps/participants/seguindo.py).
+    Personaliza a home e a loja dos GOMs: quem ele segue aparece primeiro (apps/participants/seguindo.py).
+    Sem notificação de CEG nova (seria spam).
     """
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name='seguindo')
     group = models.ForeignKey('groups.KpopGroup', on_delete=models.CASCADE, related_name='seguidores')
@@ -608,10 +607,3 @@ class Seguindo(models.Model):
 
     def __str__(self):
         return f'{self.participant} segue {self.member or self.group}'
-
-
-class AvisoSeguidores(models.Model):
-    """Marca que os seguidores já foram avisados desta CEG (aviso uma vez só)."""
-    ceg = models.OneToOneField('cegs.CEG', on_delete=models.CASCADE, related_name='aviso_seguidores')
-    avisados = models.PositiveIntegerField(default=0)
-    enviado_em = models.DateTimeField(auto_now_add=True)

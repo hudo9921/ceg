@@ -1,6 +1,6 @@
 {% comment %}
-"Seguir <grupo>" no cabeçalho da CEG (apps/participants/seguindo.py): quem segue vê as CEGs do grupo primeiro e é
-avisado quando abre outra. Sem login, leva para o login e volta. `segue_grupo` vem do CEGDetailView.
+"Seguir <grupo>" no cabeçalho da CEG (apps/participants/seguindo.py): quem segue vê as CEGs do grupo primeiro
+(sem notificação). Sem login, leva para o login e volta. `segue_grupo` vem do CEGDetailView.
 {% endcomment %}
 <span x-data="{ seguindo: {{ segue_grupo|yesno:'true,false' }}, async alternar() {
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
@@ -9,7 +9,7 @@ avisado quando abre outra. Sem login, leva para o login e volta. `segue_grupo` v
         if (data.requires_auth) { window.location = '/me/login/?next=' + encodeURIComponent(location.pathname); return; }
         if (data.success) this.seguindo = data.seguindo; } }" class="contents">
     <button type="button" class="ui-btn ui-btn-sm" :class="seguindo ? 'ui-btn-primary' : 'ui-btn-ghost'" @click="alternar()" :aria-pressed="seguindo.toString()"
-            title="Ver as CEGs de {{ ceg.era.group.name }} primeiro e ser avisado quando abrir outra">
+            title="Ver as CEGs de {{ ceg.era.group.name }} primeiro na home e nas lojas">
         <i data-lucide="heart" class="w-4 h-4" stroke-width="1.75"></i>
         <span x-text="seguindo ? 'Seguindo {{ ceg.era.group.name|escapejs }}' : 'Seguir {{ ceg.era.group.name|escapejs }}'">Seguir {{ ceg.era.group.name }}</span>
     </button>

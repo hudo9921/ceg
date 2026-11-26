@@ -39,7 +39,7 @@ ceg/
 - **`ItemIndividual`:** Itens avulsos comprados no Mercari Japão ou leilões.
 - **Caixinhas abertas:** caixas em consolidação que aceitam pedidos aparecem em `/caixinhas/` (todos os GOMs) e na página de cada GOM (`apps/cegs/caixinhas.py`).
 - **Repasses (`apps/repasses`):** joiner passa a vaga para outra pessoa (ou deixa pública em `/repasses/`); quem recebe aceita e o GOM aprova em `/gom/repasses/`. Regras em [BUSINESS_RULES.md](BUSINESS_RULES.md).
-- **Seguir (`Seguindo`, `apps/participants/seguindo.py`):** joiner segue grupos/integrantes em `/me/seguindo/`; personaliza home ("Para você") e lojas e avisa quando abre CEG.
+- **Seguir (`Seguindo`, `apps/participants/seguindo.py`):** joiner segue grupos/integrantes em `/me/seguindo/`; personaliza home ("Para você") e lojas (sem notificação de CEG nova).
 - **`ItemVitrine`:** Photocards e produtos à pronta entrega disponíveis na loja pública.
 - **`HomeBannerConfig`:** Configuração dinâmica dos banners da vitrine principal, com suporte a artes independentes para Modo Claro (Soft Y2K) e Modo Escuro (Cyber-Luxury).
 - **`GOMNotification`:** Central de notificações operacionais em tempo real para a GOM com categorização por tipo de ação (Claims, Solicitações de Envio, Pagamentos, Enquetes e Cadastros).

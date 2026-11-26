@@ -12,6 +12,11 @@ menu de gestão do GOM, conta e tema. DESIGN_SYSTEM.md §7.
             <span>{{ item.label }}</span>
         </a>
     {% endfor %}
+    {% url 'repasses_disponiveis' as repasses_url %}
+    <a href="{{ repasses_url }}" class="ui-nav-item{% if nav_repasses %} is-on{% endif %}"{% if nav_repasses %} aria-current="page"{% endif %}>
+        <i data-lucide="arrow-left-right" class="w-5 h-5" stroke-width="1.75"></i>
+        <span>Repasses</span>
+    </a>
     {% url 'gom_directory' as goms_url %}
     <a href="{{ goms_url }}" class="ui-nav-item{% if nav_goms %} is-on{% endif %}"{% if nav_goms %} aria-current="page"{% endif %}>
         <i data-lucide="building-2" class="w-5 h-5" stroke-width="1.75"></i>

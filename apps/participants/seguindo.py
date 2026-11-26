@@ -1,12 +1,10 @@
 """
-Seguir grupos e integrantes (model Seguindo): personaliza o que o joiner vê e avisa quando abre CEG.
+Seguir grupos e integrantes (model Seguindo): personaliza o que o joiner vê (sem notificação de CEG nova).
 
 - Seguir um grupo vale para as subunidades dele (NCT → NCT 127). Seguir um integrante (ex.: Karina) destaca as CEGs
   do grupo que têm item dela.
 - Relevância de uma CEG: 2 = tem item de integrante seguido; 1 = é de grupo seguido (ou do grupo de um integrante
-  seguido); 0 = nada. O aviso de CEG nova é mais estrito: integrante seguido só avisa se a CEG tem item dele.
-- Aviso: quando uma CEG fica visível (agendada, aberta ou em enquete), cada seguidor recebe uma notificação,
-  uma vez só por CEG (AvisoSeguidores). Nada é automático além do aviso.
+  seguido); 0 = nada.
 """
 from dataclasses import dataclass, field
 
@@ -15,7 +13,6 @@ from django.db.models import Q
 
 from apps.groups.models import normalize_name
 
-VISIVEIS = ('SCHEDULED', 'OPEN', 'POLLING')
 
 
 @dataclass
@@ -100,56 +97,6 @@ def alternar(participant, group, member=None):
     except IntegrityError:
         pass  # dois cliques ao mesmo tempo
     return True
-
-
-def seguidores_da_ceg(ceg):
-    """Joiners que seguem o grupo (ou o grupo principal) ou um integrante com item nesta CEG."""
-    from .models import Participant, Seguindo
-
-    group = ceg.era.group
-    grupos = [group.id] + ([group.parent_id] if group.parent_id else [])
-    nomes = membros_da_ceg(ceg)
-    ids_membros = [m.id for m in group.members.all()
-                   if normalize_name(m.name) in nomes or (m.name_native and normalize_name(m.name_native) in nomes)]
-    filtro = Q(group_id__in=grupos, member__isnull=True) | Q(member_id__in=ids_membros)
-    ids = Seguindo.objects.filter(filtro).values_list('participant_id', flat=True).distinct()
-    return Participant.objects.filter(id__in=ids)
-
-
-def avisar_seguidores(ceg):
-    """Avisa quem segue, uma vez por CEG, quando ela está visível. Devolve quantos foram avisados."""
-    from .models import AvisoSeguidores, ParticipantNotification
-
-    if ceg.status not in VISIVEIS or AvisoSeguidores.objects.filter(ceg=ceg).exists():
-        return 0
-    try:
-        with transaction.atomic():
-            aviso = AvisoSeguidores.objects.create(ceg=ceg)
-    except IntegrityError:
-        return 0  # já avisados
-    quando = {'SCHEDULED': f'abre {ceg.opens_at:%d/%m às %H:%M}' if ceg.opens_at else 'abre em breve',
-              'OPEN': 'já está aberta', 'POLLING': 'está em enquete'}[ceg.status]
-    from .models import Seguindo
-
-    group = ceg.era.group
-    nomes_ceg = membros_da_ceg(ceg)
-    seguidores = list(seguidores_da_ceg(ceg))
-    quem_segue = {}  # participant_id → integrantes seguidos que têm item nesta CEG
-    for s in Seguindo.objects.filter(participant__in=seguidores, group=group, member__isnull=False).select_related('member'):
-        if normalize_name(s.member.name) in nomes_ceg:
-            quem_segue.setdefault(s.participant_id, []).append(s.member.name)
-    avisos = []
-    for p in seguidores:
-        quem = sorted(quem_segue.get(p.id, []))
-        com = f' com {", ".join(quem)}' if quem else ''
-        avisos.append(ParticipantNotification(
-            participant=p, notification_type=ParticipantNotification.NotificationType.NOVA_CEG,
-            title=f'Nova CEG de {group.name}{com}',
-            message=f'{ceg.title} ({ceg.gom.name}) {quando}. /ceg/{ceg.slug}/'))
-    ParticipantNotification.objects.bulk_create(avisos)
-    aviso.avisados = len(avisos)
-    aviso.save(update_fields=['avisados'])
-    return len(avisos)
 
 
 def anotar_seguindo(qs, prefs, campo_grupo, campo_membro=None):

@@ -274,7 +274,7 @@
 
 - `repasses/lista.html` (`/repasses/`, público): vagas disponíveis para repasse; cards em `repasses/partials/_card.html`, "Quero esta vaga" em `repasses/partials/_script.html` (`repasses()`). A página da CEG mostra as da CEG em `repasses/partials/_ceg_secao.html`.
 - `repasses/gom_fila.html` (`/gom/repasses/`, `pedidos.editar`): "Para aprovar" (`_gom_pendente.html`, aprovar/recusar com motivo), "Em andamento" e "Histórico" (`_gom_linha.html`).
-- `/me/`: botão "Repassar"/"Ver repasse" em cada item (`_itens_section.html`, evento `repassar`), folha `participants/partials/_repasse_sheet.html` (`repasseSheet`, também define `repassesRecebidos`) e "Querem repassar para você" em `_repasses_recebidos.html`. Link "Seguindo" ao lado das abas.
+- `/me/`: botão "Repassar"/"Ver repasse" em cada item (`_itens_section.html`, evento `repassar`), folha `participants/partials/_repasse_sheet.html` (`repasseSheet`, também define `repassesRecebidos`) e "Querem repassar para você" em `_repasses_recebidos.html`. Atalhos "Seguindo" e "Repasses" (este só no celular; no desktop está na barra lateral) nas ações do topo (`_header_notices.html`).
 - `participants/seguindo.html` (`/me/seguindo/`, `seguindoApp`): busca e lista de quem o joiner segue; card em `participants/partials/_seguindo_grupo.html`.
 - CEG: botão "Seguir <grupo>" em `cegs/partials/_detail_seguir.html` (no `_detail_header_info.html`). Home: trilho "Para você" em `cegs/partials/_home_para_voce.html` (ou convite para seguir) e marca "seguindo" no título do trilho do grupo.
 

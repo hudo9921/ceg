@@ -244,6 +244,4 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   - Home: trilho **Para você** (CEGs abertas e agendadas: com item de integrante seguido primeiro, depois do grupo),
     grupos seguidos primeiro nos trilhos "Abertas agora" e CEGs relevantes primeiro dentro de cada trilho.
   - Loja do GOM (ordem padrão "Recentes" nas três abas): quem o joiner segue primeiro (`anotar_seguindo`).
-- **Aviso de CEG nova:** quando uma CEG fica visível (agendada, aberta ou enquete), cada seguidor recebe uma
-  notificação (`NOVA_CEG`), **uma vez por CEG** (`AvisoSeguidores`). Integrante seguido só avisa se a CEG tem item
-  dele. Disparado por `post_save` da CEG depois do commit (os itens já existem); `.update()` em massa não dispara.
+- **Sem notificação de CEG nova** (decisão do produto: viraria spam). Seguir só muda a ordem e o trilho "Para você".
