@@ -1,0 +1,16 @@
+{% load static %}{
+    "name": "CegManager",
+    "short_name": "CegManager",
+    "description": "Compras em grupo de K-pop: CEGs, vitrine, pagamentos e envios.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#D6D1E0",
+    "theme_color": "#6D28D9",
+    "lang": "pt-BR",
+    "icons": [
+        {"src": "{% static 'img/app-icon-192.png' %}", "sizes": "192x192", "type": "image/png"},
+        {"src": "{% static 'img/app-icon-512.png' %}", "sizes": "512x512", "type": "image/png"},
+        {"src": "{% static 'img/app-icon-maskable-512.png' %}", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+    ]
+}

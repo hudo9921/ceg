@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'apps.pagamentos',
     'apps.conversas',
     'apps.repasses',
+    'apps.avisos',
 ]
 
 MIDDLEWARE = [
@@ -265,6 +266,9 @@ REST_FRAMEWORK = {
 # Configurações WhatsApp Gateway
 # Opções de WHATSAPP_PROVIDER: 'console', 'evolution', 'zapi'
 WHATSAPP_PROVIDER = os.getenv('WHATSAPP_PROVIDER', 'console')
+# Notificações push (apps/avisos): sem VAPID_PRIVATE_KEY, a chave é derivada do SECRET_KEY (apps/avisos/vapid.py).
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', '')
+VAPID_SUBJECT = os.getenv('VAPID_SUBJECT', 'https://valcegs.duckdns.org')
 EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL', 'http://localhost:8080')
 EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', '')
 EVOLUTION_INSTANCE_NAME = os.getenv('EVOLUTION_INSTANCE_NAME', 'ceg-bot')

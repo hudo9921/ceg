@@ -1,6 +1,6 @@
 # Tudo no site — Plano (sem Google Forms e sem WhatsApp)
 
-> Status: **S1, S2 e S5 entregues** (2026-11-25). S3 (login) e S4 (push) esperam o domínio definitivo. Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
+> Status: **S1, S2 e S5 entregues** (2026-11-25); **S4 (push) entregue** em 2026-11-26 (`apps/avisos`; trocar de domínio exige o joiner ativar de novo). S3 (login) espera o domínio definitivo. Decisões já tomadas: pagamento pelo **modelo A** (Pix com valor exato +
 > confirmação do GOM); login com **Google, passkey e código por e-mail**; **uma conta só** para joiner e equipe.
 > Primeiro passo: protótipo de Pagar → Gerar Pix → QR e da fila "Recebi" do GOM (board **PagamentosV2** do canvas).
 

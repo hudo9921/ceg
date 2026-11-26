@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CegManager — compras em grupo de K-pop{% endblock %}</title>
+    {# App instalável (tela inicial) e notificações push: apps/avisos #}
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'img/app-icon-192.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+    <meta name="theme-color" content="#6D28D9">
+    <meta name="apple-mobile-web-app-title" content="CegManager">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- Script Anti-FOUC (Prevenção de flash branco no modo escuro) -->
     <script>
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -659,7 +667,10 @@
     <footer class="border-t border-ui-line py-6 mt-8 pb-28 lg:pb-6 text-xs text-ui-muted">
         <div class="max-w-7xl mx-auto px-4 lg:px-10 flex flex-col sm:flex-row justify-between items-center gap-2">
             <p class="m-0"><span class="ui-disp ui-chrome text-sm">CegManager</span> · compras em grupo de K-pop</p>
-            <a href="{% url 'privacy_policy' %}" class="text-ui-muted hover:text-ui-text">Política de privacidade</a>
+            <span class="flex gap-4">
+                <a href="{% url 'ajuda_notificacoes' %}" class="text-ui-muted hover:text-ui-text">Avisos no celular</a>
+                <a href="{% url 'privacy_policy' %}" class="text-ui-muted hover:text-ui-text">Política de privacidade</a>
+            </span>
         </div>
     </footer>
 
