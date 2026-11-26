@@ -45,8 +45,12 @@ class Command(BaseCommand):
                               ('Vendem no Circle Chart mas não achei no Wikidata', 'circle_sem_correspondencia'),
                               ('Top 200 sem integrantes', 'top200_sem_integrantes'),
                               ('Top 200 sem foto', 'top200_sem_foto'),
-                              ('Top 200 sem eras no MusicBrainz', 'top200_sem_eras')]:
-            linhas += [f'## {titulo} ({len(r[chave])})', '', ', '.join(r[chave]) or '—', '']
+                              ('Top 200 sem eras no MusicBrainz', 'top200_sem_eras'),
+                              ('ID do MusicBrainz achado pelo nome (confira)', 'musicbrainz_por_nome'),
+                              ('Singles que viraram parte de um álbum', 'singles_dobrados')]:
+            lista = r.get(chave) or []
+            corpo = '\n'.join(f'- {x}' for x in lista) if chave in ('musicbrainz_por_nome', 'singles_dobrados') else ', '.join(lista)
+            linhas += [f'## {titulo} ({len(lista)})', '', corpo or '—', '']
         Path(opts['relatorio']).write_text('\n'.join(linhas), encoding='utf-8')
         if r['obrigatorios_nao_encontrados']:
             self.stdout.write(self.style.WARNING('Não encontrados: ' + ', '.join(r['obrigatorios_nao_encontrados'])))
