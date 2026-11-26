@@ -83,6 +83,20 @@ class FluxoTests(RepasseFixture):
         rep.refresh_from_db()
         self.assertEqual((rep.status, rep.para), (Repasse.Status.DISPONIVEL, None))
 
+    def test_lista_busca_filtros_e_marca_na_ceg(self):
+        rep = services.criar(self.ana, self.slot, publico=True)
+        url = reverse('repasses_disponiveis')
+        self.assertEqual(len(self.client.get(url, {'q': 'karina'}).context['pagina'].object_list), 1)
+        self.assertEqual(len(self.client.get(url, {'q': 'nada-disso'}).context['pagina'].object_list), 0)
+        self.assertEqual(len(self.client.get(url, {'gom': self.gom.slug, 'grupo': self.ceg.era.group_id}).context['pagina'].object_list), 1)
+        res = self.client.get(url)
+        self.assertContains(res, reverse('gom_public', args=[self.gom.slug]))
+        ceg = self.client.get(reverse('ceg_detail', args=[self.ceg.slug]))
+        self.assertEqual(ceg.context['repasse_slots'], {self.slot.id})
+        self.assertContains(ceg, 'ui-stamp is-repasse')
+        self.assertContains(ceg, f'href="#repasse-{self.slot.id}"')
+        self.assertEqual(rep.status, Repasse.Status.DISPONIVEL)
+
     def test_recusa_e_cancelamento(self):
         rep = services.criar(self.ana, self.slot, '11944443333')
         services.responder(rep, self.bia, False)

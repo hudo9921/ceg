@@ -2,7 +2,7 @@
 Item avulso (DESIGN_SYSTEM §7.7): photocard 2:3, estoque e seletor de quantidade. Joiner adiciona à lista;
 equipe reserva pelo modal assistido. Esgotado fica cinza com carimbo.
 {% endcomment %}
-<div class="ui-pick {% if idef.available_count > 0 %}is-free{% else %}is-taken{% endif %}"
+<div class="ui-pick {% if idef.available_count > 0 %}is-free{% else %}is-taken{% endif %}{% if idef.id in repasse_defs %} is-repasse{% endif %}"
      x-data="{
          itemDefId: {{ idef.id }}, totalCount: {{ idef.slots_count }}, availableCount: {{ idef.available_count }}, selectedQty: 1,
          get isSelected() { return $store.claimSelection.hasAvulso(this.itemDefId); },
@@ -44,7 +44,8 @@ equipe reserva pelo modal assistido. Esgotado fica cinza com carimbo.
             {% endif %}
         </div>
     </div>
-    {% if idef.available_count == 0 %}<span class="ui-stamp">Esgotado</span>{% endif %}
+    {% if idef.id in repasse_defs %}<span class="ui-stamp is-repasse"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 inline -mt-0.5" stroke-width="2"></i> Repasse</span>
+    {% elif idef.available_count == 0 %}<span class="ui-stamp">Esgotado</span>{% endif %}
 
     <div class="px-1 space-y-0.5">
         <div class="flex items-baseline justify-between gap-2">
@@ -79,5 +80,8 @@ equipe reserva pelo modal assistido. Esgotado fica cinza com carimbo.
         {% endif %}
     {% endif %}
 
+    {% if idef.id in repasse_defs %}
+        <a href="#vagas-repasse" class="ui-btn ui-btn-primary ui-btn-sm w-full no-underline" @click.stop><i data-lucide="hand" class="w-4 h-4" stroke-width="1.75"></i>Ver vaga em repasse</a>
+    {% endif %}
     {% include 'cegs/partials/_detail_avulso_staff_units.html' %}
 </div>

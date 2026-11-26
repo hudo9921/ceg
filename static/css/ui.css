@@ -233,10 +233,14 @@ html.dark .ui-knob, html.dark .ui-knob::after { border-radius: 2px; }
 .ui-pick.is-on { outline-color: var(--ui-accent); }
 .ui-pick .ui-pc { box-shadow: var(--ui-shadow); }
 .ui-pick.is-taken .ui-pc > img, .ui-pick.is-taken .ui-pc > .ui-pc-empty { filter: grayscale(1) contrast(.85); opacity: .55; }
+/* vaga em repasse público: colorida, contorno tracejado e carimbo na cor da marca */
+.ui-pick.is-repasse { outline: 2px dashed var(--ui-accent); outline-offset: 2px; }
+.ui-pick.is-repasse .ui-pc > img, .ui-pick.is-repasse .ui-pc > .ui-pc-empty { filter: none; opacity: 1; }
 .ui-pc-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--ui-holo); color: rgba(30, 27, 38, .55); }
 .ui-tick { position: absolute; top: 10px; right: 10px; z-index: 3; width: 28px; height: 28px; border-radius: 999px; background: var(--ui-accent); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .4); }
 html.dark .ui-tick { border-radius: 2px; }
 .ui-stamp { position: absolute; left: 50%; top: 42%; z-index: 3; transform: translate(-50%, -50%) rotate(-8deg); padding: 5px 11px; border: 2px solid #1E1B26; border-radius: 8px; background: rgba(255, 255, 255, .88); color: #1E1B26; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
+.ui-stamp.is-repasse { border-color: var(--ui-accent); color: var(--ui-accent-text); }
 html.dark .ui-stamp { border-color: #ECEEF3; color: #ECEEF3; background: rgba(10, 10, 12, .82); border-radius: 2px; font-family: var(--ui-font-mono); font-size: 11px; }
 /* seção recolhível (ex.: como funciona o pagamento) */
 .ui-details > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 18px 20px; }

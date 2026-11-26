@@ -635,11 +635,14 @@
     {% include 'components/_platform_gom_banner.html' %}
     <!-- Mensagens -->
     {% if messages %}
-        <div class="max-w-4xl mx-auto px-4 mt-4 w-full space-y-2" role="status">
+        {# Mensagens como aviso flutuante (topo, centralizado): sucesso/info somem sozinhos; erro fica até fechar. #}
+        <div class="fixed left-1/2 -translate-x-1/2 top-[72px] lg:top-4 z-[80] w-[min(92vw,520px)] space-y-2 pointer-events-none" role="status" aria-live="polite">
             {% for message in messages %}
-                <div class="ui-card px-4 py-3 text-sm flex items-center justify-between gap-3">
+                <div class="ui-card ui-hud px-4 py-3 text-sm flex items-center justify-between gap-3 pointer-events-auto shadow-xl"
+                     x-data="{ v: true }" x-show="v" x-transition.opacity.duration.300ms
+                     {% if message.tags != 'error' and message.tags != 'warning' %}x-init="setTimeout(() => v = false, 5000)"{% endif %}>
                     <span class="ui-status {% if message.tags == 'error' %}ui-danger{% elif message.tags == 'success' %}ui-ok{% elif message.tags == 'warning' %}ui-warn{% else %}ui-muted{% endif %} !text-sm !font-medium"><span class="text-ui-text">{{ message }}</span></span>
-                    <button type="button" onclick="this.parentElement.remove()" class="ui-icon-btn !w-8 !h-8 shrink-0" aria-label="Fechar mensagem">
+                    <button type="button" @click="v = false" class="ui-icon-btn !w-8 !h-8 shrink-0" aria-label="Fechar mensagem">
                         <i data-lucide="x" class="w-4 h-4" stroke-width="1.75"></i>
                     </button>
                 </div>

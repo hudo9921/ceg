@@ -486,7 +486,9 @@ class CEGDetailView(View):
         return render(request, 'cegs/detail.html', {
             **rules_context(request, ceg.gom),
             'brand_gom': ceg.gom,
-            'repasses': com_valores(disponiveis(ceg=ceg)[:12]),  # vagas que joiners deixaram para repasse
+            'repasses': com_valores(disponiveis(ceg=ceg)[:30]),  # vagas que joiners deixaram para repasse
+            'repasse_slots': set(disponiveis(ceg=ceg).values_list('slot_id', flat=True)),  # marcadas nos cards
+            'repasse_defs': set(disponiveis(ceg=ceg).values_list('slot__item_definition_id', flat=True)),  # avulsos
             'segue_grupo': _segue_grupo(request, ceg),
             'ceg': ceg,
             'is_gom_staff': manage,

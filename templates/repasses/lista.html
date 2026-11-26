@@ -4,15 +4,39 @@
 
 {% block content %}
 {% comment %}
-/repasses/ (apps/repasses/views.py:lista_publica): vagas que joiners deixaram disponíveis. "Quero esta vaga" manda o
-pedido (já é o aceite) e o GOM aprova ou recusa. Cards em repasses/partials/_card.html; script em _script.html.
+/repasses/ (apps/repasses/views.py:lista_publica): vagas que joiners deixaram disponíveis. Busca (?q=), grupo (?grupo=)
+e GOM (?gom=) no servidor, como Caixinhas. "Quero esta vaga" pede (já é o aceite) e o GOM aprova. Card: _card.html.
 {% endcomment %}
-<div class="max-w-6xl mx-auto space-y-6" x-data="repasses()">
-    <header class="space-y-2 max-w-2xl">
+<div class="max-w-6xl mx-auto space-y-5" x-data="repasses()">
+    <header class="space-y-2">
         <p class="ui-label">Repasses</p>
         <h1 class="ui-disp text-4xl">Vagas para repasse</h1>
-        <p class="ui-muted text-[15px]">Joiners que não podem mais ficar com o item. Peça a vaga: o GOM aprova e ela passa para você, com o que ainda falta pagar.</p>
+        <p class="ui-muted text-[15px] max-w-2xl">Joiners que não podem mais ficar com o item. Peça a vaga: o GOM aprova e ela passa para você, com o que ainda falta pagar.</p>
     </header>
+
+    <form method="get" class="flex flex-wrap items-center gap-2" role="search">
+        <label class="ui-searchbar !static flex-[1_1_280px]">
+            <i data-lucide="search" class="w-5 h-5 ui-muted flex-none ml-2" stroke-width="1.75"></i>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar integrante, item, grupo, CEG ou GOM" aria-label="Buscar repasses" class="ui-bare flex-1 min-w-0 !pl-1">
+            {% if grupo %}<input type="hidden" name="grupo" value="{{ grupo }}">{% endif %}
+        </label>
+        {% if goms|length > 1 %}
+            <select name="gom" class="ui-input !w-auto" aria-label="GOM" onchange="this.form.submit()">
+                <option value="">Todos os GOMs</option>
+                {% for g in goms %}<option value="{{ g.gom__slug }}"{% if filtro_gom.slug == g.gom__slug %} selected{% endif %}>{{ g.gom__name }} ({{ g.n }})</option>{% endfor %}
+            </select>
+        {% elif filtro_gom %}<input type="hidden" name="gom" value="{{ filtro_gom.slug }}">{% endif %}
+        {% if url_limpar %}<a href="{{ url_limpar }}" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i>Limpar</a>{% endif %}
+    </form>
+
+    {% if grupos|length > 1 or grupo %}
+        <div class="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar por grupo">
+            <a href="{{ url_todos_grupos }}" class="ui-chip no-underline flex-none{% if not grupo %} is-on{% endif %}">Todos</a>
+            {% for g in grupos %}
+                <a href="{{ g.url }}" class="ui-chip no-underline flex-none{% if grupo == g.id %} is-on{% endif %}">{{ g.nome }} <span class="ui-mono ui-muted text-xs">{{ g.n }}</span></a>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     {% if pagina.object_list %}
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -20,15 +44,15 @@ pedido (já é o aceite) e o GOM aprova ou recusa. Cards em repasses/partials/_c
         </div>
         {% if pagina.has_other_pages %}
             <nav class="flex items-center justify-center gap-3" aria-label="Páginas">
-                {% if pagina.has_previous %}<a class="ui-btn ui-btn-ghost ui-btn-sm" href="?pagina={{ pagina.previous_page_number }}"><i data-lucide="chevron-left" class="w-4 h-4" stroke-width="1.75"></i>Anterior</a>{% endif %}
+                {% if url_anterior %}<a class="ui-btn ui-btn-ghost ui-btn-sm" href="{{ url_anterior }}"><i data-lucide="chevron-left" class="w-4 h-4" stroke-width="1.75"></i>Anterior</a>{% endif %}
                 <span class="ui-label">{{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-                {% if pagina.has_next %}<a class="ui-btn ui-btn-ghost ui-btn-sm" href="?pagina={{ pagina.next_page_number }}">Próxima<i data-lucide="chevron-right" class="w-4 h-4" stroke-width="1.75"></i></a>{% endif %}
+                {% if url_proxima %}<a class="ui-btn ui-btn-ghost ui-btn-sm" href="{{ url_proxima }}">Próxima<i data-lucide="chevron-right" class="w-4 h-4" stroke-width="1.75"></i></a>{% endif %}
             </nav>
         {% endif %}
     {% else %}
         <div class="ui-card p-10 text-center space-y-2">
             <i data-lucide="arrow-left-right" class="w-8 h-8 mx-auto ui-muted" stroke-width="1.75"></i>
-            <h2 class="ui-disp text-2xl">Nenhuma vaga para repasse agora</h2>
+            <h2 class="ui-disp text-2xl">{% if url_limpar %}Nada com esse filtro{% else %}Nenhuma vaga para repasse agora{% endif %}</h2>
             <p class="ui-muted text-[15px]">Quando um joiner deixar uma vaga disponível, ela aparece aqui.</p>
         </div>
     {% endif %}

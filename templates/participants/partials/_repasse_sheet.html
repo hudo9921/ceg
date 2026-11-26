@@ -22,7 +22,11 @@ Com repasse em andamento, mostra a situação e "Cancelar repasse".
                     <p class="text-sm m-0" x-text="situacao(it.repasse)"></p>
                     <p class="text-[13px] ui-muted m-0">O item continua seu até o GOM aprovar.</p>
                 </div>
-                <button type="button" class="ui-btn w-full" :disabled="enviando" @click="cancelar()">Cancelar repasse</button>
+                <button type="button" x-show="!confirmaCancelar" class="ui-btn w-full" @click="confirmaCancelar = true">Cancelar repasse</button>
+                <div x-show="confirmaCancelar" class="flex gap-2">
+                    <button type="button" class="ui-btn ui-btn-primary flex-1" :disabled="enviando" @click="cancelar()">Sim, cancelar repasse</button>
+                    <button type="button" class="ui-btn ui-btn-ghost" @click="confirmaCancelar = false">Voltar</button>
+                </div>
             </div>
         </template>
 
@@ -59,8 +63,9 @@ Com repasse em andamento, mostra a situação e "Cancelar repasse".
 function repasseSheet() {
     return {
         open: false, enviando: false, erro: '', it: { name: '', ceg: '', gom: '' }, modo: 'pessoa', whatsapp: '', recado: '',
+        confirmaCancelar: false,
         abrir(it) {
-            Object.assign(this, { it, open: true, erro: '', modo: 'pessoa', whatsapp: '', recado: '' });
+            Object.assign(this, { it, open: true, erro: '', modo: 'pessoa', whatsapp: '', recado: '', confirmaCancelar: false });
             this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
         },
         async executar(url, body) {
@@ -68,8 +73,7 @@ function repasseSheet() {
             try {
                 const data = await repassePost(url, body);
                 if (!data.success) { this.erro = data.message || 'Não deu certo.'; return; }
-                alert(data.message);
-                window.location.reload();
+                window.location.reload();  // a mensagem de sucesso aparece no topo (messages do Django)
             } catch (e) { this.erro = 'Não deu certo. Tente de novo.'; } finally { this.enviando = false; }
         },
         situacao(r) {
@@ -81,7 +85,7 @@ function repasseSheet() {
             }[r.status] || '';
         },
         enviar() { this.executar('{% url "repasse_criar" %}', { slot_id: this.it.slot_id, modo: this.modo, whatsapp: this.whatsapp, recado: this.recado }); },
-        cancelar() { if (confirm('Cancelar este repasse?')) this.executar('/me/repasses/' + this.it.repasse.id + '/cancelar/'); },
+        cancelar() { this.executar('/me/repasses/' + this.it.repasse.id + '/cancelar/'); },
     };
 }
 
@@ -93,15 +97,14 @@ async function repassePost(url, body) {
 
 function repassesRecebidos() {
     return {
-        enviando: false,
+        enviando: false, erro: '',
         async responder(id, aceitar) {
-            if (aceitar && !confirm('Aceitar? O que falta pagar passa a ser seu quando o GOM aprovar.')) return;
-            this.enviando = true;
+            this.enviando = true; this.erro = '';
             try {
                 const data = await repassePost('/me/repasses/' + id + '/responder/', { aceitar });
-                alert(data.message);
-                window.location.reload();
-            } catch (e) { alert('Não deu certo. Tente de novo.'); } finally { this.enviando = false; }
+                if (data.success) { window.location.reload(); return; }
+                this.erro = data.message || 'Não deu certo.';
+            } catch (e) { this.erro = 'Não deu certo. Tente de novo.'; } finally { this.enviando = false; }
         },
     };
 }

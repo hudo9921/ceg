@@ -1,8 +1,13 @@
 {% comment %}
 Ação da vaga: botão real de "Adicionar à lista"/"Na lista" (o toque sobe para o card, que alterna a seleção),
-"Entrar para reservar" para visitantes e o nome de quem reservou nas vagas tomadas.
+"Entrar para reservar" para visitantes e o nome de quem reservou nas vagas tomadas. Vaga em repasse público
+(`slot.id in repasse_slots`, do CEGDetailView): "Quero esta vaga" leva ao card dela em "Vagas para repasse".
 {% endcomment %}
-{% if slot.claimed_by %}
+{% if slot.id in repasse_slots %}
+    <a href="#repasse-{{ slot.id }}" class="ui-btn ui-btn-primary ui-btn-sm w-full no-underline" @click.stop>
+        <i data-lucide="hand" class="w-4 h-4" stroke-width="1.75"></i><span>Quero esta vaga</span>
+    </a>
+{% elif slot.claimed_by %}
     <p class="m-0 px-1 text-[12px] ui-muted truncate">por {{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}</p>
 {% elif logged_participant or user.is_authenticated %}
     <button type="button" class="ui-btn ui-btn-sm w-full"
