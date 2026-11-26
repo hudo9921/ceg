@@ -1,0 +1,25 @@
+{% comment %}Linha de um grupo no catálogo da plataforma. `g` vem anotado com n_eras, n_membros, n_cegs e n_eras_sem_capa.{% endcomment %}
+<div class="flex items-center gap-3 px-4 py-3 border-t first:border-t-0" style="border-color: var(--ui-line)">
+    <a href="{% url 'platform_catalogo_grupo' g.pk %}" class="flex items-center gap-3 flex-1 min-w-0 no-underline text-ui-text group">
+        {% if g.image_url %}
+            <img src="{{ g.image_url|thumb }}" data-full="{{ g.image_url }}" alt="" loading="lazy" decoding="async" class="w-11 h-11 rounded-full object-cover flex-none">
+        {% else %}
+            <span class="w-11 h-11 rounded-full flex-none ui-well flex items-center justify-center" title="Sem foto">
+                <i data-lucide="image-off" class="w-4 h-4 ui-muted" stroke-width="1.75"></i>
+            </span>
+        {% endif %}
+        <span class="min-w-0">
+            <span class="block font-semibold truncate group-hover:underline">{{ g.name }}{% if g.name_native %} <span class="ui-muted font-normal">{{ g.name_native }}</span>{% endif %}</span>
+            <span class="block ui-label truncate">{{ g.get_kind_display }}{% if g.popularity_rank %} · #{{ g.popularity_rank }}{% endif %}{% if g.agency %} · {{ g.agency }}{% endif %} · {{ g.get_source_display }}</span>
+        </span>
+    </a>
+    <span class="hidden sm:flex items-center gap-1.5 flex-none">
+        <span class="ui-tag !bg-transparent ui-muted" title="Eras"><i data-lucide="disc-3" class="w-3.5 h-3.5" stroke-width="1.75"></i><span class="ui-mono">{{ g.n_eras }}</span></span>
+        <span class="ui-tag !bg-transparent ui-muted" title="Integrantes"><i data-lucide="users" class="w-3.5 h-3.5" stroke-width="1.75"></i><span class="ui-mono">{{ g.n_membros }}</span></span>
+        <span class="ui-tag !bg-transparent ui-muted" title="CEGs"><i data-lucide="sparkles" class="w-3.5 h-3.5" stroke-width="1.75"></i><span class="ui-mono">{{ g.n_cegs }}</span></span>
+        {% if g.n_eras_sem_capa %}<span class="ui-status ui-warn !text-[12px]" title="Eras sem capa">{{ g.n_eras_sem_capa }} sem capa</span>{% endif %}
+    </span>
+    <a href="{% url 'admin:groups_kpopgroup_change' g.pk %}" target="_blank" rel="noopener" class="ui-icon-btn flex-none" aria-label="Editar {{ g.name }} no Django Admin" title="Editar no Django Admin">
+        <i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i>
+    </a>
+</div>

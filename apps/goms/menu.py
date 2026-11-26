@@ -26,6 +26,7 @@ GOM_MENU = [
 
 PLATFORM_MENU = [
     ('goms', 'GOMs da plataforma', 'building-2', 'platform_goms', ('platform_goms',)),
+    ('catalogo', 'Catálogo', 'library', 'platform_catalogo', ('platform_catalogo', 'platform_catalogo_grupo')),
     ('whatsapp', 'Bot do WhatsApp', 'message-circle', 'admin_whatsapp', ('admin_whatsapp',)),
 ]
 
@@ -44,7 +45,11 @@ def build_gom_menu(request, granted, unread=0):
 
 
 def build_platform_menu(request):
+    from apps.auth_otp.status import estado_do_bot
+
     match = getattr(request, 'resolver_match', None)
     current = match.url_name if match else ''
-    return [{'key': k, 'label': label, 'icon': icon, 'url': reverse(url_name), 'active': current in active}
+    bot = estado_do_bot()  # cache de 60 s; None fora da Evolution
+    return [{'key': k, 'label': label, 'icon': icon, 'url': reverse(url_name), 'active': current in active,
+             'alerta': k == 'whatsapp' and bot is not None and not bot['conectado']}
             for k, label, icon, url_name, active in PLATFORM_MENU]

@@ -69,7 +69,13 @@ class WhatsAppManagerView(PlatformAdminRequiredMixin, View):
         if state != 'open':
             qr_data = fetch_qr_code()
 
+        from .status import estado_do_bot, resumo_codigos
+
+        codigos, ultimos_codigos = resumo_codigos()
         context = {
+            'bot': estado_do_bot(usar_cache=False),
+            'codigos': codigos,
+            'ultimos_codigos': ultimos_codigos,
             'state': state,
             'instance_data': instance_data,
             'qr_data': qr_data,
@@ -117,6 +123,10 @@ class WhatsAppManagerView(PlatformAdminRequiredMixin, View):
             except Exception as e:
                 messages.error(request, f"Exceção ao reiniciar: {e}")
 
+        from django.core.cache import cache
+
+        from .status import CHAVE_CACHE
+        cache.delete(CHAVE_CACHE)  # o aviso do menu reflete a ação na próxima página
         return redirect('admin_whatsapp')
 
 
@@ -130,6 +140,11 @@ class WhatsAppStatusAPIView(PlatformAdminRequiredMixin, View):
         if state != 'open':
             qr_data = fetch_qr_code()
 
+        if state == 'open':
+            from django.core.cache import cache
+
+            from .status import CHAVE_CACHE
+            cache.delete(CHAVE_CACHE)  # acabou de conectar: tira o "off" do menu
         return JsonResponse({
             'state': state,
             'base64': qr_data.get('base64'),

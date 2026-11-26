@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ grupo.name }} — Catálogo{% endblock %}
+
+{% block content %}
+{% comment %}Um grupo/solista no catálogo da plataforma: dados, integrantes, eras (com capa) e CEGs por GOM. Editar pelo Django Admin.{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <a href="{% url 'platform_catalogo' %}" class="ui-label hover:underline">← Catálogo</a>
+
+    <header class="ui-card p-5 sm:p-6 flex flex-wrap items-center gap-5">
+        {% if grupo.image_url %}
+            <img src="{{ grupo.image_url|thumb }}" data-full="{{ grupo.image_url }}" alt="" decoding="async" class="w-24 h-24 rounded-full object-cover">
+        {% else %}
+            <span class="w-24 h-24 rounded-full ui-well flex items-center justify-center"><i data-lucide="image-off" class="w-6 h-6 ui-muted" stroke-width="1.75"></i></span>
+        {% endif %}
+        <div class="flex-1 min-w-[220px] space-y-1.5">
+            <p class="ui-label m-0">{{ grupo.get_kind_display }} · {{ grupo.get_status_display }}{% if grupo.popularity_rank %} · #{{ grupo.popularity_rank }} no ranking{% endif %}</p>
+            <h1 class="ui-disp text-4xl m-0">{{ grupo.name }}{% if grupo.name_native %} <span class="ui-muted text-2xl">{{ grupo.name_native }}</span>{% endif %}</h1>
+            <p class="ui-muted text-sm m-0">
+                {% if grupo.agency %}{{ grupo.agency }} · {% endif %}{% if grupo.debut_date %}estreia {{ grupo.debut_date|date:"d/m/Y" }} · {% endif %}{{ grupo.get_source_display }}{% if grupo.aliases %} · também: {{ grupo.aliases }}{% endif %}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if grupo.wikidata_id %}<a href="https://www.wikidata.org/wiki/{{ grupo.wikidata_id }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost ui-btn-sm">Wikidata</a>{% endif %}
+            <a href="{% url 'admin:groups_kpopgroup_change' grupo.pk %}" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i>Editar</a>
+        </div>
+    </header>
+
+    <div class="grid lg:grid-cols-[280px_1fr] gap-6 items-start">
+        <div class="space-y-6">
+            <section class="ui-card p-5 space-y-3" aria-labelledby="g-membros">
+                <h2 id="g-membros" class="ui-disp text-xl m-0">Integrantes <span class="ui-mono ui-muted text-base">{{ membros|length }}</span></h2>
+                <ul class="m-0 p-0 list-none space-y-1.5">
+                    {% for m in membros %}
+                        <li class="flex items-center justify-between gap-2 text-sm">
+                            <span class="{% if m.is_former %}ui-muted line-through{% endif %}">{{ m.name }}{% if m.name_native %} <span class="ui-muted">{{ m.name_native }}</span>{% endif %}</span>
+                            {% if m.solo %}<a href="{% url 'platform_catalogo_grupo' m.solo_id %}" class="ui-label hover:underline">solo</a>{% endif %}
+                        </li>
+                    {% empty %}
+                        <li class="ui-muted text-sm">Nenhum integrante cadastrado.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+            <section class="ui-card p-5 space-y-3" aria-labelledby="g-cegs">
+                <h2 id="g-cegs" class="ui-disp text-xl m-0">CEGs por GOM</h2>
+                {% for c in cegs_por_gom %}
+                    <p class="m-0 flex justify-between text-sm"><span>{{ c.gom__name|default:"—" }}</span><span class="ui-mono">{{ c.n }}</span></p>
+                {% empty %}
+                    <p class="m-0 ui-muted text-sm">Nenhuma CEG ainda.</p>
+                {% endfor %}
+            </section>
+        </div>
+
+        <section class="space-y-3" aria-labelledby="g-eras">
+            <h2 id="g-eras" class="ui-disp text-xl m-0">Eras <span class="ui-mono ui-muted text-base">{{ eras|length }}</span>{% if eras_sem_capa %} <span class="ui-status ui-warn !text-[13px]">{{ eras_sem_capa }} sem capa</span>{% endif %}</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                {% for e in eras %}
+                    <a href="{% url 'admin:groups_era_change' e.pk %}" target="_blank" rel="noopener" class="ui-card ui-lift overflow-hidden no-underline text-ui-text" title="Editar no Django Admin">
+                        {% if e.banner_url %}
+                            <img src="{{ e.banner_url|thumb }}" data-full="{{ e.banner_url }}" alt="" loading="lazy" decoding="async" class="w-full aspect-square object-cover">
+                        {% else %}
+                            <span class="w-full aspect-square ui-well !rounded-none flex flex-col items-center justify-center gap-1 ui-muted text-[12px]"><i data-lucide="image-off" class="w-5 h-5" stroke-width="1.75"></i>sem capa</span>
+                        {% endif %}
+                        <span class="block p-2.5 space-y-0.5">
+                            <span class="block text-sm font-semibold truncate">{{ e.name }}</span>
+                            <span class="block ui-label truncate">{{ e.get_kind_display }}{% if e.release_date %} · {{ e.release_date|date:"Y" }}{% endif %}{% if e.n_cegs %} · {{ e.n_cegs }} CEG{{ e.n_cegs|pluralize }}{% endif %}</span>
+                        </span>
+                    </a>
+                {% empty %}
+                    <p class="ui-muted text-sm col-span-full">Nenhuma era cadastrada.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

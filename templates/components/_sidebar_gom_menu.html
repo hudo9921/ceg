@@ -1,6 +1,6 @@
 {% comment %}
 Menu do painel do GOM (P5) na barra lateral: itens de apps/goms/menu.py já filtrados pelas permissões
-do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_menu).
+do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_menu; "off" no bot desconectado).
 {% endcomment %}
 <nav class="space-y-0.5" aria-label="Painel do GOM">
     {% if gom_menu %}<p class="ui-label px-3 pb-1.5 truncate">Painel{% if active_gom %} · {{ active_gom.name }}{% endif %}</p>{% endif %}
@@ -19,7 +19,8 @@ do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_me
         <p class="ui-label px-3 {% if gom_menu %}pt-3 {% endif %}pb-1.5">Plataforma</p>
         {% for item in platform_menu %}
             <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
-                <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span>{{ item.label }}</span>
+                <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span class="flex-1">{{ item.label }}</span>
+                {% if item.alerta %}<span class="ui-status ui-danger !text-[11px]" title="O bot está desconectado: abra para conectar de novo">off</span>{% endif %}
             </a>
         {% endfor %}
         <a href="/admin/" target="_blank" rel="noopener" class="ui-nav-item !h-10 !text-[14px]">

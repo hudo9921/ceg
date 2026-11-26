@@ -215,6 +215,7 @@
   - `_bulk_create_header.html`, `_bulk_create_tabs_nav.html`, `_bulk_create_tab_paste.html`, `_bulk_create_tab_table.html`, `_bulk_create_tab_recent.html`, `_bulk_create_toast.html`, `_bulk_create_app_script.html`.
 - **Gestão do Bot WhatsApp (`whatsapp_manager.html` — 21 linhas):**
   - `_whatsapp_header.html`, `_whatsapp_status_device.html`, `_whatsapp_test_send.html`, `_whatsapp_app_script.html`.
+  - `_whatsapp_resumo.html`: desde quando/por que o bot caiu e códigos de login pedidos/usados (24 h, 7 dias, últimos com telefone mascarado), de `apps/auth_otp/status.py`. O menu da plataforma mostra "off" no Bot do WhatsApp quando está desconectado (cache de 60 s).
 - **Multi-GOM no painel do joiner (`templates/participants/partials/`):**
 - **Configurações do GOM:** `goms/settings.html` (abas de `apps/goms/settings_tabs.py`) + uma parcial por aba `goms/partials/_settings_<aba>.html` (perfil + `_settings_pagina.html` + `_settings_cor.html`, pix, regras, padroes, envio + `_settings_envio_metodo.html`), reaproveitando `_profile_field.html`, `_profile_image.html` e `_profile_pix.html` (`/gom/configuracoes/<aba>/`; `/gom/perfil/` redireciona). Classe `.settings-tab` em `static/css/ui.css`.
 - **Regras do GOM:** `goms/partials/_gom_rules.html` (faixa do estreante, linha "ver regras" e folha de aceite; componente `gomRules`), incluída em `cegs/detail.html` e `goms/public_page.html`.
@@ -245,6 +246,7 @@
   - `invite_accept.html`: aceitar convite.
   - `team.html`: equipe do GOM e permissões por admin (visual novo `ui-*`, Alpine `teamApp()`, dados em `#team-data`). Partials: `_team_script.html` (lógica), `_team_members.html` (lista), `_team_panel.html` (papel, remover, modelos, interruptores, prévia do menu, barra de salvar), `_team_invites.html` (convites pendentes) e `_team_invite_sheet.html` (convidar com modelo).
   - `platform_goms.html`: GOMs da plataforma.
+  - `groups/plataforma_catalogo.html` (`/plataforma/catalogo/`, só superusuário, `apps/groups/plataforma_views.py`): números do catálogo, busca, tipo, "Revisar" (sem foto, sem eras, sem integrantes, eras sem capa) e ordem; linhas em `groups/partials/_plataforma_grupo_linha.html`. `groups/plataforma_grupo.html`: integrantes, eras com capa, CEGs por GOM. Editar abre o Django Admin.
   - `partials/_invite_link.html`: link exibido uma única vez. `partials/_gom_switcher.html`: seletor de GOM ativo.
   - `components/_sidebar_gom_menu.html`: menu de gestão da sidebar (incluído pela `ui_sidebar.html`).
 - **Verificação em Duas Etapas do Backoffice (`templates/core/two_factor/`):**
