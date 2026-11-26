@@ -1,0 +1,40 @@
+{% comment %}
+Card de vaga disponível para repasse (lista.html e página da CEG). Foto do item (ou da CEG), GOM com link,
+o que falta pagar e "Quero esta vaga" com confirmação no próprio card (repasses() em _script.html).
+`r` tem .a_pagar (views.com_valores). id="repasse-<slot>" para o link do card da vaga na CEG.
+{% endcomment %}
+{% with ceg=r.slot.set.ceg item=r.slot.item_definition %}
+{% firstof item.image_url ceg.display_image_url as foto %}
+<article id="repasse-{{ r.slot_id }}" class="ui-card overflow-hidden flex scroll-mt-28" x-data="{ confirmando: false }">
+    <a href="{% url 'ceg_detail' ceg.slug %}#repasse-{{ r.slot_id }}" class="w-28 sm:w-32 flex-none aspect-[2/3] overflow-hidden ui-well !rounded-none" aria-label="Ver {{ item.name }} na CEG">
+        {% if foto %}<img src="{{ foto|thumb }}" data-full="{{ foto }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">
+        {% else %}<span class="w-full h-full grid place-items-center ui-disp text-3xl ui-muted">{{ item.member_name|default:item.name|slice:":1"|upper }}</span>{% endif %}
+    </a>
+    <div class="p-4 flex flex-col gap-2 min-w-0 flex-1">
+        <div class="min-w-0 space-y-0.5">
+            <p class="ui-label m-0 truncate">{{ ceg.era.group.name }} · <a href="{% url 'gom_public' r.gom.slug %}" class="hover:underline">{{ r.gom.name }}</a></p>
+            <p class="font-bold m-0 leading-snug line-clamp-2">{{ item.member_name|default:item.name }}{% if item.member_name %} <span class="ui-muted font-medium">· {{ item.name }}</span>{% endif %}</p>
+            <a href="{% url 'ceg_detail' ceg.slug %}" class="block text-sm ui-muted truncate hover:underline">{{ ceg.title }}</a>
+        </div>
+        {% if r.recado %}<p class="ui-well p-2 text-[13px] m-0 line-clamp-2">“{{ r.recado }}”</p>{% endif %}
+        <p class="text-sm m-0">{% if r.a_pagar %}Falta pagar <b class="ui-mono">R$ {{ r.a_pagar }}</b>{% else %}<span class="ui-status ui-ok">Já pago</span> <span class="ui-muted">· combine o valor</span>{% endif %}</p>
+        <div class="mt-auto">
+            {% if logged_participant and logged_participant.pk == r.de_id %}
+                <p class="ui-label m-0">Esta vaga é sua.</p>
+            {% else %}
+                <button type="button" x-show="!confirmando" class="ui-btn ui-btn-primary ui-btn-sm w-full" @click="confirmando = true">
+                    <i data-lucide="hand" class="w-4 h-4" stroke-width="1.75"></i>Quero esta vaga
+                </button>
+                <div x-show="confirmando" x-cloak class="space-y-2">
+                    <p class="text-[13px] m-0">{% if r.a_pagar %}Os R$ {{ r.a_pagar }} passam para você{% else %}A vaga passa para você{% endif %} quando o GOM aprovar.</p>
+                    <div class="flex gap-2">
+                        <button type="button" class="ui-btn ui-btn-primary ui-btn-sm flex-1" :disabled="enviando" @click="pedir({{ r.pk }}, $el)">Confirmar</button>
+                        <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="confirmando = false">Voltar</button>
+                    </div>
+                    <p class="ui-danger text-[13px] m-0" x-show="erro" x-text="erro"></p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</article>
+{% endwith %}

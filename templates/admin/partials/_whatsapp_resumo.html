@@ -1,0 +1,48 @@
+{% comment %}
+Resumo do bot para o administrador da plataforma (apps/auth_otp/status.py): desde quando e por que caiu,
+e quantos códigos de login foram pedidos e usados. Telefones aparecem só com os 4 últimos dígitos.
+{% endcomment %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+    <section class="ui-card p-5 space-y-3" aria-labelledby="wa-situacao">
+        <h2 id="wa-situacao" class="ui-disp text-xl flex items-center gap-2">
+            <i data-lucide="activity" class="w-5 h-5" stroke-width="1.75"></i>Situação
+        </h2>
+        {% if not bot %}
+            <p class="m-0 ui-muted text-sm">O provedor configurado é <b>{{ provider_name }}</b>: as mensagens não passam pela Evolution API.</p>
+        {% elif bot.conectado %}
+            <p class="ui-status ui-ok m-0">Conectado: enviando códigos e avisos</p>
+        {% else %}
+            <p class="ui-status ui-danger m-0">Desconectado{% if bot.desde %} desde {{ bot.desde|date:"d/m/Y \à\s H:i" }} ({{ bot.desde|timesince }}){% endif %}</p>
+            {% if bot.motivo %}<p class="m-0 text-sm">{{ bot.motivo }}</p>{% endif %}
+            <p class="m-0 text-sm ui-muted">Enquanto estiver assim, ninguém recebe código de login nem aviso pelo WhatsApp. Escaneie o QR abaixo com o celular do bot (Aparelhos conectados → Conectar um aparelho).</p>
+        {% endif %}
+    </section>
+
+    <section class="ui-card p-5 space-y-3" aria-labelledby="wa-codigos">
+        <h2 id="wa-codigos" class="ui-disp text-xl flex items-center gap-2">
+            <i data-lucide="key-round" class="w-5 h-5" stroke-width="1.75"></i>Códigos de login
+        </h2>
+        <div class="grid grid-cols-2 gap-2">
+            {% for c in codigos %}
+                <div class="ui-fact">
+                    <span class="ui-label">Últimos {{ c.rotulo }}</span>
+                    <span class="ui-mono font-bold text-lg">{{ c.usados }} / {{ c.pedidos }}</span>
+                    <span class="text-[12px] ui-muted">usados / pedidos</span>
+                </div>
+            {% endfor %}
+        </div>
+        {% if ultimos_codigos %}
+            <ul class="m-0 p-0 list-none divide-y" style="border-color: var(--ui-line)">
+                {% for o in ultimos_codigos %}
+                    <li class="flex items-center justify-between gap-3 py-1.5 text-sm">
+                        <span class="ui-mono">{{ o.fone }}</span>
+                        <span class="ui-muted">{{ o.quando|date:"d/m H:i" }}</span>
+                        {% if o.usado %}<span class="ui-status ui-ok">entrou</span>{% else %}<span class="ui-status ui-warn">não usado</span>{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="m-0 text-sm ui-muted">Nenhum código pedido ainda.</p>
+        {% endif %}
+    </section>
+</div>

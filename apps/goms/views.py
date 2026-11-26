@@ -248,7 +248,9 @@ def gom_public_page(request, slug):
     from .rules import rules_context
 
     gom = get_object_or_404(Gom, slug=slug, is_active=True)
-    loja = contexto_loja(gom, request.GET)
+    from apps.participants.seguindo import preferencias
+    from apps.participants.session_auth import get_session_participant
+    loja = contexto_loja(gom, request.GET, preferencias(get_session_participant(request)))
     parcial = request.GET.get('parcial')
     if parcial:
         # Troca de filtro sem recarregar a página (corpo da loja) e "Carregar mais" (só os novos cards).

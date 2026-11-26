@@ -8,6 +8,7 @@
     <div class="flex items-center justify-between gap-3">
         <h3 class="ui-disp text-xl m-0 flex items-baseline gap-3">
             <span>{{ group.name }}</span>
+            {% if group.seguindo %}<span class="ui-label inline-flex items-center gap-1" title="Você segue"><i data-lucide="heart" class="w-3.5 h-3.5" stroke-width="1.75"></i>seguindo</span>{% endif %}
             <span class="ui-label" x-text="getGroupVisibleCount('{{ group.id }}') + ' CEG' + (getGroupVisibleCount('{{ group.id }}') === 1 ? '' : 's')">{{ group.cegs_count }} CEG{{ group.cegs_count|pluralize }}</span>
         </h3>
         <div class="flex items-center gap-1">

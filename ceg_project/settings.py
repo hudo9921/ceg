@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     'apps.goms',
     'apps.pagamentos',
     'apps.conversas',
+    'apps.repasses',
 ]
 
 MIDDLEWARE = [

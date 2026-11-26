@@ -28,7 +28,7 @@ from apps.participants.models import Participant, ParticipantNotification
 # Rotas abertas a qualquer visitante (podem responder 200 para anônimos).
 PUBLIC_ROUTES = {
     'health_check', 'home', 'ceg_detail', 'ceg_polling_summary_api', 'caixa_detail',
-    'vitrine_list', 'caixinhas_abertas', 'login_otp', 'logout_participant', 'privacy_policy',
+    'vitrine_list', 'caixinhas_abertas', 'repasses_disponiveis', 'login_otp', 'logout_participant', 'privacy_policy',
     'backoffice_login', 'gom_invite_accept', 'gom_public', 'gom_directory',
 }
 # Rotas do joiner: anônimo precisa ser mandado para o login OTP; joiner logado pode usar.
@@ -39,6 +39,8 @@ PARTICIPANT_ROUTES = {
     'pix_gerar', 'pix_ver', 'pix_paguei', 'pix_cancelar', 'endereco_salvar', 'endereco_excluir', 'endereco_cep',
     'joiner_mensagens', 'joiner_mensagem_nova', 'joiner_mensagem_enviar', 'joiner_mensagens_novas',
     'vitrine_reservar', 'joiner_reserva_cancelar', 'vitrine_comprar',
+    'repasse_criar', 'repasse_responder', 'repasse_cancelar', 'repasse_pedir',
+    'seguindo', 'seguindo_buscar', 'seguindo_alternar',
 }
 LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
 LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')

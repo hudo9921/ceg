@@ -9,7 +9,9 @@
             {% if participant.social_handle %}<span>{{ participant.social_handle }}</span>{% endif %}
         </p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="{% url 'seguindo' %}" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="heart" class="w-4 h-4" stroke-width="1.75"></i>Seguindo</a>
+        <a href="{% url 'repasses_disponiveis' %}" class="ui-btn ui-btn-ghost ui-btn-sm lg:hidden"><i data-lucide="arrow-left-right" class="w-4 h-4" stroke-width="1.75"></i>Repasses</a>
         <a href="{% url 'joiner_mensagens' %}" class="ui-btn ui-btn-ghost ui-btn-sm">
             <i data-lucide="message-square" class="w-4 h-4" stroke-width="1.75"></i>Mensagens{% if joiner_unread_mensagens %}
             <span class="min-w-[20px] h-5 px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold inline-flex items-center justify-center" aria-label="{{ joiner_unread_mensagens }} com resposta nova">{{ joiner_unread_mensagens }}</span>{% endif %}</a>

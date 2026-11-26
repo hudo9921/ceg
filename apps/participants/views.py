@@ -10,7 +10,7 @@ from django.conf import settings
 from .models import Participant, Claim, ParticipantNotification, clean_phone_number
 from .charges import attach_pix_state, build_charges
 from .models import UF_CHOICES
-from .items_panel import build_items, stage_options
+from .items_panel import build_items, repasses_por_vaga, repasses_recebidos, stage_options
 from .gom_panel import gom_pix_defaults, goms_summary, mercari_pix_by_gom, shipping_configs_by_gom
 from .services import BulkParticipantService
 from apps.auth_otp.models import WhatsAppOTP
@@ -1066,7 +1066,9 @@ class MyClaimsView(View):
                 list(cegs_dict.values()), mercari_items_pending, pacotes_nacionais,
                 vitrine=participant.reservas_vitrine.filter(status='RESERVADA').select_related('item__gom')), participant),
             # Seção Meus itens (P3b): claims + avulsos numa lista, com etapa para agrupar e filtrar.
-            'items_panel': build_items(claims_list, itens_individuais_list),
+            'items_panel': build_items(claims_list, itens_individuais_list, repasses_por_vaga(participant)),
+            # Repasse: pedidos para este joiner aceitar (apps/repasses).
+            'repasses_recebidos': repasses_recebidos(participant),
             'item_stages': stage_options(),
             'pacote_steps': PacoteNacional.JOINER_STEPS,
             'prazos_urgentes_count': prazos_urgentes_count,

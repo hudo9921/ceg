@@ -1,14 +1,19 @@
 {% comment %}
 Passo 1 da Nova CEG: capas já usadas nesta era (qualquer GOM). Tocar usa o mesmo link como capa, sem novo upload.
 Lê `selectedEraId` e escreve `cegBannerUrl`/`cegBannerPreview`/`cegBannerBase64` do creationsHubApp.
+Filtra pelo "Título da CEG" (campo name=title do mesmo formulário) enquanto a pessoa digita: $store.fotosEra.capasPara().
 {% endcomment %}
-<div x-effect="$store.fotosEra.carregar(selectedEraId)" x-show="$store.fotosEra.capas.length" x-cloak class="space-y-2">
+<div x-data="{ titulo: '' }" x-init="titulo = $el.closest('form')?.querySelector('[name=title]')?.value || ''"
+     @input.window="if ($event.target.name === 'title' && $el.closest('form')?.contains($event.target)) titulo = $event.target.value"
+     x-effect="$store.fotosEra.carregar(selectedEraId)" x-show="$store.fotosEra.capas.length" x-cloak class="space-y-2">
     <div>
         <p class="ui-label">Capas já usadas nesta era</p>
-        <p class="ui-muted text-[13px]">De CEGs publicadas (de qualquer GOM). Toque para usar a mesma imagem.</p>
+        <p class="ui-muted text-[13px]" x-text="$store.fotosEra.capasPara(titulo).filtrado
+            ? 'Parecidas com o título. Apague o título para ver todas.'
+            : 'De CEGs publicadas (de qualquer GOM). Toque para usar a mesma imagem.'"></p>
     </div>
     <div class="flex gap-2 overflow-x-auto pb-1" role="list">
-        <template x-for="c in $store.fotosEra.capas" :key="c.url">
+        <template x-for="c in $store.fotosEra.capasPara(titulo).lista" :key="c.url">
             <button type="button" role="listitem"
                     @click="cegBannerUrl = c.url; cegBannerPreview = c.url; cegBannerBase64 = ''"
                     :aria-label="'Usar a capa de ' + c.origem + (c.gom ? ' (' + c.gom + ')' : '')"

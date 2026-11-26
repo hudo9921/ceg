@@ -1,0 +1,124 @@
+{% comment %}
+Modal de edição do catálogo da plataforma (grupo ou era), aberto pelos botões com data-dados (dados_grupo/dados_era
+em apps/groups/plataforma_views.py, via |json_attr): @click="editar($el)". Salva com POST comum e volta para a página.
+{% endcomment %}
+<div x-show="aberto" x-cloak style="display:none" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6"
+     @keydown.escape.window="aberto = false" role="dialog" aria-modal="true" aria-labelledby="cat-modal-titulo">
+    <div class="absolute inset-0 bg-black/40" @click="aberto = false"></div>
+    <form method="post" :action="d.url" class="ui-sheet sm:!rounded-[var(--ui-r-card)] relative w-full sm:max-w-xl max-h-[92vh] overflow-y-auto space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="next" :value="location.pathname + location.search">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <p class="ui-label m-0" x-text="d.tipo === 'era' ? 'Editar era' : 'Editar grupo / solista'"></p>
+                <h2 id="cat-modal-titulo" class="ui-disp text-2xl m-0" x-text="d.name"></h2>
+            </div>
+            <button type="button" class="ui-icon-btn" @click="aberto = false" aria-label="Fechar"><i data-lucide="x" class="w-5 h-5" stroke-width="1.75"></i></button>
+        </div>
+
+        <div class="flex gap-4 items-start">
+            <span class="w-24 flex-none ui-well overflow-hidden flex items-center justify-center" :class="d.tipo === 'era' ? 'aspect-square' : 'h-24 rounded-full'">
+                <img x-show="d.image_url && !erroImg" :src="d.image_url" alt="" class="w-full h-full object-cover" @error="erroImg = true" @load="erroImg = false">
+                <i x-show="!d.image_url || erroImg" data-lucide="image-off" class="w-6 h-6 ui-muted" stroke-width="1.75"></i>
+            </span>
+            <label class="block space-y-1.5 flex-1 min-w-0">
+                <span class="ui-label" x-text="d.tipo === 'era' ? 'URL da capa' : 'URL da foto'"></span>
+                <input type="url" name="image_url" x-model="d.image_url" placeholder="https://…" class="ui-input w-full">
+                <span x-show="!erroImg" class="block text-[12px] ui-muted">Cole o link direto de uma imagem (.jpg, .png, .webp).</span>
+                <span x-show="erroImg" class="block text-[12px] ui-danger">Essa imagem não carregou. Confira se o link abre direto a imagem.</span>
+            </label>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-3">
+            <label class="block space-y-1.5 sm:col-span-2"><span class="ui-label">Nome</span>
+                <input type="text" name="name" x-model="d.name" required class="ui-input w-full"></label>
+
+            <template x-if="d.tipo === 'grupo'">
+                <div class="contents">
+                    <label class="block space-y-1.5"><span class="ui-label">Nome em Hangul</span>
+                        <input type="text" name="name_native" x-model="d.name_native" class="ui-input w-full"></label>
+                    <label class="block space-y-1.5"><span class="ui-label">Agência</span>
+                        <input type="text" name="agency" x-model="d.agency" class="ui-input w-full"></label>
+                    <label class="block space-y-1.5 sm:col-span-2"><span class="ui-label">Outros nomes (separados por vírgula)</span>
+                        <input type="text" name="aliases" x-model="d.aliases" class="ui-input w-full"></label>
+                    <label class="block space-y-1.5"><span class="ui-label">Tipo</span>
+                        <select name="kind" x-model="d.kind" class="ui-input w-full">
+                            {% for v, rotulo in kinds_grupo %}<option value="{{ v }}">{{ rotulo }}</option>{% endfor %}
+                        </select></label>
+                    <label class="block space-y-1.5"><span class="ui-label">Situação</span>
+                        <select name="status" x-model="d.status" class="ui-input w-full">
+                            {% for v, rotulo in status_grupo %}<option value="{{ v }}">{{ rotulo }}</option>{% endfor %}
+                        </select></label>
+                    <label class="block space-y-1.5"><span class="ui-label">Estreia</span>
+                        <input type="date" name="debut_date" x-model="d.debut_date" class="ui-input w-full"></label>
+                    <label class="block space-y-1.5"><span class="ui-label">Posição no ranking</span>
+                        <input type="number" min="1" name="popularity_rank" x-model="d.popularity_rank" class="ui-input w-full"></label>
+                </div>
+            </template>
+
+            <template x-if="d.tipo === 'era'">
+                <div class="contents">
+                    <label class="block space-y-1.5"><span class="ui-label">Tipo de lançamento</span>
+                        <select name="kind" x-model="d.kind" class="ui-input w-full">
+                            {% for v, rotulo in kinds_era %}<option value="{{ v }}">{{ rotulo }}</option>{% endfor %}
+                        </select></label>
+                    <label class="block space-y-1.5"><span class="ui-label">Lançamento</span>
+                        <input type="date" name="release_date" x-model="d.release_date" class="ui-input w-full"></label>
+                    <label class="block space-y-1.5 sm:col-span-2"><span class="ui-label">Outros nomes (singles deste comeback, separados por vírgula)</span>
+                        <input type="text" name="aliases" x-model="d.aliases" placeholder="Ex.: SWIM" class="ui-input w-full"></label>
+                </div>
+            </template>
+        </div>
+
+        <template x-if="d.tipo === 'era' && d.irmas && d.irmas.length">
+            <div class="ui-well p-4 space-y-3">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="merge" class="w-4 h-4 mt-0.5 flex-none" stroke-width="1.75"></i>
+                    <div class="min-w-0">
+                        <p class="font-semibold m-0">Juntar com outra era</p>
+                        <p class="text-[13px] ui-muted m-0" x-show="d.parte_de">A importação acha que este single é parte de outro comeback.</p>
+                        <p class="text-[13px] ui-muted m-0" x-show="!d.parte_de">Para singles que são parte de um comeback (ex.: faixa-título).</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <select name="destino" form="cat-juntar" x-model="destino" class="ui-input flex-[1_1_200px]" aria-label="Era principal">
+                        <option value="">Escolha a era principal…</option>
+                        <template x-for="x in d.irmas" :key="x.id"><option :value="x.id" x-text="x.nome" :selected="String(x.id) === String(destino)"></option></template>
+                    </select>
+                    <button type="submit" form="cat-juntar" name="acao" value="juntar" class="ui-btn ui-btn-sm" :disabled="!destino"
+                            @click="if (!confirm('Juntar ' + d.name + ' na era escolhida? ' + (d.n_cegs ? d.n_cegs + ' CEG(s) mudam de era. ' : '') + 'O nome vira apelido dela.')) $event.preventDefault()">Juntar</button>
+                    <button type="submit" form="cat-juntar" name="acao" value="manter" x-show="d.parte_de" class="ui-btn ui-btn-ghost ui-btn-sm">Manter separada</button>
+                </div>
+                <p class="text-[12px] ui-muted m-0">As CEGs e os itens da vitrine vão para a era escolhida, e esta era é apagada.</p>
+            </div>
+        </template>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <a :href="d.admin" target="_blank" rel="noopener" class="ui-label hover:underline flex items-center gap-1">
+                <i data-lucide="external-link" class="w-3.5 h-3.5" stroke-width="1.75"></i>Mais campos no Django Admin
+            </a>
+            <div class="flex gap-2">
+                <button type="button" class="ui-btn ui-btn-ghost" @click="aberto = false">Cancelar</button>
+                <button type="submit" class="ui-btn ui-btn-primary"><i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>Salvar</button>
+            </div>
+        </div>
+    </form>
+    <form id="cat-juntar" method="post" :action="d.juntar_url" class="hidden">{% csrf_token %}<input type="hidden" name="next" :value="location.pathname + location.search"></form>
+</div>
+<script>
+function catalogoEditar() {
+    return {
+        aberto: false,
+        erroImg: false,
+        destino: '',
+        d: { tipo: 'grupo', url: '', admin: '', name: '', image_url: '' },
+        editar(botao) {
+            this.erroImg = false;
+            this.d = JSON.parse(botao.dataset.dados);
+            this.destino = this.d.parte_de || '';
+            this.aberto = true;
+            this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+        },
+    };
+}
+</script>

@@ -2,8 +2,8 @@
 Photocard de uma vaga (DESIGN_SYSTEM §7.7). Tocar no card (ou no botão) põe/tira da lista; vaga tomada fica cinza
 com carimbo. Equipe: caixa de seleção em lote, editar, histórico e marcação de pagamentos (_detail_slot_payment_status).
 {% endcomment %}
-<div class="ui-pick" data-item-def="{{ slot.item_definition_id }}" data-slot-status="{{ slot.status }}"
-     x-show="!onlyAvailableSlots || status === 'AVAILABLE'"
+<div class="ui-pick{% if slot.id in repasse_slots %} is-repasse{% endif %}" data-item-def="{{ slot.item_definition_id }}" data-slot-status="{{ slot.status }}"
+     x-show="!onlyAvailableSlots || status === 'AVAILABLE'{% if slot.id in repasse_slots %} || true{% endif %}"
      x-data="{
              slotId: {{ slot.id }},
              status: '{{ slot.status }}',
@@ -102,8 +102,12 @@ com carimbo. Equipe: caixa de seleção em lote, editar, histórico e marcação
         </label>
         {% endif %}
     </div>
+    {% if slot.id in repasse_slots %}
+    <span class="ui-stamp is-repasse"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 inline -mt-0.5" stroke-width="2"></i> Repasse</span>
+    {% else %}
     <span class="ui-stamp" x-show="status !== 'AVAILABLE'" {% if slot.status == 'AVAILABLE' %}x-cloak{% endif %}
           x-text="status === 'PAID' ? 'Pago' : 'Reservado'">{% if slot.status == 'PAID' %}Pago{% else %}Reservado{% endif %}</span>
+    {% endif %}
 
     <div class="px-1 space-y-0.5">
         <div class="flex items-baseline justify-between gap-2">

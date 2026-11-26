@@ -1,0 +1,25 @@
+{% comment %}
+Pedidos de repasse para este joiner aceitar (`repasses_recebidos`, apps/participants/items_panel.py). Aceitar manda
+para o GOM aprovar; o que falta pagar passa a ser dele(a). Script repassesRecebidos() em _repasse_sheet.html.
+{% endcomment %}
+{% if repasses_recebidos %}
+<section class="space-y-3" aria-labelledby="rep-recebidos" x-data="repassesRecebidos()">
+    <h2 id="rep-recebidos" class="ui-disp text-2xl m-0">Querem repassar para você</h2>
+    {% for r in repasses_recebidos %}
+        <article class="ui-card p-5 space-y-3">
+            <p class="m-0"><b>{{ r.de }}</b> quer repassar <b>{{ r.item }}</b> <span class="ui-muted">({{ r.gom }})</span></p>
+            {% if r.recado %}<p class="ui-well p-3 text-sm m-0">“{{ r.recado }}”</p>{% endif %}
+            <p class="text-sm m-0">
+                {% if r.pendencias %}Passa para você: {% for p in r.pendencias %}{{ p.nome }} R$ {{ p.valor }}{% if not forloop.last %} · {% endif %}{% endfor %} (<b>R$ {{ r.total }}</b>).
+                {% else %}<span class="ui-status ui-ok">Já pago</span> <span class="ui-muted">· combine o valor com {{ r.de }}.</span>{% endif %}
+            </p>
+            <p class="text-[13px] ui-muted m-0">Aceitando, o GOM ainda precisa aprovar. Só depois o item passa a ser seu.</p>
+            <div class="flex gap-2">
+                <button type="button" class="ui-btn ui-btn-primary" :disabled="enviando" @click="responder({{ r.id }}, true)"><i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>Aceitar</button>
+                <button type="button" class="ui-btn ui-btn-ghost" :disabled="enviando" @click="responder({{ r.id }}, false)">Recusar</button>
+            </div>
+        </article>
+    {% endfor %}
+    <p class="ui-danger text-sm m-0" x-show="erro" x-cloak x-text="erro"></p>
+</section>
+{% endif %}

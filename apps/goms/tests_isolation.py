@@ -20,7 +20,7 @@ from .models import Gom, GomMembership
 SECRETS = ('CEG Matriz', 'Caixa Matriz', 'PC Mercari', 'PAC-MATRIZ', 'Joana SegredoA', '900000009')
 # Rotas da plataforma/joiner ou que não carregam dados de GOM.
 NOT_GOM_DATA = PUBLIC_ROUTES | PARTICIPANT_ROUTES | {
-    'gom_team', 'gom_switch', 'platform_goms', 'backoffice_home', 'staff_2fa_manage',
+    'gom_team', 'gom_switch', 'platform_goms', 'platform_catalogo', 'platform_catalogo_grupo', 'platform_catalogo_grupo_salvar', 'platform_catalogo_era_salvar', 'platform_catalogo_era_juntar', 'backoffice_home', 'staff_2fa_manage',
     'staff_2fa_setup', 'staff_2fa_verify', 'admin_whatsapp_manager', 'admin_whatsapp_status',
 }
 ALLOWED_DENIALS = (400, 401, 403, 404, 405)

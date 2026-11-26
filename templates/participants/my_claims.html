@@ -1,12 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Minha conta — {{ participant.display_name }} | ValCegs{% endblock %}
+{% block title %}Minha conta — {{ participant.display_name }} | CegManager{% endblock %}
 
 {% block content %}
 <div class="space-y-8 max-w-[1120px] mx-auto" x-data="myClaimsApp({{ charges.count|default:0 }})">
 
     {% include 'participants/partials/_header_notices.html' %}
     {% include 'participants/partials/_tabs_nav.html' %}
+
+    <!-- REPASSES: pedidos para aceitar (apps/repasses) -->
+    {% include 'participants/partials/_repasses_recebidos.html' %}
 
     <!-- PAGAR (P3): cobranças por GOM com o Pix de cada uma -->
     {% include 'participants/partials/_pagar_section.html' %}
@@ -20,6 +23,7 @@
     <!-- MODAIS DO PARTICIPANTE -->
     {% include 'participants/partials/_modais.html' %}
     {% include 'participants/partials/_endereco_sheet.html' %}
+    {% include 'participants/partials/_repasse_sheet.html' %}
 
 </div>
 

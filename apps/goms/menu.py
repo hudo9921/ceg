@@ -17,6 +17,7 @@ GOM_MENU = [
      ('caixas_dashboard', 'caixa_create', 'caixa_update', 'caixa_transfer_unclaimed_vitrine')),
     ('envios', 'Envios', 'truck', 'envios_nacionais', ('envios.pacotes', 'gom.envio'), ('envios_nacionais',)),
     ('joiners', 'Joiners', 'users', 'consulta_joiner', ('pedidos.ver',), ('consulta_joiner',)),
+    ('repasses', 'Repasses', 'arrow-left-right', 'gom_repasses', ('pedidos.editar',), ('gom_repasses',)),
     ('relatorios', 'Relatórios', 'chart-column', 'sales_report', ('analytics.ver',), ('sales_report', 'sales_report_alias', 'analytics_dashboard', 'lucro_cegs')),
     ('avisos', 'Avisos', 'bell', 'gom_notifications', (ANY,), ('gom_notifications',)),
     ('auditoria', 'Auditoria', 'shield', 'auditoria_logs', ('analytics.ver',), ('auditoria_logs', 'auditoria_logs_alias')),
@@ -26,6 +27,7 @@ GOM_MENU = [
 
 PLATFORM_MENU = [
     ('goms', 'GOMs da plataforma', 'building-2', 'platform_goms', ('platform_goms',)),
+    ('catalogo', 'Catálogo', 'library', 'platform_catalogo', ('platform_catalogo', 'platform_catalogo_grupo')),
     ('whatsapp', 'Bot do WhatsApp', 'message-circle', 'admin_whatsapp', ('admin_whatsapp',)),
 ]
 
@@ -38,13 +40,26 @@ def build_gom_menu(request, granted, unread=0):
     for key, label, icon, url_name, perms, active_names in GOM_MENU:
         if not granted or not any(p == ANY or p in granted for p in perms):
             continue
+        badge = unread if key == 'avisos' else (_repasses_pendentes(request) if key == 'repasses' else 0)
         items.append({'key': key, 'label': label, 'icon': icon, 'url': reverse(url_name),
-                      'active': current in active_names, 'badge': unread if key == 'avisos' else 0})
+                      'active': current in active_names, 'badge': badge})
     return items
 
 
+def _repasses_pendentes(request):
+    gom = getattr(request, 'active_gom', None)
+    if gom is None:
+        return 0
+    from apps.repasses.models import Repasse
+    return Repasse.objects.for_gom(gom).filter(status=Repasse.Status.AGUARDANDO_GOM).count()
+
+
 def build_platform_menu(request):
+    from apps.auth_otp.status import estado_do_bot
+
     match = getattr(request, 'resolver_match', None)
     current = match.url_name if match else ''
-    return [{'key': k, 'label': label, 'icon': icon, 'url': reverse(url_name), 'active': current in active}
+    bot = estado_do_bot()  # cache de 60 s; None fora da Evolution
+    return [{'key': k, 'label': label, 'icon': icon, 'url': reverse(url_name), 'active': current in active,
+             'alerta': k == 'whatsapp' and bot is not None and not bot['conectado']}
             for k, label, icon, url_name, active in PLATFORM_MENU]

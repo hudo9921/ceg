@@ -36,7 +36,7 @@ def _avulso_photo(item):
     return item.foto_url or ''
 
 
-def _claim_entry(claim):
+def _claim_entry(claim, repasse=None):
     slot = claim.slot
     ceg, definition = slot.set.ceg, slot.item_definition
     life = claim.lifecycle
@@ -52,6 +52,12 @@ def _claim_entry(claim):
         'caixa_id': caixa.id if caixa else None, 'caixa': caixa.nome if caixa else 'Sem caixa ainda',
         'price': f'{claim.total_price:.2f}', 'stage': _stage(life), 'label': life.get('label', ''),
         'detail': life.get('detail', ''),
+        # Repasse: dá para repassar enquanto não está num pacote nacional; `repasse` = o que está em andamento.
+        'slot_id': slot.id, 'repassavel': not slot.pacote_nacional_id and claim.status != 'CANCELLED',
+        'repasse': {'id': repasse.pk, 'status': repasse.status, 'label': repasse.get_status_display(),
+                    'para_nome': repasse.para.display_name if repasse.para else '',
+                    'para_numero': f'•••• {repasse.para_whatsapp[-4:]}' if repasse.para_whatsapp else ''}
+        if repasse else None,
     }
 
 
@@ -70,9 +76,28 @@ def _avulso_entry(item):
     }
 
 
-def build_items(claims, itens_individuais):
+def build_items(claims, itens_individuais, repasses=None):
     """Lista de itens para o painel (ordem: mais recentes primeiro, como chegam do view)."""
-    return [_claim_entry(c) for c in claims] + [_avulso_entry(i) for i in itens_individuais]
+    repasses = repasses or {}
+    return [_claim_entry(c, repasses.get(c.slot_id)) for c in claims] + [_avulso_entry(i) for i in itens_individuais]
+
+
+def repasses_por_vaga(participant):
+    """Repasses em andamento feitos por este joiner, por vaga."""
+    from apps.repasses.models import Repasse
+    return {r.slot_id: r for r in Repasse.objects.filter(de=participant, status__in=Repasse.ATIVOS).select_related('para')}
+
+
+def repasses_recebidos(participant):
+    """Pedidos de repasse esperando este joiner aceitar, já no formato do template."""
+    from apps.repasses.services import descricao, pendencias, recebidos
+    lista = []
+    for r in recebidos(participant):
+        faltam = pendencias(r.slot)
+        lista.append({'id': r.pk, 'de': r.de.display_name, 'item': descricao(r.slot), 'gom': r.slot.set.ceg.gom.name,
+                      'recado': r.recado, 'pendencias': [{'nome': n, 'valor': f'{v:.2f}'} for n, v in faltam],
+                      'total': f'{sum(v for _, v in faltam):.2f}'})
+    return lista
 
 
 def stage_options():

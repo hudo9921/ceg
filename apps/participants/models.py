@@ -582,3 +582,28 @@ class Endereco(models.Model):
         comp = f' — {self.complemento}' if self.complemento else ''
         return (f'{self.nome_destinatario}\n{self.logradouro}, {self.numero}{comp}\n'
                 f'{self.bairro} — {self.cidade}/{self.uf}\nCEP {self.cep_formatado}')
+
+
+class Seguindo(models.Model):
+    """
+    Grupo ou integrante que o joiner segue (docs/BUSINESS_RULES.md, "Seguir"). `member` vazio = o grupo inteiro.
+    Personaliza a home e a loja dos GOMs: quem ele segue aparece primeiro (apps/participants/seguindo.py).
+    Sem notificação de CEG nova (seria spam).
+    """
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name='seguindo')
+    group = models.ForeignKey('groups.KpopGroup', on_delete=models.CASCADE, related_name='seguidores')
+    member = models.ForeignKey('groups.GroupMember', on_delete=models.CASCADE, null=True, blank=True, related_name='seguidores')
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Seguindo'
+        verbose_name_plural = 'Seguindo'
+        constraints = [
+            models.UniqueConstraint(fields=['participant', 'group'], condition=models.Q(member__isnull=True),
+                                    name='seguindo_grupo_unico'),
+            models.UniqueConstraint(fields=['participant', 'member'], condition=models.Q(member__isnull=False),
+                                    name='seguindo_membro_unico'),
+        ]
+
+    def __str__(self):
+        return f'{self.participant} segue {self.member or self.group}'

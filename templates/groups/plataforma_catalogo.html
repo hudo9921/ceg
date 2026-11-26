@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogo — Plataforma{% endblock %}
+
+{% block content %}
+{% comment %}
+Catálogo da plataforma (só superusuário, apps/groups/plataforma_views.py): números, busca e filtros de grupos/solistas.
+Cada linha abre a página do grupo; o lápis abre o modal de edição (_plataforma_modal_editar.html).
+{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6" x-data="catalogoEditar()">
+    <header class="space-y-2">
+        <p class="ui-label">Plataforma</p>
+        <h1 class="ui-disp text-4xl">Catálogo</h1>
+        <p class="ui-muted text-[15px]">Grupos, solistas, integrantes e eras que os GOMs usam para criar CEGs.</p>
+    </header>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {% for rotulo, n in numeros %}
+            <div class="ui-fact">
+                <span class="ui-label">{{ rotulo }}</span>
+                <span class="ui-mono font-bold text-xl">{{ n }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <form method="get" class="ui-card p-4 flex flex-wrap gap-3 items-end" aria-label="Filtrar catálogo">
+        <label class="block space-y-1.5 flex-[1_1_260px]">
+            <span class="ui-label">Buscar</span>
+            <input type="search" name="q" value="{{ q }}" placeholder="Nome, Hangul, apelido ou agência" class="ui-input w-full">
+        </label>
+        <label class="block space-y-1.5 flex-[1_1_140px]">
+            <span class="ui-label">Tipo</span>
+            <select name="tipo" class="ui-input w-full" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                {% for v, rotulo in tipos %}<option value="{{ v }}"{% if tipo == v %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="block space-y-1.5 flex-[1_1_200px]">
+            <span class="ui-label">Revisar</span>
+            <select name="problema" class="ui-input w-full" onchange="this.form.submit()">
+                <option value="">Tudo</option>
+                {% for v, rotulo in problemas %}<option value="{{ v }}"{% if problema == v %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="block space-y-1.5 flex-[1_1_180px]">
+            <span class="ui-label">Ordem</span>
+            <select name="ordem" class="ui-input w-full" onchange="this.form.submit()">
+                {% for v, rotulo in ordens %}<option value="{{ v }}"{% if ordem == v %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+            </select>
+        </label>
+        <div class="flex gap-2">
+            <button type="submit" class="ui-btn ui-btn-primary"><i data-lucide="search" class="w-4 h-4" stroke-width="1.75"></i>Buscar</button>
+            {% if tem_filtro %}
+                <a href="{% url 'platform_catalogo' %}" class="ui-btn ui-btn-ghost" title="Limpar filtros"><i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i></a>
+            {% endif %}
+        </div>
+    </form>
+
+    <p class="ui-label m-0">{{ pagina.paginator.count }} resultado{{ pagina.paginator.count|pluralize }}</p>
+
+    <section class="ui-card overflow-hidden" aria-label="Grupos e solistas">
+        {% for g in pagina.object_list %}
+            {% include 'groups/partials/_plataforma_grupo_linha.html' %}
+        {% empty %}
+            <p class="p-8 m-0 text-center ui-muted">Nada encontrado com esses filtros.</p>
+        {% endfor %}
+    </section>
+
+    {% if pagina.has_other_pages %}
+        <nav class="flex items-center justify-center gap-3" aria-label="Páginas">
+            {% if pagina.has_previous %}
+                <a class="ui-btn ui-btn-ghost ui-btn-sm" href="?{% if filtros_qs %}{{ filtros_qs }}&{% endif %}pagina={{ pagina.previous_page_number }}"><i data-lucide="chevron-left" class="w-4 h-4" stroke-width="1.75"></i>Anterior</a>
+            {% endif %}
+            <span class="ui-label">{{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+            {% if pagina.has_next %}
+                <a class="ui-btn ui-btn-ghost ui-btn-sm" href="?{% if filtros_qs %}{{ filtros_qs }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima<i data-lucide="chevron-right" class="w-4 h-4" stroke-width="1.75"></i></a>
+            {% endif %}
+        </nav>
+    {% endif %}
+    {% include 'groups/partials/_plataforma_modal_editar.html' %}
+</div>
+{% endblock %}

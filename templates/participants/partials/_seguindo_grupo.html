@@ -1,0 +1,25 @@
+{% comment %}Card de grupo em /me/seguindo/ (dentro de x-for, variável `g`): coração = grupo todo; chips = integrantes.{% endcomment %}
+<article class="ui-card p-4 space-y-3">
+    <div class="flex items-center gap-3">
+        <span class="w-12 h-12 rounded-full overflow-hidden flex-none ui-well grid place-items-center">
+            <template x-if="g.thumb"><img :src="g.thumb" :data-full="g.image" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async"></template>
+            <template x-if="!g.thumb"><span class="font-bold" x-text="g.name.slice(0, 1)"></span></template>
+        </span>
+        <div class="min-w-0 flex-1">
+            <p class="font-bold truncate m-0"><span x-text="g.name"></span> <span class="ui-muted font-normal" x-text="g.name_native"></span></p>
+            <p class="ui-label m-0" x-text="g.seguindo ? 'Seguindo o grupo todo' : (g.members.some((m) => m.seguindo) ? 'Seguindo integrantes' : g.kind)"></p>
+        </div>
+        <button type="button" class="ui-btn ui-btn-sm" :class="g.seguindo ? 'ui-btn-primary' : 'ui-btn-ghost'" @click="alternar(g)"
+                :aria-pressed="g.seguindo.toString()" :aria-label="(g.seguindo ? 'Deixar de seguir ' : 'Seguir ') + g.name">
+            <i data-lucide="heart" class="w-4 h-4" stroke-width="1.75"></i>
+            <span x-text="g.seguindo ? 'Seguindo' : 'Seguir'"></span>
+        </button>
+    </div>
+    <div x-show="g.members.length" class="flex flex-wrap gap-2" role="group" :aria-label="'Integrantes de ' + g.name">
+        <template x-for="m in g.members" :key="m.id">
+            <button type="button" class="ui-chip" :class="m.seguindo && 'is-on'" :aria-pressed="m.seguindo.toString()" @click="alternar(g, m)">
+                <span x-show="m.seguindo" class="inline-flex"><i data-lucide="heart" class="w-3.5 h-3.5" stroke-width="1.75"></i></span><span x-text="m.name"></span>
+            </button>
+        </template>
+    </div>
+</article>

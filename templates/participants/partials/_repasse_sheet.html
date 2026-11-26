@@ -1,0 +1,111 @@
+{% comment %}
+Folha "Repassar item" (repasseSheet, apps/repasses): abre pelo evento `repassar` (botão no item de Meus itens).
+Para uma pessoa (WhatsApp; ela aceita e o GOM aprova) ou disponível para qualquer pessoa (/repasses/).
+Com repasse em andamento, mostra a situação e "Cancelar repasse".
+{% endcomment %}
+<div x-data="repasseSheet()" @repassar.window="abrir($event.detail)">
+<div x-show="open" x-cloak class="ui-scrim !z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="open = false" @keydown.escape.window="open = false">
+    <div class="ui-sheet sm:!rounded-ui-card w-full sm:max-w-lg max-h-[92vh] overflow-y-auto space-y-4" role="dialog" aria-modal="true" aria-labelledby="repasse-title">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="ui-label m-0">Repassar item</p>
+                <h2 id="repasse-title" class="ui-disp text-2xl m-0 truncate" x-text="it.name"></h2>
+                <p class="ui-muted text-sm m-0 truncate" x-text="it.ceg + ' · ' + it.gom"></p>
+            </div>
+            <button type="button" class="ui-icon-btn" @click="open = false" aria-label="Fechar"><i data-lucide="x" class="w-5 h-5" stroke-width="1.75"></i></button>
+        </div>
+
+        <template x-if="it.repasse">
+            <div class="space-y-3">
+                <div class="ui-well p-4 space-y-1.5">
+                    <span class="ui-status ui-warn" x-text="it.repasse.label"></span>
+                    <p class="text-sm m-0" x-text="situacao(it.repasse)"></p>
+                    <p class="text-[13px] ui-muted m-0">O item continua seu até o GOM aprovar.</p>
+                </div>
+                <button type="button" x-show="!confirmaCancelar" class="ui-btn w-full" @click="confirmaCancelar = true">Cancelar repasse</button>
+                <div x-show="confirmaCancelar" class="flex gap-2">
+                    <button type="button" class="ui-btn ui-btn-primary flex-1" :disabled="enviando" @click="cancelar()">Sim, cancelar repasse</button>
+                    <button type="button" class="ui-btn ui-btn-ghost" @click="confirmaCancelar = false">Voltar</button>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="!it.repasse">
+            <div class="space-y-4">
+                <div class="ui-toggle w-full" role="radiogroup" aria-label="Para quem">
+                    <button type="button" class="flex-1" role="radio" :aria-checked="(modo === 'pessoa').toString()" :class="modo === 'pessoa' && 'is-on'" @click="modo = 'pessoa'">Para uma pessoa</button>
+                    <button type="button" class="flex-1" role="radio" :aria-checked="(modo === 'publico').toString()" :class="modo === 'publico' && 'is-on'" @click="modo = 'publico'">Para qualquer pessoa</button>
+                </div>
+                <label class="block space-y-1.5" x-show="modo === 'pessoa'">
+                    <span class="ui-label">WhatsApp de quem vai receber</span>
+                    <input type="tel" x-model="whatsapp" inputmode="tel" autocomplete="off" placeholder="(11) 99999-8888" class="ui-input w-full">
+                    <span class="block text-[12px] ui-muted">A pessoa aceita em Meus itens (se ainda não tem conta, é só entrar com esse número).</span>
+                </label>
+                <p x-show="modo === 'publico'" class="text-sm ui-muted m-0">A vaga aparece em <a href="{% url 'repasses_disponiveis' %}" class="underline">Repasses</a> e na página da CEG. Quem quiser pede, e o GOM aprova.</p>
+                <label class="block space-y-1.5">
+                    <span class="ui-label">Recado (opcional)</span>
+                    <input type="text" x-model="recado" maxlength="280" placeholder="Ex.: já paguei o item, combinamos o valor no direct" class="ui-input w-full">
+                </label>
+                <p class="text-[13px] ui-muted m-0">O que ainda falta pagar (item, frete, taxa) passa para quem receber. O acerto de dinheiro entre vocês é com vocês. Nada muda até o GOM aprovar.</p>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" class="ui-btn ui-btn-ghost" @click="open = false">Cancelar</button>
+                    <button type="button" class="ui-btn ui-btn-primary" :disabled="enviando || (modo === 'pessoa' && whatsapp.replace(/\D/g, '').length < 10)" @click="enviar()">
+                        <i data-lucide="arrow-left-right" class="w-4 h-4" stroke-width="1.75"></i>Pedir repasse
+                    </button>
+                </div>
+            </div>
+        </template>
+        <p x-show="erro" x-cloak class="ui-danger text-sm m-0" x-text="erro"></p>
+    </div>
+</div>
+</div>
+<script>
+function repasseSheet() {
+    return {
+        open: false, enviando: false, erro: '', it: { name: '', ceg: '', gom: '' }, modo: 'pessoa', whatsapp: '', recado: '',
+        confirmaCancelar: false,
+        abrir(it) {
+            Object.assign(this, { it, open: true, erro: '', modo: 'pessoa', whatsapp: '', recado: '', confirmaCancelar: false });
+            this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+        },
+        async executar(url, body) {
+            this.enviando = true; this.erro = '';
+            try {
+                const data = await repassePost(url, body);
+                if (!data.success) { this.erro = data.message || 'Não deu certo.'; return; }
+                window.location.reload();  // a mensagem de sucesso aparece no topo (messages do Django)
+            } catch (e) { this.erro = 'Não deu certo. Tente de novo.'; } finally { this.enviando = false; }
+        },
+        situacao(r) {
+            const quem = r.para_nome || (r.para_numero ? 'o número ' + r.para_numero : 'a pessoa');
+            return {
+                DISPONIVEL: 'Está em Repasses, disponível para quem quiser. Quando alguém pedir, o GOM decide.',
+                AGUARDANDO_ACEITE: 'Esperando ' + quem + ' aceitar. Depois disso, o GOM decide.',
+                AGUARDANDO_GOM: quem + ' aceitou. Agora o GOM decide se aprova.',
+            }[r.status] || '';
+        },
+        enviar() { this.executar('{% url "repasse_criar" %}', { slot_id: this.it.slot_id, modo: this.modo, whatsapp: this.whatsapp, recado: this.recado }); },
+        cancelar() { this.executar('/me/repasses/' + this.it.repasse.id + '/cancelar/'); },
+    };
+}
+
+async function repassePost(url, body) {
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    const res = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    return res.json();
+}
+
+function repassesRecebidos() {
+    return {
+        enviando: false, erro: '',
+        async responder(id, aceitar) {
+            this.enviando = true; this.erro = '';
+            try {
+                const data = await repassePost('/me/repasses/' + id + '/responder/', { aceitar });
+                if (data.success) { window.location.reload(); return; }
+                this.erro = data.message || 'Não deu certo.';
+            } catch (e) { this.erro = 'Não deu certo. Tente de novo.'; } finally { this.enviando = false; }
+        },
+    };
+}
+</script>

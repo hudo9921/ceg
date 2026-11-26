@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}ValCegs — Reservas e Compras em Grupo{% endblock %}
+{% block title %}CegManager — Reservas e Compras em Grupo{% endblock %}
 
 {% block content %}
 {% include 'components/ui_rail_script.html' %}
@@ -13,6 +13,9 @@
 
     <!-- 1. Hero Spotlight Flutuante (Destaque Principal) -->
     {% include 'cegs/partials/_home_hero_spotlight.html' %}
+
+    <!-- 1b. Para você: CEGs de quem o joiner segue (apps/participants/seguindo.py) -->
+    {% include 'cegs/partials/_home_para_voce.html' %}
 
     <!-- 2. Abrindo em breve (CEGs agendadas com contagem) -->
     {% include 'cegs/partials/_home_soon_rail.html' %}
