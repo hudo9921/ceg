@@ -37,11 +37,13 @@ def _corpo(request):
         return {}
 
 
-def _resposta(fn, *args, msg):
+def _resposta(request, fn, *args, msg):
+    """Executa; erro volta em JSON (mostrado no próprio card/folha) e o sucesso vira mensagem do site após recarregar."""
     try:
         fn(*args)
     except services.RepasseError as exc:
         return JsonResponse({'success': False, 'message': str(exc)}, status=400)
+    messages.success(request, msg)
     return JsonResponse({'success': True, 'message': msg})
 
 
@@ -53,7 +55,7 @@ def criar(request):
     publico = body.get('modo') == 'publico'
     msg = ('Pronto: a vaga aparece como disponível para repasse. O GOM aprova quando alguém pedir.' if publico
            else 'Pedido enviado. Quando a pessoa aceitar, o GOM aprova.')
-    return _resposta(services.criar, request.participant, slot, body.get('whatsapp', ''), publico, body.get('recado', ''),
+    return _resposta(request, services.criar, request.participant, slot, body.get('whatsapp', ''), publico, body.get('recado', ''),
                      msg=msg)
 
 
@@ -62,7 +64,7 @@ def criar(request):
 def responder(request, pk):
     aceitar = bool(_corpo(request).get('aceitar'))
     rep = get_object_or_404(Repasse, pk=pk)
-    return _resposta(services.responder, rep, request.participant, aceitar,
+    return _resposta(request, services.responder, rep, request.participant, aceitar,
                      msg='Aceito! Agora o GOM aprova o repasse.' if aceitar else 'Repasse recusado.')
 
 
@@ -70,14 +72,14 @@ def responder(request, pk):
 @_joiner
 def cancelar(request, pk):
     rep = get_object_or_404(Repasse, pk=pk, de=request.participant)
-    return _resposta(services.cancelar, rep, request.participant, msg='Repasse cancelado.')
+    return _resposta(request, services.cancelar, rep, request.participant, msg='Repasse cancelado.')
 
 
 @require_POST
 @_joiner
 def pedir(request, pk):
     rep = get_object_or_404(Repasse, pk=pk, publico=True)
-    return _resposta(services.pedir_publico, rep, request.participant, msg='Pedido enviado! O GOM vai aprovar ou recusar.')
+    return _resposta(request, services.pedir_publico, rep, request.participant, msg='Pedido enviado! O GOM vai aprovar ou recusar.')
 
 
 def disponiveis(gom=None, ceg=None):
@@ -100,10 +102,45 @@ def com_valores(repasses):
 
 
 def lista_publica(request):
-    """/repasses/: vagas que joiners deixaram disponíveis (qualquer pessoa pede; o GOM aprova)."""
-    pagina = Paginator(disponiveis(), 30).get_page(request.GET.get('pagina'))
+    """
+    /repasses/: vagas que joiners deixaram disponíveis (qualquer pessoa pede; o GOM aprova).
+    Busca (?q= item, integrante, grupo, CEG ou GOM) e filtros por grupo (?grupo=<id>) e GOM (?gom=<slug>).
+    """
+    from django.db.models import Count, Q
+    from django.utils.http import urlencode
+
+    from apps.goms.models import Gom
+
+    q = request.GET.get('q', '').strip()[:80]
+    gom = Gom.objects.filter(slug=request.GET.get('gom', '').strip(), is_active=True).first() if request.GET.get('gom') else None
+    grupo = request.GET.get('grupo', '')
+    grupo = int(grupo) if grupo.isdigit() else None
+
+    base = disponiveis(gom=gom)
+    if q:
+        base = base.filter(Q(slot__item_definition__name__icontains=q) | Q(slot__item_definition__member_name__icontains=q)
+                           | Q(slot__set__ceg__title__icontains=q) | Q(slot__set__ceg__era__name__icontains=q)
+                           | Q(slot__set__ceg__era__group__name__icontains=q) | Q(gom__name__icontains=q))
+    grupos = list(base.order_by().values('slot__set__ceg__era__group_id', 'slot__set__ceg__era__group__name')
+                  .annotate(n=Count('id')).order_by('-n', 'slot__set__ceg__era__group__name'))
+    goms = list(disponiveis().order_by().values('gom__slug', 'gom__name').annotate(n=Count('id')).order_by('gom__name'))
+    lista = base.filter(slot__set__ceg__era__group_id=grupo) if grupo else base
+    pagina = Paginator(lista, 30).get_page(request.GET.get('pagina'))
     com_valores(pagina.object_list)
-    return render(request, 'repasses/lista.html', {'pagina': pagina})
+
+    def link(**mudar):
+        atual = {'q': q, 'gom': gom.slug if gom else '', 'grupo': grupo or ''}
+        atual.update(mudar)
+        return '?' + urlencode({k: v for k, v in atual.items() if v})
+
+    return render(request, 'repasses/lista.html', {
+        'pagina': pagina, 'q': q, 'filtro_gom': gom, 'grupo': grupo, 'goms': goms,
+        'grupos': [{'id': g['slot__set__ceg__era__group_id'], 'nome': g['slot__set__ceg__era__group__name'], 'n': g['n'],
+                    'url': link(grupo=g['slot__set__ceg__era__group_id'], pagina='')} for g in grupos],
+        'url_todos_grupos': link(grupo=''), 'url_limpar': '?' if (q or gom or grupo) else '',
+        'url_anterior': link(pagina=pagina.previous_page_number()) if pagina.has_previous() else '',
+        'url_proxima': link(pagina=pagina.next_page_number()) if pagina.has_next() else '',
+    })
 
 
 @never_cache

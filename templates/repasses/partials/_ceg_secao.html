@@ -1,6 +1,6 @@
 {% comment %}Vagas desta CEG disponíveis para repasse (CEGDetailView: `repasses`). Cards e script de repasses/.{% endcomment %}
 {% if repasses %}
-<section class="space-y-3" aria-labelledby="ceg-repasses" x-data="repasses()">
+<section id="vagas-repasse" class="space-y-3 scroll-mt-28" aria-labelledby="ceg-repasses" x-data="repasses()">
     <div class="flex items-end justify-between gap-3">
         <h2 id="ceg-repasses" class="ui-disp text-2xl m-0">Vagas para repasse <span class="ui-mono ui-muted text-base">{{ repasses|length }}</span></h2>
         <a href="{% url 'repasses_disponiveis' %}" class="ui-label hover:underline">Todos os repasses</a>

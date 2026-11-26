@@ -1,20 +1,22 @@
-{% comment %}repasses(): "Quero esta vaga" (POST /repasses/<pk>/pedir/). Sem login, manda para o login do joiner.{% endcomment %}
+{% comment %}
+repasses(): "Quero esta vaga" → POST /repasses/<pk>/pedir/. Sucesso recarrega e o servidor mostra a mensagem no topo
+(messages); erro aparece no próprio card. Sem login, manda para o login e volta.
+{% endcomment %}
 <script>
 function repasses() {
     const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
     return {
-        enviando: false,
-        async pedir(pk, botao) {
-            if (!confirm('Pedir esta vaga? O que falta pagar passa para você quando o GOM aprovar.')) return;
-            this.enviando = true;
+        enviando: false, erro: '',
+        async pedir(pk) {
+            this.enviando = true; this.erro = '';
             try {
-                const res = await fetch(`/repasses/${pk}/pedir/`, { method: 'POST', headers: { 'X-CSRFToken': csrf() } });
+                const res = await fetch('/repasses/' + pk + '/pedir/', { method: 'POST', headers: { 'X-CSRFToken': csrf() } });
                 const data = await res.json();
-                if (data.requires_auth) { window.location = '/me/login/?next=' + encodeURIComponent(location.pathname); return; }
-                alert(data.message);
-                if (data.success) botao.closest('article').remove();
+                if (data.requires_auth) { window.location = '/me/login/?next=' + encodeURIComponent(location.pathname + location.search); return; }
+                if (data.success) { window.location.reload(); return; }
+                this.erro = data.message || 'Não deu certo.';
             } catch (e) {
-                alert('Não deu certo. Tente de novo.');
+                this.erro = 'Não deu certo. Tente de novo.';
             } finally {
                 this.enviando = false;
             }

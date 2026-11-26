@@ -13,11 +13,13 @@ para o GOM aprovar; o que falta pagar passa a ser dele(a). Script repassesRecebi
                 {% if r.pendencias %}Passa para você: {% for p in r.pendencias %}{{ p.nome }} R$ {{ p.valor }}{% if not forloop.last %} · {% endif %}{% endfor %} (<b>R$ {{ r.total }}</b>).
                 {% else %}<span class="ui-status ui-ok">Já pago</span> <span class="ui-muted">· combine o valor com {{ r.de }}.</span>{% endif %}
             </p>
+            <p class="text-[13px] ui-muted m-0">Aceitando, o GOM ainda precisa aprovar. Só depois o item passa a ser seu.</p>
             <div class="flex gap-2">
                 <button type="button" class="ui-btn ui-btn-primary" :disabled="enviando" @click="responder({{ r.id }}, true)"><i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>Aceitar</button>
                 <button type="button" class="ui-btn ui-btn-ghost" :disabled="enviando" @click="responder({{ r.id }}, false)">Recusar</button>
             </div>
         </article>
     {% endfor %}
+    <p class="ui-danger text-sm m-0" x-show="erro" x-cloak x-text="erro"></p>
 </section>
 {% endif %}

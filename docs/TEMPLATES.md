@@ -272,7 +272,8 @@
 
 ### Repasses e Seguindo
 
-- `repasses/lista.html` (`/repasses/`, público): vagas disponíveis para repasse; cards em `repasses/partials/_card.html`, "Quero esta vaga" em `repasses/partials/_script.html` (`repasses()`). A página da CEG mostra as da CEG em `repasses/partials/_ceg_secao.html`.
+- `repasses/lista.html` (`/repasses/`, público, link "Repasses" na barra lateral): busca (`?q=`), chips de grupo (`?grupo=`) e GOM (`?gom=`) no servidor. Cards em `repasses/partials/_card.html` (foto do item, GOM com link, "Quero esta vaga" com confirmação no próprio card); script `repasses/partials/_script.html` (`repasses()`, sucesso recarrega e mostra a mensagem do site). A página da CEG mostra as da CEG em `repasses/partials/_ceg_secao.html` (`#vagas-repasse`) e marca a vaga no card (`.ui-pick.is-repasse`, carimbo "Repasse", botão "Quero esta vaga"; avulsos: "Ver vaga em repasse"), via `repasse_slots`/`repasse_defs` do CEGDetailView.
+- Mensagens do site (`base.html`): aviso flutuante no topo; sucesso/info somem em 5 s, erro e aviso ficam até fechar. Ações em JSON (repasse) usam `messages` + recarregar em vez de `alert()`.
 - `repasses/gom_fila.html` (`/gom/repasses/`, `pedidos.editar`): "Para aprovar" (`_gom_pendente.html`, aprovar/recusar com motivo), "Em andamento" e "Histórico" (`_gom_linha.html`).
 - `/me/`: botão "Repassar"/"Ver repasse" em cada item (`_itens_section.html`, evento `repassar`), folha `participants/partials/_repasse_sheet.html` (`repasseSheet`, também define `repassesRecebidos`) e "Querem repassar para você" em `_repasses_recebidos.html`. Atalhos "Seguindo" e "Repasses" (este só no celular; no desktop está na barra lateral) nas ações do topo (`_header_notices.html`).
 - `participants/seguindo.html` (`/me/seguindo/`, `seguindoApp`): busca e lista de quem o joiner segue; card em `participants/partials/_seguindo_grupo.html`.

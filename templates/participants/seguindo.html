@@ -17,8 +17,10 @@ deles na home e nas lojas dos GOMs e avisa quando abre CEG nova. Card de grupo e
 
     <div class="ui-searchbar !static !w-full" role="search">
         <i data-lucide="search" class="w-5 h-5 ui-muted flex-none" stroke-width="1.75"></i>
-        <input type="search" x-model="q" @input.debounce.300ms="buscar()" placeholder="Buscar grupo ou solista (ex.: aespa, 에스파)" aria-label="Buscar grupo" class="ui-bare flex-1 min-w-0">
+        <input type="search" x-model="q" @input.debounce.300ms="buscar()" placeholder="Buscar grupo ou solista (ex.: aespa, 에스파)" aria-label="Buscar grupo" class="ui-bare flex-1 min-w-0 !pl-1">
     </div>
+
+    <p x-show="erro" x-cloak class="ui-danger text-sm m-0" x-text="erro"></p>
 
     <section x-show="q.trim().length >= 2" x-cloak class="space-y-3" aria-label="Resultados">
         <p x-show="buscando" class="ui-label m-0">Buscando…</p>
@@ -44,7 +46,7 @@ deles na home e nas lojas dos GOMs e avisa quando abre CEG nova. Card de grupo e
 function seguindoApp() {
     const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
     return {
-        q: '', buscando: false, resultados: [],
+        q: '', buscando: false, resultados: [], erro: '',
         seguidos: JSON.parse(document.getElementById('seguindo-data').textContent || '[]'),
         async buscar() {
             const q = this.q.trim();
@@ -60,7 +62,8 @@ function seguindoApp() {
             const res = await fetch('{% url "seguindo_alternar" %}', { method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' },
                                                                       body: JSON.stringify(m ? { member_id: m.id } : { group_id: g.id }) });
             const data = await res.json();
-            if (!data.success) { alert(data.message || 'Não deu certo.'); return; }
+            if (!data.success) { this.erro = data.message || 'Não deu certo.'; return; }
+            this.erro = '';
             if (m) m.seguindo = data.seguindo; else g.seguindo = data.seguindo;
             // Mantém "Quem você segue" em dia sem recarregar.
             const i = this.seguidos.findIndex((x) => x.id === g.id);
