@@ -36,6 +36,7 @@ urlpatterns = [
     path('', include('apps.pagamentos.urls')),
     path('', include('apps.conversas.urls')),  # /me/mensagens/... e /mensagens/  # /me/pagar/... (antes de /me/) e /pagamentos/
     path('', include('apps.repasses.urls')),  # /me/repasses/..., /repasses/ e /gom/repasses/ (antes de /gom/<slug>/)
+    path('', include('apps.avisos.urls')),  # /sw.js, /manifest.webmanifest e /push/...
     path('me/', include('apps.participants.urls')),
     path('privacidade/', PrivacyPolicyView.as_view(), name='privacy_policy'),
     path('', include('apps.goms.urls')),

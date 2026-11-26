@@ -6,6 +6,7 @@
 <div class="space-y-8 max-w-[1120px] mx-auto" x-data="myClaimsApp({{ charges.count|default:0 }})">
 
     {% include 'participants/partials/_header_notices.html' %}
+    {% include 'components/_push_card.html' with publico='joiner' %}
     {% include 'participants/partials/_tabs_nav.html' %}
 
     <!-- REPASSES: pedidos para aceitar (apps/repasses) -->

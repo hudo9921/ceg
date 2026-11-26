@@ -396,6 +396,9 @@ class PollingDemandService:
             # 4. Cria notificações internas no site em lote
             if notifications_to_create:
                 ParticipantNotification.objects.bulk_create(notifications_to_create)
+                from apps.avisos.push import para_joiner  # bulk_create não dispara o sinal do push
+                for n in notifications_to_create:
+                    para_joiner(n.participant, n.title, n.message, '/me/?tab=itens')
 
         # Fora da transação: dispara mensagens WhatsApp
         wa_sent_count = 0

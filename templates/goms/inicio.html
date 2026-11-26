@@ -12,6 +12,7 @@
         </div>
         {% include 'goms/partials/_gom_switcher.html' %}
     </header>
+    {% include 'components/_push_card.html' with publico='gom' %}
 
     {% if tasks %}
     <section class="grid gap-4 md:grid-cols-3" aria-label="Para fazer hoje">

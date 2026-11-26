@@ -245,3 +245,20 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
     grupos seguidos primeiro nos trilhos "Abertas agora" e CEGs relevantes primeiro dentro de cada trilho.
   - Loja do GOM (ordem padrão "Recentes" nas três abas): quem o joiner segue primeiro (`anotar_seguindo`).
 - **Sem notificação de CEG nova** (decisão do produto: viraria spam). Seguir só muda a ordem e o trilho "Para você".
+
+## Avisos no celular — push (`apps/avisos`, S4)
+
+- O joiner (em `/me/`) e a equipe do GOM (Início e Avisos do painel) ativam no card **Avisos no celular**
+  (`components/_push_card.html`). Cada aparelho vira uma `Inscricao` (endpoint + chaves que o navegador gera).
+  iPhone: só com o site adicionado à Tela de Início (o card explica). Testar e Desligar no mesmo card.
+- **Joiner:** toda `ParticipantNotification` vai também por push (sinal `post_save`; o `bulk_create` das enquetes chama
+  o push à mão). Inclui Pix confirmado/recusado, frete/taxa lançados, set cancelado, envio nacional, repasse e
+  respostas do GOM e as mudanças de etapa da caixa (`Caixa.atualizar_status` já avisa cada joiner da caixa).
+- **Equipe:** `GOMNotification` dos tipos `PAYMENT`, `PACKAGE_REQUEST`, `REPASSE` e `SYSTEM` (mensagens) vai para
+  quem é da equipe daquele GOM. Reserva de vaga e voto em enquete não (seriam centenas no segundo zero).
+- **Nunca** há aviso de CEG nova para quem segue grupo/integrante.
+- Envio: fila única por processo, depois do commit (não atrasa quem clicou). 404/410 apaga a inscrição; 5 falhas
+  seguidas também. Chave VAPID: `VAPID_PRIVATE_KEY` do .env ou derivada do `SECRET_KEY` (`apps/avisos/vapid.py`).
+- Service worker em `/sw.js` (só notificações, sem cache offline) e manifesto em `/manifest.webmanifest`
+  (ícones em `static/img/app-icon-*.png`, gerados com Pillow).
+
