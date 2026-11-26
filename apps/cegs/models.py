@@ -257,7 +257,8 @@ class Caixa(models.Model):
                     participant=p,
                     title=title,
                     message=msg,
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='envios',
                 )
 
             # Notifica também compradores de Itens Individuais desta Caixa
@@ -276,7 +277,8 @@ class Caixa(models.Model):
                     participant=p,
                     title=title,
                     message=msg,
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='envios',
                 )
         except Exception:
             pass

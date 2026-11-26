@@ -9,13 +9,17 @@ URL_JOINER = {'ENVIO_NACIONAL': '/me/?tab=envios', 'SET_CANCELLED': '/me/?tab=it
 @receiver(post_save, sender='participants.ParticipantNotification')
 def push_joiner(sender, instance, created, **kwargs):
     if created:
+        from .preferencias import categoria_joiner
         from .push import para_joiner
         para_joiner(instance.participant, instance.title, instance.message,
-                    URL_JOINER.get(instance.notification_type, '/me/'), tag=f'pn{instance.pk}')
+                    URL_JOINER.get(instance.notification_type, '/me/'), tag=f'pn{instance.pk}',
+                    categoria=categoria_joiner(instance))
 
 
 @receiver(post_save, sender='cegs.GOMNotification')
 def push_gom(sender, instance, created, **kwargs):
+    from .preferencias import categoria_gom
     from .push import TIPOS_GOM, para_gom
     if created and instance.notification_type in TIPOS_GOM and instance.gom_id:
-        para_gom(instance.gom, instance.title, instance.message, instance.action_url or '', tag=f'gn{instance.pk}')
+        para_gom(instance.gom, instance.title, instance.message, instance.action_url or '', tag=f'gn{instance.pk}',
+                 categoria=categoria_gom(instance))

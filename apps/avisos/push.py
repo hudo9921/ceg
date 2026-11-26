@@ -96,12 +96,26 @@ def _trabalhar(fila):
             close_old_connections()
 
 
-def para_joiner(participant, titulo, corpo='', url='/me/', tag=''):
+def para_joiner(participant, titulo, corpo='', url='/me/', tag='', categoria=''):
+    """Push para os aparelhos do joiner, se ele não desligou esta categoria ('importante' sempre vai)."""
+    from .preferencias import IMPORTANTE, desligados
+    if categoria and categoria != IMPORTANTE and categoria in desligados(participant=participant):
+        return 0
     return enviar(Inscricao.objects.filter(participant=participant), titulo, corpo, url, tag)
 
 
-def para_gom(gom, titulo, corpo='', url='', tag=''):
-    """Para quem é da equipe deste GOM (dono e admins) e ativou no aparelho."""
+def para_gom(gom, titulo, corpo='', url='', tag='', categoria=''):
+    """Para quem é da equipe deste GOM, tem a permissão da área do aviso e não desligou a categoria."""
     from apps.goms.models import GomMembership
-    users = GomMembership.objects.filter(gom=gom).values('user_id')
+    from apps.goms.permissions import membership_permissions
+
+    from .models import Preferencia
+    from .preferencias import PERMISSAO_GOM
+
+    perm = PERMISSAO_GOM.get(categoria)
+    users = [m.user_id for m in GomMembership.objects.filter(gom=gom, is_active=True)
+             if not perm or perm in membership_permissions(m)]
+    if categoria:  # equipe é pequena: confere em Python (JSON __contains não existe no SQLite)
+        sem = {p.user_id for p in Preferencia.objects.filter(user_id__in=users) if categoria in p.desligados}
+        users = [u for u in users if u not in sem]
     return enviar(Inscricao.objects.filter(user_id__in=users), titulo, corpo, url or '/notificacoes/', tag)

@@ -189,7 +189,8 @@ def confirmar(cobranca, actor):
     cobranca.save(update_fields=['status', 'resolvida_em', 'resolvida_por'])
     _audit(cobranca, actor, f'Pix {cobranca.referencia} recebido (R$ {cobranca.valor_total})')
     _notify_joiner(cobranca, 'Pagamento confirmado',
-                   f'{cobranca.gom.name} confirmou seu Pix {cobranca.referencia} de R$ {cobranca.valor_total}.')
+                   f'{cobranca.gom.name} confirmou seu Pix {cobranca.referencia} de R$ {cobranca.valor_total}.',
+                   categoria='pagamentos')
 
 
 def recusar(cobranca, actor, recado=''):
@@ -223,9 +224,9 @@ def _audit(cobranca, actor, label):
                             metadata={'cobranca': cobranca.referencia, 'valor': str(cobranca.valor_total)})
 
 
-def _notify_joiner(cobranca, title, message):
+def _notify_joiner(cobranca, title, message, categoria='importante'):
     from apps.participants.models import ParticipantNotification
-    ParticipantNotification.objects.create(participant=cobranca.participant, title=title, message=message,
+    ParticipantNotification.objects.create(participant=cobranca.participant, title=title, message=message, categoria=categoria,
                                            notification_type=ParticipantNotification.NotificationType.GENERAL)
 
 

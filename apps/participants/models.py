@@ -518,6 +518,8 @@ class ParticipantNotification(models.Model):
     is_read = models.BooleanField('Lida', default=False, db_index=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True, db_index=True)
     read_at = models.DateTimeField('Lida em', null=True, blank=True)
+    # Grupo do aviso para as preferências de push (apps/avisos/preferencias.py). Vazio = segue o tipo.
+    categoria = models.CharField('Categoria', max_length=20, blank=True, default='')
 
     class Meta:
         verbose_name = 'Notificação de Participante'
