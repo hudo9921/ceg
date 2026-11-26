@@ -1,0 +1,9 @@
+{% comment %}
+Marca no topo (barra lateral e barra superior). Em página de UM GOM (`brand_gom`: página pública, CEG, caixa e painel)
+mostra o nome do GOM e leva à página dele; no resto, o nome da plataforma ("CegManager"). `tamanho`: classe do texto.
+{% endcomment %}
+{% if brand_gom %}
+    <a href="{% url 'gom_public' brand_gom.slug %}" class="ui-disp ui-chrome {{ tamanho }} no-underline block min-w-0 leading-tight line-clamp-2 break-words" title="Página de {{ brand_gom.name }}">{{ brand_gom.name }}</a>
+{% else %}
+    <a href="{% url 'home' %}" class="ui-disp ui-chrome {{ tamanho }} no-underline block min-w-0 leading-tight line-clamp-2 break-words">CegManager</a>
+{% endif %}

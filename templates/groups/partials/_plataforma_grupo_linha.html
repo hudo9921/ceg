@@ -19,7 +19,7 @@
         <span class="ui-tag !bg-transparent ui-muted" title="CEGs"><i data-lucide="sparkles" class="w-3.5 h-3.5" stroke-width="1.75"></i><span class="ui-mono">{{ g.n_cegs }}</span></span>
         {% if g.n_eras_sem_capa %}<span class="ui-status ui-warn !text-[12px]" title="Eras sem capa">{{ g.n_eras_sem_capa }} sem capa</span>{% endif %}
     </span>
-    <a href="{% url 'admin:groups_kpopgroup_change' g.pk %}" target="_blank" rel="noopener" class="ui-icon-btn flex-none" aria-label="Editar {{ g.name }} no Django Admin" title="Editar no Django Admin">
+    <button type="button" class="ui-icon-btn flex-none" data-dados="{{ g.dados|json_attr }}" @click="editar($el)" aria-label="Editar {{ g.name }}" title="Editar">
         <i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i>
-    </a>
+    </button>
 </div>

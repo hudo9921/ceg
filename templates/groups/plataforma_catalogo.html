@@ -5,9 +5,9 @@
 {% block content %}
 {% comment %}
 Catálogo da plataforma (só superusuário, apps/groups/plataforma_views.py): números, busca e filtros de grupos/solistas.
-Cada linha abre a página do grupo; editar é pelo Django Admin.
+Cada linha abre a página do grupo; o lápis abre o modal de edição (_plataforma_modal_editar.html).
 {% endcomment %}
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="max-w-6xl mx-auto space-y-6" x-data="catalogoEditar()">
     <header class="space-y-2">
         <p class="ui-label">Plataforma</p>
         <h1 class="ui-disp text-4xl">Catálogo</h1>
@@ -77,5 +77,6 @@ Cada linha abre a página do grupo; editar é pelo Django Admin.
             {% endif %}
         </nav>
     {% endif %}
+    {% include 'groups/partials/_plataforma_modal_editar.html' %}
 </div>
 {% endblock %}

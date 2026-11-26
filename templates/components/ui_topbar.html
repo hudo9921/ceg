@@ -1,6 +1,6 @@
 {% comment %}Barra superior (celular/tablet, abaixo de lg): marca, tema, atalhos da equipe e conta. DESIGN_SYSTEM.md §7.{% endcomment %}
 <header class="ui-topbar lg:hidden">
-    <a href="{% url 'home' %}" class="ui-disp ui-chrome text-2xl no-underline">ValCegs</a>
+    {% include 'components/_marca.html' with tamanho='text-2xl' %}
     <div class="flex items-center">
         <div x-data="themeApp()" x-init="init()">
             <button type="button" @click="toggleTheme()" class="ui-icon-btn" :aria-label="isDark ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'" aria-label="Alternar tema">
