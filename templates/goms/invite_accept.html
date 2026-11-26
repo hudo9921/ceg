@@ -1,6 +1,6 @@
 {% extends 'core/two_factor/_layout.html' %}
 
-{% block title %}Convite para a equipe — ValCegs{% endblock %}
+{% block title %}Convite para a equipe — CegManager{% endblock %}
 {% block heading %}{% if invalid %}Convite inválido{% else %}Entrar na equipe {{ invite.gom.name }}{% endif %}{% endblock %}
 {% block lead %}{% if invalid %}Este link expirou, já foi usado ou foi cancelado. Peça um novo ao dono do GOM.{% else %}Você foi convidado(a) como {{ invite.get_role_display }}.{% endif %}{% endblock %}
 

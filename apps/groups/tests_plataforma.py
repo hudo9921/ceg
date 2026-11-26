@@ -55,6 +55,49 @@ class CatalogoPlataformaTests(TestCase):
         self.assertContains(res, reverse('admin:groups_kpopgroup_change', args=[self.aespa.pk]))
 
 
+class EdicaoCatalogoTests(TestCase):
+    def setUp(self):
+        self.root = User.objects.create_superuser('root-ed', 'e@example.com', 'Senha-Forte-123')
+        self.grupo = KpopGroup.objects.create(name='aespa', slug='aespa-ed')
+        self.era = Era.objects.create(group=self.grupo, name='Rich Man', slug='rich-ed')
+
+    def test_salva_grupo_e_volta(self):
+        self.client.force_login(self.root)
+        volta = reverse('platform_catalogo') + '?q=aespa'
+        res = self.client.post(reverse('platform_catalogo_grupo_salvar', args=[self.grupo.pk]), {
+            'name': 'aespa', 'name_native': '에스파', 'aliases': 'æspa', 'kind': 'GRUPO', 'status': 'ATIVO',
+            'agency': 'SM', 'debut_date': '2020-11-17', 'popularity_rank': '4', 'image_url': 'https://example.com/a.jpg',
+            'next': volta})
+        self.assertRedirects(res, volta, fetch_redirect_response=False)
+        self.grupo.refresh_from_db()
+        self.assertEqual((self.grupo.name_native, self.grupo.popularity_rank, self.grupo.image_url),
+                         ('에스파', 4, 'https://example.com/a.jpg'))
+
+    def test_salva_capa_da_era_e_ignora_next_externo(self):
+        self.client.force_login(self.root)
+        res = self.client.post(reverse('platform_catalogo_era_salvar', args=[self.era.pk]), {
+            'name': 'Rich Man', 'kind': 'MINI', 'release_date': '', 'image_url': 'https://example.com/r.jpg',
+            'next': 'https://evil.example.com/'})
+        self.assertEqual(res['Location'], reverse('platform_catalogo'))
+        self.era.refresh_from_db()
+        self.assertEqual((self.era.kind, self.era.banner_url), ('MINI', 'https://example.com/r.jpg'))
+
+    def test_dono_de_gom_nao_edita(self):
+        dono = User.objects.create_user('dono-ed', password='Senha-Forte-123')
+        self.client.force_login(dono)
+        self.client.post(reverse('platform_catalogo_era_salvar', args=[self.era.pk]), {'name': 'Hack', 'kind': 'OUTRO'})
+        self.era.refresh_from_db()
+        self.assertEqual(self.era.name, 'Rich Man')
+
+
+class MarcaTests(TestCase):
+    def test_plataforma_e_pagina_do_gom(self):
+        Gom.objects.create(name='Loja Marca', slug='loja-marca')
+        self.assertContains(self.client.get(reverse('gom_directory')), '>CegManager</a>')
+        res = self.client.get(reverse('gom_public', args=['loja-marca']))
+        self.assertContains(res, 'title="Página de Loja Marca">Loja Marca</a>')
+
+
 @override_settings(WHATSAPP_PROVIDER='evolution')
 class AvisoBotTests(TestCase):
     def setUp(self):

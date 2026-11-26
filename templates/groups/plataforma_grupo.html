@@ -3,8 +3,8 @@
 {% block title %}{{ grupo.name }} — Catálogo{% endblock %}
 
 {% block content %}
-{% comment %}Um grupo/solista no catálogo da plataforma: dados, integrantes, eras (com capa) e CEGs por GOM. Editar pelo Django Admin.{% endcomment %}
-<div class="max-w-6xl mx-auto space-y-6">
+{% comment %}Um grupo/solista no catálogo da plataforma: dados, integrantes, eras (com capa) e CEGs por GOM. Editar (grupo e cada era) pelo modal _plataforma_modal_editar.html.{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6" x-data="catalogoEditar()">
     <a href="{% url 'platform_catalogo' %}" class="ui-label hover:underline">← Catálogo</a>
 
     <header class="ui-card p-5 sm:p-6 flex flex-wrap items-center gap-5">
@@ -22,7 +22,7 @@
         </div>
         <div class="flex flex-wrap gap-2">
             {% if grupo.wikidata_id %}<a href="https://www.wikidata.org/wiki/{{ grupo.wikidata_id }}" target="_blank" rel="noopener noreferrer" class="ui-btn ui-btn-ghost ui-btn-sm">Wikidata</a>{% endif %}
-            <a href="{% url 'admin:groups_kpopgroup_change' grupo.pk %}" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i>Editar</a>
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" data-dados="{{ dados_grupo|json_attr }}" @click="editar($el)"><i data-lucide="pencil" class="w-4 h-4" stroke-width="1.75"></i>Editar</button>
         </div>
     </header>
 
@@ -55,7 +55,7 @@
             <h2 id="g-eras" class="ui-disp text-xl m-0">Eras <span class="ui-mono ui-muted text-base">{{ eras|length }}</span>{% if eras_sem_capa %} <span class="ui-status ui-warn !text-[13px]">{{ eras_sem_capa }} sem capa</span>{% endif %}</h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {% for e in eras %}
-                    <a href="{% url 'admin:groups_era_change' e.pk %}" target="_blank" rel="noopener" class="ui-card ui-lift overflow-hidden no-underline text-ui-text" title="Editar no Django Admin">
+                    <button type="button" class="ui-card ui-lift overflow-hidden text-left text-ui-text cursor-pointer" data-dados="{{ e.dados|json_attr }}" @click="editar($el)" title="Editar {{ e.name }}">
                         {% if e.banner_url %}
                             <img src="{{ e.banner_url|thumb }}" data-full="{{ e.banner_url }}" alt="" loading="lazy" decoding="async" class="w-full aspect-square object-cover">
                         {% else %}
@@ -65,12 +65,13 @@
                             <span class="block text-sm font-semibold truncate">{{ e.name }}</span>
                             <span class="block ui-label truncate">{{ e.get_kind_display }}{% if e.release_date %} · {{ e.release_date|date:"Y" }}{% endif %}{% if e.n_cegs %} · {{ e.n_cegs }} CEG{{ e.n_cegs|pluralize }}{% endif %}</span>
                         </span>
-                    </a>
+                    </button>
                 {% empty %}
                     <p class="ui-muted text-sm col-span-full">Nenhuma era cadastrada.</p>
                 {% endfor %}
             </div>
         </section>
     </div>
+    {% include 'groups/partials/_plataforma_modal_editar.html' %}
 </div>
 {% endblock %}

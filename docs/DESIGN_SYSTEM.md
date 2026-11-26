@@ -312,3 +312,6 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
 `html` e `body` usam `overflow-x: clip` (em `ui.css`), nunca `overflow-x-hidden`: `hidden` transforma o `body` em
 contêiner de rolagem e nenhum `position: sticky` gruda. Busca da loja do GOM: `.ui-searchbar` (pílula de até 560px
 com o campo `.ui-bare`, que fica fora da regra de inputs do modo escuro em `base.html`).
+
+### Marca no topo
+`components/_marca.html` (barra lateral e barra superior): nome da plataforma, **CegManager**, por padrão; em páginas de um GOM só (`brand_gom`: página pública, CEG, caixa e painel do GOM) mostra o nome do GOM e leva à página dele.

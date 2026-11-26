@@ -4,7 +4,7 @@ menu de gestão do GOM, conta e tema. DESIGN_SYSTEM.md §7.
 {% endcomment %}
 <aside class="ui-sidebar hidden lg:flex" aria-label="Navegação principal"
        x-data="{ sidebarCollapsed: false, gomMenuOpen: {% if nav_section %}false{% else %}true{% endif %} }">
-    <a href="{% url 'home' %}" class="ui-disp ui-chrome text-[28px] px-3 pb-5 no-underline">ValCegs</a>
+    <div class="px-3 pb-5">{% include 'components/_marca.html' with tamanho='text-[24px]' %}</div>
 
     {% for item in joiner_nav %}
         <a href="{{ item.url }}" class="ui-nav-item{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
