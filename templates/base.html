@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br" class="scroll-smooth overflow-x-hidden">
+<html lang="pt-br" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -298,7 +298,7 @@
         }
 
         /* 7. Formulários: inputs, selects, textareas */
-        html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="range"]):not([type="file"]),
+        html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="range"]):not([type="file"]):not(.ui-bare),
         html.dark select,
         html.dark textarea {
             background-color: #0F172A !important;
@@ -623,7 +623,7 @@
     {% if brand_gom.brand %}{% include 'components/_brand_style.html' with b=brand_gom.brand %}{% endif %}
     {% block extra_head %}{% endblock %}
 </head>
-<body class="ui-page min-h-screen flex flex-col antialiased overflow-x-hidden">
+<body class="ui-page min-h-screen flex flex-col antialiased">
 
     <!-- Navegação: barra lateral (desktop) + barra superior e abas (celular) — DESIGN_SYSTEM.md §7 -->
     {% include 'components/ui_sidebar.html' %}

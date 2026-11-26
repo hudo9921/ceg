@@ -307,3 +307,8 @@ Aprovado no protótipo (artboards "P2b" no canvas do redesign). Regras:
   O escuro não muda.
 - Chip selecionado no claro: mesma pílula do item ativo da barra lateral (`--ui-accent-soft`, borda rosa 45%,
   texto `--ui-accent-text`). O degradê holográfico ficou só nas barras de progresso e enfeites.
+
+### Barras fixas (sticky)
+`html` e `body` usam `overflow-x: clip` (em `ui.css`), nunca `overflow-x-hidden`: `hidden` transforma o `body` em
+contêiner de rolagem e nenhum `position: sticky` gruda. Busca da loja do GOM: `.ui-searchbar` (pílula de até 560px
+com o campo `.ui-bare`, que fica fora da regra de inputs do modo escuro em `base.html`).

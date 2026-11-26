@@ -42,15 +42,15 @@
 
     <section aria-label="Loja de {{ gom.name }}" x-data="lojaGom({{ f.ativos|yesno:'true,false' }})" class="space-y-4">
         <form id="loja-form" method="get" action="{% url 'gom_public' gom.slug %}" @submit.prevent="aplicar()" @change="mudou($event)" class="space-y-4">
-            <div class="ui-filters">
-                <div class="relative flex-1 min-w-[200px]">
+            <div class="ui-searchbar">
+                <div class="relative flex-1 min-w-0 flex">
                     <label for="loja-busca" class="sr-only">Buscar nesta loja</label>
                     <input type="search" id="loja-busca" name="q" value="{{ f.q }}" @input.debounce.400ms="aplicar()"
-                           placeholder="Buscar grupo, era, integrante ou item" class="ui-input w-full pl-11" autocomplete="off">
-                    <i data-lucide="search" class="w-4 h-4 ui-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" stroke-width="1.75"></i>
+                           placeholder="Buscar grupo, era, integrante ou item" autocomplete="off" class="ui-bare">
+                    <i data-lucide="search" class="w-4 h-4 ui-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" stroke-width="1.75"></i>
                 </div>
-                <button type="button" class="ui-btn ui-btn-ghost shrink-0" x-show="ativos" @click="limpar()"{% if not f.ativos %} style="display:none"{% endif %}>
-                    <i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i><span>Limpar filtros</span>
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm shrink-0" x-show="ativos" @click="limpar()" aria-label="Limpar filtros" title="Limpar filtros"{% if not f.ativos %} style="display:none"{% endif %}>
+                    <i data-lucide="filter-x" class="w-4 h-4" stroke-width="1.75"></i><span class="hidden sm:inline">Limpar filtros</span>
                 </button>
             </div>
             <div id="loja-corpo" :aria-busy="carregando.toString()" :class="carregando && 'opacity-60 transition-opacity'">
