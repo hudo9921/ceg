@@ -5,7 +5,7 @@
             <p class="ui-label m-0">{{ r.slot.set.ceg.title }}{% if r.publico %} · vaga pública{% endif %}</p>
             <h3 class="font-bold text-lg m-0">{{ r.slot.item_definition.name }}{% if r.slot.item_definition.member_name %} · {{ r.slot.item_definition.member_name }}{% endif %}</h3>
         </div>
-        <span class="ui-status ui-warn">desde {{ r.aceito_em|timesince }}</span>
+        <span class="ui-status ui-warn">pedido em {{ r.aceito_em|date:"d/m H:i" }}</span>
     </div>
     <div class="flex flex-wrap items-center gap-3 text-[15px]">
         <span class="ui-chip !cursor-default">{{ r.de.display_name }}</span>
