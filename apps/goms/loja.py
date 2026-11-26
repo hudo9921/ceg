@@ -108,8 +108,27 @@ def _pagina(qs_ou_lista, f, total):
     return list(qs_ou_lista[inicio:inicio + POR_PAGINA]), inicio + POR_PAGINA < total
 
 
-def listar_cegs(gom, f):
-    """CEGs abertas com ao menos uma vaga que bate com os filtros (sem filtros: todas, inclusive as esgotadas)."""
+def _seguindo_cegs(qs, prefs):
+    """Anota `_seg`: 2 = CEG com item de integrante seguido, 1 = de grupo seguido (apps/participants/seguindo.py)."""
+    from django.db.models import Case, IntegerField, Value, When
+
+    from apps.cegs.models import CEGItemDefinition
+    from apps.participants.seguindo import anotar_seguindo
+
+    casos = []
+    if prefs and prefs.membros:
+        itens = anotar_seguindo(CEGItemDefinition.objects.filter(ceg_id=OuterRef('pk')), prefs,
+                                'ceg__era__group_id', 'member_name').filter(_seg=2)
+        casos.append(When(Exists(itens), then=Value(2)))
+    if prefs:
+        casos.append(When(era__group_id__in=prefs.todos_grupos, then=Value(1)))
+    return qs.annotate(_seg=Case(*casos, default=Value(0), output_field=IntegerField()) if casos
+                       else Value(0, output_field=IntegerField()))
+
+
+def listar_cegs(gom, f, prefs=None):
+    """CEGs abertas com ao menos uma vaga que bate com os filtros (sem filtros: todas, inclusive as esgotadas).
+    Ordem "recentes" (padrão) põe primeiro quem o joiner segue (`prefs`)."""
     qs = cegs_abertas(gom).select_related('era__group', 'gom')
     if f.ativos:
         qs = qs.filter(Exists(_vagas(gom, f).filter(set__ceg_id=OuterRef('pk'))))
@@ -124,14 +143,14 @@ def listar_cegs(gom, f):
         qs = qs.order_by('-_livres', '-created_at')
     elif f.ordem == 'fechando':
         qs = qs.order_by(F('closes_at').asc(nulls_last=True), '-created_at')
-    else:  # recentes; esgotadas vão para o fim
-        qs = qs.annotate(_tem=Exists(livres)).order_by('-_tem', '-created_at')
+    else:  # recentes; esgotadas vão para o fim; quem o joiner segue primeiro
+        qs = _seguindo_cegs(qs, prefs).annotate(_tem=Exists(livres)).order_by('-_tem', '-_seg', '-created_at')
     total = qs.count()
     itens, mais = _pagina(qs, f, total)
     return itens, total, mais
 
 
-def listar_itens(gom, f):
+def listar_itens(gom, f, prefs=None):
     """Cada item (definição) com vaga livre vira um produto: menor preço, quantas vagas e em quais sets."""
     qs = (_vagas(gom, f)
           .values('item_definition_id', 'item_definition__name', 'item_definition__member_name',
@@ -141,7 +160,11 @@ def listar_itens(gom, f):
           .annotate(preco=Min('price'), vagas=Count('id')))
     ordem = {'preco': ['preco', '-set__ceg__created_at'], 'vagas': ['-vagas', 'preco'],
              'fechando': [F('set__ceg__closes_at').asc(nulls_last=True), 'preco']}
-    qs = qs.order_by(*ordem.get(f.ordem, ['-set__ceg__created_at', 'item_definition__order_index', 'item_definition__name']))
+    if f.ordem not in ordem:  # padrão: integrante/grupo seguido primeiro
+        from apps.participants.seguindo import anotar_seguindo
+        qs = anotar_seguindo(qs, prefs, 'set__ceg__era__group_id', 'item_definition__member_name')
+    qs = qs.order_by(*ordem.get(f.ordem, ['-_seg', '-set__ceg__created_at', 'item_definition__order_index',
+                                          'item_definition__name']))
     total = qs.count()
     itens, mais = _pagina(qs, f, total)
     for it in itens:
@@ -150,7 +173,7 @@ def listar_itens(gom, f):
     return itens, total, mais
 
 
-def listar_pronta(gom, f):
+def listar_pronta(gom, f, prefs=None):
     qs = ItemVitrine.objects.for_gom(gom).filter(status=ItemVitrine.Status.DISPONIVEL).select_related('group', 'era')
     if f.grupo:
         qs = qs.filter(group_id=f.grupo)
@@ -163,7 +186,11 @@ def listar_pronta(gom, f):
     if f.q:
         qs = qs.filter(Q(titulo__icontains=f.q) | Q(integrante__icontains=f.q) | Q(group__name__icontains=f.q)
                        | Q(era__name__icontains=f.q))
-    qs = qs.order_by(*{'preco': ['preco'], 'fechando': ['-destaque', '-created_at']}.get(f.ordem, ['-destaque', '-created_at']))
+    if f.ordem not in ('preco', 'fechando'):
+        from apps.participants.seguindo import anotar_seguindo
+        qs = anotar_seguindo(qs, prefs, 'group_id', 'integrante')
+    qs = qs.order_by(*{'preco': ['preco'], 'fechando': ['-destaque', '-created_at']}.get(
+        f.ordem, ['-destaque', '-_seg', '-created_at']))
     total = qs.count()
     itens, mais = _pagina(qs, f, total)
     return itens, total, mais
@@ -210,18 +237,19 @@ def facetas(gom, f):
             'integrantes': integrantes, 'tipos': tipos}
 
 
-def contexto_loja(gom, get):
+def contexto_loja(gom, get, prefs=None):
+    """`prefs`: o que o joiner logado segue (apps/participants/seguindo.preferencias); personaliza a ordem padrão."""
     f = ler_filtros(get)
     if not gom.pagina_mostrar_vitrine:  # GOM escondeu a pronta entrega da página
         f.aba = 'cegs'
     if f.aba == 'pronta':
         if f.vista != 'cegs':
             f.vista = 'cegs'
-        resultados, total, mais = listar_pronta(gom, f)
+        resultados, total, mais = listar_pronta(gom, f, prefs)
     elif f.vista == 'itens':
-        resultados, total, mais = listar_itens(gom, f)
+        resultados, total, mais = listar_itens(gom, f, prefs)
     else:
-        resultados, total, mais = listar_cegs(gom, f)
+        resultados, total, mais = listar_cegs(gom, f, prefs)
         from apps.cegs.services import enrich_cegs_with_availability
         enrich_cegs_with_availability(resultados)
     return {

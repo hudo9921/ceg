@@ -83,3 +83,21 @@ def _thumbnail_new_photo(sender, instance, **kwargs):
 for _model in _PHOTO_MODELS:
     pre_save.connect(_mark_new_photo, sender=_model, dispatch_uid=f'photo-mark-{_model}')
     post_save.connect(_thumbnail_new_photo, sender=_model, dispatch_uid=f'photo-thumb-{_model}')
+
+
+@receiver(post_save, sender='cegs.CEG')
+def avisar_seguidores_da_ceg(sender, instance, **kwargs):
+    """CEG visível (agendada, aberta ou enquete): avisa quem segue o grupo/integrante, uma vez (apps/participants/seguindo.py).
+    Roda depois do commit, quando os itens da CEG já existem. Mudança de status em massa (.update) não dispara."""
+    if instance.status not in ('SCHEDULED', 'OPEN', 'POLLING'):
+        return
+    from django.db import transaction
+
+    def _avisar():
+        try:
+            from apps.participants.seguindo import avisar_seguidores
+            avisar_seguidores(instance)
+        except Exception:
+            logger.exception('Falha ao avisar seguidores da CEG %s', instance.pk)
+
+    transaction.on_commit(_avisar)

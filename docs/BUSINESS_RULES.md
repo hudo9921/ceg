@@ -219,3 +219,31 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
   então o link continua válido.
 - "Preencher fotos vazias" usa, para cada item sem foto, a do mesmo integrante (nome sem acento/maiúscula), preferindo a mesma subcategoria.
 - Endpoint: `GET /creations/era/<era_id>/fotos/` (`ceg.editar`), em `apps/cegs/catalogo_views.py`.
+
+## Repasse de item (`apps/repasses`)
+
+- O joiner passa uma vaga de CEG para outra pessoa em **Meus itens → Repassar**:
+  - **Para uma pessoa:** informa o WhatsApp. A pessoa aceita ou recusa em `/me/` (se ainda não tem conta, vê o
+    pedido quando entrar com aquele número). Depois do aceite, o pedido vai para o GOM.
+  - **Para qualquer pessoa:** a vaga aparece em `/repasses/` e na página da CEG ("Vagas para repasse"). Quem pedir já
+    está aceitando; o pedido vai para o GOM. Se o GOM recusar, a vaga volta a ficar disponível.
+- **Só o GOM troca o dono** (painel **Repasses**, `/gom/repasses/`, permissão `pedidos.editar`, com contador no menu).
+  Aprovar muda `Claim.participant` e `ItemSlot.claimed_by`, registra no AuditLog (`SLOT_ASSIGNED`) e avisa os dois.
+- **O que falta pagar vai junto** (item, frete internacional, taxa). O acerto de dinheiro entre os dois é com eles.
+- Bloqueios (`services.checar_vaga`): a vaga precisa ser de quem repassa; não pode estar num pacote nacional; não pode
+  ter Pix em aberto com ela (pague ou cancele antes); um repasse ativo por vaga (constraint no banco). Conferido de
+  novo na aprovação.
+- Quem repassa pode cancelar enquanto não foi aprovado. Notificações para o joiner: `CLAIM_UPDATE`; para o GOM:
+  `GOMNotification` tipo `REPASSE`.
+
+## Seguir grupos e integrantes (`apps/participants/seguindo.py`)
+
+- O joiner segue em **/me/seguindo/** (busca de grupo; coração = grupo todo, chips = integrantes) ou no botão
+  **Seguir** do cabeçalho da CEG. Seguir um grupo vale para as subunidades dele.
+- **Personalização** (só para quem está logado e segue alguém):
+  - Home: trilho **Para você** (CEGs abertas e agendadas: com item de integrante seguido primeiro, depois do grupo),
+    grupos seguidos primeiro nos trilhos "Abertas agora" e CEGs relevantes primeiro dentro de cada trilho.
+  - Loja do GOM (ordem padrão "Recentes" nas três abas): quem o joiner segue primeiro (`anotar_seguindo`).
+- **Aviso de CEG nova:** quando uma CEG fica visível (agendada, aberta ou enquete), cada seguidor recebe uma
+  notificação (`NOVA_CEG`), **uma vez por CEG** (`AvisoSeguidores`). Integrante seguido só avisa se a CEG tem item
+  dele. Disparado por `post_save` da CEG depois do commit (os itens já existem); `.update()` em massa não dispara.

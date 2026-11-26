@@ -40,6 +40,7 @@ PARTICIPANT_ROUTES = {
     'joiner_mensagens', 'joiner_mensagem_nova', 'joiner_mensagem_enviar', 'joiner_mensagens_novas',
     'vitrine_reservar', 'joiner_reserva_cancelar', 'vitrine_comprar',
     'repasse_criar', 'repasse_responder', 'repasse_cancelar', 'repasse_pedir',
+    'seguindo', 'seguindo_buscar', 'seguindo_alternar',
 }
 LOGIN_PREFIXES_ANON = ('/entrar/', '/admin/login/', '/me/login/')
 LOGIN_PREFIXES_STAFF = ('/entrar/', '/admin/login/')

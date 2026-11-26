@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Seguindo — CegManager{% endblock %}
+
+{% block content %}
+{% comment %}
+/me/seguindo/ (apps/participants/seguindo_views.py): grupos e integrantes que o joiner segue. Seguir destaca as CEGs
+deles na home e nas lojas dos GOMs e avisa quando abre CEG nova. Card de grupo em partials/_seguindo_grupo.html.
+{% endcomment %}
+{{ grupos|json_script:"seguindo-data" }}
+<div class="max-w-3xl mx-auto space-y-6" x-data="seguindoApp()">
+    <header class="space-y-2">
+        <a href="{% url 'my_claims' %}" class="ui-label hover:underline">← Minha conta</a>
+        <h1 class="ui-disp text-4xl">Seguindo</h1>
+        <p class="ui-muted text-[15px]">Siga seus grupos e integrantes favoritos: as CEGs deles aparecem primeiro e você é avisado quando abre uma nova.</p>
+    </header>
+
+    <div class="ui-searchbar !static !w-full" role="search">
+        <i data-lucide="search" class="w-5 h-5 ui-muted flex-none" stroke-width="1.75"></i>
+        <input type="search" x-model="q" @input.debounce.300ms="buscar()" placeholder="Buscar grupo ou solista (ex.: aespa, 에스파)" aria-label="Buscar grupo" class="ui-bare flex-1 min-w-0">
+    </div>
+
+    <section x-show="q.trim().length >= 2" x-cloak class="space-y-3" aria-label="Resultados">
+        <p x-show="buscando" class="ui-label m-0">Buscando…</p>
+        <template x-for="g in resultados" :key="'r' + g.id">
+            {% include 'participants/partials/_seguindo_grupo.html' %}
+        </template>
+        <p x-show="!buscando && !resultados.length" class="ui-card p-6 text-center ui-muted m-0">Nenhum grupo com esse nome.</p>
+    </section>
+
+    <section x-show="q.trim().length < 2" class="space-y-3" aria-labelledby="seg-title">
+        <h2 id="seg-title" class="ui-disp text-2xl m-0">Quem você segue</h2>
+        <template x-for="g in seguidos" :key="'s' + g.id">
+            {% include 'participants/partials/_seguindo_grupo.html' %}
+        </template>
+        <div x-show="!seguidos.length" class="ui-card p-8 text-center space-y-2">
+            <i data-lucide="heart" class="w-8 h-8 mx-auto ui-muted" stroke-width="1.75"></i>
+            <p class="ui-disp text-xl m-0">Você ainda não segue ninguém</p>
+            <p class="ui-muted text-sm m-0">Busque um grupo acima e toque no coração (o grupo todo) ou no nome de um integrante.</p>
+        </div>
+    </section>
+</div>
+<script>
+function seguindoApp() {
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    return {
+        q: '', buscando: false, resultados: [],
+        seguidos: JSON.parse(document.getElementById('seguindo-data').textContent || '[]'),
+        async buscar() {
+            const q = this.q.trim();
+            if (q.length < 2) { this.resultados = []; return; }
+            this.buscando = true;
+            try {
+                const res = await fetch('{% url "seguindo_buscar" %}?q=' + encodeURIComponent(q));
+                this.resultados = (await res.json()).grupos || [];
+            } finally { this.buscando = false; this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh'))); }
+        },
+        segueAlgo(g) { return g.seguindo || g.members.some((m) => m.seguindo); },
+        async alternar(g, m) {
+            const res = await fetch('{% url "seguindo_alternar" %}', { method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' },
+                                                                      body: JSON.stringify(m ? { member_id: m.id } : { group_id: g.id }) });
+            const data = await res.json();
+            if (!data.success) { alert(data.message || 'Não deu certo.'); return; }
+            if (m) m.seguindo = data.seguindo; else g.seguindo = data.seguindo;
+            // Mantém "Quem você segue" em dia sem recarregar.
+            const i = this.seguidos.findIndex((x) => x.id === g.id);
+            if (this.segueAlgo(g) && i < 0) this.seguidos.push(g);
+            else if (i >= 0) this.seguidos[i] = g;
+            this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
+        },
+    };
+}
+</script>
+{% endblock %}

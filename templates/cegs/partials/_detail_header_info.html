@@ -13,7 +13,9 @@
             <span>Caixa {{ ceg.caixa.nome }}</span>
         </a>
     {% endif %}
-    <button type="button" @click="openShareModal()" class="ui-btn ui-btn-ghost ui-btn-sm ml-auto" title="Gerar texto com as vagas abertas para divulgar">
+    <span class="ml-auto"></span>
+    {% include 'cegs/partials/_detail_seguir.html' %}
+    <button type="button" @click="openShareModal()" class="ui-btn ui-btn-ghost ui-btn-sm" title="Gerar texto com as vagas abertas para divulgar">
         <i data-lucide="share-2" class="w-4 h-4" stroke-width="1.75"></i>
         <span>Divulgar vagas</span>
     </button>
