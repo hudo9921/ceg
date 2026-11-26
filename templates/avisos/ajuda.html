@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Como ativar os avisos — CegManager{% endblock %}
+
+{% block content %}
+{% comment %}
+/ajuda/notificacoes/ (apps/avisos/views.py:ajuda): passo a passo para ligar os avisos no Android, no iPhone e no
+computador, e como desbloquear. Abre na aba do aparelho de quem está vendo. O card de ativar fica no fim.
+Passos em partials/_ajuda_passo.html.
+{% endcomment %}
+<div class="max-w-3xl mx-auto space-y-6" x-data="{ aba: /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iphone' : (/Android/.test(navigator.userAgent) ? 'android' : 'computador') }">
+    <header class="space-y-2">
+        <p class="ui-label">Ajuda</p>
+        <h1 class="ui-disp text-4xl">Avisos no celular</h1>
+        <p class="ui-muted text-[15px]">Receba na hora quando o Pix for confirmado, a caixa chegar, o pacote sair ou o GOM responder — mesmo com o site fechado. É grátis e você pode desligar quando quiser.</p>
+    </header>
+
+    <div class="ui-toggle w-full max-w-md" role="tablist" aria-label="Aparelho">
+        <button type="button" role="tab" class="flex-1" :class="aba === 'android' && 'is-on'" :aria-selected="(aba === 'android').toString()" @click="aba = 'android'">Android</button>
+        <button type="button" role="tab" class="flex-1" :class="aba === 'iphone' && 'is-on'" :aria-selected="(aba === 'iphone').toString()" @click="aba = 'iphone'">iPhone</button>
+        <button type="button" role="tab" class="flex-1" :class="aba === 'computador' && 'is-on'" :aria-selected="(aba === 'computador').toString()" @click="aba = 'computador'">Computador</button>
+    </div>
+
+    <section x-show="aba === 'android'" class="space-y-3" aria-label="Android">
+        <p class="ui-muted text-sm m-0">Funciona no <b>Chrome</b> (e no Samsung Internet, Edge e Firefox).</p>
+        {% include 'avisos/partials/_ajuda_passo.html' with n=1 icone='user' titulo='Entre na sua conta' texto='Abra o CegManager no Chrome e entre com seu número (ou no painel, se você é da equipe de um GOM).' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=2 icone='bell' titulo='Toque em "Ativar"' texto='Em Minha conta, no card "Avisos no celular". Para a equipe do GOM, o card fica no Início e em Avisos do painel.' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=3 icone='circle-check' titulo='Toque em "Permitir"' texto='O Chrome pergunta se o site pode enviar notificações. Toque em Permitir.' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=4 icone='send' titulo='Teste' texto='Toque em "Testar": em alguns segundos chega um aviso. Pronto!' %}
+        <p class="ui-well p-4 text-sm m-0"><b>Dica:</b> para abrir o CegManager como um app, toque no menu <i data-lucide="ellipsis-vertical" class="w-4 h-4 inline" stroke-width="1.75"></i> do Chrome → <b>Adicionar à tela inicial</b>.</p>
+    </section>
+
+    <section x-show="aba === 'iphone'" x-cloak class="space-y-3" aria-label="iPhone">
+        <p class="ui-muted text-sm m-0">No iPhone os avisos só funcionam com o CegManager <b>adicionado à Tela de Início</b> (iOS 16.4 ou mais novo). Leva um minuto:</p>
+        {% include 'avisos/partials/_ajuda_passo.html' with n=1 icone='compass' titulo='Abra no Safari' texto='Abra o CegManager no Safari (não funciona dentro do Instagram, WhatsApp ou outro app).' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=2 icone='share' titulo='Toque em Compartilhar' texto='É o quadrado com a seta para cima, na barra de baixo (ou de cima, no iPad).' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=3 icone='square-plus' titulo='"Adicionar à Tela de Início"' texto='Role a lista e toque em Adicionar à Tela de Início, depois em Adicionar.' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=4 icone='house' titulo='Abra pelo ícone novo' texto='Na Tela de Início aparece o ícone do CegManager. Abra por ele e entre na sua conta.' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=5 icone='bell' titulo='Toque em "Ativar" e em "Permitir"' texto='No card "Avisos no celular" (Minha conta ou, para a equipe, Início do painel). Depois toque em Testar.' %}
+        <p class="ui-well p-4 text-sm m-0"><b>Não aparece "Ativar"?</b> Confira se abriu pelo ícone da Tela de Início (e não pelo Safari) e se o iPhone está no iOS 16.4 ou mais novo (Ajustes → Geral → Sobre).</p>
+    </section>
+
+    <section x-show="aba === 'computador'" x-cloak class="space-y-3" aria-label="Computador">
+        {% include 'avisos/partials/_ajuda_passo.html' with n=1 icone='laptop' titulo='Use Chrome, Edge, Firefox ou Safari' texto='Entre na sua conta (ou no painel do GOM).' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=2 icone='bell' titulo='Clique em "Ativar" e em "Permitir"' texto='No card "Avisos no celular". O navegador pergunta se pode enviar notificações.' %}
+        {% include 'avisos/partials/_ajuda_passo.html' with n=3 icone='send' titulo='Teste' texto='Clique em "Testar". Os avisos chegam enquanto o navegador estiver aberto (mesmo com a aba fechada).' %}
+    </section>
+
+    <section class="ui-card p-5 space-y-3" aria-labelledby="ajuda-bloqueado">
+        <h2 id="ajuda-bloqueado" class="ui-disp text-xl m-0 flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5" stroke-width="1.75"></i>Apareceu "bloqueadas"?</h2>
+        <p class="text-sm m-0">Você tocou em "Não permitir" antes. Para liberar:</p>
+        <ul class="text-sm m-0 pl-5 space-y-1.5 list-disc">
+            <li><b>Android (Chrome):</b> toque no cadeado <i data-lucide="lock" class="w-3.5 h-3.5 inline" stroke-width="1.75"></i> ao lado do endereço → <b>Permissões</b> → <b>Notificações</b> → Permitir. Ou: Configurações do celular → Apps → Chrome → Notificações.</li>
+            <li><b>iPhone:</b> Ajustes → <b>Notificações</b> → <b>CegManager</b> → Permitir Notificações.</li>
+            <li><b>Computador:</b> clique no cadeado ao lado do endereço → Notificações → Permitir.</li>
+        </ul>
+        <p class="text-sm ui-muted m-0">Depois volte aqui (ou em Minha conta) e toque em Ativar de novo.</p>
+    </section>
+
+    <section class="ui-card p-5 space-y-2" aria-labelledby="ajuda-o-que">
+        <h2 id="ajuda-o-que" class="ui-disp text-xl m-0">O que chega?</h2>
+        <p class="text-sm m-0"><b>Joiner:</b> Pix confirmado (ou não recebido), frete e taxa lançados, mudança de etapa da caixa, pacote enviado, set cancelado, repasse e respostas do GOM.</p>
+        <p class="text-sm m-0"><b>Equipe do GOM:</b> Pix avisado, pedido de envio, repasse para aprovar e mensagens novas.</p>
+        <p class="text-sm ui-muted m-0">Não mandamos propaganda nem aviso de toda CEG nova. Cada aparelho é ativado separado: ative no celular e no computador se quiser receber nos dois.</p>
+    </section>
+
+    {% if logged_participant or is_gom_member or is_platform_admin %}
+        {% include 'components/_push_card.html' with publico=publico_ajuda %}
+    {% else %}
+        <a href="{% url 'login_otp' %}?next={{ request.path|urlencode }}" class="ui-btn ui-btn-primary w-full">Entrar para ativar</a>
+    {% endif %}
+</div>
+{% endblock %}

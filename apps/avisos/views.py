@@ -90,3 +90,10 @@ def testar(request):
 @require_GET
 def chave(request):
     return JsonResponse({'chave': chave_publica()})
+
+
+@require_GET
+def ajuda(request):
+    """Passo a passo para ligar os avisos no Android, iPhone e computador (público)."""
+    publico = 'joiner' if get_session_participant(request) else 'gom'
+    return render(request, 'avisos/ajuda.html', {'publico_ajuda': publico})

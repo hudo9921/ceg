@@ -15,6 +15,10 @@ Estados: carregando · sem-suporte · ios · bloqueado · desligado · ligado.
         <p class="text-sm ui-muted m-0" x-show="estado === 'sem-suporte'">Este navegador não recebe notificações. No Android use o Chrome; no iPhone, adicione o site à Tela de Início.</p>
         <p class="text-sm ui-danger m-0" x-show="erro" x-text="erro"></p>
         <p class="text-sm ui-ok m-0" x-show="ok" x-text="ok"></p>
+        {% url 'ajuda_notificacoes' as url_ajuda %}{% if request.path != url_ajuda %}
+        <a href="{{ url_ajuda }}" class="text-[13px] font-semibold text-ui-accent-text hover:underline inline-flex items-center gap-1 mt-1">
+            <i data-lucide="circle-help" class="w-3.5 h-3.5" stroke-width="1.75"></i><span x-text="['ios', 'bloqueado', 'sem-suporte'].includes(estado) ? 'Ver o passo a passo' : 'Como ativar no Android e no iPhone'">Como ativar no Android e no iPhone</span>
+        </a>{% endif %}
     </div>
     <div class="flex gap-2 flex-none">
         <button type="button" x-show="estado === 'desligado'" class="ui-btn ui-btn-primary ui-btn-sm" :disabled="ocupado" @click="ativar()">

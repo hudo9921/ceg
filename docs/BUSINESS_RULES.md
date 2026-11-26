@@ -250,7 +250,8 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 
 - O joiner (em `/me/`) e a equipe do GOM (Início e Avisos do painel) ativam no card **Avisos no celular**
   (`components/_push_card.html`). Cada aparelho vira uma `Inscricao` (endpoint + chaves que o navegador gera).
-  iPhone: só com o site adicionado à Tela de Início (o card explica). Testar e Desligar no mesmo card.
+  iPhone: só com o site adicionado à Tela de Início (o card explica). Testar e Desligar no mesmo card. Passo a passo
+  para Android, iPhone e computador (e como desbloquear) em `/ajuda/notificacoes/`, com link no card e no rodapé.
 - **Joiner:** toda `ParticipantNotification` vai também por push (sinal `post_save`; o `bulk_create` das enquetes chama
   o push à mão). Inclui Pix confirmado/recusado, frete/taxa lançados, set cancelado, envio nacional, repasse e
   respostas do GOM e as mudanças de etapa da caixa (`Caixa.atualizar_status` já avisa cada joiner da caixa).
