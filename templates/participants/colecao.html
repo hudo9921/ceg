@@ -7,13 +7,14 @@
 {% block content %}
 {% comment %}
 Minha coleção (/me/colecao/) e a versão pública (/colecao/<token>/), de apps/participants/colecao.py: itens de pacotes
-entregues como fichário por grupo e era. Pública: sem preço, telefone nem GOM. Carta: partials/_colecao_carta.html.
+entregues como fichário: um por grupo, páginas de 9 bolsos (.ui-binder, static/css/ui.css). Pública: sem preço,
+telefone nem GOM. Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
 {% endcomment %}
 <div class="max-w-6xl mx-auto space-y-6" x-data="{ grupo: 'todos' }">
     <header class="space-y-2">
         {% if not publica %}<a href="{% url 'my_claims' %}" class="ui-label hover:underline">← Minha conta</a>{% else %}<p class="ui-label">Coleção</p>{% endif %}
         <h1 class="ui-disp text-4xl">{% if publica %}Coleção de {{ dono.display_name }}{% else %}Minha coleção{% endif %}</h1>
-        <p class="ui-muted text-[15px] m-0">{{ total }} ite{{ total|pluralize:"m,ns" }}{% if grupos %} de {{ grupos|length }} grupo{{ grupos|length|pluralize }}{% endif %}{% if not publica %} · o que já chegou na sua casa (pacotes entregues){% endif %}.</p>
+        <p class="ui-muted text-[15px] m-0">{{ total }} ite{{ total|pluralize:"m,ns" }}{% if grupos %} de {{ grupos|length }} grupo{{ grupos|length|pluralize }}{% endif %}{% if not publica %} · o que já chegou na sua casa (pacotes entregues){% endif %}.{% if total %} Pare o mouse ou toque numa carta para ver os detalhes.{% endif %}</p>
     </header>
 
     {% if not publica %}
@@ -46,16 +47,16 @@ entregues como fichário por grupo e era. Pública: sem preço, telefone nem GOM
     {% endif %}
 
     {% for g in grupos %}
-        <section class="space-y-4" x-show="grupo === 'todos' || grupo === '{{ g.id }}'" aria-labelledby="colecao-g-{{ g.id }}">
-            <h2 id="colecao-g-{{ g.id }}" class="ui-disp text-2xl m-0">{{ g.grupo }}</h2>
-            {% for e in g.eras %}
-                <div class="space-y-2">
-                    <h3 class="ui-label m-0">{{ e.era }} · {{ e.cartas|length }}</h3>
-                    <ul class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 m-0 p-0 list-none">
-                        {% for c in e.cartas %}{% include 'participants/partials/_colecao_carta.html' %}{% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
+        <section class="space-y-3" x-show="grupo === 'todos' || grupo === '{{ g.id }}'" aria-labelledby="colecao-g-{{ g.id }}">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 id="colecao-g-{{ g.id }}" class="ui-disp text-2xl m-0">{{ g.grupo }}</h2>
+                <p class="ui-label m-0">{{ g.total }} carta{{ g.total|pluralize }} · {{ g.paginas|length }} página{{ g.paginas|length|pluralize }}</p>
+            </div>
+            <div class="ui-binder">
+                {% for pagina in g.paginas %}
+                    <div class="ui-binder-page"><ul class="ui-binder-grid">{% for c in pagina %}{% include 'participants/partials/_colecao_carta.html' %}{% endfor %}</ul></div>
+                {% endfor %}
+            </div>
         </section>
     {% empty %}
         <div class="ui-card p-8 text-center space-y-2">

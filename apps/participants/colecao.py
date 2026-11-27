@@ -1,8 +1,10 @@
 """
 Minha coleção (/me/colecao/): o que já chegou na casa do joiner — itens de CEG e pedidos individuais de pacotes
-entregues —, como um fichário por grupo e era. O joiner pode ligar um link público (/colecao/<token>/) para mostrar;
+entregues —, como um fichário: um por grupo, páginas de 9 bolsos (sem texto; integrante, grupo, era e
+origem aparecem ao parar o mouse ou tocar na carta). O joiner pode ligar um link público (/colecao/<token>/) para mostrar;
 a página pública não mostra preço, telefone nem GOM. Desligar apaga o link (o antigo para de funcionar).
 """
+import re
 import secrets
 from collections import OrderedDict
 
@@ -15,10 +17,25 @@ from .models import Claim, Participant
 from .session_auth import get_session_participant
 
 ENTREGUE = 'ENTREGUE'
+BOLSOS = 9  # página de fichário 3x3
+
+
+def origem(ceg):
+    """De onde veio a carta, pelo título da CEG sem o nome do grupo e sem o código no fim.
+    'LE SSERAFIM — WEVERSE GLOBAL 2.0 (PF-33)' -> 'WEVERSE GLOBAL 2.0'."""
+    titulo = re.sub(r'^\s*' + re.escape(ceg.era.group.name) + r'\s*[—–:|·-]\s*', '', ceg.title, flags=re.I)
+    titulo = re.sub(r'\s*\([A-Za-z]{1,5}-?\d+\)\s*$', '', titulo).strip()
+    return titulo or ceg.title
+
+
+def paginas(cartas):
+    """Divide as cartas em páginas de 9 bolsos; a última é completada com bolsos vazios (None)."""
+    return [cartas[i:i + BOLSOS] + [None] * (BOLSOS - len(cartas[i:i + BOLSOS])) for i in range(0, len(cartas), BOLSOS)]
 
 
 def itens(participant):
-    """[{grupo, eras: [{era, cartas: [{nome, membro, img}]}]}] e o total, mais recentes primeiro dentro de cada era."""
+    """[{grupo, id, total, paginas: [[carta|None x9]]}] e o total. Carta: {nome, membro, grupo, era, origem, img};
+    dentro do grupo, ordem por era e integrante."""
     from apps.cegs.models import ItemIndividual
 
     cartas = []
@@ -28,16 +45,16 @@ def itens(participant):
     for c in claims:
         d, ceg = c.slot.item_definition, c.slot.set.ceg
         cartas.append({'grupo': ceg.era.group.name, 'grupo_id': ceg.era.group_id, 'era': ceg.era.name,
-                       'nome': d.name, 'membro': d.member_name or '', 'img': d.image_url or ceg.display_image_url})
+                       'nome': d.name, 'membro': d.member_name or '', 'origem': origem(ceg),
+                       'img': d.image_url or ceg.display_image_url})
     for i in ItemIndividual.objects.filter(comprador=participant, pacote_nacional__status=ENTREGUE):
         cartas.append({'grupo': 'Pedidos individuais', 'grupo_id': 0, 'era': 'Mercari e lojas', 'nome': i.nome,
-                       'membro': '', 'img': i.image_display_url})
+                       'membro': '', 'origem': 'Pedido individual', 'img': i.image_display_url})
     grupos = OrderedDict()
     for c in sorted(cartas, key=lambda c: (c['grupo'].lower(), c['era'].lower(), c['membro'].lower(), c['nome'].lower())):
-        g = grupos.setdefault(c['grupo_id'], {'grupo': c['grupo'], 'id': c['grupo_id'], 'eras': OrderedDict(), 'total': 0})
-        g['eras'].setdefault(c['era'], []).append(c)
-        g['total'] += 1
-    lista = [{**g, 'eras': [{'era': e, 'cartas': cs} for e, cs in g['eras'].items()]} for g in grupos.values()]
+        grupos.setdefault(c['grupo_id'], {'grupo': c['grupo'], 'id': c['grupo_id'], 'cartas': []})['cartas'].append(c)
+    lista = [{'grupo': g['grupo'], 'id': g['id'], 'total': len(g['cartas']), 'paginas': paginas(g['cartas'])}
+             for g in grupos.values()]
     return lista, len(cartas)
 
 
