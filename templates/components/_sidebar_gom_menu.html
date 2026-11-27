@@ -3,7 +3,11 @@ Menu do painel do GOM (P5) na barra lateral: itens de apps/goms/menu.py já filt
 do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_menu; "off" no bot desconectado).
 {% endcomment %}
 <nav class="space-y-0.5" aria-label="Painel do GOM">
-    {% if gom_menu %}<p class="ui-label px-3 pb-1.5 truncate">Painel{% if active_gom %} · {{ active_gom.name }}{% endif %}</p>{% endif %}
+    {% if gom_menu %}<p class="ui-label px-3 pb-1.5 truncate">Painel{% if active_gom %} · {{ active_gom.name }}{% endif %}</p>
+        {% if is_gom_staff %}<button type="button" class="ui-nav-item !h-10 !text-[14px] w-full bg-transparent border-0 cursor-pointer" @click="$dispatch('abrir-busca')">
+            <i data-lucide="search" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span class="flex-1 text-left">Buscar</span><kbd class="hidden lg:inline text-[11px] ui-muted border border-ui-line rounded-md px-1.5">Ctrl K</kbd>
+        </button>{% endif %}
+    {% endif %}
     {% for item in gom_menu %}
         <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
             <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i>
