@@ -7,11 +7,12 @@
 {% block content %}
 {% comment %}
 Minha coleção (/me/colecao/) e a versão pública (/colecao/<token>/), de apps/participants/colecao.py: itens de pacotes
-entregues como fichário: um por grupo, páginas de 9 bolsos (.ui-binder, static/css/ui.css). Pública: sem preço,
+entregues como fichário: um por grupo ou um só (escolha do dono, `modo`; no único os chips pulam até o grupo),
+páginas de 9 bolsos (.ui-binder, static/css/ui.css). Pública: sem preço,
 telefone nem GOM. Fichário que vira página: partials/_colecao_fichario.html (+ _colecao_fichario_js.html).
 Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
 {% endcomment %}
-<div class="max-w-6xl mx-auto space-y-6" x-data="{ grupo: 'todos' }">
+<div class="max-w-6xl mx-auto space-y-6" x-data="{ grupo: 'todos', de: 0, ate: 1 }" @pagina-mudou="de = $event.detail.de; ate = $event.detail.ate">
     <header class="space-y-2">
         {% if not publica %}<a href="{% url 'my_claims' %}" class="ui-label hover:underline">← Minha conta</a>{% else %}<p class="ui-label">Coleção</p>{% endif %}
         <h1 class="ui-disp text-4xl">{% if publica %}Coleção de {{ dono.display_name }}{% else %}Minha coleção{% endif %}</h1>
@@ -38,22 +39,39 @@ Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
         </section>
     {% endif %}
 
-    {% if grupos|length > 1 %}
-        <div class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filtrar por grupo">
-            <button type="button" class="ui-chip flex-none" :class="grupo === 'todos' && 'is-on'" @click="grupo = 'todos'">Todos</button>
-            {% for g in grupos %}
-                <button type="button" class="ui-chip flex-none" :class="grupo === '{{ g.id }}' && 'is-on'" @click="grupo = '{{ g.id }}'">{{ g.grupo }} <span class="ui-mono ui-muted text-xs">{{ g.total }}</span></button>
-            {% endfor %}
+    {% if grupos|length > 1 or not publica and grupos %}
+        <div class="flex flex-wrap items-center gap-3">
+            {% if grupos|length > 1 %}
+                <div class="flex gap-2 overflow-x-auto pb-1 min-w-0 w-full sm:w-auto sm:flex-1" role="group" aria-label="{% if modo == 'unico' %}Ir para o grupo{% else %}Filtrar por grupo{% endif %}">
+                    {% if modo == 'unico' %}
+                        {% for g in grupos %}
+                            <button type="button" class="ui-chip flex-none" :class="de <= {{ g.fim }} && ate >= {{ g.inicio }} && 'is-on'" @click="$dispatch('ir-pagina', {{ g.inicio }})">{{ g.grupo }} <span class="ui-mono ui-muted text-xs">{{ g.total }}</span></button>
+                        {% endfor %}
+                    {% else %}
+                        <button type="button" class="ui-chip flex-none" :class="grupo === 'todos' && 'is-on'" @click="grupo = 'todos'">Todos</button>
+                        {% for g in grupos %}
+                            <button type="button" class="ui-chip flex-none" :class="grupo === '{{ g.id }}' && 'is-on'" @click="grupo = '{{ g.id }}'">{{ g.grupo }} <span class="ui-mono ui-muted text-xs">{{ g.total }}</span></button>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% if not publica %}{% include 'participants/partials/_colecao_modo.html' %}{% endif %}
         </div>
     {% endif %}
 
+    {% if modo == 'unico' and grupos %}
+        <section class="space-y-3" aria-label="Fichário">
+            <p class="ui-label m-0 text-right">{{ total }} carta{{ total|pluralize }} · {{ paginas_unico|length }} página{{ paginas_unico|length|pluralize }}</p>
+            {% include 'participants/partials/_colecao_fichario.html' with paginas=paginas_unico nome='a coleção' %}
+        </section>
+    {% else %}
     {% for g in grupos %}
         <section class="space-y-3" x-show="grupo === 'todos' || grupo === '{{ g.id }}'" aria-labelledby="colecao-g-{{ g.id }}">
             <div class="flex items-baseline justify-between gap-3">
                 <h2 id="colecao-g-{{ g.id }}" class="ui-disp text-2xl m-0">{{ g.grupo }}</h2>
                 <p class="ui-label m-0">{{ g.total }} carta{{ g.total|pluralize }} · {{ g.paginas|length }} página{{ g.paginas|length|pluralize }}</p>
             </div>
-            {% include 'participants/partials/_colecao_fichario.html' %}
+            {% include 'participants/partials/_colecao_fichario.html' with paginas=g.paginas nome=g.grupo %}
         </section>
     {% empty %}
         <div class="ui-card p-8 text-center space-y-2">
@@ -61,6 +79,7 @@ Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
             {% if not publica %}<p class="ui-muted text-sm m-0">Quando você confirmar a entrega em Envios, os itens aparecem aqui.</p>{% endif %}
         </div>
     {% endfor %}
+    {% endif %}
 </div>
 {% include 'participants/partials/_colecao_fichario_js.html' %}
 {% endblock %}

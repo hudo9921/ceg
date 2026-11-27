@@ -26,6 +26,7 @@ urlpatterns = [
     path('meus-dados/excluir/', RequestDataDeletionView.as_view(), name='request_data_deletion'),
     path('colecao/', colecao.pagina, name='minha_colecao'),
     path('colecao/compartilhar/', colecao.compartilhar, name='colecao_compartilhar'),
+    path('colecao/fichario/', colecao.escolher_modo, name='colecao_modo'),
     path('seguindo/', seguindo_views.pagina, name='seguindo'),
     path('seguindo/buscar/', seguindo_views.buscar, name='seguindo_buscar'),
     path('seguindo/alternar/', seguindo_views.alternar_view, name='seguindo_alternar'),
