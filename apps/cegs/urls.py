@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalogo_views, conferencia, envios_views, joiner_painel, procurar
+from . import agenda, catalogo_views, conferencia, envios_views, joiner_painel, procurar
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -182,6 +182,8 @@ urlpatterns = [
     path('vitrine/', VitrineListView.as_view(), name='vitrine_list'),
     path('caixinhas/', caixinhas_abertas, name='caixinhas_abertas'),
     path('procurar/', procurar.procurar, name='procurar'),
+    path('agenda/', agenda.agenda, name='agenda'),
+    path('agenda/<slug:slug>.ics', agenda.agenda_ics, name='agenda_ics'),
     path('vitrine/novo/', VitrineItemCreateView.as_view(), name='vitrine_create'),
     path('vitrine/<slug:slug>/editar/', VitrineItemUpdateView.as_view(), name='vitrine_edit'),
     path('vitrine/<slug:slug>/excluir/', VitrineItemDeleteView.as_view(), name='vitrine_delete'),

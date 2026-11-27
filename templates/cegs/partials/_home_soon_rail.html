@@ -7,7 +7,7 @@ A contagem usa um horário-alvo (não atrasa com a aba em segundo plano). Some q
     <div class="flex items-end justify-between gap-3">
         <h2 id="soon-title" class="ui-disp text-2xl m-0">Abrindo em breve</h2>
         <div class="flex items-center gap-1">
-            <span class="ui-label mr-2">{{ scheduled_cegs|length }} agendada{{ scheduled_cegs|length|pluralize }}</span>
+            <a href="{% url 'agenda' %}" class="ui-label mr-2 hover:underline">{{ scheduled_cegs|length }} agendada{{ scheduled_cegs|length|pluralize }} · ver agenda</a>
             {% if scheduled_cegs|length > 1 %}
             <button type="button" class="ui-icon-btn hidden sm:inline-flex" aria-label="CEGs anteriores" @click="go(-1)"><i data-lucide="chevron-left" class="w-5 h-5" stroke-width="1.75"></i></button>
             <button type="button" class="ui-icon-btn hidden sm:inline-flex" aria-label="Próximas CEGs" @click="go(1)"><i data-lucide="chevron-right" class="w-5 h-5" stroke-width="1.75"></i></button>

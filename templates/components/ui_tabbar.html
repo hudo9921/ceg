@@ -11,7 +11,7 @@ DESIGN_SYSTEM.md §7.
             <span>{{ item.label }}</span>
         </a>
     {% endfor %}
-    <button type="button" class="ui-tab relative bg-transparent border-0 cursor-pointer{% if nav_repasses or nav_goms or nav_procurar or not nav_section %} is-on{% endif %}"
+    <button type="button" class="ui-tab relative bg-transparent border-0 cursor-pointer{% if nav_repasses or nav_goms or nav_procurar or nav_agenda or not nav_section %} is-on{% endif %}"
             @click="mais = true" :aria-expanded="mais.toString()" aria-haspopup="dialog">
         <i data-lucide="menu" class="w-[22px] h-[22px]" stroke-width="1.75"></i>
         <span>Mais</span>
