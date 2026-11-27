@@ -24,7 +24,7 @@ calendário" (.ics). Quem segue alguém vê "Para você" e pode filtrar ?seguind
     {% for dia in dias %}
         <section class="space-y-3" aria-labelledby="dia-{{ forloop.counter }}">
             <h2 id="dia-{{ forloop.counter }}" class="ui-label !text-[13px] m-0 sticky top-[68px] lg:top-3 z-10 py-1.5 bg-ui-bg/80 backdrop-blur">
-                {% if dia.hoje %}Hoje{% elif dia.amanha %}Amanhã{% else %}{{ dia.data|date:"l" }}{% endif %} · {{ dia.data|date:"d \d\e F" }}
+                {% if dia.hoje %}Hoje{% elif dia.amanha %}Amanhã{% else %}{{ dia.data|date:"l" }}{% endif %} · {{ dia.data|date:"d \d\e F"|lower }}
             </h2>
             <ul class="m-0 p-0 list-none space-y-3">
                 {% for ceg in dia.cegs %}{% include 'cegs/partials/_agenda_ceg.html' %}{% endfor %}
