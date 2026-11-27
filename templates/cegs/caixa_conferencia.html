@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Conferência da chegada — {{ caixa.nome }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Conferência da chegada da caixa (apps/cegs/conferencia.py, permissão caixas.editar): quantas unidades de cada item
+chegaram. O que faltou mostra quem tem o item; nada é avisado sozinho. Linhas em partials/_conferencia_linha.html.
+{% endcomment %}
+<div class="max-w-4xl mx-auto space-y-5" x-data="conferencia({{ resumo|json_attr }})">
+    <header class="space-y-2">
+        <a href="{% url 'caixa_detail' slug=caixa.slug %}" class="text-[13px] font-semibold text-ui-accent-text no-underline inline-flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5" stroke-width="1.75"></i>{{ caixa.nome }}</a>
+        <h1 class="ui-disp text-4xl">Conferir chegada</h1>
+        <p class="ui-muted text-[15px] m-0">Abra a caixa e marque quantas unidades de cada item chegaram. O que faltar mostra quem tem aquele item. Ninguém é avisado sozinho: você decide o que fazer.</p>
+    </header>
+
+    <section class="ui-card p-5 space-y-3 lg:sticky lg:top-4 z-10" aria-label="Resumo da conferência">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="font-bold m-0"><span x-text="resumo.conferidos"></span> de <span x-text="resumo.total"></span> itens conferidos</p>
+            <p class="m-0 text-sm" x-show="resumo.faltando_itens" x-cloak><span class="ui-status ui-danger"><span x-text="resumo.faltando_unidades"></span>&nbsp;unidade(s) faltando</span></p>
+            <p class="m-0 text-sm" x-show="resumo.total && resumo.conferidos === resumo.total && !resumo.faltando_itens" x-cloak><span class="ui-status ui-ok">Tudo chegou</span></p>
+        </div>
+        <div class="h-2 rounded-full bg-ui-accent-soft overflow-hidden" role="progressbar" :aria-valuenow="resumo.conferidos" aria-valuemin="0" :aria-valuemax="resumo.total">
+            <div class="h-full bg-ui-accent transition-all" :style="'width: ' + (resumo.total ? resumo.conferidos * 100 / resumo.total : 0) + '%'"></div>
+        </div>
+        <p class="text-sm m-0" x-show="resumo.afetados.length" x-cloak><b>Quem pode ter sido afetado:</b> <span x-text="resumo.afetados.join(', ')"></span></p>
+        <p class="text-sm ui-danger m-0" x-show="erro" x-text="erro" role="alert"></p>
+    </section>
+
+    {% for bloco in cegs %}
+        <section class="ui-card p-4 sm:p-5 space-y-3" aria-labelledby="conf-ceg-{{ bloco.ceg.id }}">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="conf-ceg-{{ bloco.ceg.id }}" class="font-bold text-lg m-0">{{ bloco.ceg.title }}</h2>
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" :disabled="ocupado" @click="enviar({ ceg_id: {{ bloco.ceg.id }} })">
+                    <i data-lucide="check-check" class="w-4 h-4" stroke-width="1.75"></i>Chegou tudo desta CEG</button>
+            </div>
+            <ul class="divide-y divide-ui-line m-0 p-0 list-none">
+                {% for l in bloco.linhas %}{% include 'cegs/partials/_conferencia_linha.html' %}{% endfor %}
+            </ul>
+        </section>
+    {% endfor %}
+
+    {% if individuais %}
+        <section class="ui-card p-4 sm:p-5 space-y-3" aria-labelledby="conf-individuais">
+            <h2 id="conf-individuais" class="font-bold text-lg m-0">Pedidos individuais</h2>
+            <ul class="divide-y divide-ui-line m-0 p-0 list-none">
+                {% for l in individuais %}{% include 'cegs/partials/_conferencia_linha.html' %}{% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {% if not cegs and not individuais %}
+        <p class="ui-card p-8 text-center ui-muted m-0">Esta caixa ainda não tem CEGs nem pedidos individuais.</p>
+    {% endif %}
+</div>
+<script>
+function conferencia(resumoInicial) {
+    const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    return {
+        resumo: resumoInicial, ocupado: false, erro: '',
+        async enviar(corpo) {
+            this.ocupado = true; this.erro = '';
+            try {
+                const res = await fetch('{% url "caixa_conferencia_marcar" slug=caixa.slug %}', {
+                    method: 'POST', headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+                const data = await res.json();
+                if (!data.success) { this.erro = data.message || 'Não deu para salvar.'; return; }
+                this.resumo = data.resumo;
+                window.dispatchEvent(new CustomEvent('conferencia', { detail: data.linhas }));
+            } catch (e) { this.erro = 'Sem conexão. Tente de novo.'; } finally { this.ocupado = false; }
+        },
+    };
+}
+</script>
+{% endblock %}

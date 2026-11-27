@@ -40,6 +40,7 @@ Cada GOM define em **Configurações → Pix** (`/gom/configuracoes/pix/`) uma c
 ## 📦 2. Caixas & Propagação em Cascata
 
 Uma `Caixa` agrupa várias `CEG`s e vários `ItemIndividual` (Mercari Japão):
+0.1. **Conferência de chegada** (`ConferenciaChegada`, `apps/cegs/conferencia.py`, `/caixas/<slug>/conferencia/`, permissão `caixas.editar`): por item da CEG, quantas unidades chegaram (esperado = slots não cancelados de sets ativos); por pedido individual, chegou ou não. O que faltou lista quem tem o item ("quem pode ter sido afetado"). Só registra: não muda slot, não cobra e não avisa ninguém.
 0. **Aviso de caixa fechada:** vincular CEG ou item a uma caixa fora de `EM_CONSOLIDACAO` (Embalada em diante) continua permitido, mas avisa a GOM: no modal de vincular da caixa, na mensagem depois de salvar (`_avisar_caixa_fechada`) e ao escolher a caixa em qualquer `<select name="caixa_id">` (opções com `data-caixa-fechada`, script `components/_aviso_caixa_fechada.html`). Nada é bloqueado.
 1. **Status de Rastreio:**
    - Ao alterar o status da Caixa (`EM_CONSOLIDACAO` ➔ `PRONTA_ENVIO` ➔ `ENVIADA` ➔ `NO_BRASIL` ➔ `TRIBUTADA` ➔ `LIBERADA` ➔ `ENTREGUE` ➔ `FINALIZADA`), a mudança propaga automaticamente em cascata para `ceg.shipping_status` de todas as CEGs vinculadas e `item_individual.status` de todos os itens Mercari.

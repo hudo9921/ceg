@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalogo_views, envios_views
+from . import catalogo_views, conferencia, envios_views
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -154,6 +154,8 @@ urlpatterns = [
     path('caixas/create/', CaixaCreateView.as_view(), name='caixa_create'),
     path('caixas/<slug:slug>/', CaixaDetailView.as_view(), name='caixa_detail'),
     path('caixas/<slug:slug>/edit/', CaixaUpdateView.as_view(), name='caixa_update'),
+    path('caixas/<slug:slug>/conferencia/', conferencia.pagina, name='caixa_conferencia'),
+    path('caixas/<slug:slug>/conferencia/marcar/', conferencia.marcar, name='caixa_conferencia_marcar'),
     path('caixas/<slug:slug>/status/', CaixaUpdateStatusView.as_view(), name='caixa_update_status'),
     path('caixas/<slug:slug>/link-cegs/', CaixaLinkCEGView.as_view(), name='caixa_link_cegs'),
     path('caixas/<slug:slug>/unlink-ceg/<int:ceg_id>/', CaixaUnlinkCEGView.as_view(), name='caixa_unlink_ceg'),

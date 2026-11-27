@@ -5,6 +5,7 @@
             <a href="{% url 'caixas_dashboard' %}" class="ui-label hover:underline">← Caixas & Remessas</a>
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'caixa_transfer_unclaimed_vitrine' slug=caixa.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">Transferir sobras para a Vitrine</a>
+                <a href="{% url 'caixa_conferencia' slug=caixa.slug %}" class="ui-btn {% if caixa.status == 'ENTREGUE' %}ui-btn-primary{% else %}ui-btn-ghost{% endif %} ui-btn-sm"><i data-lucide="list-checks" class="w-4 h-4" stroke-width="1.75"></i>Conferir chegada</a>
                 <a href="{% url 'caixa_update' slug=caixa.slug %}" class="ui-btn ui-btn-ghost ui-btn-sm">Editar caixa</a>
             </div>
         {% else %}
