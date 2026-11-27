@@ -2,7 +2,7 @@
 Respostas prontas (Mensagens da equipe): modelos de texto do GOM com {nome}, {valor} e {gom}.
 No primeiro uso o GOM recebe PADRAO gravado (dá para editar ou apagar cada uma; apagar todas deixa a lista vazia).
 """
-from decimal import Decimal
+from apps.pagamentos.services import total_devido
 
 from .models import RespostaPronta
 
@@ -25,16 +25,6 @@ def garantir(gom):
     return list(RespostaPronta.objects.for_gom(gom))
 
 
-def devendo(participant, gom):
-    """Quanto o joiner deve a este GOM (o que está em Pagar + Pix gerados ainda abertos)."""
-    from apps.pagamentos.models import Cobranca
-    from apps.pagamentos.services import open_units
-    total = sum((u['valor'] for u in open_units(participant, gom)), Decimal('0'))
-    total += sum((c.valor_total for c in Cobranca.objects.filter(
-        gom=gom, participant=participant, status__in=Cobranca.OPEN)), Decimal('0'))
-    return total
-
-
 def _brl(valor):
     inteiro, _, cent = f'{valor:,.2f}'.partition('.')
     return f"R$ {inteiro.replace(',', '.')},{cent}"
@@ -47,7 +37,7 @@ def preenchidas(conversa):
     campos = {
         '{nome}': (conversa.participant.display_name or '').split(' ')[0],
         '{gom}': conversa.gom.name,
-        '{valor}': _brl(devendo(conversa.participant, conversa.gom)) if precisa_valor else '',
+        '{valor}': _brl(total_devido(conversa.participant, conversa.gom)) if precisa_valor else '',
     }
     saida = []
     for titulo, texto in modelos:

@@ -2,7 +2,7 @@
 <section class="ui-card p-5 space-y-4" aria-labelledby="pix-cur-title">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
-            <h2 id="pix-cur-title" class="ui-disp text-2xl truncate">{{ cur.participant.display_name }}</h2>
+            <h2 id="pix-cur-title" class="ui-disp text-2xl truncate"><button type="button" data-joiner-id="{{ cur.participant_id }}" class="bg-transparent border-0 p-0 cursor-pointer hover:underline text-left text-ui-text" title="Ver joiner">{{ cur.participant.display_name }}</button></h2>
             <p class="ui-muted text-sm ui-mono">{{ cur.referencia }} · chave {{ cur.chave_pix }}</p>
             <p class="ui-muted text-sm">Gerado {{ cur.criada_em|date:"d/m \à\s H:i" }}{% if cur.criada_por %} pela equipe{% endif %}{% if cur.informada_em %} · avisou que pagou {{ cur.informada_em|date:"d/m \à\s H:i" }}{% endif %}</p>
         </div>

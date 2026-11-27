@@ -211,6 +211,7 @@
   - `components/ui_topbar.html`: barra superior no celular (marca, tema, atalhos da equipe, conta).
   - `components/ui_tabbar.html`: barra de abas no celular (seções do joiner + "Mais").
   - `components/_aviso_caixa_fechada.html`: script (só para a equipe) que avisa ao escolher uma caixa já Embalada ou além em `<select name="caixa_id">`.
+  - `components/_painel_joiner.html`: painel lateral do joiner (só a equipe). Abre ao clicar em qualquer elemento com `data-joiner-id` ou num link da Consulta 360° com `?participant_id=` (Ctrl/Cmd abre a página; `data-sem-painel` desliga). Conteúdo de `cegs/partials/_joiner_painel_conteudo.html` via `/joiners/<id>/painel/` (`apps/cegs/joiner_painel.py`, `pedidos.ver`): quanto deve, itens pagos, itens recentes, pacotes, o que está em aberto e se tem endereço (sem mostrar o endereço nem o telefone completo).
   - `components/_menu_mais.html`: folha do "Mais" no celular com o que a barra lateral tem e não cabe nas abas (Repasses, GOMs, Seguindo, painel do GOM, plataforma, conta).
   - As seções e qual está ativa vêm de `apps/core/context_processors.frontend` (`joiner_nav`, `nav_section`).
 - **Cadastro em Massa de Participantes (`bulk_create.html` — 30 linhas):**

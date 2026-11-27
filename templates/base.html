@@ -638,6 +638,7 @@
     {% include 'components/ui_topbar.html' %}
     {% include 'components/ui_tabbar.html' %}
     {% if is_gom_member or is_platform_admin %}{% include 'components/_aviso_caixa_fechada.html' %}{% endif %}
+    {% if is_gom_staff %}{% include 'components/_painel_joiner.html' %}{% endif %}
 
     <!-- Área Principal de Conteúdo (Deslocada pela Sidebar no Desktop) -->
     <div class="lg:pl-60 min-h-screen flex flex-col flex-1 w-full">

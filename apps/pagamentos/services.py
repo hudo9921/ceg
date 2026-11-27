@@ -96,6 +96,13 @@ def open_units(participant, gom):
     return [u for u in units if _unit_key(u) not in busy]
 
 
+def total_devido(participant, gom):
+    """Quanto o joiner deve a este GOM: o que está em Pagar + Pix já gerados e ainda abertos."""
+    total = sum((u['valor'] for u in open_units(participant, gom)), ZERO)
+    return total + sum((c.valor_total for c in Cobranca.objects.filter(
+        gom=gom, participant=participant, status__in=Cobranca.OPEN)), ZERO)
+
+
 def open_groups(participant, gom):
     """As unidades agrupadas como na tela Pagar (por CEG/item/pacote e tipo), na ordem em que aparecem."""
     groups = OrderedDict()

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalogo_views, conferencia, envios_views
+from . import catalogo_views, conferencia, envios_views, joiner_painel
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -128,6 +128,7 @@ urlpatterns = [
 
     # 1. Consulta Joiner (Visão 360º de itens, pagamentos e envios de cada participante)
     path('consulta-joiner/', ConsultaJoinerView.as_view(), name='consulta_joiner'),
+    path('joiners/<int:participant_id>/painel/', joiner_painel.painel, name='joiner_painel'),
 
     # 2. Envios Nacionais & Pacotes (Dashboard Global com todos os envios, filtros e feedbacks)
     path('envios/pacote/<int:pacote_id>/endereco/', envios_views.pacote_endereco, name='pacote_endereco'),
