@@ -7,6 +7,7 @@ from django.urls import reverse
 from apps.cegs.models import CEG, CEGItemDefinition, CEGSet, ItemSlot, PacoteNacional
 from apps.goms.models import Gom
 from apps.groups.models import Era, KpopGroup
+from apps.participants.colecao import origem, paginas
 from apps.participants.models import Claim, Participant
 
 
@@ -55,3 +56,19 @@ class ColecaoTests(TestCase):
 
     def test_precisa_entrar(self):
         self.assertEqual(self.client.get(reverse('minha_colecao')).status_code, 302)
+
+
+class FicharioTests(TestCase):
+    def test_origem_tira_grupo_e_codigo(self):
+        g = KpopGroup.objects.create(name='LE SSERAFIM', slug='lsf')
+        era = Era.objects.create(group=g, name='Crazy')
+        gom = Gom.objects.create(name='Loja F', slug='loja-f')
+        c = CEG.objects.create(gom=gom, era=era, title='LE SSERAFIM — WEVERSE GLOBAL 2.0 (PF-33)', slug='lsf-wv')
+        self.assertEqual(origem(c), 'WEVERSE GLOBAL 2.0')
+        c.title = 'Makestar'
+        self.assertEqual(origem(c), 'Makestar')
+
+    def test_paginas_de_nove_com_bolsos_vazios(self):
+        ps = paginas(list(range(10)))
+        self.assertEqual([len(p) for p in ps], [9, 9])
+        self.assertEqual(ps[1][1:], [None] * 8)

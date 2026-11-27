@@ -1,10 +1,22 @@
-{% comment %}Uma carta da coleção (participants/colecao.html): foto no formato de photocard (.ui-pc; se a imagem falhar, mostra o vazio), integrante e nome do item.{% endcomment %}
-<li class="space-y-1.5">
+{% comment %}
+Um bolso do fichário (participants/colecao.html). Sem texto: integrante, grupo · era e origem (CEG) aparecem ao parar o
+mouse (com atraso, CSS .ui-pocket-info), ao focar pelo teclado ou ao tocar (is-on). Bolso vazio quando c é None.
+Se a imagem falhar, mostra o vazio.
+{% endcomment %}
+{% if c %}
+<li class="ui-pocket" tabindex="0" x-data="{ on: false }" :class="on && 'is-on'" @click="on = !on" @keydown.enter.prevent="on = !on" @click.outside="on = false"
+    aria-label="{% if c.membro %}{{ c.membro }}, {% endif %}{{ c.nome }} — {{ c.grupo }}, {{ c.era }}, {{ c.origem }}">
     <div class="ui-pc">
-        {% if c.img %}<img src="{{ c.img|thumb }}" data-full="{{ c.img }}" loading="lazy" decoding="async" alt="{{ c.nome }}" class="w-full h-full object-cover"
+        {% if c.img %}<img src="{{ c.img|thumb }}" data-full="{{ c.img }}" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover"
              onerror="this.style.display='none'; this.nextElementSibling.style.display='';">{% endif %}
         <span class="ui-pc-empty"{% if c.img %} style="display:none"{% endif %}><i data-lucide="image" class="w-6 h-6" stroke-width="1.75"></i></span>
     </div>
-    <p class="text-[13px] font-semibold m-0 truncate">{% if c.membro %}{{ c.membro }}{% else %}{{ c.nome }}{% endif %}</p>
-    {% if c.membro %}<p class="text-[12px] ui-muted m-0 truncate">{{ c.nome }}</p>{% endif %}
+    <div class="ui-pocket-info" aria-hidden="true">
+        <b>{% firstof c.membro c.nome %}</b>
+        <span>{{ c.grupo }} · {{ c.era }}</span>
+        <span>{{ c.origem }}</span>
+    </div>
 </li>
+{% else %}
+<li class="ui-pocket" aria-hidden="true"></li>
+{% endif %}
