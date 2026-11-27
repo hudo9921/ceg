@@ -57,7 +57,7 @@
 
                     <!-- Comprador -->
                     <td class="py-3 px-3">
-                        <div class="font-bold">{{ item.comprador.display_name }}</div>
+                        <div class="font-bold">{% if item.comprador_id %}<button type="button" data-joiner-id="{{ item.comprador_id }}" class="bg-transparent border-0 p-0 cursor-pointer hover:underline text-left font-bold">{{ item.comprador.display_name }}</button>{% endif %}</div>
                         <div class="flex flex-col text-[10px] ui-muted">
                             {% if item.comprador.social_handle %}
                                 <span class="text-pink-600 dark:text-pink-400 font-semibold">{{ item.comprador.social_handle }}</span>

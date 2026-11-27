@@ -1,0 +1,71 @@
+{% comment %}
+Conteúdo do painel lateral do joiner (apps/cegs/joiner_painel.py), carregado por fetch em components/_painel_joiner.html.
+Sem endereço nem telefone completo: só se tem endereço cadastrado. Para o resto, a Consulta 360°.
+{% endcomment %}
+<div class="space-y-5">
+    <header class="flex items-center gap-3">
+        <span class="w-12 h-12 rounded-ui-pill bg-ui-accent text-white flex items-center justify-center text-lg font-bold flex-none">{{ p.display_name|slice:":1"|upper }}</span>
+        <div class="min-w-0">
+            <h2 id="painel-joiner-titulo" class="font-bold text-xl m-0 truncate">{{ p.display_name }}</h2>
+            <p class="text-[13px] ui-muted m-0 truncate">{% if p.name and p.name != p.display_name %}{{ p.name }} · {% endif %}{{ telefone }}{% if p.social_handle %} · {{ p.social_handle }}{% endif %}</p>
+        </div>
+    </header>
+
+    <dl class="grid grid-cols-2 gap-2 m-0">
+        <div class="ui-well p-3"><dt class="ui-label">Deve</dt><dd class="m-0 text-lg font-bold {% if devendo %}ui-danger{% endif %}">R$ {{ devendo|floatformat:"2g" }}</dd></div>
+        <div class="ui-well p-3"><dt class="ui-label">Itens pagos</dt><dd class="m-0 text-lg font-bold">R$ {{ pago|floatformat:"2g" }}</dd></div>
+        <div class="ui-well p-3"><dt class="ui-label">Itens</dt><dd class="m-0 font-bold">{{ total_itens }}{% if pendentes %} <span class="text-[13px] font-semibold ui-warn">· {{ pendentes }} a pagar</span>{% endif %}</dd></div>
+        <div class="ui-well p-3"><dt class="ui-label">Pacotes</dt><dd class="m-0 font-bold">{{ pacotes_total }}{% if pacotes_abertos %} <span class="text-[13px] font-semibold ui-muted">· {{ pacotes_abertos }} em aberto</span>{% endif %}</dd></div>
+    </dl>
+    <p class="text-sm m-0 flex items-center gap-2"><i data-lucide="{% if tem_endereco %}map-pin-check{% else %}map-pin-off{% endif %}" class="w-4 h-4" stroke-width="1.75"></i>{% if tem_endereco %}Tem endereço cadastrado{% else %}Ainda sem endereço cadastrado{% endif %}</p>
+
+    {% if grupos or pix_abertos %}
+        <section class="space-y-2" aria-label="O que está em aberto">
+            <h3 class="ui-label m-0">Em aberto</h3>
+            {% for c in pix_abertos %}
+                <div class="flex justify-between gap-3 text-sm"><span class="min-w-0 truncate">Pix {{ c.get_status_display|lower }}</span><b class="flex-none">R$ {{ c.valor_total|floatformat:"2g" }}</b></div>
+            {% endfor %}
+            {% for g in grupos %}
+                <div class="flex justify-between gap-3 text-sm"><span class="min-w-0 truncate">{{ g.tipo_label }} · {{ g.title }}</span><b class="flex-none">R$ {{ g.total|floatformat:"2g" }}</b></div>
+            {% endfor %}
+            {% if mais_grupos %}<p class="text-[13px] ui-muted m-0">e mais {{ mais_grupos }}…</p>{% endif %}
+        </section>
+    {% endif %}
+
+    {% if itens or avulsos %}
+        <section class="space-y-2" aria-label="Itens recentes">
+            <h3 class="ui-label m-0">Itens recentes</h3>
+            <ul class="m-0 p-0 list-none space-y-2">
+                {% for c in itens %}
+                    <li class="flex items-center gap-2.5">
+                        {% with img=c.slot.item_definition.image_url|default:c.slot.set.ceg.display_image_url %}
+                            {% if img %}<img src="{{ img|thumb }}" data-full="{{ img }}" loading="lazy" decoding="async" alt="" class="w-9 h-11 object-cover rounded-md border border-ui-line flex-none">{% endif %}
+                        {% endwith %}
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold m-0 truncate">{{ c.slot.item_definition.name }}</p>
+                            <p class="text-[12px] ui-muted m-0 truncate">{{ c.slot.set.ceg.title }}</p>
+                        </div>
+                        <span class="ui-status {% if c.status == 'PENDING' %}ui-warn{% else %}ui-ok{% endif %} flex-none">{{ c.lifecycle.label }}</span>
+                    </li>
+                {% endfor %}
+                {% for i in avulsos %}
+                    <li class="flex items-center gap-2.5">
+                        {% if i.image_display_url %}<img src="{{ i.image_display_url|thumb }}" data-full="{{ i.image_display_url }}" loading="lazy" decoding="async" alt="" class="w-9 h-11 object-cover rounded-md border border-ui-line flex-none">{% endif %}
+                        <div class="min-w-0 flex-1"><p class="text-sm font-semibold m-0 truncate">{{ i.nome }}</p><p class="text-[12px] ui-muted m-0">Pedido individual</p></div>
+                        <span class="ui-status {% if i.produto_pago %}ui-ok{% else %}ui-warn{% endif %} flex-none">{% if i.produto_pago %}Pago{% else %}A pagar{% endif %}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            {% if total_itens > itens|length %}<p class="text-[13px] ui-muted m-0">Mostrando {{ itens|length }} de {{ total_itens }}.</p>{% endif %}
+        </section>
+    {% else %}
+        <p class="ui-muted text-sm m-0">Nenhum item com este GOM ainda.</p>
+    {% endif %}
+
+    <div class="flex flex-wrap gap-2 pt-1">
+        <a href="{% url 'consulta_joiner' %}?participant_id={{ p.id }}" class="ui-btn ui-btn-primary ui-btn-sm" data-sem-painel><i data-lucide="user-search" class="w-4 h-4" stroke-width="1.75"></i>Consulta 360°</a>
+        <form method="post" action="{% url 'gom_mensagem_nova' %}" class="m-0">{% csrf_token %}<input type="hidden" name="participant_id" value="{{ p.id }}">
+            <button type="submit" class="ui-btn ui-btn-ghost ui-btn-sm"><i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i>Mensagem</button></form>
+        <a href="{% url 'envios_nacionais' %}?participant_id={{ p.id }}" class="ui-btn ui-btn-ghost ui-btn-sm" data-sem-painel><i data-lucide="truck" class="w-4 h-4" stroke-width="1.75"></i>Pacotes</a>
+    </div>
+</div>

@@ -60,7 +60,7 @@
                         #{{ slot.unit_number }}
                     </span>
                     {% if slot.claimed_by %}
-                    <span class="font-bold text-pink-600 dark:text-pink-400 truncate max-w-[100px]" title="{{ slot.claimed_by.display_name }}">
+                    <span data-joiner-id="{{ slot.claimed_by_id }}" role="button" tabindex="0" class="font-bold text-pink-600 dark:text-pink-400 truncate max-w-[100px] cursor-pointer hover:underline" title="Ver {{ slot.claimed_by.display_name }}">
                         {{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}
                     </span>
                     {% else %}
