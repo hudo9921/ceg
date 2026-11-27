@@ -18,7 +18,7 @@
             {% if caixas_mercari %}
                 <optgroup label="🇯🇵 Caixas Mercari Existentes (Japão)">
                     {% for cx in caixas_mercari %}
-                        <option value="{{ cx.id }}">
+                        <option value="{{ cx.id }}"{% if cx.status != 'EM_CONSOLIDACAO' %} data-caixa-fechada="{{ cx.get_status_display }}"{% endif %}>
                             [JP] {{ cx.nome }} ({{ cx.get_status_display }})
                         </option>
                     {% endfor %}
@@ -27,7 +27,7 @@
             <optgroup label="📦 Outras Caixas / Remessas">
                 {% for cx in caixas %}
                     {% if cx.origem != 'JP' %}
-                        <option value="{{ cx.id }}">
+                        <option value="{{ cx.id }}"{% if cx.status != 'EM_CONSOLIDACAO' %} data-caixa-fechada="{{ cx.get_status_display }}"{% endif %}>
                             [{{ cx.origem }}] {{ cx.nome }} ({{ cx.get_status_display }})
                         </option>
                     {% endif %}

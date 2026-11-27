@@ -69,7 +69,7 @@
                                     class="ui-input w-full">
                                 <option value="">Sem Caixa</option>
                                 {% for cx in caixas %}
-                                <option value="{{ cx.id }}" :selected="String(editingCeg.caixa_id) === '{{ cx.id }}'">
+                                <option value="{{ cx.id }}"{% if cx.status != 'EM_CONSOLIDACAO' %} data-caixa-fechada="{{ cx.get_status_display }}"{% endif %} :selected="String(editingCeg.caixa_id) === '{{ cx.id }}'">
                                     {{ cx.nome }} ({{ cx.get_origem_display }})
                                 </option>
                                 {% endfor %}

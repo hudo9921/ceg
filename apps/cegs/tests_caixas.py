@@ -478,3 +478,32 @@ class CaixasViewsTests(TestCase):
         self.assertNotIn(Caixa.Status.FINALIZADA, choices_values)
         self.assertIn(Caixa.Status.ENTREGUE, choices_values)
 
+
+
+class AvisoCaixaFechadaTests(TestCase):
+    """Vincular a uma caixa já Embalada funciona, mas avisa a GOM (nada é bloqueado)."""
+    setUp = CaixasViewsTests.setUp
+
+    def test_vincular_ceg_em_caixa_embalada_avisa(self):
+        from django.contrib.messages import get_messages
+        self.client.login(username='admin', password='adminpass123')
+        Caixa.objects.filter(pk=self.caixa.pk).update(status=Caixa.Status.PRONTA_ENVIO)
+        outra = CEG.objects.create(era=self.era, title="IVE SWITCH Photobook", slug="ive-switch-pb", status=CEG.Status.OPEN)
+        resp = self.client.post(reverse('caixa_link_cegs', kwargs={'slug': self.caixa.slug}), {'ceg_ids': [outra.id]})
+        outra.refresh_from_db()
+        self.assertEqual(outra.caixa_id, self.caixa.id)
+        textos = [str(m) for m in get_messages(resp.wsgi_request)]
+        self.assertTrue(any('já está "Embalada' in t for t in textos), textos)
+
+    def test_caixa_em_consolidacao_nao_avisa(self):
+        from django.contrib.messages import get_messages
+        self.client.login(username='admin', password='adminpass123')
+        outra = CEG.objects.create(era=self.era, title="IVE SWITCH Photobook", slug="ive-switch-pb", status=CEG.Status.OPEN)
+        resp = self.client.post(reverse('caixa_link_cegs', kwargs={'slug': self.caixa.slug}), {'ceg_ids': [outra.id]})
+        self.assertFalse(any('já está' in str(m) for m in get_messages(resp.wsgi_request)))
+
+    def test_opcao_de_caixa_embalada_vem_marcada(self):
+        self.client.login(username='admin', password='adminpass123')
+        Caixa.objects.filter(pk=self.caixa.pk).update(status=Caixa.Status.PRONTA_ENVIO)
+        html = self.client.get(reverse('ceg_detail', kwargs={'slug': self.ceg.slug})).content.decode()
+        self.assertIn('data-caixa-fechada="Embalada', html)

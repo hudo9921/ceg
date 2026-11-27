@@ -19,6 +19,7 @@
 
                 <form action="{% url 'caixa_link_cegs' slug=caixa.slug %}" method="post" class="space-y-4">
                     {% csrf_token %}
+                    {% if caixa.status != 'EM_CONSOLIDACAO' %}<p class="ui-well ui-warn text-[13px] font-semibold px-3 py-2 m-0 flex items-center gap-2" role="status"><i data-lucide="triangle-alert" class="w-4 h-4 shrink-0" stroke-width="1.75"></i>Esta caixa já está "{{ caixa.get_status_display }}". Confira se ainda dá para incluir.</p>{% endif %}
                     <p class="text-xs text-slate-600 dark:text-slate-300">
                         Selecione uma ou mais CEGs sem caixa para atrelar à remessa <b>{{ caixa.nome }}</b>:
                     </p>
@@ -78,6 +79,7 @@
 
                 <form action="{% url 'caixa_link_itens' slug=caixa.slug %}" method="post" class="space-y-4">
                     {% csrf_token %}
+                    {% if caixa.status != 'EM_CONSOLIDACAO' %}<p class="ui-well ui-warn text-[13px] font-semibold px-3 py-2 m-0 flex items-center gap-2" role="status"><i data-lucide="triangle-alert" class="w-4 h-4 shrink-0" stroke-width="1.75"></i>Esta caixa já está "{{ caixa.get_status_display }}". Confira se ainda dá para incluir.</p>{% endif %}
                     <p class="text-xs text-slate-600 dark:text-slate-300">
                         Selecione um ou mais itens avulsos do Mercari para atrelar à remessa <b>{{ caixa.nome }}</b>:
                     </p>
