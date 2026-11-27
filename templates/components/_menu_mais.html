@@ -14,6 +14,9 @@ e a conta. Aberto por components/ui_tabbar.html (variável `mais` do x-data de l
         </div>
 
         <nav class="space-y-0.5" aria-label="Explorar">
+            <a href="{% url 'agenda' %}" class="ui-nav-item{% if nav_agenda %} is-on{% endif %}">
+                <i data-lucide="calendar-clock" class="w-5 h-5" stroke-width="1.75"></i><span>Agenda de aberturas</span>
+            </a>
             <a href="{% url 'procurar' %}" class="ui-nav-item{% if nav_procurar %} is-on{% endif %}">
                 <i data-lucide="user-search" class="w-5 h-5" stroke-width="1.75"></i><span>Procurar integrante</span>
             </a>

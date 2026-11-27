@@ -17,6 +17,11 @@ menu de gestão do GOM, conta e tema. DESIGN_SYSTEM.md §7.
         <i data-lucide="arrow-left-right" class="w-5 h-5" stroke-width="1.75"></i>
         <span>Repasses</span>
     </a>
+    {% url 'agenda' as agenda_url %}
+    <a href="{{ agenda_url }}" class="ui-nav-item{% if nav_agenda %} is-on{% endif %}"{% if nav_agenda %} aria-current="page"{% endif %}>
+        <i data-lucide="calendar-clock" class="w-5 h-5" stroke-width="1.75"></i>
+        <span>Agenda</span>
+    </a>
     {% url 'procurar' as procurar_url %}
     <a href="{{ procurar_url }}" class="ui-nav-item{% if nav_procurar %} is-on{% endif %}"{% if nav_procurar %} aria-current="page"{% endif %}>
         <i data-lucide="user-search" class="w-5 h-5" stroke-width="1.75"></i>
