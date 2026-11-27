@@ -1,0 +1,27 @@
+{% comment %}
+Fichário de um grupo (participants/colecao.html): páginas de 9 bolsos (g.paginas), uma abertura por vez com
+Alpine.data('fichario') (partials/_colecao_fichario_js.html). Antes do Alpine, as páginas 3+ ficam escondidas.
+{% endcomment %}
+<div class="space-y-3" x-data="fichario({{ g.paginas|length }})" @keydown.left="virar(-1)" @keydown.right="virar(1)"
+     @touchstart.passive="toque($event)" @touchend.passive="soltar($event)">
+    <div class="ui-binder">
+        {% for pagina in g.paginas %}
+            <div class="ui-binder-page" x-show="ve({{ forloop.counter0 }})" :class="cls({{ forloop.counter0 }})"{% if forloop.counter0 > 1 %} style="display:none"{% endif %}
+                 role="group" aria-label="Página {{ forloop.counter }} de {{ g.paginas|length }}">
+                <ul class="ui-binder-grid">{% for c in pagina %}{% include 'participants/partials/_colecao_carta.html' %}{% endfor %}</ul>
+            </div>
+        {% endfor %}
+        {% if not g.paginas|length|divisibleby:2 %}
+            <div class="ui-binder-page is-blank" x-show="largo && ve({{ g.paginas|length }})" :class="cls({{ g.paginas|length }})" style="display:none" aria-hidden="true"></div>
+        {% endif %}
+    </div>
+    <nav class="flex items-center justify-center gap-3" aria-label="Virar páginas de {{ g.grupo }}" x-show="n > porVez"{% if g.paginas|length < 2 %} style="display:none"{% endif %}>
+        <button type="button" class="ui-icon-btn" @click="virar(-1)" :disabled="!podeVoltar" aria-label="Página anterior">
+            <i data-lucide="chevron-left" class="w-5 h-5" stroke-width="1.75"></i>
+        </button>
+        <p class="ui-label m-0 min-w-[9rem] text-center" aria-live="polite" x-text="rotulo">Página 1 de {{ g.paginas|length }}</p>
+        <button type="button" class="ui-icon-btn" @click="virar(1)" :disabled="!podeAvancar" aria-label="Próxima página">
+            <i data-lucide="chevron-right" class="w-5 h-5" stroke-width="1.75"></i>
+        </button>
+    </nav>
+</div>
