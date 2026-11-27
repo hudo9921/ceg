@@ -155,6 +155,9 @@ html.dark .ui-pc:hover::after, html.dark *:hover > .ui-pc::after { transform: tr
     .ui-binder-page.is-right { border-radius: 4px 18px 18px 4px; border-left-style: dashed; }
 }
 .ui-binder { perspective: 2200px; }
+.ui-binder:has(.has-tab) { padding-top: 22px; }
+.ui-binder-tab { position: absolute; bottom: 100%; left: 32px; margin: 0; padding: 3px 12px 2px; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; border: 1px solid var(--ui-line); border-bottom: 0; border-radius: 10px 10px 0 0; background: var(--ui-surface); color: var(--ui-text); }
+.ui-binder-page.is-left .ui-binder-tab { left: 14px; }
 .ui-binder-page.is-blank { background: var(--ui-surface-2); }
 .ui-binder-page.is-blank::before { display: none; }
 .ui-binder-page.is-hinge-l { transform-origin: left center; --ui-turn: -90deg; }

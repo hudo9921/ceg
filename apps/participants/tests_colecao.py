@@ -72,3 +72,37 @@ class FicharioTests(TestCase):
         ps = paginas(list(range(10)))
         self.assertEqual([len(p) for p in ps], [9, 9])
         self.assertEqual(ps[1][1:], [None] * 8)
+
+
+class FicharioUnicoTests(TestCase):
+    setUp = ColecaoTests.setUp
+    _entrar = ColecaoTests._entrar
+
+    def test_dono_escolhe_um_fichario_so_e_vale_no_link(self):
+        self._entrar()
+        self.client.post(reverse('colecao_compartilhar'), {'ligar': '1'})
+        self.client.post(reverse('colecao_modo'), {'modo': 'unico'})
+        self.joiner.refresh_from_db()
+        self.assertEqual(self.joiner.colecao_modo, 'unico')
+        res = self.client.get(reverse('minha_colecao'))
+        self.assertEqual(len(res.context['paginas_unico']), 1)
+        self.assertEqual(res.context['paginas_unico'][0]['rotulo'], 'aespa')
+        self.client.logout()
+        publica = self.client.get(reverse('colecao_publica', args=[self.joiner.colecao_token]))
+        self.assertEqual(publica.context['modo'], 'unico')
+        self.assertNotContains(publica, 'Como mostrar o fichário')
+
+    def test_modo_invalido_ignorado(self):
+        self._entrar()
+        self.client.post(reverse('colecao_modo'), {'modo': 'xyz'})
+        self.joiner.refresh_from_db()
+        self.assertEqual(self.joiner.colecao_modo, 'grupos')
+
+    def test_cada_grupo_comeca_pagina_nova(self):
+        from apps.participants.colecao import fichario_unico
+        cartas = [{'x': i} for i in range(10)]
+        grupos = [{'id': 1, 'grupo': 'A', 'paginas': [{'cartas': cartas[:9], 'rotulo': ''}, {'cartas': cartas[9:], 'rotulo': ''}]},
+                  {'id': 2, 'grupo': 'B', 'paginas': [{'cartas': cartas[:1], 'rotulo': ''}]}]
+        paginas, inicio = fichario_unico(grupos)
+        self.assertEqual([p['rotulo'] for p in paginas], ['A', '', 'B'])
+        self.assertEqual(inicio, {1: 0, 2: 2})

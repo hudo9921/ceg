@@ -1,0 +1,12 @@
+{% comment %}
+Escolha do dono (participants/colecao.html): um fichário por grupo ou um fichário só. Salva em Participant.colecao_modo
+(POST colecao_modo) e vale também para o link compartilhado.
+{% endcomment %}
+<form method="post" action="{% url 'colecao_modo' %}" class="m-0 ml-auto flex gap-1 ui-well p-1 flex-none" role="group" aria-label="Como mostrar o fichário">{% csrf_token %}
+    {% for valor, nome in modos %}
+        <button type="submit" name="modo" value="{{ valor }}" class="ui-chip !border-0 {% if modo == valor %}is-on{% endif %}" aria-pressed="{% if modo == valor %}true{% else %}false{% endif %}" title="{{ nome }}">
+            <i data-lucide="{% if valor == 'unico' %}book{% else %}book-copy{% endif %}" class="w-4 h-4" stroke-width="1.75"></i>
+            {% if valor == 'unico' %}Um só{% else %}Por grupo{% endif %}
+        </button>
+    {% endfor %}
+</form>

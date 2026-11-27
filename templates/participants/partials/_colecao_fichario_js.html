@@ -10,8 +10,10 @@ document.addEventListener('alpine:init', () => {
         init() {
             const mq = window.matchMedia('(min-width: 1024px)');
             const ajustar = () => { this.largo = mq.matches; if (this.largo) this.pag -= this.pag % 2; };
+            const avisar = () => this.$dispatch('pagina-mudou', { de: this.pag, ate: this.pag + this.porVez - 1 });
             ajustar();
-            mq.addEventListener('change', ajustar);
+            this.$nextTick(avisar);
+            mq.addEventListener('change', () => { ajustar(); avisar(); });
         },
         get porVez() { return this.largo ? 2 : 1; },
         // No computador o total vira par: a última página sozinha ganha um verso em branco ao lado.
@@ -35,16 +37,22 @@ document.addEventListener('alpine:init', () => {
             return i === alvo ? lado + ' ' + dobradica + ' is-turn-' + this.virando : lado;
         },
         virar(d) {
-            if (this.virando || (d > 0 ? !this.podeAvancar : !this.podeVoltar)) return;
-            const passo = d * this.porVez;
-            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.pag += passo; return; }
+            if (d > 0 ? this.podeAvancar : this.podeVoltar) this.irPara(this.pag + d * this.porVez);
+        },
+        // Vai até a abertura que contém a página i (setas, deslizar e os chips de grupo no fichário único).
+        irPara(i) {
+            const alvo = Math.max(0, Math.min(this.largo ? i - (i % 2) : i, this.n - 1));
+            if (this.virando || alvo === this.pag) return;
+            const d = alvo > this.pag ? 1 : -1;
+            const mudar = () => { this.pag = alvo; this.$dispatch('pagina-mudou', { de: alvo, ate: alvo + this.porVez - 1 }); };
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { mudar(); return; }
             this.dir = d;
             const entrar = () => { this.virando = 'in'; setTimeout(() => { this.virando = null; }, 230); };
             // Celular: avançar dobra a página atual; voltar desdobra a anterior por cima.
-            if (!this.largo && d < 0) { this.pag += passo; entrar(); return; }
+            if (!this.largo && d < 0) { mudar(); entrar(); return; }
             this.virando = 'out';
             setTimeout(() => {
-                this.pag += passo;
+                mudar();
                 if (!this.largo) { this.virando = null; return; }
                 entrar();
             }, 230);

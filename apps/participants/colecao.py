@@ -1,6 +1,6 @@
 """
 Minha coleção (/me/colecao/): o que já chegou na casa do joiner — itens de CEG e pedidos individuais de pacotes
-entregues —, como um fichário: um por grupo, páginas de 9 bolsos (sem texto; integrante, grupo, era e
+entregues —, como um fichário: um por grupo ou um só com todos (Participant.colecao_modo, escolha do dono), páginas de 9 bolsos (sem texto; integrante, grupo, era e
 origem aparecem ao parar o mouse ou tocar na carta). O joiner pode ligar um link público (/colecao/<token>/) para mostrar;
 a página pública não mostra preço, telefone nem GOM. Desligar apaga o link (o antigo para de funcionar).
 """
@@ -53,9 +53,31 @@ def itens(participant):
     grupos = OrderedDict()
     for c in sorted(cartas, key=lambda c: (c['grupo'].lower(), c['era'].lower(), c['membro'].lower(), c['nome'].lower())):
         grupos.setdefault(c['grupo_id'], {'grupo': c['grupo'], 'id': c['grupo_id'], 'cartas': []})['cartas'].append(c)
-    lista = [{'grupo': g['grupo'], 'id': g['id'], 'total': len(g['cartas']), 'paginas': paginas(g['cartas'])}
-             for g in grupos.values()]
+    lista = [{'grupo': g['grupo'], 'id': g['id'], 'total': len(g['cartas']),
+              'paginas': [{'cartas': cs, 'rotulo': ''} for cs in paginas(g['cartas'])]} for g in grupos.values()]
     return lista, len(cartas)
+
+
+def fichario_unico(grupos):
+    """Um fichário só: cada grupo começa numa página nova, com o nome do grupo na aba da primeira página.
+    Devolve as páginas e, por grupo, o índice da primeira página (para os chips pularem até ele)."""
+    todas, inicio = [], {}
+    for g in grupos:
+        inicio[g['id']] = len(todas)
+        todas += [{'cartas': p['cartas'], 'rotulo': g['grupo'] if i == 0 else ''} for i, p in enumerate(g['paginas'])]
+    return todas, inicio
+
+
+def contexto(participant, publica):
+    grupos, total = itens(participant)
+    ctx = {'grupos': grupos, 'total': total, 'dono': participant, 'publica': publica,
+           'modo': participant.colecao_modo or 'grupos'}
+    if ctx['modo'] == 'unico':
+        ctx['paginas_unico'], inicio = fichario_unico(grupos)
+        for g in grupos:
+            g['inicio'] = inicio[g['id']]
+            g['fim'] = g['inicio'] + len(g['paginas']) - 1
+    return ctx
 
 
 @never_cache
@@ -63,10 +85,10 @@ def pagina(request):
     participant = get_session_participant(request)
     if participant is None:
         return redirect('/me/login/?next=/me/colecao/')
-    grupos, total = itens(participant)
-    link = request.build_absolute_uri(f'/colecao/{participant.colecao_token}/') if participant.colecao_token else ''
-    return render(request, 'participants/colecao.html', {
-        'grupos': grupos, 'total': total, 'dono': participant, 'link': link, 'publica': False})
+    ctx = contexto(participant, publica=False)
+    ctx['link'] = request.build_absolute_uri(f'/colecao/{participant.colecao_token}/') if participant.colecao_token else ''
+    ctx['modos'] = Participant.COLECAO_MODOS
+    return render(request, 'participants/colecao.html', ctx)
 
 
 @require_POST
@@ -79,12 +101,23 @@ def compartilhar(request):
     return redirect('minha_colecao')
 
 
+@require_POST
+def escolher_modo(request):
+    """Um fichário por grupo ou um fichário só; vale para o dono e para o link compartilhado."""
+    participant = get_session_participant(request)
+    if participant is None:
+        return redirect('/me/login/?next=/me/colecao/')
+    modo = request.POST.get('modo')
+    if modo in dict(Participant.COLECAO_MODOS):
+        participant.colecao_modo = modo
+        participant.save(update_fields=['colecao_modo'])
+    return redirect('minha_colecao')
+
+
 def publica(request, token):
     if not token or len(token) < 10:
         raise Http404
     participant = Participant.objects.filter(colecao_token=token).first()
     if participant is None:
         raise Http404('Esta coleção não está mais compartilhada.')
-    grupos, total = itens(participant)
-    return render(request, 'participants/colecao.html', {
-        'grupos': grupos, 'total': total, 'dono': participant, 'publica': True})
+    return render(request, 'participants/colecao.html', contexto(participant, publica=True))

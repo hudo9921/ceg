@@ -34,7 +34,7 @@ PUBLIC_ROUTES = {
 }
 # Rotas do joiner: anônimo precisa ser mandado para o login OTP; joiner logado pode usar.
 PARTICIPANT_ROUTES = {
-    'my_claims', 'minha_colecao', 'colecao_compartilhar', 'update_profile', 'mark_notification_read', 'mark_all_notifications_read',
+    'my_claims', 'minha_colecao', 'colecao_compartilhar', 'colecao_modo', 'update_profile', 'mark_notification_read', 'mark_all_notifications_read',
     'confirmar_entrega_pacote', 'cancelar_solicitacao_envio', 'solicitar_envio_nacional',
     'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion', 'gom_rules_accept',
     'pix_gerar', 'pix_ver', 'pix_paguei', 'pix_cancelar', 'endereco_salvar', 'endereco_excluir', 'endereco_cep',
