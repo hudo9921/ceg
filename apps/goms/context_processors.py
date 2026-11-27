@@ -1,5 +1,5 @@
 from .access import accessible_goms, get_active_gom, gom_permissions, gom_role, is_platform_admin
-from .menu import build_gom_menu, build_platform_menu
+from .menu import agrupar, build_gom_menu, build_platform_menu
 from .models import GomMembership
 
 
@@ -11,6 +11,7 @@ def gom_context(request):
     gom = get_active_gom(request)
     role = gom_role(user, gom)
     gom_menu = build_gom_menu(request, gom_permissions(request)) if role else []
+    platform_menu = build_platform_menu(request) if is_platform_admin(user) else []
     return {
         'active_gom': gom,
         'gom_role': role,
@@ -24,7 +25,11 @@ def gom_context(request):
         'gom_perms': gom_permissions(request),
         # Menu do painel (apps/goms/menu.py), já filtrado pelas permissões.
         'gom_menu': gom_menu,
+        # O mesmo menu em blocos para a sanfona da barra lateral (Vendas, Logística, Gestão).
+        'gom_menu_blocos': agrupar(gom_menu),
         # Cor da marca (C4) nas telas do painel; páginas de um GOM (pública, CEG, caixa) passam o próprio.
         'brand_gom': gom if any(item['active'] for item in gom_menu) else None,
-        'platform_menu': build_platform_menu(request) if is_platform_admin(user) else [],
+        'platform_menu': platform_menu,
+        'platform_ativo': any(i['active'] for i in platform_menu),
+        'platform_alerta': any(i['alerta'] for i in platform_menu),
     }

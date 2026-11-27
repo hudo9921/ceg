@@ -1,0 +1,12 @@
+{% comment %}Um item do painel do GOM na barra lateral (components/_sidebar_gom_menu.html), com o contador quando houver.{% endcomment %}
+<a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
+    <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i>
+    <span class="flex-1">{{ item.label }}</span>
+    {% if item.key == 'avisos' and gom_unread_notifications_count > 0 %}
+        <span class="gom-unread-badge ui-nav-badge">{{ gom_unread_notifications_count }}</span>
+    {% elif item.key == 'mensagens' and gom_unread_mensagens > 0 %}
+        <span class="ui-nav-badge" aria-label="{{ gom_unread_mensagens }} conversas com mensagem nova">{{ gom_unread_mensagens }}</span>
+    {% elif item.key == 'repasses' and item.badge %}
+        <span class="ui-nav-badge" aria-label="{{ item.badge }} repasses para aprovar">{{ item.badge }}</span>
+    {% endif %}
+</a>

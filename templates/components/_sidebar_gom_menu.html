@@ -1,36 +1,45 @@
 {% comment %}
-Menu do painel do GOM (P5) na barra lateral: itens de apps/goms/menu.py já filtrados pelas permissões
-do admin (gom_menu) e, para o superusuário, os itens da plataforma (platform_menu; "off" no bot desconectado).
+Menu do painel do GOM (P5) na barra lateral e no "Mais" do celular: blocos de apps/goms/menu.py (gom_menu_blocos, já
+filtrados pelas permissões). Buscar e Início ficam à vista; Vendas, Logística e Gestão são sanfonas (navGrupo em
+base.html: abre sozinho com a página atual dentro, senão lembra a escolha). Fechado, o grupo mostra a soma dos contadores.
+Plataforma (superusuário; "off" no bot desconectado) também é sanfona. `onde` evita ids repetidos (lado | mais).
 {% endcomment %}
+{% with onde=onde|default:'lado' %}
 <nav class="space-y-0.5" aria-label="Painel do GOM">
     {% if gom_menu %}<p class="ui-label px-3 pb-1.5 truncate">Painel{% if active_gom %} · {{ active_gom.name }}{% endif %}</p>
         {% if is_gom_staff %}<button type="button" class="ui-nav-item !h-10 !text-[14px] w-full bg-transparent border-0 cursor-pointer" @click="$dispatch('abrir-busca')">
             <i data-lucide="search" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span class="flex-1 text-left">Buscar</span><kbd class="hidden lg:inline text-[11px] ui-muted border border-ui-line rounded-md px-1.5">Ctrl K</kbd>
         </button>{% endif %}
     {% endif %}
-    {% for item in gom_menu %}
-        <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
-            <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i>
-            <span class="flex-1">{{ item.label }}</span>
-            {% if item.key == 'avisos' and gom_unread_notifications_count > 0 %}
-                <span class="gom-unread-badge min-w-[22px] h-[22px] px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold flex items-center justify-center">{{ gom_unread_notifications_count }}</span>
-            {% elif item.key == 'mensagens' and gom_unread_mensagens > 0 %}
-                <span class="min-w-[22px] h-[22px] px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold flex items-center justify-center" aria-label="{{ gom_unread_mensagens }} conversas com mensagem nova">{{ gom_unread_mensagens }}</span>
-            {% elif item.key == 'repasses' and item.badge %}
-                <span class="min-w-[22px] h-[22px] px-1.5 rounded-ui-pill bg-ui-accent text-white text-[11px] font-bold flex items-center justify-center" aria-label="{{ item.badge }} repasses para aprovar">{{ item.badge }}</span>
-            {% endif %}
-        </a>
+    {% for b in gom_menu_blocos %}
+        {% if b.grupo %}
+            <div x-data="navGrupo('{{ b.grupo }}', {{ b.active|yesno:'true,false' }})">
+                {% if 'mensagens' in b.chaves %}{% include 'components/_nav_grupo_botao.html' with label=b.label icon=b.icon ativo=b.active badge=gom_unread_mensagens|add:b.badge painel=onde|add:'-'|add:b.grupo %}
+                {% elif 'avisos' in b.chaves %}{% include 'components/_nav_grupo_botao.html' with label=b.label icon=b.icon ativo=b.active badge=gom_unread_notifications_count|add:b.badge painel=onde|add:'-'|add:b.grupo %}
+                {% else %}{% include 'components/_nav_grupo_botao.html' with label=b.label icon=b.icon ativo=b.active badge=b.badge painel=onde|add:'-'|add:b.grupo %}{% endif %}
+                <div id="{{ onde }}-{{ b.grupo }}" class="ui-nav-sub" x-show="aberto"{% if not b.active %} style="display:none"{% endif %}>
+                    {% for item in b.itens %}{% include 'components/_nav_gom_item.html' %}{% endfor %}
+                </div>
+            </div>
+        {% else %}
+            {% for item in b.itens %}{% include 'components/_nav_gom_item.html' %}{% endfor %}
+        {% endif %}
     {% endfor %}
     {% if platform_menu %}
-        <p class="ui-label px-3 {% if gom_menu %}pt-3 {% endif %}pb-1.5">Plataforma</p>
-        {% for item in platform_menu %}
-            <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
-                <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span class="flex-1">{{ item.label }}</span>
-                {% if item.alerta %}<span class="ui-status ui-danger !text-[11px]" title="O bot está desconectado: abra para conectar de novo">off</span>{% endif %}
-            </a>
-        {% endfor %}
-        <a href="/admin/" target="_blank" rel="noopener" class="ui-nav-item !h-10 !text-[14px]">
-            <i data-lucide="external-link" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span>Django Admin</span>
-        </a>
+        <div class="{% if gom_menu %}pt-2{% endif %}" x-data="navGrupo('plataforma', {{ platform_ativo|yesno:'true,false' }})">
+            {% include 'components/_nav_grupo_botao.html' with label='Plataforma' icon='shield-check' ativo=platform_ativo badge=0 alerta=platform_alerta painel=onde|add:'-plataforma' %}
+            <div id="{{ onde }}-plataforma" class="ui-nav-sub" x-show="aberto"{% if not platform_ativo %} style="display:none"{% endif %}>
+                {% for item in platform_menu %}
+                    <a href="{{ item.url }}" class="ui-nav-item !h-10 !text-[14px]{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
+                        <i data-lucide="{{ item.icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span class="flex-1">{{ item.label }}</span>
+                        {% if item.alerta %}<span class="ui-status ui-danger !text-[11px]" title="O bot está desconectado: abra para conectar de novo">off</span>{% endif %}
+                    </a>
+                {% endfor %}
+                <a href="/admin/" target="_blank" rel="noopener" class="ui-nav-item !h-10 !text-[14px]">
+                    <i data-lucide="external-link" class="w-[18px] h-[18px]" stroke-width="1.75"></i><span>Django Admin</span>
+                </a>
+            </div>
+        </div>
     {% endif %}
 </nav>
+{% endwith %}

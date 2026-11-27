@@ -43,7 +43,7 @@ e a conta. Aberto por components/ui_tabbar.html (variável `mais` do x-data de l
 
         {% if is_gom_member or is_platform_admin %}
             <div class="pt-4 border-t border-ui-line">
-                {% include 'components/_sidebar_gom_menu.html' %}
+                {% include 'components/_sidebar_gom_menu.html' with onde='mais' %}
             </div>
         {% endif %}
 
