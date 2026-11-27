@@ -94,7 +94,7 @@ def get_active_gom(request):
     """GOM em que o usuário está atuando (seletor da sessão), calculado uma vez por requisição.
 
     Membro de equipe cai no primeiro GOM dele. O administrador da plataforma não entra em GOM nenhum
-    sozinho: precisa escolher em "GOMs da plataforma" (Abrir painel), e sai com "Sair do painel".
+    sozinho: precisa escolher em Plataforma > "Gerenciar GOMs" (Abrir painel), e sai com "Sair do painel".
     """
     if not hasattr(request, '_active_gom'):
         user = getattr(request, 'user', None)

@@ -1,0 +1,13 @@
+{% comment %}
+Cabeçalho de um grupo da sanfona da barra lateral (dentro de um x-data="navGrupo(...)", base.html). Parâmetros:
+label, icon, ativo (página atual está no grupo), badge (soma dos contadores; aparece só com o grupo fechado), alerta ("off"),
+painel (id da lista que o botão abre).
+{% endcomment %}
+<button type="button" class="ui-nav-item ui-nav-group !h-10 !text-[14px] w-full bg-transparent border-0 cursor-pointer{% if ativo %} has-on{% endif %}"
+        @click="alternar()" :aria-expanded="aberto ? 'true' : 'false'" aria-controls="{{ painel }}">
+    <i data-lucide="{{ icon }}" class="w-[18px] h-[18px]" stroke-width="1.75"></i>
+    <span class="flex-1 text-left">{{ label }}</span>
+    {% if alerta %}<span class="ui-status ui-danger !text-[11px]" x-show="!aberto" title="O bot está desconectado">off</span>{% endif %}
+    {% if badge %}<span class="ui-nav-badge" x-show="!aberto" aria-label="{{ badge }} novidades">{{ badge }}</span>{% endif %}
+    <i data-lucide="chevron-down" class="ui-nav-chevron w-4 h-4" :class="aberto && 'is-open'" stroke-width="1.75"></i>
+</button>

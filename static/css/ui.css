@@ -198,6 +198,14 @@ html.dark .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--u
 :root:not(.dark) .ui-sidebar .ui-nav-item.is-on { background: var(--ui-accent-soft); color: var(--ui-accent-text); box-shadow: none; font-weight: 700; }
 :root:not(.dark) .ui-sidebar .ui-nav-item.is-on svg { color: var(--ui-accent); }
 :root:not(.dark) .ui-sidebar .ui-label { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+.ui-nav-badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--ui-accent); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+/* Sanfona da barra lateral (components/_nav_grupo_botao.html): grupo com a página atual em destaque; itens recuados com guia. */
+.ui-nav-group.has-on { color: var(--ui-text); }
+.ui-nav-chevron { flex: none; transition: transform .2s ease; opacity: .7; }
+.ui-nav-chevron.is-open { transform: rotate(180deg); }
+.ui-nav-sub { margin: 2px 0 4px 20px; padding-left: 4px; border-left: 1px solid var(--ui-line); }
+.ui-nav-sub > .ui-nav-item { padding-left: 8px; padding-right: 8px; gap: 10px; }
+.ui-nav-sub > .ui-nav-item > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ui-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 6px 4px calc(8px + env(safe-area-inset-bottom)); background: var(--ui-bar); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-top: 1px solid var(--ui-line); }
 .ui-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; font-size: 11px; font-weight: 600; text-align: center; line-height: 1.15; color: var(--ui-muted); text-decoration: none; }
 .ui-tab.is-on { color: var(--ui-accent-text); }
@@ -306,7 +314,7 @@ html.dark .ui-num { border-radius: 2px; font-family: var(--ui-font-mono); }
 html.dark .ui-timer { background: rgba(10, 10, 12, .85); color: #E6ECFF; border: 1px solid rgba(143, 178, 255, .45); box-shadow: 0 0 18px -6px rgba(42, 98, 245, .9); }
 
 @media (prefers-reduced-motion: reduce) {
-    .ui-btn, .ui-pc::after, .ui-pocket-info, .ui-pick, .ui-lift, .ui-knob::after, .ui-details > summary .ui-chevron { transition: none; }
+    .ui-btn, .ui-pc::after, .ui-pocket-info, .ui-nav-chevron, .ui-pick, .ui-lift, .ui-knob::after, .ui-details > summary .ui-chevron { transition: none; }
     .ui-pick.is-free:hover, .ui-pick.is-on, .ui-lift:hover { transform: none; }
     .ui-count.is-pulse .ui-count-digits b { animation: none; }
     .ui-binder-page.is-turn-out, .ui-binder-page.is-turn-in { animation: none; }

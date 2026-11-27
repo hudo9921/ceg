@@ -207,7 +207,7 @@
   - `_notificacoes_pagination.html`: Paginação preservando filtros.
   - `_notificacoes_app_script.html`: Script Alpine.js com requisições assíncronas para leitura de notificações sem recarregar.
 - **Navegação (redesign 2026, DESIGN_SYSTEM §7.4):**
-  - `components/ui_sidebar.html`: barra lateral fixa no desktop (seções do joiner, menu do GOM, conta, tema).
+  - `components/ui_sidebar.html`: barra lateral fixa no desktop (seções do joiner, sanfona "Explorar" com Repasses/Agenda/Procurar/GOMs, menu do GOM, conta, tema).
   - `components/ui_topbar.html`: barra superior no celular (marca, tema, atalhos da equipe, conta).
   - `components/ui_tabbar.html`: barra de abas no celular (seções do joiner + "Mais").
   - `components/_aviso_caixa_fechada.html`: script (só para a equipe) que avisa ao escolher uma caixa já Embalada ou além em `<select name="caixa_id">`.
@@ -276,7 +276,7 @@
 ### Painel do GOM (P5)
 - `goms/inicio.html` (`/painel/`, view `backoffice_home`): Início com tarefas de hoje (pagamentos, pedidos de envio, aberturas), números do mês, próximas aberturas e atividade. Dados: `apps/goms/dashboard.py`, só com o que a pessoa pode ver. No celular, atalhos do menu.
 - `components/_platform_gom_banner.html`: faixa do superusuário dentro do painel de um GOM (Trocar GOM, Sair do painel). Incluída no `base.html`.
-- `components/_sidebar_gom_menu.html`: menu do painel montado em `apps/goms/menu.py` (`GOM_MENU`) e filtrado pelas permissões; seção Plataforma para o superusuário.
+- `components/_sidebar_gom_menu.html`: menu do painel montado em `apps/goms/menu.py` (`GOM_MENU`) e filtrado pelas permissões, em **sanfona**: Buscar e Início à vista; Vendas, Logística e Gestão (`GRUPOS`/`agrupar` → `gom_menu_blocos`) e Plataforma (superusuário) abrem ao clicar. O grupo da página atual abre sozinho; fora isso, `navGrupo` (base.html) lembra no aparelho se ficou aberto. Fechado, o grupo mostra a soma dos contadores (Avisos, Mensagens, Repasses) e "off" do bot. Partes: `_nav_grupo_botao.html` (cabeçalho) e `_nav_gom_item.html` (item com contador). Grupo com um item só (por permissão) vira item solto. Também usado no "Mais" do celular (`onde='mais'`).
 - **Backoffice no visual novo (P5d–P5h):** caixas (lista, formulário, transferência para a Vitrine, abas da equipe na caixa), Vitrine (formulário), Envios, Consulta Joiner, Avisos, Auditoria, Relatórios (status das CEGs, vendas, métricas), Criar (hub e modais), cadastro em massa, alocador, bot do WhatsApp, ferramentas da equipe na página da CEG e modais da home. Telas grandes migraram por papel do elemento: campos `ui-input`, rótulos `ui-label`, cartões `ui-card`, botões `ui-btn`, cabeçalhos `ui-disp`, degradês trocados por `bg-ui-accent`/`ui-well`. Topos reescritos à mão no padrão "rótulo · título · descrição".
 - `admin/base_site.html`: Django Admin com as cores do design system (variáveis do próprio admin, claro e escuro) e fonte local; atalho "Painel".
 

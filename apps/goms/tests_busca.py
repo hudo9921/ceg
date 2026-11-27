@@ -51,3 +51,25 @@ class BuscaRapidaTests(TestCase):
     def test_texto_curto_nao_busca(self):
         self.client.force_login(self.dono)
         self.assertEqual(self._grupos('w'), {})
+
+
+class MenuSanfonaTests(TestCase):
+    """Barra lateral em sanfona (apps/goms/menu.agrupar): Início à vista, grupos com o ativo marcado."""
+
+    def _item(self, key, active=False, badge=0):
+        return {'key': key, 'label': key, 'icon': 'x', 'url': '/', 'active': active, 'badge': badge}
+
+    def test_agrupa_e_marca_grupo_ativo(self):
+        from apps.goms.menu import agrupar
+        menu = [self._item('inicio'), self._item('cegs'), self._item('pagamentos'), self._item('caixas', active=True),
+                self._item('envios'), self._item('avisos'), self._item('repasses', badge=2)]
+        blocos = agrupar(menu)
+        self.assertIsNone(blocos[0]['grupo'])
+        self.assertEqual([i['key'] for i in blocos[0]['itens']], ['inicio'])
+        grupos = {b['grupo']: b for b in blocos if b['grupo']}
+        self.assertTrue(grupos['logistica']['active'])
+        self.assertFalse(grupos['vendas']['active'])
+        self.assertEqual(grupos['vendas']['badge'], 2)
+        # Gestão com um item só (Avisos) vira item solto.
+        self.assertNotIn('gestao', grupos)
+        self.assertIn('avisos', [i['key'] for b in blocos if not b['grupo'] for i in b['itens']])
