@@ -28,13 +28,13 @@ from apps.participants.models import Participant, ParticipantNotification
 # Rotas abertas a qualquer visitante (podem responder 200 para anônimos).
 PUBLIC_ROUTES = {
     'health_check', 'home', 'ceg_detail', 'ceg_polling_summary_api', 'caixa_detail',
-    'vitrine_list', 'caixinhas_abertas', 'repasses_disponiveis', 'procurar', 'agenda', 'agenda_ics', 'login_otp',
+    'vitrine_list', 'caixinhas_abertas', 'repasses_disponiveis', 'procurar', 'agenda', 'agenda_ics', 'colecao_publica', 'login_otp',
     'service_worker', 'webmanifest', 'ajuda_notificacoes', 'push_chave', 'push_inscrever', 'push_cancelar', 'push_testar', 'push_preferencias', 'logout_participant', 'privacy_policy',
     'backoffice_login', 'gom_invite_accept', 'gom_public', 'gom_directory',
 }
 # Rotas do joiner: anônimo precisa ser mandado para o login OTP; joiner logado pode usar.
 PARTICIPANT_ROUTES = {
-    'my_claims', 'update_profile', 'mark_notification_read', 'mark_all_notifications_read',
+    'my_claims', 'minha_colecao', 'colecao_compartilhar', 'update_profile', 'mark_notification_read', 'mark_all_notifications_read',
     'confirmar_entrega_pacote', 'cancelar_solicitacao_envio', 'solicitar_envio_nacional',
     'claim_slot', 'bulk_claim', 'ceg_vote', 'export_my_data', 'request_data_deletion', 'gom_rules_accept',
     'pix_gerar', 'pix_ver', 'pix_paguei', 'pix_cancelar', 'endereco_salvar', 'endereco_excluir', 'endereco_cep',
