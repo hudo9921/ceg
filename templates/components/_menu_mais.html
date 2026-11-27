@@ -29,6 +29,9 @@ e a conta. Aberto por components/ui_tabbar.html (variável `mais` do x-data de l
                 <i data-lucide="building-2" class="w-5 h-5" stroke-width="1.75"></i><span>GOMs</span>
             </a>
             {% if logged_participant %}
+                <a href="{% url 'minha_colecao' %}" class="ui-nav-item">
+                    <i data-lucide="book-heart" class="w-5 h-5" stroke-width="1.75"></i><span>Minha coleção</span>
+                </a>
                 <a href="{% url 'seguindo' %}" class="ui-nav-item">
                     <i data-lucide="heart" class="w-5 h-5" stroke-width="1.75"></i><span>Seguindo</span>
                 </a>

@@ -1,0 +1,8 @@
+{% comment %}Uma carta da coleção (participants/colecao.html): foto no formato de photocard (.ui-pc), integrante e nome do item.{% endcomment %}
+<li class="space-y-1.5">
+    <div class="ui-pc">
+        {% if c.img %}<img src="{{ c.img|thumb }}" data-full="{{ c.img }}" loading="lazy" decoding="async" alt="{{ c.nome }}" class="w-full h-full object-cover">{% else %}<span class="ui-pc-empty"><i data-lucide="image" class="w-6 h-6" stroke-width="1.75"></i></span>{% endif %}
+    </div>
+    <p class="text-[13px] font-semibold m-0 truncate">{% if c.membro %}{{ c.membro }}{% else %}{{ c.nome }}{% endif %}</p>
+    {% if c.membro %}<p class="text-[12px] ui-muted m-0 truncate">{{ c.nome }}</p>{% endif %}
+</li>

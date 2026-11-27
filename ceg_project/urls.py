@@ -17,6 +17,7 @@ def _platform_admin_only(request):
 admin.site.has_permission = _platform_admin_only
 
 from django.http import HttpResponse
+from apps.participants.colecao import publica as colecao_publica
 from apps.participants.privacy_views import PrivacyPolicyView
 
 def health_check(request):
@@ -39,6 +40,7 @@ urlpatterns = [
     path('', include('apps.avisos.urls')),  # /sw.js, /manifest.webmanifest e /push/...
     path('me/', include('apps.participants.urls')),
     path('privacidade/', PrivacyPolicyView.as_view(), name='privacy_policy'),
+    path('colecao/<str:token>/', colecao_publica, name='colecao_publica'),
     path('', include('apps.goms.urls')),
     path('analytics/', include('apps.analytics.urls')),
     path('', include('apps.cegs.urls')),

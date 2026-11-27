@@ -127,6 +127,8 @@ class Participant(models.Model):
         blank=True,
         help_text='Identificador público na comunidade de K-pop (ex: @jihyolover)'
     )
+    # Minha coleção (apps/participants/colecao.py): link público só quando o joiner liga; vazio = desligado.
+    colecao_token = models.CharField('Link da coleção', max_length=32, blank=True, db_index=True)
     notes = models.TextField('Notas Internas do Organizador', blank=True)
     created_at = models.DateTimeField('Cadastrado em', auto_now_add=True)
 
