@@ -78,7 +78,7 @@ def _links(log, granted):
     """Para onde o GOM vai a partir de um evento: o painel do joiner (com permissão) e a página da CEG."""
     links = {'url': '', 'ceg_url': '', 'ceg_title': ''}
     if log.participant_id and 'pedidos.ver' in granted:
-        links['url'] = reverse('joiner_painel', args=[log.participant_id])
+        links['url'] = f"{reverse('consulta_joiner')}?participant_id={log.participant_id}"
     elif log.pacote_nacional_id and 'envios.pacotes' in granted:
         links['url'] = reverse('envios_nacionais')
     if log.ceg_id and log.ceg:

@@ -90,7 +90,7 @@ class AtividadeLinksTests(TestCase):
     def test_joiner_e_ceg(self):
         from apps.goms.dashboard import _links
         links = _links(self.log, {'pedidos.ver'})
-        self.assertEqual(links['url'], reverse('joiner_painel', args=[self.joiner.pk]))
+        self.assertEqual(links['url'], f"{reverse('consulta_joiner')}?participant_id={self.joiner.pk}")
         self.assertEqual(links['ceg_url'], reverse('ceg_detail', kwargs={'slug': 'ive-wonderful'}))
         self.assertEqual(links['ceg_title'], 'IVE Wonderful POB')
 
