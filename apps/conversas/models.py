@@ -84,3 +84,24 @@ class ReservaVitrine(models.Model):
 
     def __str__(self):
         return f'{self.item} · {self.participant} · {self.get_status_display()}'
+
+
+class RespostaPronta(models.Model):
+    """
+    Resposta pronta da equipe em Mensagens: um clique preenche a caixa de texto (a equipe revisa e envia).
+    {nome} vira o primeiro nome do joiner, {valor} o que ele deve ao GOM e {gom} o nome do GOM (apps/conversas/respostas.py).
+    """
+    gom = models.ForeignKey('goms.Gom', on_delete=models.CASCADE, related_name='respostas_prontas', verbose_name='GOM')
+    titulo = models.CharField('Título', max_length=60)
+    texto = models.TextField('Texto', max_length=1000)
+    ordem = models.PositiveIntegerField(default=0)
+    criada_em = models.DateTimeField(auto_now_add=True)
+    objects = scoped_manager('gom')
+
+    class Meta:
+        verbose_name = 'Resposta pronta'
+        verbose_name_plural = 'Respostas prontas'
+        ordering = ['ordem', 'id']
+
+    def __str__(self):
+        return self.titulo

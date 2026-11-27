@@ -1,0 +1,25 @@
+{% comment %}
+Respostas prontas (só a equipe, dentro de _thread.html): o clique põe o texto já preenchido ({nome}, {valor}, {gom})
+na caixa de mensagem; a equipe revisa e envia. `respostas` vem de apps/conversas/respostas.py:preenchidas.
+{% endcomment %}
+{{ respostas|json_script:"chat-respostas" }}
+<div class="relative flex-none" x-data="{ aberto: false, lista: JSON.parse(document.getElementById('chat-respostas').textContent || '[]') }"
+     @keydown.escape="aberto = false" @click.outside="aberto = false">
+    <button type="button" class="ui-icon-btn" @click="aberto = !aberto" :aria-expanded="aberto.toString()" aria-label="Respostas prontas" title="Respostas prontas">
+        <i data-lucide="message-square-text" class="w-5 h-5" stroke-width="1.75"></i>
+    </button>
+    <div x-show="aberto" x-cloak class="absolute bottom-full left-0 mb-2 w-[min(88vw,340px)] ui-card ui-hud p-2 shadow-xl z-20 max-h-80 overflow-y-auto">
+        <p class="ui-label px-2 pt-1 pb-2">Respostas prontas</p>
+        <template x-for="(r, i) in lista" :key="i">
+            <button type="button" class="w-full text-left rounded-xl px-2.5 py-2 hover:bg-ui-accent-soft bg-transparent border-0 cursor-pointer"
+                    @click="texto = r.texto; aberto = false; $nextTick(() => document.getElementById('chat-texto')?.focus())">
+                <span class="block text-sm font-semibold" x-text="r.titulo"></span>
+                <span class="block text-[13px] ui-muted line-clamp-2" x-text="r.texto"></span>
+            </button>
+        </template>
+        <p x-show="!lista.length" class="text-sm ui-muted px-2.5 py-2 m-0">Nenhuma resposta salva.</p>
+        <a href="{% url 'gom_respostas' %}" class="flex items-center gap-1.5 px-2.5 pt-2 mt-1 border-t border-ui-line text-[13px] font-semibold text-ui-accent-text no-underline">
+            <i data-lucide="pencil" class="w-3.5 h-3.5" stroke-width="1.75"></i>Editar respostas
+        </a>
+    </div>
+</div>

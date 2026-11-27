@@ -66,6 +66,8 @@ class Gom(models.Model):
     caixinha_prazo_dias = models.PositiveSmallIntegerField(
         'Tempo máximo na caixinha (dias depois de chegar)', null=True, blank=True,
         help_text='Em branco: sem limite. O joiner vê "peça o envio até dd/mm".')
+    # Mensagens: as respostas prontas padrão já foram gravadas (apps/conversas/respostas.py).
+    respostas_iniciadas = models.BooleanField(default=False, editable=False)
     is_active = models.BooleanField('Ativo', default=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
 

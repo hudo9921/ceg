@@ -204,6 +204,7 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 
 ## Conversas e reservas da Vitrine
 
+- **Respostas prontas** (`RespostaPronta`, `apps/conversas/respostas.py`): modelos por GOM com `{nome}` (primeiro nome do joiner), `{valor}` (o que ele deve ao GOM: Pagar + Pix abertos) e `{gom}`. No primeiro uso o GOM recebe 4 respostas padrão (`Gom.respostas_iniciadas`); apagar todas deixa a lista vazia. O clique só preenche a caixa de texto: a equipe revisa e envia. Edição em `/mensagens/respostas/` (`mensagens.responder`).
 - Conversa entre joiner e GOM por assunto (geral, pacote, CEG, item da Vitrine). Cada rodada de mensagens gera um aviso
   no site para o outro lado; a tela aberta atualiza a cada 8 s. Equipe responde com a permissão `mensagens.responder`.
 - **Reservar** na Vitrine guarda uma unidade para o joiner (respeitando `quantidade`) e abre a conversa da reserva.
