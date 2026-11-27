@@ -25,6 +25,7 @@ Uma conversa (S5): mensagens (do JSON inicial e das buscas a cada 8 s) e a caixa
         <p x-show="!msgs.length" class="text-center ui-muted text-sm py-8">Escreva a primeira mensagem.</p>
     </div>
     <form class="p-3 border-t border-ui-line flex items-end gap-2" @submit.prevent="enviar()">
+        {% if lado == 'gom' %}{% include 'conversas/partials/_respostas_prontas.html' %}{% endif %}
         <label class="sr-only" for="chat-texto">Mensagem</label>
         <textarea id="chat-texto" x-model="texto" rows="1" maxlength="2000" class="ui-input flex-1 !py-2.5 resize-none max-h-40"
                   placeholder="Escreva sua mensagem…" @keydown.enter.prevent="if (!$event.shiftKey) enviar(); else texto += '\n'"></textarea>

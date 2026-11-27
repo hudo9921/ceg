@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Respostas prontas — Painel {{ active_gom.name }}{% endblock %}
+
+{% block content %}
+{% comment %}
+Respostas prontas do GOM (apps/conversas/views.py:gom_respostas, permissão mensagens.responder).
+Na conversa, {nome}, {valor} e {gom} viram o primeiro nome do joiner, quanto ele deve e o nome do GOM.
+{% endcomment %}
+<div class="max-w-3xl mx-auto space-y-5">
+    <header class="space-y-1.5">
+        <a href="{% url 'gom_mensagens' %}" class="text-[13px] font-semibold text-ui-accent-text no-underline inline-flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5" stroke-width="1.75"></i>Mensagens</a>
+        <h1 class="ui-disp text-4xl">Respostas prontas</h1>
+        <p class="ui-muted text-[15px]">Na conversa, toque no ícone <i data-lucide="message-square-text" class="w-4 h-4 inline" stroke-width="1.75"></i> ao lado da caixa de texto: a resposta entra já preenchida e você revisa antes de enviar.</p>
+        <p class="ui-well p-3 text-sm m-0">Use <code>{nome}</code> para o primeiro nome do joiner, <code>{valor}</code> para quanto ele deve ao GOM agora e <code>{gom}</code> para o nome do GOM.</p>
+    </header>
+
+    {% for r in respostas %}
+        <form method="post" class="ui-card p-4 space-y-3" aria-label="Resposta {{ r.titulo }}">
+            {% csrf_token %}<input type="hidden" name="id" value="{{ r.id }}">
+            <input name="titulo" value="{{ r.titulo }}" maxlength="60" required class="ui-input w-full font-semibold" aria-label="Título">
+            <textarea name="texto" rows="3" maxlength="1000" required class="ui-input w-full" aria-label="Texto">{{ r.texto }}</textarea>
+            <div class="flex gap-2 justify-end">
+                <button type="submit" name="acao" value="apagar" class="ui-btn ui-btn-ghost ui-btn-sm" formnovalidate><i data-lucide="trash-2" class="w-4 h-4" stroke-width="1.75"></i>Apagar</button>
+                <button type="submit" name="acao" value="salvar" class="ui-btn ui-btn-primary ui-btn-sm">Salvar</button>
+            </div>
+        </form>
+    {% empty %}
+        <p class="ui-card p-6 text-center ui-muted m-0">Nenhuma resposta ainda. Crie a primeira abaixo.</p>
+    {% endfor %}
+
+    <form method="post" class="ui-card p-4 space-y-3 border-dashed" aria-labelledby="nova-resposta">
+        {% csrf_token %}
+        <h2 id="nova-resposta" class="font-bold m-0 flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i>Nova resposta</h2>
+        <input name="titulo" maxlength="60" required class="ui-input w-full" placeholder="Título (ex.: Frete lançado)" aria-label="Título">
+        <textarea name="texto" rows="3" maxlength="1000" required class="ui-input w-full" placeholder="Oi, {nome}! ..." aria-label="Texto"></textarea>
+        <div class="flex justify-end"><button type="submit" name="acao" value="salvar" class="ui-btn ui-btn-primary ui-btn-sm">Criar</button></div>
+    </form>
+</div>
+{% endblock %}

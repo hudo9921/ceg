@@ -120,9 +120,42 @@ def joiner_novas(request, conversa_id):
 @staff_required(PERM)
 @require_GET
 def gom_lista(request):
-    conversas = list(Conversa.objects.for_gom(request.active_gom).select_related('participant')[:200])
+    from .respostas import preenchidas
+    conversas = list(Conversa.objects.for_gom(request.active_gom).select_related('participant', 'gom')[:200])
     cur = next((c for c in conversas if str(c.id) == request.GET.get('c')), None)
-    return _page(request, conversas, cur, 'gom', 'conversas/gom.html')
+    return _page(request, conversas, cur, 'gom', 'conversas/gom.html',
+                 {'respostas': preenchidas(cur) if cur else []})
+
+
+@never_cache
+@staff_required(PERM)
+def gom_respostas(request):
+    """Respostas prontas do GOM: criar, editar e apagar. {nome}, {valor} e {gom} são trocados na conversa."""
+    from .models import RespostaPronta
+    from .respostas import garantir
+    gom = request.active_gom
+    if request.method == 'POST':
+        garantir(gom)
+        acao, rid = request.POST.get('acao'), request.POST.get('id')
+        resposta = get_object_or_404(RespostaPronta.objects.for_gom(gom), pk=rid) if rid else None
+        if acao == 'apagar' and resposta:
+            resposta.delete()
+            messages.success(request, 'Resposta apagada.')
+        elif acao == 'salvar':
+            titulo = (request.POST.get('titulo') or '').strip()[:60]
+            texto = (request.POST.get('texto') or '').strip()[:1000]
+            if not titulo or not texto:
+                messages.error(request, 'Preencha o título e o texto.')
+            elif resposta:
+                resposta.titulo, resposta.texto = titulo, texto
+                resposta.save(update_fields=['titulo', 'texto'])
+                messages.success(request, 'Resposta salva.')
+            else:
+                ultima = RespostaPronta.objects.for_gom(gom).order_by('-ordem').first()
+                RespostaPronta.objects.create(gom=gom, titulo=titulo, texto=texto, ordem=(ultima.ordem + 1) if ultima else 0)
+                messages.success(request, 'Resposta criada.')
+        return redirect('gom_respostas')
+    return render(request, 'conversas/respostas.html', {'respostas': garantir(gom)})
 
 
 @staff_required(PERM)
