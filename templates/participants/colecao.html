@@ -8,7 +8,8 @@
 {% comment %}
 Minha coleção (/me/colecao/) e a versão pública (/colecao/<token>/), de apps/participants/colecao.py: itens de pacotes
 entregues como fichário: um por grupo, páginas de 9 bolsos (.ui-binder, static/css/ui.css). Pública: sem preço,
-telefone nem GOM. Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
+telefone nem GOM. Fichário que vira página: partials/_colecao_fichario.html (+ _colecao_fichario_js.html).
+Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
 {% endcomment %}
 <div class="max-w-6xl mx-auto space-y-6" x-data="{ grupo: 'todos' }">
     <header class="space-y-2">
@@ -52,11 +53,7 @@ telefone nem GOM. Bolso: partials/_colecao_carta.html (texto só ao parar o mous
                 <h2 id="colecao-g-{{ g.id }}" class="ui-disp text-2xl m-0">{{ g.grupo }}</h2>
                 <p class="ui-label m-0">{{ g.total }} carta{{ g.total|pluralize }} · {{ g.paginas|length }} página{{ g.paginas|length|pluralize }}</p>
             </div>
-            <div class="ui-binder">
-                {% for pagina in g.paginas %}
-                    <div class="ui-binder-page"><ul class="ui-binder-grid">{% for c in pagina %}{% include 'participants/partials/_colecao_carta.html' %}{% endfor %}</ul></div>
-                {% endfor %}
-            </div>
+            {% include 'participants/partials/_colecao_fichario.html' %}
         </section>
     {% empty %}
         <div class="ui-card p-8 text-center space-y-2">
@@ -65,4 +62,5 @@ telefone nem GOM. Bolso: partials/_colecao_carta.html (texto só ao parar o mous
         </div>
     {% endfor %}
 </div>
+{% include 'participants/partials/_colecao_fichario_js.html' %}
 {% endblock %}
