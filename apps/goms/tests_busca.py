@@ -73,3 +73,35 @@ class MenuSanfonaTests(TestCase):
         # Gestão com um item só (Avisos) vira item solto.
         self.assertNotIn('gestao', grupos)
         self.assertIn('avisos', [i['key'] for b in blocos if not b['grupo'] for i in b['itens']])
+
+
+class AtividadeLinksTests(TestCase):
+    """'Agora há pouco' no Início do painel (apps/goms/dashboard._links): cada evento leva ao joiner e à CEG."""
+
+    def setUp(self):
+        from apps.cegs.models import AuditLog
+        self.gom = Gom.objects.create(name='Loja C', slug='loja-c')
+        self.joiner = Participant.objects.create(whatsapp='5511900001111', name='Joiner C', username='joinerc')
+        era = Era.objects.create(group=KpopGroup.objects.create(name='IVE', slug='ive'), name='Wonderful')
+        self.ceg = CEG.objects.create(gom=self.gom, era=era, title='IVE Wonderful POB', slug='ive-wonderful')
+        self.log = AuditLog.objects.create(gom=self.gom, event_type='CLAIM_SUCCESS', participant=self.joiner,
+                                           ceg=self.ceg, action_label='Claim Garantido: Joiner C')
+
+    def test_joiner_e_ceg(self):
+        from apps.goms.dashboard import _links
+        links = _links(self.log, {'pedidos.ver'})
+        self.assertEqual(links['url'], reverse('joiner_painel', args=[self.joiner.pk]))
+        self.assertEqual(links['ceg_url'], reverse('ceg_detail', kwargs={'slug': 'ive-wonderful'}))
+        self.assertEqual(links['ceg_title'], 'IVE Wonderful POB')
+
+    def test_sem_permissao_de_joiner_vai_para_a_ceg(self):
+        from apps.goms.dashboard import _links
+        links = _links(self.log, {'analytics.ver'})
+        self.assertEqual(links['url'], reverse('ceg_detail', kwargs={'slug': 'ive-wonderful'}))
+        self.assertEqual(links['ceg_url'], '')
+
+    def test_evento_sem_alvo_fica_sem_link(self):
+        from apps.cegs.models import AuditLog
+        from apps.goms.dashboard import _links
+        log = AuditLog.objects.create(gom=self.gom, event_type='OTHER', action_label='Algo')
+        self.assertEqual(_links(log, {'pedidos.ver'})['url'], '')

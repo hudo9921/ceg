@@ -56,10 +56,7 @@
         <section class="ui-card overflow-hidden" aria-labelledby="atividade-title">
             <h2 id="atividade-title" class="ui-disp text-xl p-5 pb-3">Agora há pouco</h2>
             {% for a in activity %}
-                <div class="flex items-start gap-3 px-5 py-3 border-t" style="border-color: var(--ui-line)">
-                    <span class="flex-1 text-sm">{{ a.text }}</span>
-                    <span class="ui-label flex-none">{{ a.when }}</span>
-                </div>
+                {% include 'goms/partials/_inicio_atividade.html' %}
             {% endfor %}
         </section>
         {% endif %}
