@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if membro %}{{ membro.name }} ({{ membro.group.name }}) — onde tem{% else %}Procurar integrante{% endif %} — CegManager{% endblock %}
+
+{% block content %}
+{% comment %}
+/procurar/ (apps/cegs/procurar.py): onde tem um integrante em todos os GOMs. ?q= lista integrantes; ?m= mostra
+vagas livres nas CEGs abertas/agendadas, Vitrine e repasses públicos. Cards em partials/_procurar_*.html.
+{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <header class="space-y-2">
+        <p class="ui-label">Procurar</p>
+        <h1 class="ui-disp text-4xl">{% if membro %}Onde tem {{ membro.name }}{% else %}Onde tem minha bias?{% endif %}</h1>
+        <p class="ui-muted text-[15px] max-w-2xl">{% if membro %}{{ membro.group.name }} · vagas livres em CEGs de todos os GOMs, pronta entrega e repasses.{% else %}Digite o nome de uma integrante e veja todas as CEGs com vaga dela, a pronta entrega e os repasses, de todos os GOMs.{% endif %}</p>
+    </header>
+
+    <form method="get" class="flex flex-wrap items-center gap-2" role="search">
+        <label class="ui-searchbar !static flex-[1_1_280px]">
+            <i data-lucide="search" class="w-5 h-5 ui-muted flex-none ml-2" stroke-width="1.75"></i>
+            <input type="search" name="q" value="{{ q }}" placeholder="Ex.: Wonyoung, Karina, 카리나" aria-label="Nome da integrante" class="ui-bare flex-1 min-w-0 !pl-1 !border-0 !shadow-none !outline-none !ring-0" {% if not membro and not q %}autofocus{% endif %}>
+        </label>
+        <button type="submit" class="ui-btn ui-btn-primary">Procurar</button>
+    </form>
+
+    {% if candidatos|length > 1 %}
+        <section class="space-y-3" aria-labelledby="procurar-quem">
+            <h2 id="procurar-quem" class="font-bold m-0">Qual delas?</h2>
+            <div class="flex flex-wrap gap-2">
+                {% for c in candidatos %}
+                    <a href="?m={{ c.id }}" class="ui-chip no-underline">{{ c.name }} <span class="ui-muted text-[13px]">· {{ c.group.name }}{% if c.is_former %} (ex){% endif %}</span></a>
+                {% endfor %}
+            </div>
+        </section>
+    {% elif q and not membro %}
+        <p class="ui-card p-6 text-center ui-muted m-0">Não achamos nenhuma integrante com “{{ q }}”. Confira a grafia ou tente o nome em hangul.</p>
+    {% endif %}
+
+    {% if membro %}
+        {% if not total %}
+            <div class="ui-card p-8 text-center space-y-2">
+                <p class="font-semibold m-0">Nada com {{ membro.name }} agora.</p>
+                <p class="ui-muted text-sm m-0">Siga {{ membro.name }} para ver as CEGs dela primeiro quando abrirem.</p>
+                {% if logged_participant %}<a href="{% url 'seguindo' %}" class="ui-btn ui-btn-ghost ui-btn-sm mt-2">Quem eu sigo</a>{% endif %}
+            </div>
+        {% endif %}
+
+        {% if cegs %}
+            <section class="space-y-3" aria-labelledby="procurar-cegs">
+                <h2 id="procurar-cegs" class="ui-disp text-2xl m-0">CEGs com vaga <span class="ui-muted text-base font-normal">({{ cegs|length }})</span></h2>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for bloco in cegs %}{% include 'cegs/partials/_procurar_ceg.html' %}{% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {% if repasses %}
+            <section class="space-y-3" aria-labelledby="procurar-repasses">
+                <h2 id="procurar-repasses" class="ui-disp text-2xl m-0">Repasses <span class="ui-muted text-base font-normal">({{ repasses|length }})</span></h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {% for it in repasses %}{% include 'cegs/partials/_procurar_item.html' %}{% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {% if vitrine %}
+            <section class="space-y-3" aria-labelledby="procurar-vitrine">
+                <h2 id="procurar-vitrine" class="ui-disp text-2xl m-0">Pronta entrega <span class="ui-muted text-base font-normal">({{ vitrine|length }})</span></h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {% for it in vitrine %}{% include 'cegs/partials/_procurar_item.html' %}{% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

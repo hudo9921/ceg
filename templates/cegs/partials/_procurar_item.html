@@ -1,0 +1,12 @@
+{% comment %}Item em /procurar/ (repasse ou pronta entrega): `it` = {img, titulo, sub, gom, selo, url} de apps/cegs/procurar.py.{% endcomment %}
+<a href="{{ it.url }}" class="ui-card p-2.5 space-y-2 no-underline text-ui-text block hover:border-ui-accent transition">
+    <div class="aspect-[3/4] rounded-xl overflow-hidden ui-well relative">
+        {% if it.img %}<img src="{{ it.img|thumb }}" data-full="{{ it.img }}" loading="lazy" decoding="async" alt="" class="w-full h-full object-cover">{% else %}<span class="absolute inset-0 flex items-center justify-center"><i data-lucide="image" class="w-6 h-6 ui-muted" stroke-width="1.75"></i></span>{% endif %}
+        <span class="ui-stamp !left-2 !top-2 !transform-none !text-[11px]">{{ it.selo }}</span>
+    </div>
+    <div class="px-0.5">
+        <p class="text-sm font-semibold m-0 truncate">{{ it.titulo }}</p>
+        <p class="text-[12px] ui-muted m-0 truncate">{{ it.sub }}</p>
+        <p class="text-[12px] ui-muted m-0 truncate">{{ it.gom.name }}</p>
+    </div>
+</a>

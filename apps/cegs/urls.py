@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalogo_views, conferencia, envios_views, joiner_painel
+from . import catalogo_views, conferencia, envios_views, joiner_painel, procurar
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -181,6 +181,7 @@ urlpatterns = [
     # Vitrine de Pronta Entrega
     path('vitrine/', VitrineListView.as_view(), name='vitrine_list'),
     path('caixinhas/', caixinhas_abertas, name='caixinhas_abertas'),
+    path('procurar/', procurar.procurar, name='procurar'),
     path('vitrine/novo/', VitrineItemCreateView.as_view(), name='vitrine_create'),
     path('vitrine/<slug:slug>/editar/', VitrineItemUpdateView.as_view(), name='vitrine_edit'),
     path('vitrine/<slug:slug>/excluir/', VitrineItemDeleteView.as_view(), name='vitrine_delete'),

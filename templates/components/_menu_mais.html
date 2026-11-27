@@ -14,6 +14,9 @@ e a conta. Aberto por components/ui_tabbar.html (variável `mais` do x-data de l
         </div>
 
         <nav class="space-y-0.5" aria-label="Explorar">
+            <a href="{% url 'procurar' %}" class="ui-nav-item{% if nav_procurar %} is-on{% endif %}">
+                <i data-lucide="user-search" class="w-5 h-5" stroke-width="1.75"></i><span>Procurar integrante</span>
+            </a>
             {% url 'repasses_disponiveis' as repasses_url %}
             <a href="{{ repasses_url }}" class="ui-nav-item{% if nav_repasses %} is-on{% endif %}">
                 <i data-lucide="arrow-left-right" class="w-5 h-5" stroke-width="1.75"></i><span>Repasses</span>

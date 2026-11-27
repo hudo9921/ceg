@@ -1,0 +1,24 @@
+{% comment %}
+Uma CEG em /procurar/ (`bloco`: ceg, agendada, itens = definições do integrante com .livres). Mostra só os itens
+dela e quantas vagas livres cada um tem; o card leva à CEG.
+{% endcomment %}
+<a href="{% url 'ceg_detail' bloco.ceg.slug %}" class="ui-card p-4 space-y-3 no-underline text-ui-text block hover:border-ui-accent transition">
+    <div class="flex items-start gap-3">
+        {% if bloco.ceg.display_image_url %}<img src="{{ bloco.ceg.display_image_url|thumb }}" data-full="{{ bloco.ceg.display_image_url }}" loading="lazy" decoding="async" alt="" class="w-14 h-14 object-cover rounded-xl border border-ui-line flex-none">{% endif %}
+        <div class="min-w-0">
+            <p class="font-bold m-0 line-clamp-2">{{ bloco.ceg.title }}</p>
+            <p class="text-[13px] ui-muted m-0">por {{ bloco.ceg.gom.name }}</p>
+            {% if bloco.agendada %}<p class="text-[13px] m-0"><span class="ui-status ui-warn">Abre {{ bloco.ceg.opens_at|date:"d/m \à\s H:i" }}</span></p>{% endif %}
+        </div>
+    </div>
+    <ul class="m-0 p-0 list-none space-y-1.5">
+        {% for d in bloco.itens|slice:":4" %}
+            <li class="flex items-center gap-2.5">
+                {% if d.image_url %}<img src="{{ d.image_url|thumb }}" data-full="{{ d.image_url }}" loading="lazy" decoding="async" alt="" class="w-8 h-10 object-cover rounded-md border border-ui-line flex-none">{% endif %}
+                <span class="text-sm min-w-0 flex-1 truncate">{{ d.name }}</span>
+                <span class="text-[13px] font-semibold flex-none {% if d.livres %}ui-ok{% else %}ui-muted{% endif %}">{% if bloco.agendada %}{{ d.livres }} vaga{{ d.livres|pluralize }}{% else %}{{ d.livres }} livre{{ d.livres|pluralize }}{% endif %}</span>
+            </li>
+        {% endfor %}
+        {% if bloco.itens|length > 4 %}<li class="text-[13px] ui-muted">e mais {{ bloco.itens|length|add:"-4" }} item(ns)</li>{% endif %}
+    </ul>
+</a>
