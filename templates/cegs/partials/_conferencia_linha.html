@@ -1,0 +1,36 @@
+{% comment %}
+Uma linha da conferência (caixa_conferencia.html): foto, item, quantas se esperam, quantas chegaram (− / +),
+"Chegou" e quem tem o item quando faltou. `l` vem de apps/cegs/conferencia.py:montar; o estado se atualiza pelo
+evento "conferencia" (resposta do servidor).
+{% endcomment %}
+<li class="py-3 flex flex-wrap items-center gap-3"
+    x-data="{ k: '{{ l.tipo }}:{{ l.id }}', esperado: {{ l.esperado }}, chegou: {{ l.chegou }}, conferido: {{ l.conferido|yesno:'true,false' }}, situacao: '{{ l.situacao }}' }"
+    @conferencia.window="const d = $event.detail[k]; if (d) { chegou = d.chegou; conferido = d.conferido; situacao = d.situacao }">
+    {% if l.img %}<img src="{{ l.img|thumb }}" data-full="{{ l.img }}" loading="lazy" decoding="async" alt="" class="w-11 h-14 object-cover rounded-lg border border-ui-line flex-none">{% else %}<span class="w-11 h-14 ui-well flex items-center justify-center flex-none"><i data-lucide="package" class="w-5 h-5" stroke-width="1.75"></i></span>{% endif %}
+    <div class="min-w-0 flex-[1_1_180px]">
+        <p class="font-semibold m-0 truncate">{{ l.nome }}</p>
+        <p class="text-[13px] ui-muted m-0">{% if l.membro %}{{ l.membro }} · {% endif %}{% if l.tipo == 'item' %}{{ l.esperado }} esperada{{ l.esperado|pluralize }}{% else %}{{ l.donos|join:", "|default:"Sem comprador" }}{% endif %}</p>
+        <p class="text-[13px] m-0">
+            <span x-show="situacao === 'ok'" class="ui-status ui-ok">Chegou</span>
+            <span x-show="situacao === 'faltou'" x-cloak class="ui-status ui-danger" x-text="'Faltou ' + (esperado - chegou)"></span>
+            <span x-show="situacao === 'pendente'" x-cloak class="ui-status ui-muted">Não conferido</span>
+        </p>
+        {% if l.tipo == 'item' and l.donos %}<p x-show="situacao === 'faltou'" x-cloak class="text-[13px] ui-muted m-0">Quem tem: {{ l.donos|join:", " }}</p>{% endif %}
+    </div>
+    <div class="flex items-center gap-1.5 flex-none">
+        {% if l.tipo == 'item' %}
+            <button type="button" class="ui-icon-btn !w-9 !h-9" aria-label="Uma a menos" :disabled="ocupado || chegou <= 0"
+                    @click="enviar({ tipo: 'item', id: {{ l.id }}, chegou: Math.max(0, chegou - 1) })"><i data-lucide="minus" class="w-4 h-4" stroke-width="1.75"></i></button>
+            <span class="w-14 text-center font-bold tabular-nums" aria-live="polite"><span x-text="conferido ? chegou : '–'"></span>/{{ l.esperado }}</span>
+            <button type="button" class="ui-icon-btn !w-9 !h-9" aria-label="Uma a mais" :disabled="ocupado || (conferido && chegou >= esperado)"
+                    @click="enviar({ tipo: 'item', id: {{ l.id }}, chegou: conferido ? chegou + 1 : 1 })"><i data-lucide="plus" class="w-4 h-4" stroke-width="1.75"></i></button>
+        {% endif %}
+        <button type="button" class="ui-btn ui-btn-sm" :class="situacao === 'ok' ? 'ui-btn-primary' : 'ui-btn-ghost'" :disabled="ocupado"
+                @click="enviar({ tipo: '{{ l.tipo }}', id: {{ l.id }}, chegou: esperado })"><i data-lucide="check" class="w-4 h-4" stroke-width="1.75"></i>Chegou</button>
+        {% if l.tipo == 'individual' %}
+            <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" :disabled="ocupado" @click="enviar({ tipo: 'individual', id: {{ l.id }}, chegou: 0 })">Não chegou</button>
+        {% endif %}
+        <button type="button" x-show="conferido" x-cloak class="ui-icon-btn !w-9 !h-9" aria-label="Desfazer a conferência deste item" title="Desfazer"
+                :disabled="ocupado" @click="enviar({ desfazer: '{{ l.tipo }}', id: {{ l.id }} })"><i data-lucide="undo-2" class="w-4 h-4" stroke-width="1.75"></i></button>
+    </div>
+</li>
