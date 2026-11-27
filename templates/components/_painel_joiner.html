@@ -3,7 +3,7 @@ Painel lateral do joiner (só a equipe; incluído em base.html). Abre ao clicar 
 data-joiner-id="<id>" ou num link da Consulta 360° com ?participant_id= (clique simples; Ctrl/Cmd abre a página).
 Conteúdo: apps/cegs/joiner_painel.py → cegs/partials/_joiner_painel_conteudo.html.
 {% endcomment %}
-<div x-data="painelJoiner()" @keydown.escape.window="fechar()">
+<div x-data="painelJoiner()" @keydown.escape.window="fechar()" @abrir-joiner.window="abrir($event.detail)">
     <div x-show="aberto" x-cloak class="ui-scrim !z-[75]" @click="fechar()" x-transition.opacity></div>
     <aside x-show="aberto" x-cloak role="dialog" aria-modal="true" aria-labelledby="painel-joiner-titulo"
            class="fixed z-[76] bg-ui-surface border-ui-line shadow-2xl overflow-y-auto p-5

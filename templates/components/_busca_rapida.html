@@ -1,0 +1,78 @@
+{% comment %}
+Busca rápida do painel (só a equipe; incluído em base.html): Ctrl+K / ⌘K ou o botão "Buscar" do menu.
+Páginas do menu filtradas aqui; joiners, CEGs, caixas e pacotes vêm de /painel/busca/ (apps/goms/busca.py).
+Joiner abre o painel lateral (evento abrir-joiner, components/_painel_joiner.html). ↑ ↓ escolhem, Enter abre.
+{% endcomment %}
+{{ gom_menu|json_script:"busca-menu" }}
+<div x-data="buscaRapida()" @keydown.window="atalho($event)" @abrir-busca.window="abrir()">
+    <div x-show="aberto" x-cloak class="ui-scrim !z-[78] flex items-start justify-center px-4 pt-[10vh]" @click.self="fechar()">
+        <div class="ui-card ui-hud w-full max-w-xl shadow-2xl overflow-hidden" role="dialog" aria-modal="true" aria-label="Busca rápida"
+             @keydown.escape.stop="fechar()" @keydown.arrow-down.prevent="mover(1)" @keydown.arrow-up.prevent="mover(-1)" @keydown.enter.prevent="escolher()">
+            <div class="flex items-center gap-2 px-4 border-b border-ui-line">
+                <i data-lucide="search" class="w-5 h-5 ui-muted flex-none" stroke-width="1.75"></i>
+                <input x-ref="campo" x-model="q" @input.debounce.200ms="buscar()" type="search" autocomplete="off" spellcheck="false"
+                       class="ui-bare flex-1 !bg-transparent !border-0 !shadow-none !outline-none !ring-0 py-4 text-[16px] text-ui-text" placeholder="Joiner, CEG, caixa, pacote ou página…"
+                       aria-label="Buscar no painel" role="combobox" aria-controls="busca-resultados" :aria-activedescendant="lista.length ? 'busca-item-' + ativo : null">
+                <kbd class="hidden sm:inline text-[11px] ui-muted border border-ui-line rounded-md px-1.5 py-0.5">Esc</kbd>
+            </div>
+            <ul id="busca-resultados" role="listbox" class="max-h-[60vh] overflow-y-auto p-2 m-0 list-none">
+                <template x-for="(it, i) in lista" :key="i">
+                    <li>
+                        <p x-show="i === 0 || lista[i - 1].grupo !== it.grupo" class="ui-label px-2.5 pt-2.5 pb-1 m-0" x-text="it.grupo"></p>
+                        <a :href="it.url" :id="'busca-item-' + i" role="option" :aria-selected="(i === ativo).toString()"
+                           class="flex items-center gap-3 rounded-xl px-2.5 py-2 no-underline text-ui-text" :class="i === ativo && 'bg-ui-accent-soft'"
+                           @mouseenter="ativo = i" @click.prevent="escolher(i)">
+                            <span class="w-8 h-8 ui-well flex items-center justify-center flex-none text-[13px] font-bold" x-text="it.letra"></span>
+                            <span class="min-w-0"><span class="block text-sm font-semibold truncate" x-text="it.titulo"></span>
+                                <span class="block text-[12px] ui-muted truncate" x-text="it.sub" x-show="it.sub"></span></span>
+                        </a>
+                    </li>
+                </template>
+                <li x-show="q.trim().length >= 2 && !carregando && !lista.length" class="text-sm ui-muted text-center py-6">Nada encontrado para “<span x-text="q"></span>”.</li>
+                <li x-show="q.trim().length < 2 && !lista.length" class="text-sm ui-muted text-center py-6">Digite o nome do joiner (ou os 4 últimos números), da CEG, da caixa ou o código do pacote.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<script>
+function buscaRapida() {
+    const menu = JSON.parse(document.getElementById('busca-menu')?.textContent || '[]');
+    const semAcento = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    return {
+        aberto: false, q: '', lista: [], ativo: 0, carregando: false, pedido: 0,
+        atalho(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.aberto ? this.fechar() : this.abrir(); }
+        },
+        abrir() { this.aberto = true; this.q = ''; this.paginas(); this.$nextTick(() => this.$refs.campo.focus()); },
+        fechar() { this.aberto = false; },
+        paginas() {
+            const t = semAcento(this.q.trim());
+            this.lista = menu.filter((m) => !t || semAcento(m.label).includes(t))
+                .map((m) => ({ grupo: 'Páginas', titulo: m.label, sub: '', url: m.url, letra: m.label[0] }));
+            this.ativo = 0;
+        },
+        async buscar() {
+            this.paginas();
+            const q = this.q.trim();
+            if (q.length < 2) return;
+            const n = ++this.pedido; this.carregando = true;
+            try {
+                const res = await fetch('{% url "painel_busca" %}?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } });
+                const data = await res.json();
+                if (n !== this.pedido) return;  // chegou uma resposta mais nova
+                const extra = (data.grupos || []).flatMap((g) => g.itens.map((it) => ({ ...it, grupo: g.titulo, letra: (it.titulo || '?')[0].toUpperCase() })));
+                this.lista = [...extra, ...this.lista];
+                this.ativo = 0;
+            } catch (e) { /* sem conexão: fica só com as páginas */ } finally { if (n === this.pedido) this.carregando = false; }
+        },
+        mover(d) { if (this.lista.length) this.ativo = (this.ativo + d + this.lista.length) % this.lista.length; },
+        escolher(i) {
+            const it = this.lista[i ?? this.ativo];
+            if (!it) return;
+            this.fechar();
+            if (it.tipo === 'joiner') window.dispatchEvent(new CustomEvent('abrir-joiner', { detail: it.id }));
+            else window.location.href = it.url;
+        },
+    };
+}
+</script>

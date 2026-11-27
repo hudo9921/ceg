@@ -2,11 +2,12 @@ from django.urls import path
 
 from apps.groups import plataforma_views
 
-from . import settings_views, views
+from . import busca, settings_views, views
 
 urlpatterns = [
     path('entrar/', views.BackofficeLoginView.as_view(), name='backoffice_login'),
     path('painel/', views.backoffice_home, name='backoffice_home'),
+    path('painel/busca/', busca.busca, name='painel_busca'),
     path('convite/<str:token>/', views.invite_accept, name='gom_invite_accept'),
     path('gom/equipe/', views.team, name='gom_team'),
     path('gom/trocar/', views.switch_gom, name='gom_switch'),
