@@ -796,3 +796,73 @@ def imprimir_pacotes(request):
         if p.endereco_destinatario:
             log_pii_access(request, p.participant, 'endereço impresso na lista de embalagem', pacote=p)
     return render(request, 'cegs/imprimir_pacotes.html', {'pacotes': pacotes, 'gom': request.active_gom})
+
+
+ETAPAS_EXPORTAR = {
+    'abertos': ('SOLICITADO', 'EM_PREPARACAO'),
+    'SOLICITADO': ('SOLICITADO',),
+    'EM_PREPARACAO': ('EM_PREPARACAO',),
+    'ENVIADO': ('ENVIADO',),
+}
+
+
+def separar_endereco(texto):
+    """
+    Desfaz Endereco.texto_completo() (nome / rua, número — complemento / bairro — cidade/UF / CEP) em colunas.
+    Endereço antigo em texto livre: tudo vai para "Endereço completo" e as colunas ficam vazias.
+    """
+    import re
+    vazio = dict.fromkeys(('nome', 'rua', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'cep'), '')
+    linhas = [x.strip() for x in (texto or '').splitlines() if x.strip()]
+    m_cep = re.fullmatch(r'CEP\s*([\d.\-\s]+)', linhas[-1]) if linhas else None
+    m_cid = re.fullmatch(r'(.*?)\s+—\s+(.+)/([A-Z]{2})', linhas[2]) if len(linhas) == 4 else None
+    m_rua = re.fullmatch(r'(.+),\s*([^,—]+?)(?:\s+—\s+(.*))?', linhas[1]) if len(linhas) == 4 else None
+    if not (m_cep and m_cid and m_rua):
+        return vazio
+    return {'nome': linhas[0], 'rua': m_rua.group(1), 'numero': m_rua.group(2), 'complemento': m_rua.group(3) or '',
+            'bairro': m_cid.group(1), 'cidade': m_cid.group(2), 'uf': m_cid.group(3),
+            'cep': re.sub(r'\D', '', m_cep.group(1))}
+
+
+@staff_required('envios.pacotes')
+def exportar_pacotes(request):
+    """
+    Planilha (CSV com ;, abre no Excel e no Google Planilhas) dos pacotes para colar no Melhor Envio, Correios ou
+    transportadora: destinatário e endereço em colunas, itens, frete e rastreio. `?etapa=abertos|SOLICITADO|
+    EM_PREPARACAO|ENVIADO` ou `?ids=1,2`. Cada endereço exportado vai para a Auditoria (log_pii_access).
+    """
+    import csv
+
+    from django.http import HttpResponse
+    from django.utils import timezone
+
+    from apps.core.privacy import log_pii_access
+
+    qs = (PacoteNacional.objects.for_gom(request.active_gom)
+          .select_related('participant', 'metodo_envio')
+          .prefetch_related('slots__item_definition', 'itens_individuais'))
+    ids = [int(x) for x in request.GET.get('ids', '').split(',') if x.strip().isdigit()]
+    etapa = request.GET.get('etapa', 'abertos')
+    qs = qs.filter(pk__in=ids) if ids else qs.filter(status__in=ETAPAS_EXPORTAR.get(etapa, ()))
+
+    resposta = HttpResponse(content_type='text/csv; charset=utf-8')
+    nome = f"pacotes-{etapa if not ids else 'selecionados'}-{timezone.localdate():%Y-%m-%d}.csv"
+    resposta['Content-Disposition'] = f'attachment; filename="{nome}"'
+    resposta.write('﻿')  # BOM: o Excel abre os acentos certos
+    w = csv.writer(resposta, delimiter=';')
+    w.writerow(['Pacote', 'Etapa', 'Forma de envio', 'Joiner', 'Destinatário', 'CEP', 'Rua', 'Número', 'Complemento',
+                'Bairro', 'Cidade', 'UF', 'Endereço completo', 'Qtd. itens', 'Itens', 'Frete nacional (R$)',
+                'Frete pago', 'Rastreio', 'Observações do joiner'])
+    for p in qs.order_by('created_at'):
+        itens = [s.item_definition.name for s in p.slots.all()] + [i.nome for i in p.itens_individuais.all()]
+        end = separar_endereco(p.endereco_destinatario)
+        if p.endereco_destinatario:
+            log_pii_access(request, p.participant, 'endereço exportado na planilha de envios', pacote=p)
+        frete = f'{p.valor_frete_nacional:.2f}'.replace('.', ',') if p.valor_frete_nacional is not None else ''
+        w.writerow([p.identificador, p.get_status_display(), p.metodo_nome or (p.metodo_envio.nome if p.metodo_envio else ''),
+                    p.participant.display_name, end['nome'], end['cep'] or ''.join(ch for ch in (p.cep_destinatario or '') if ch.isdigit()),
+                    end['rua'], end['numero'], end['complemento'], end['bairro'], end['cidade'], end['uf'],
+                    p.endereco_destinatario.replace('\n', ' / ') if p.endereco_destinatario else 'Sem endereço (retirada)',
+                    len(itens), ', '.join(itens), frete, 'Sim' if p.is_frete_pago else 'Não', p.codigo_rastreio or '',
+                    (p.observacoes_joiner or '').replace('\n', ' ')])
+    return resposta

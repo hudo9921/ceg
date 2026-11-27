@@ -14,6 +14,18 @@
             <a href="{% url 'imprimir_pacotes' %}?status=EM_PREPARACAO" target="_blank" rel="noopener" class="ui-btn ui-btn-ghost">
                 <i data-lucide="printer" class="w-4 h-4" stroke-width="1.75"></i>Imprimir em preparação ({{ stats.em_preparacao_count }})</a>
         {% endif %}
+        {% url 'exportar_pacotes' as url_exportar %}
+        <div class="relative" x-data="{ aberto: false }" @click.outside="aberto = false" @keydown.escape="aberto = false">
+            <button type="button" class="ui-btn ui-btn-ghost" @click="aberto = !aberto" :aria-expanded="aberto.toString()" aria-haspopup="menu">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4" stroke-width="1.75"></i>Exportar planilha</button>
+            <div x-show="aberto" x-cloak role="menu" class="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 z-30 w-72 max-w-[calc(100vw-32px)] ui-card ui-hud p-2 shadow-xl">
+                <p class="text-[13px] ui-muted px-2.5 pt-1 pb-2 m-0">Para colar no Melhor Envio, Correios ou transportadora. Os endereços exportados ficam registrados na Auditoria.</p>
+                <a role="menuitem" href="{{ url_exportar }}?etapa=abertos" class="block rounded-xl px-2.5 py-2 text-sm font-semibold no-underline text-ui-text hover:bg-ui-accent-soft" @click="aberto = false">Ainda não enviados</a>
+                <a role="menuitem" href="{{ url_exportar }}?etapa=EM_PREPARACAO" class="block rounded-xl px-2.5 py-2 text-sm font-semibold no-underline text-ui-text hover:bg-ui-accent-soft" @click="aberto = false">Em preparação</a>
+                <a role="menuitem" href="{{ url_exportar }}?etapa=SOLICITADO" class="block rounded-xl px-2.5 py-2 text-sm font-semibold no-underline text-ui-text hover:bg-ui-accent-soft" @click="aberto = false">Solicitados</a>
+                <a role="menuitem" href="{{ url_exportar }}?etapa=ENVIADO" class="block rounded-xl px-2.5 py-2 text-sm font-semibold no-underline text-ui-text hover:bg-ui-accent-soft" @click="aberto = false">Enviados (com rastreio)</a>
+            </div>
+        </div>
         <a href="{% url 'consulta_joiner' %}" class="ui-btn ui-btn-ghost">Empacotar pelo joiner</a>
     </div>
 </header>
