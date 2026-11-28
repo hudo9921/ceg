@@ -716,6 +716,13 @@ class CaixaUpdateStatusView(StaffRequiredMixin, View):
         return redirect('caixa_detail', slug=caixa.slug)
 
 
+def _avisar_caixa_fechada(request, caixa):
+    """Caixa fora da consolidação (Embalada em diante): só avisa, a GOM decide."""
+    if caixa.status != Caixa.Status.EM_CONSOLIDACAO:
+        messages.warning(request, f'Atenção: a caixa "{caixa.nome}" já está "{caixa.get_status_display()}". '
+                                  'Confira se os itens ainda entram nela.')
+
+
 class CaixaLinkCEGView(StaffRequiredMixin, View):
     """Vincula uma ou mais CEGs a esta Caixa."""
     gom_permission = 'caixas.editar'
@@ -739,6 +746,7 @@ class CaixaLinkCEGView(StaffRequiredMixin, View):
         # Propaga em cascata taxas, prazos e status da Caixa para as novas CEGs vinculadas
         caixa.propagar_taxas_e_prazos_em_cascata()
 
+        _avisar_caixa_fechada(request, caixa)
         messages.success(
             request,
             f"🔗 {updated_count} CEG(s) vinculada(s) à caixa '{caixa.nome}' e sincronizadas com status '{caixa.get_status_display()}', taxas e prazos."
@@ -787,6 +795,7 @@ class CaixaLinkItemIndividualView(StaffRequiredMixin, View):
         # Propaga em cascata taxas, prazos e status da Caixa para os novos itens vinculados
         caixa.propagar_taxas_e_prazos_em_cascata()
 
+        _avisar_caixa_fechada(request, caixa)
         messages.success(
             request,
             f"🔗 {updated_count} item(ns) Mercari vinculado(s) à caixa '{caixa.nome}' com sucesso!"
@@ -987,7 +996,8 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
                     participant=p,
                     title=f"📦 Frete e/ou Taxa lançados: {caixa.nome}",
                     message=f"Os valores de frete internacional e/ou taxa aduaneira foram definidos para a remessa '{caixa.nome}'. Acesse suas reservas para conferir valores e prazos.",
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='pagamentos'
                 )
 
             for it in caixa.itens_individuais.select_related('comprador'):
@@ -999,7 +1009,8 @@ class CaixaDistributeRatesView(StaffRequiredMixin, View):
                     participant=p,
                     title=f"📦 Frete e/ou Taxa lançados: {caixa.nome}",
                     message=f"Os valores de frete internacional e/ou taxa aduaneira foram definidos para seu pedido '{it.nome}' na remessa '{caixa.nome}'. Acesse suas reservas para conferir valores e prazos.",
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='pagamentos'
                 )
         except Exception:
             pass

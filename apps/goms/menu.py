@@ -26,10 +26,35 @@ GOM_MENU = [
 ]
 
 PLATFORM_MENU = [
-    ('goms', 'GOMs da plataforma', 'building-2', 'platform_goms', ('platform_goms',)),
+    ('goms', 'Gerenciar GOMs', 'building-2', 'platform_goms', ('platform_goms',)),
     ('catalogo', 'Catálogo', 'library', 'platform_catalogo', ('platform_catalogo', 'platform_catalogo_grupo')),
     ('whatsapp', 'Bot do WhatsApp', 'message-circle', 'admin_whatsapp', ('admin_whatsapp',)),
 ]
+
+
+# Grupos da barra lateral (sanfona): (chave, rótulo, ícone, chaves dos itens). Itens fora daqui ficam sempre à vista.
+GRUPOS = [
+    ('vendas', 'Vendas', 'shopping-bag', ('cegs', 'criar', 'pagamentos', 'mensagens', 'joiners', 'repasses')),
+    ('logistica', 'Logística', 'package', ('caixas', 'envios')),
+    ('gestao', 'Gestão', 'briefcase', ('relatorios', 'avisos', 'auditoria', 'equipe', 'config')),
+]
+
+
+def agrupar(menu):
+    """O menu já filtrado em blocos para a sanfona: {'grupo': None, 'itens': [item]} (sempre à vista) ou
+    {'grupo': chave, 'label', 'icon', 'itens', 'active'}. Grupo com um item só vira item solto."""
+    por_chave = {item['key']: item for item in menu}
+    agrupados = {k for _, _, _, chaves in GRUPOS for k in chaves}
+    blocos = [{'grupo': None, 'itens': [i for i in menu if i['key'] not in agrupados]}]
+    for chave, label, icon, chaves in GRUPOS:
+        itens = [por_chave[k] for k in chaves if k in por_chave]
+        if len(itens) == 1:
+            blocos.append({'grupo': None, 'itens': itens})
+        elif itens:
+            blocos.append({'grupo': chave, 'label': label, 'icon': icon, 'itens': itens,
+                           'active': any(i['active'] for i in itens), 'chaves': [i['key'] for i in itens],
+                           'badge': sum(i['badge'] for i in itens)})
+    return [b for b in blocos if b['itens']]
 
 
 def build_gom_menu(request, granted, unread=0):

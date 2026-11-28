@@ -96,6 +96,13 @@ def open_units(participant, gom):
     return [u for u in units if _unit_key(u) not in busy]
 
 
+def total_devido(participant, gom):
+    """Quanto o joiner deve a este GOM: o que está em Pagar + Pix já gerados e ainda abertos."""
+    total = sum((u['valor'] for u in open_units(participant, gom)), ZERO)
+    return total + sum((c.valor_total for c in Cobranca.objects.filter(
+        gom=gom, participant=participant, status__in=Cobranca.OPEN)), ZERO)
+
+
 def open_groups(participant, gom):
     """As unidades agrupadas como na tela Pagar (por CEG/item/pacote e tipo), na ordem em que aparecem."""
     groups = OrderedDict()
@@ -189,7 +196,8 @@ def confirmar(cobranca, actor):
     cobranca.save(update_fields=['status', 'resolvida_em', 'resolvida_por'])
     _audit(cobranca, actor, f'Pix {cobranca.referencia} recebido (R$ {cobranca.valor_total})')
     _notify_joiner(cobranca, 'Pagamento confirmado',
-                   f'{cobranca.gom.name} confirmou seu Pix {cobranca.referencia} de R$ {cobranca.valor_total}.')
+                   f'{cobranca.gom.name} confirmou seu Pix {cobranca.referencia} de R$ {cobranca.valor_total}.',
+                   categoria='pagamentos')
 
 
 def recusar(cobranca, actor, recado=''):
@@ -223,9 +231,9 @@ def _audit(cobranca, actor, label):
                             metadata={'cobranca': cobranca.referencia, 'valor': str(cobranca.valor_total)})
 
 
-def _notify_joiner(cobranca, title, message):
+def _notify_joiner(cobranca, title, message, categoria='importante'):
     from apps.participants.models import ParticipantNotification
-    ParticipantNotification.objects.create(participant=cobranca.participant, title=title, message=message,
+    ParticipantNotification.objects.create(participant=cobranca.participant, title=title, message=message, categoria=categoria,
                                            notification_type=ParticipantNotification.NotificationType.GENERAL)
 
 

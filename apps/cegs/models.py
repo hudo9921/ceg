@@ -257,7 +257,8 @@ class Caixa(models.Model):
                     participant=p,
                     title=title,
                     message=msg,
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='envios',
                 )
 
             # Notifica também compradores de Itens Individuais desta Caixa
@@ -276,7 +277,8 @@ class Caixa(models.Model):
                     participant=p,
                     title=title,
                     message=msg,
-                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE
+                    notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE,
+                    categoria='envios',
                 )
         except Exception:
             pass
@@ -2526,3 +2528,33 @@ class GOMNotification(models.Model):
 
 
 
+
+
+class ConferenciaChegada(models.Model):
+    """
+    Conferência da chegada de uma caixa (apps/cegs/conferencia.py): por item da CEG (quantas unidades chegaram)
+    ou por pedido individual (chegou ou não). Só registra; a GOM decide o que fazer com o que faltou.
+    """
+    gom = models.ForeignKey('goms.Gom', on_delete=models.CASCADE, related_name='+', verbose_name='GOM')
+    caixa = models.ForeignKey(Caixa, on_delete=models.CASCADE, related_name='conferencias')
+    item_definition = models.ForeignKey('cegs.CEGItemDefinition', on_delete=models.CASCADE, null=True, blank=True,
+                                        related_name='+')
+    item_individual = models.ForeignKey('cegs.ItemIndividual', on_delete=models.CASCADE, null=True, blank=True,
+                                        related_name='+')
+    chegou = models.PositiveSmallIntegerField('Unidades que chegaram', default=0)
+    atualizado_por = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    atualizado_em = models.DateTimeField(auto_now=True)
+    objects = scoped_manager('gom')
+
+    class Meta:
+        verbose_name = 'Conferência de chegada'
+        verbose_name_plural = 'Conferências de chegada'
+        constraints = [
+            models.UniqueConstraint(fields=['caixa', 'item_definition'], condition=models.Q(item_definition__isnull=False),
+                                    name='conferencia_item_unico'),
+            models.UniqueConstraint(fields=['caixa', 'item_individual'], condition=models.Q(item_individual__isnull=False),
+                                    name='conferencia_individual_unico'),
+        ]
+
+    def __str__(self):
+        return f'{self.caixa} · {self.item_definition or self.item_individual}: {self.chegou}'

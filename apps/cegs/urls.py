@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalogo_views, envios_views
+from . import agenda, catalogo_views, conferencia, envios_views, joiner_painel, procurar
 from .views import (
     HomeView,
     UpdateHomeBannerView,
@@ -128,10 +128,12 @@ urlpatterns = [
 
     # 1. Consulta Joiner (Visão 360º de itens, pagamentos e envios de cada participante)
     path('consulta-joiner/', ConsultaJoinerView.as_view(), name='consulta_joiner'),
+    path('joiners/<int:participant_id>/painel/', joiner_painel.painel, name='joiner_painel'),
 
     # 2. Envios Nacionais & Pacotes (Dashboard Global com todos os envios, filtros e feedbacks)
     path('envios/pacote/<int:pacote_id>/endereco/', envios_views.pacote_endereco, name='pacote_endereco'),
     path('envios/imprimir/', envios_views.imprimir_pacotes, name='imprimir_pacotes'),
+    path('envios/exportar/', envios_views.exportar_pacotes, name='exportar_pacotes'),
     path('envios/', EnviosNacionaisDashboardView.as_view(), name='envios_nacionais'),
     path('envios/empacotar/', EmpacotarItensView.as_view(), name='empacotar_itens'),
     path('envios/pacote/<int:pacote_id>/marcar-enviado/', MarcarPacoteEnviadoView.as_view(), name='marcar_pacote_enviado'),
@@ -153,6 +155,8 @@ urlpatterns = [
     path('caixas/create/', CaixaCreateView.as_view(), name='caixa_create'),
     path('caixas/<slug:slug>/', CaixaDetailView.as_view(), name='caixa_detail'),
     path('caixas/<slug:slug>/edit/', CaixaUpdateView.as_view(), name='caixa_update'),
+    path('caixas/<slug:slug>/conferencia/', conferencia.pagina, name='caixa_conferencia'),
+    path('caixas/<slug:slug>/conferencia/marcar/', conferencia.marcar, name='caixa_conferencia_marcar'),
     path('caixas/<slug:slug>/status/', CaixaUpdateStatusView.as_view(), name='caixa_update_status'),
     path('caixas/<slug:slug>/link-cegs/', CaixaLinkCEGView.as_view(), name='caixa_link_cegs'),
     path('caixas/<slug:slug>/unlink-ceg/<int:ceg_id>/', CaixaUnlinkCEGView.as_view(), name='caixa_unlink_ceg'),
@@ -177,6 +181,9 @@ urlpatterns = [
     # Vitrine de Pronta Entrega
     path('vitrine/', VitrineListView.as_view(), name='vitrine_list'),
     path('caixinhas/', caixinhas_abertas, name='caixinhas_abertas'),
+    path('procurar/', procurar.procurar, name='procurar'),
+    path('agenda/', agenda.agenda, name='agenda'),
+    path('agenda/<slug:slug>.ics', agenda.agenda_ics, name='agenda_ics'),
     path('vitrine/novo/', VitrineItemCreateView.as_view(), name='vitrine_create'),
     path('vitrine/<slug:slug>/editar/', VitrineItemUpdateView.as_view(), name='vitrine_edit'),
     path('vitrine/<slug:slug>/excluir/', VitrineItemDeleteView.as_view(), name='vitrine_delete'),

@@ -65,7 +65,7 @@
 ### ⌨️ 3.5. Command Palette Global (`Ctrl + K` / `Cmd + K`)
 - **Contexto:** Atalho universal para power users e organizadoras navegarem instantaneamente entre qualquer grupo, integrante, CEG ou remessa.
 - **Mecânica:** Modal flutuante estilo Spotlight com busca difusa instantânea, comandos de atalho rápido e navegação 100% por teclado.
-- **Status:** Guardado para implementação futura.
+- **Status:** Feito para a equipe do GOM (`components/_busca_rapida.html`: páginas, joiners, CEGs, caixas e pacotes).
 
 ### 🎬 3.6. View Transitions API (Morfismo Fluido entre Telas)
 - **Contexto:** Eliminar o piscar de recarregamento ao navegar entre a Vitrine da Home e a Página de Detalhe da CEG.

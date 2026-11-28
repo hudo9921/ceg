@@ -1,0 +1,69 @@
+{% comment %}
+Alpine.data('fichario') da coleção (participants/colecao.html): mostra uma "abertura" por vez — 2 páginas no computador
+(lg), 1 no celular — e vira a página com botões, setas do teclado ou deslizando o dedo. A virada é CSS
+(.is-turn-out / .is-turn-in com dobradiça .is-hinge-l/-r em static/css/ui.css); sem animação se o sistema pedir menos movimento.
+{% endcomment %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('fichario', (total) => ({
+        total, pag: 0, largo: false, virando: null, dir: 1, x0: null, y0: null,
+        init() {
+            const mq = window.matchMedia('(min-width: 1024px)');
+            const ajustar = () => { this.largo = mq.matches; if (this.largo) this.pag -= this.pag % 2; };
+            const avisar = () => this.$dispatch('pagina-mudou', { de: this.pag, ate: this.pag + this.porVez - 1 });
+            ajustar();
+            this.$nextTick(avisar);
+            mq.addEventListener('change', () => { ajustar(); avisar(); });
+        },
+        get porVez() { return this.largo ? 2 : 1; },
+        // No computador o total vira par: a última página sozinha ganha um verso em branco ao lado.
+        get n() { return this.largo ? this.total + (this.total % 2) : this.total; },
+        get podeVoltar() { return this.pag > 0; },
+        get podeAvancar() { return this.pag + this.porVez < this.n; },
+        get rotulo() {
+            const fim = this.largo ? Math.min(this.pag + 2, this.total) : this.pag + 1;
+            return fim > this.pag + 1 ? 'Páginas ' + (this.pag + 1) + '–' + fim + ' de ' + this.total
+                                      : 'Página ' + (this.pag + 1) + ' de ' + this.total;
+        },
+        ve(i) { return i >= this.pag && i < this.pag + this.porVez; },
+        cls(i) {
+            const lado = this.largo ? (i % 2 ? 'is-right' : 'is-left') : '';
+            if (!this.virando) return lado;
+            const primeira = this.pag, ultima = this.pag + this.porVez - 1;
+            let alvo, dobradica;
+            if (!this.largo) { alvo = primeira; dobradica = 'is-hinge-l'; }
+            else if (this.virando === 'out') { alvo = this.dir > 0 ? ultima : primeira; dobradica = this.dir > 0 ? 'is-hinge-l' : 'is-hinge-r'; }
+            else { alvo = this.dir > 0 ? primeira : ultima; dobradica = this.dir > 0 ? 'is-hinge-r' : 'is-hinge-l'; }
+            return i === alvo ? lado + ' ' + dobradica + ' is-turn-' + this.virando : lado;
+        },
+        virar(d) {
+            if (d > 0 ? this.podeAvancar : this.podeVoltar) this.irPara(this.pag + d * this.porVez);
+        },
+        // Vai até a abertura que contém a página i (setas, deslizar e os chips de grupo no fichário único).
+        irPara(i) {
+            const alvo = Math.max(0, Math.min(this.largo ? i - (i % 2) : i, this.n - 1));
+            if (this.virando || alvo === this.pag) return;
+            const d = alvo > this.pag ? 1 : -1;
+            const mudar = () => { this.pag = alvo; this.$dispatch('pagina-mudou', { de: alvo, ate: alvo + this.porVez - 1 }); };
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { mudar(); return; }
+            this.dir = d;
+            const entrar = () => { this.virando = 'in'; setTimeout(() => { this.virando = null; }, 230); };
+            // Celular: avançar dobra a página atual; voltar desdobra a anterior por cima.
+            if (!this.largo && d < 0) { mudar(); entrar(); return; }
+            this.virando = 'out';
+            setTimeout(() => {
+                mudar();
+                if (!this.largo) { this.virando = null; return; }
+                entrar();
+            }, 230);
+        },
+        toque(e) { const t = e.changedTouches[0]; this.x0 = t.clientX; this.y0 = t.clientY; },
+        soltar(e) {
+            if (this.x0 === null) return;
+            const t = e.changedTouches[0], dx = t.clientX - this.x0, dy = t.clientY - this.y0;
+            this.x0 = null;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) this.virar(dx < 0 ? 1 : -1);
+        },
+    }));
+});
+</script>

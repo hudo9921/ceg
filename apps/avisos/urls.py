@@ -10,4 +10,5 @@ urlpatterns = [
     path('push/inscrever/', views.inscrever, name='push_inscrever'),
     path('push/cancelar/', views.cancelar, name='push_cancelar'),
     path('push/testar/', views.testar, name='push_testar'),
+    path('push/preferencias/', views.preferencias, name='push_preferencias'),
 ]

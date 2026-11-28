@@ -11,6 +11,7 @@ urlpatterns = [
     # Equipe do GOM (mensagens.responder).
     path('mensagens/', views.gom_lista, name='gom_mensagens'),
     path('mensagens/nova/', views.gom_nova, name='gom_mensagem_nova'),
+    path('mensagens/respostas/', views.gom_respostas, name='gom_respostas'),
     path('mensagens/<int:conversa_id>/enviar/', views.gom_enviar, name='gom_mensagem_enviar'),
     path('mensagens/<int:conversa_id>/novas/', views.gom_novas, name='gom_mensagens_novas'),
     # Vitrine (S5b): joiner reserva/cancela; equipe cancela ou marca como pago (vitrine.reservar).

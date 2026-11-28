@@ -127,6 +127,11 @@ class Participant(models.Model):
         blank=True,
         help_text='Identificador público na comunidade de K-pop (ex: @jihyolover)'
     )
+    # Minha coleção (apps/participants/colecao.py): link público só quando o joiner liga; vazio = desligado.
+    colecao_token = models.CharField('Link da coleção', max_length=32, blank=True, db_index=True)
+    # Como a coleção aparece (para o dono e no link): um fichário por grupo ou um fichário só com todos.
+    COLECAO_MODOS = [('grupos', 'Um fichário por grupo'), ('unico', 'Um fichário só')]
+    colecao_modo = models.CharField('Fichário da coleção', max_length=10, choices=COLECAO_MODOS, default='grupos')
     notes = models.TextField('Notas Internas do Organizador', blank=True)
     created_at = models.DateTimeField('Cadastrado em', auto_now_add=True)
 
@@ -518,6 +523,8 @@ class ParticipantNotification(models.Model):
     is_read = models.BooleanField('Lida', default=False, db_index=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True, db_index=True)
     read_at = models.DateTimeField('Lida em', null=True, blank=True)
+    # Grupo do aviso para as preferências de push (apps/avisos/preferencias.py). Vazio = segue o tipo.
+    categoria = models.CharField('Categoria', max_length=20, blank=True, default='')
 
     class Meta:
         verbose_name = 'Notificação de Participante'

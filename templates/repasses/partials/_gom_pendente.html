@@ -8,9 +8,9 @@
         <span class="ui-status ui-warn">pedido em {{ r.aceito_em|date:"d/m H:i" }}</span>
     </div>
     <div class="flex flex-wrap items-center gap-3 text-[15px]">
-        <span class="ui-chip !cursor-default">{{ r.de.display_name }}</span>
+        <button type="button" data-joiner-id="{{ r.de_id }}" class="ui-chip" title="Ver joiner">{{ r.de.display_name }}</button>
         <i data-lucide="arrow-right" class="w-4 h-4 ui-muted" stroke-width="1.75"></i>
-        <span class="ui-chip is-on !cursor-default">{{ r.para.display_name }}</span>
+        <button type="button" data-joiner-id="{{ r.para_id }}" class="ui-chip is-on" title="Ver joiner">{{ r.para.display_name }}</button>
         <a href="{% url 'consulta_joiner' %}?q={{ r.para.whatsapp|urlencode }}" class="ui-label hover:underline">ver joiner</a>
     </div>
     {% if r.recado %}<p class="ui-well p-3 text-sm m-0">“{{ r.recado }}”</p>{% endif %}

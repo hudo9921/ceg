@@ -1,0 +1,107 @@
+"""Busca rápida (Ctrl+K): acha joiner, CEG, caixa e pacote do GOM ativo; respeita permissões e isolamento."""
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+
+from apps.cegs.models import CEG, Caixa, PacoteNacional
+from apps.goms.models import Gom, GomMembership
+from apps.groups.models import Era, KpopGroup
+from apps.participants.models import Participant
+
+User = get_user_model()
+
+
+class BuscaRapidaTests(TestCase):
+    def setUp(self):
+        self.gom = Gom.objects.create(name='Loja B', slug='loja-b')
+        self.dono = User.objects.create_user('dono-b', password='x')
+        GomMembership.objects.create(user=self.dono, gom=self.gom, role='OWNER')
+        self.joiner = Participant.objects.create(whatsapp='5511912345678', name='Wonyoungie Fã', username='wony')
+        self.joiner.known_by_goms.add(self.gom)
+        era = Era.objects.create(group=KpopGroup.objects.create(name='IVE', slug='ive'), name='Wonderful')
+        CEG.objects.create(gom=self.gom, era=era, title='IVE Wonderful POB', slug='ive-wonderful')
+        Caixa.objects.create(gom=self.gom, nome='Caixa Wonder KR')
+        self.pacote = PacoteNacional.objects.create(gom=self.gom, participant=self.joiner)
+        outro = Gom.objects.create(name='Outro', slug='outro-b')
+        CEG.objects.create(gom=outro, era=era, title='IVE Wonderful de outro GOM', slug='ive-outro')
+        self.url = reverse('painel_busca')
+
+    def _grupos(self, q):
+        return {g['titulo']: [i['titulo'] for i in g['itens']] for g in self.client.get(self.url, {'q': q}).json()['grupos']}
+
+    def test_acha_tudo_do_gom(self):
+        self.client.force_login(self.dono)
+        grupos = self._grupos('wonder')
+        self.assertEqual(grupos['CEGs'], ['IVE Wonderful POB'])
+        self.assertEqual(grupos['Caixas'], ['Caixa Wonder KR'])
+        self.assertEqual(self._grupos('5678')['Joiners'], ['wony'])
+        self.assertEqual(self._grupos(self.pacote.identificador)['Pacotes'], [f'Pacote {self.pacote.identificador}'])
+
+    def test_sem_permissao_nao_ve_joiners_nem_caixas(self):
+        ajudante = User.objects.create_user('ajudante-b', password='x')
+        GomMembership.objects.create(user=ajudante, gom=self.gom, role='ADMIN', permissions=['ceg.editar'])
+        self.client.force_login(ajudante)
+        grupos = self._grupos('wony')
+        self.assertNotIn('Joiners', grupos)
+        self.assertNotIn('Caixas', self._grupos('wonder'))
+
+    def test_visitante_nao_busca(self):
+        self.assertNotEqual(self.client.get(self.url, {'q': 'wonder'}).status_code, 200)
+
+    def test_texto_curto_nao_busca(self):
+        self.client.force_login(self.dono)
+        self.assertEqual(self._grupos('w'), {})
+
+
+class MenuSanfonaTests(TestCase):
+    """Barra lateral em sanfona (apps/goms/menu.agrupar): Início à vista, grupos com o ativo marcado."""
+
+    def _item(self, key, active=False, badge=0):
+        return {'key': key, 'label': key, 'icon': 'x', 'url': '/', 'active': active, 'badge': badge}
+
+    def test_agrupa_e_marca_grupo_ativo(self):
+        from apps.goms.menu import agrupar
+        menu = [self._item('inicio'), self._item('cegs'), self._item('pagamentos'), self._item('caixas', active=True),
+                self._item('envios'), self._item('avisos'), self._item('repasses', badge=2)]
+        blocos = agrupar(menu)
+        self.assertIsNone(blocos[0]['grupo'])
+        self.assertEqual([i['key'] for i in blocos[0]['itens']], ['inicio'])
+        grupos = {b['grupo']: b for b in blocos if b['grupo']}
+        self.assertTrue(grupos['logistica']['active'])
+        self.assertFalse(grupos['vendas']['active'])
+        self.assertEqual(grupos['vendas']['badge'], 2)
+        # Gestão com um item só (Avisos) vira item solto.
+        self.assertNotIn('gestao', grupos)
+        self.assertIn('avisos', [i['key'] for b in blocos if not b['grupo'] for i in b['itens']])
+
+
+class AtividadeLinksTests(TestCase):
+    """'Agora há pouco' no Início do painel (apps/goms/dashboard._links): cada evento leva ao joiner e à CEG."""
+
+    def setUp(self):
+        from apps.cegs.models import AuditLog
+        self.gom = Gom.objects.create(name='Loja C', slug='loja-c')
+        self.joiner = Participant.objects.create(whatsapp='5511900001111', name='Joiner C', username='joinerc')
+        era = Era.objects.create(group=KpopGroup.objects.create(name='IVE', slug='ive'), name='Wonderful')
+        self.ceg = CEG.objects.create(gom=self.gom, era=era, title='IVE Wonderful POB', slug='ive-wonderful')
+        self.log = AuditLog.objects.create(gom=self.gom, event_type='CLAIM_SUCCESS', participant=self.joiner,
+                                           ceg=self.ceg, action_label='Claim Garantido: Joiner C')
+
+    def test_joiner_e_ceg(self):
+        from apps.goms.dashboard import _links
+        links = _links(self.log, {'pedidos.ver'})
+        self.assertEqual(links['url'], f"{reverse('consulta_joiner')}?participant_id={self.joiner.pk}")
+        self.assertEqual(links['ceg_url'], reverse('ceg_detail', kwargs={'slug': 'ive-wonderful'}))
+        self.assertEqual(links['ceg_title'], 'IVE Wonderful POB')
+
+    def test_sem_permissao_de_joiner_vai_para_a_ceg(self):
+        from apps.goms.dashboard import _links
+        links = _links(self.log, {'analytics.ver'})
+        self.assertEqual(links['url'], reverse('ceg_detail', kwargs={'slug': 'ive-wonderful'}))
+        self.assertEqual(links['ceg_url'], '')
+
+    def test_evento_sem_alvo_fica_sem_link(self):
+        from apps.cegs.models import AuditLog
+        from apps.goms.dashboard import _links
+        log = AuditLog.objects.create(gom=self.gom, event_type='OTHER', action_label='Algo')
+        self.assertEqual(_links(log, {'pedidos.ver'})['url'], '')

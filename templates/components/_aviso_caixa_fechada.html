@@ -1,0 +1,21 @@
+{% comment %}
+Aviso ao escolher uma caixa que já saiu da consolidação (Embalada, Enviada, ...) em qualquer <select name="caixa_id">
+do painel. As opções dessas caixas trazem data-caixa-fechada="<etapa>" (CEG, item Mercari, edição em Status/Auditoria).
+Só avisa: a GOM decide. Incluído em base.html para a equipe.
+{% endcomment %}
+<script>
+document.addEventListener('change', (e) => {
+    const sel = e.target;
+    if (!(sel instanceof HTMLSelectElement) || sel.name !== 'caixa_id') return;
+    let aviso = sel.parentElement.querySelector(':scope > .aviso-caixa-fechada');
+    const etapa = sel.selectedOptions[0]?.dataset.caixaFechada;
+    if (!etapa) { aviso?.remove(); return; }
+    if (!aviso) {
+        aviso = document.createElement('p');
+        aviso.className = 'aviso-caixa-fechada ui-well ui-warn text-[13px] font-semibold px-3 py-2 mt-1.5 mb-0';
+        aviso.setAttribute('role', 'status');
+        sel.insertAdjacentElement('afterend', aviso);
+    }
+    aviso.textContent = `Atenção: esta caixa já está "${etapa}". Confira se ainda dá para incluir antes de salvar.`;
+});
+</script>

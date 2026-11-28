@@ -1,0 +1,68 @@
+{% comment %}
+"Mais" da barra de abas (celular/tablet): o que a barra lateral do desktop mostra e não cabe nas abas —
+Repasses, GOMs, Seguindo, o painel do GOM (gom_menu, já filtrado pelas permissões), a plataforma (superusuário)
+e a conta. Aberto por components/ui_tabbar.html (variável `mais` do x-data de lá).
+{% endcomment %}
+<div x-show="mais" x-cloak class="ui-scrim !z-[70] flex items-end justify-center lg:hidden" @click.self="mais = false">
+    <div class="ui-sheet w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-4" role="dialog" aria-modal="true" aria-labelledby="menu-mais-titulo"
+         x-show="mais" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
+        <div class="flex items-center justify-between gap-3">
+            <h2 id="menu-mais-titulo" class="ui-disp text-2xl m-0">Menu</h2>
+            <button type="button" class="ui-icon-btn" @click="mais = false" aria-label="Fechar menu">
+                <i data-lucide="x" class="w-5 h-5" stroke-width="1.75"></i>
+            </button>
+        </div>
+
+        <nav class="space-y-0.5" aria-label="Explorar">
+            <a href="{% url 'agenda' %}" class="ui-nav-item{% if nav_agenda %} is-on{% endif %}">
+                <i data-lucide="calendar-clock" class="w-5 h-5" stroke-width="1.75"></i><span>Agenda de aberturas</span>
+            </a>
+            <a href="{% url 'procurar' %}" class="ui-nav-item{% if nav_procurar %} is-on{% endif %}">
+                <i data-lucide="user-search" class="w-5 h-5" stroke-width="1.75"></i><span>Procurar integrante</span>
+            </a>
+            {% url 'repasses_disponiveis' as repasses_url %}
+            <a href="{{ repasses_url }}" class="ui-nav-item{% if nav_repasses %} is-on{% endif %}">
+                <i data-lucide="arrow-left-right" class="w-5 h-5" stroke-width="1.75"></i><span>Repasses</span>
+            </a>
+            {% url 'gom_directory' as goms_url %}
+            <a href="{{ goms_url }}" class="ui-nav-item{% if nav_goms %} is-on{% endif %}">
+                <i data-lucide="building-2" class="w-5 h-5" stroke-width="1.75"></i><span>GOMs</span>
+            </a>
+            {% if logged_participant %}
+                <a href="{% url 'minha_colecao' %}" class="ui-nav-item">
+                    <i data-lucide="book-heart" class="w-5 h-5" stroke-width="1.75"></i><span>Minha coleção</span>
+                </a>
+                <a href="{% url 'seguindo' %}" class="ui-nav-item">
+                    <i data-lucide="heart" class="w-5 h-5" stroke-width="1.75"></i><span>Seguindo</span>
+                </a>
+            {% endif %}
+            <a href="{% url 'ajuda_notificacoes' %}" class="ui-nav-item">
+                <i data-lucide="bell-ring" class="w-5 h-5" stroke-width="1.75"></i><span>Avisos no celular</span>
+            </a>
+        </nav>
+
+        {% if is_gom_member or is_platform_admin %}
+            <div class="pt-4 border-t border-ui-line">
+                {% include 'components/_sidebar_gom_menu.html' with onde='mais' %}
+            </div>
+        {% endif %}
+
+        <div class="pt-4 border-t border-ui-line">
+            {% if logged_participant %}
+                <div class="ui-well p-3 flex items-center gap-3">
+                    <a href="{% url 'my_claims' %}" class="flex items-center gap-3 min-w-0 flex-1 no-underline text-ui-text">
+                        <span class="w-9 h-9 rounded-ui-pill bg-ui-accent text-white flex items-center justify-center font-bold shrink-0">{{ logged_participant.display_name|slice:":1"|upper }}</span>
+                        <span class="min-w-0"><span class="block text-sm font-semibold truncate">{{ logged_participant.display_name }}</span><span class="ui-label block">Minha conta</span></span>
+                    </a>
+                    <a href="{% url 'logout_participant' %}" class="ui-btn ui-btn-ghost ui-btn-sm">
+                        <i data-lucide="log-out" class="w-4 h-4" stroke-width="1.75"></i>Sair
+                    </a>
+                </div>
+            {% else %}
+                <a href="{% url 'login_otp' %}" class="ui-btn ui-btn-primary w-full">
+                    <i data-lucide="message-circle" class="w-4 h-4" stroke-width="1.75"></i><span>Entrar</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

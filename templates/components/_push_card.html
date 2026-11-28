@@ -25,11 +25,26 @@ Estados: carregando · sem-suporte · ios · bloqueado · desligado · ligado.
             <i data-lucide="bell" class="w-4 h-4" stroke-width="1.75"></i>Ativar
         </button>
         <template x-if="estado === 'ligado'">
-            <span class="flex gap-2">
+            <span class="flex flex-wrap gap-2">
+                <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" @click="abrirPrefs()" :aria-expanded="prefsAberto.toString()">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4" stroke-width="1.75"></i>Escolher o que receber
+                </button>
                 <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" :disabled="ocupado" @click="testar()">Testar</button>
                 <button type="button" class="ui-btn ui-btn-ghost ui-btn-sm" :disabled="ocupado" @click="desligar()">Desligar</button>
             </span>
         </template>
+    </div>
+    {# Preferências: só filtram o push; a central de avisos do site recebe tudo (apps/avisos/preferencias.py). #}
+    <div x-show="prefsAberto && estado === 'ligado'" x-cloak class="w-full ui-well p-3 space-y-1">
+        <template x-for="o in prefs" :key="o.chave">
+            <button type="button" class="ui-switch !ml-0 w-full !justify-start !whitespace-normal text-left" role="switch"
+                    :aria-checked="o.ligado.toString()" @click="o.ligado = !o.ligado; salvarPrefs()">
+                <span class="ui-knob" aria-hidden="true"></span>
+                <span class="min-w-0"><span class="block font-semibold" x-text="o.rotulo"></span><span class="block text-[13px] ui-muted font-normal" x-text="o.descricao"></span></span>
+            </button>
+        </template>
+        <p class="text-[13px] ui-muted m-0 pt-1" x-text="prefsAviso"></p>
+        <p class="text-[13px] ui-muted m-0">Tudo continua aparecendo em Avisos no site; isto só muda o que chega no celular.</p>
     </div>
 </div>
 <script>
@@ -40,6 +55,17 @@ window.pushAvisos = window.pushAvisos || function () {
     const aparelho = () => { const ua = navigator.userAgent; return /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Navegador'; };
     return {
         estado: 'carregando', ocupado: false, erro: '', ok: '', reg: null,
+        prefsAberto: false, prefs: [], prefsAviso: '', publico: '{{ publico|default:"joiner" }}',
+        async abrirPrefs() {
+            this.prefsAberto = !this.prefsAberto;
+            if (!this.prefsAberto || this.prefs.length) return;
+            const data = await (await fetch('{% url "push_preferencias" %}?publico=' + this.publico)).json();
+            if (data.success) { this.prefs = data.opcoes; this.prefsAviso = data.aviso; }
+        },
+        async salvarPrefs() {
+            const data = await post('{% url "push_preferencias" %}', { publico: this.publico, ligados: this.prefs.filter((o) => o.ligado).map((o) => o.chave) });
+            this.erro = data.success ? '' : (data.message || 'Não deu para salvar.');
+        },
         async iniciar() {
             const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
             const instalado = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -65,6 +91,7 @@ window.pushAvisos = window.pushAvisos || function () {
                 const data = await post('{% url "push_inscrever" %}', { subscription: sub.toJSON(), aparelho: aparelho() });
                 if (!data.success) { this.erro = data.message || 'Não deu certo.'; await sub.unsubscribe(); return; }
                 this.estado = 'ligado'; this.ok = data.message;
+                this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
             } catch (e) { this.erro = 'Não deu para ativar neste navegador.'; } finally { this.ocupado = false; }
         },
         async desligar() {
@@ -72,7 +99,8 @@ window.pushAvisos = window.pushAvisos || function () {
             try {
                 const sub = await this.reg.pushManager.getSubscription();
                 if (sub) { await post('{% url "push_cancelar" %}', { endpoint: sub.endpoint }); await sub.unsubscribe(); }
-                this.estado = 'desligado';
+                this.estado = 'desligado'; this.prefsAberto = false;
+                this.$nextTick(() => window.dispatchEvent(new Event('icons-refresh')));
             } finally { this.ocupado = false; }
         },
         async testar() {

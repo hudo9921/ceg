@@ -40,6 +40,8 @@ Cada GOM define em **Configurações → Pix** (`/gom/configuracoes/pix/`) uma c
 ## 📦 2. Caixas & Propagação em Cascata
 
 Uma `Caixa` agrupa várias `CEG`s e vários `ItemIndividual` (Mercari Japão):
+0.1. **Conferência de chegada** (`ConferenciaChegada`, `apps/cegs/conferencia.py`, `/caixas/<slug>/conferencia/`, permissão `caixas.editar`): por item da CEG, quantas unidades chegaram (esperado = slots não cancelados de sets ativos); por pedido individual, chegou ou não. O que faltou lista quem tem o item ("quem pode ter sido afetado"). Só registra: não muda slot, não cobra e não avisa ninguém.
+0. **Aviso de caixa fechada:** vincular CEG ou item a uma caixa fora de `EM_CONSOLIDACAO` (Embalada em diante) continua permitido, mas avisa a GOM: no modal de vincular da caixa, na mensagem depois de salvar (`_avisar_caixa_fechada`) e ao escolher a caixa em qualquer `<select name="caixa_id">` (opções com `data-caixa-fechada`, script `components/_aviso_caixa_fechada.html`). Nada é bloqueado.
 1. **Status de Rastreio:**
    - Ao alterar o status da Caixa (`EM_CONSOLIDACAO` ➔ `PRONTA_ENVIO` ➔ `ENVIADA` ➔ `NO_BRASIL` ➔ `TRIBUTADA` ➔ `LIBERADA` ➔ `ENTREGUE` ➔ `FINALIZADA`), a mudança propaga automaticamente em cascata para `ceg.shipping_status` de todas as CEGs vinculadas e `item_individual.status` de todos os itens Mercari.
 2. **Prazos de Frete e Taxa:**
@@ -203,6 +205,7 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 
 ## Conversas e reservas da Vitrine
 
+- **Respostas prontas** (`RespostaPronta`, `apps/conversas/respostas.py`): modelos por GOM com `{nome}` (primeiro nome do joiner), `{valor}` (o que ele deve ao GOM: Pagar + Pix abertos) e `{gom}`. No primeiro uso o GOM recebe 4 respostas padrão (`Gom.respostas_iniciadas`); apagar todas deixa a lista vazia. O clique só preenche a caixa de texto: a equipe revisa e envia. Edição em `/mensagens/respostas/` (`mensagens.responder`).
 - Conversa entre joiner e GOM por assunto (geral, pacote, CEG, item da Vitrine). Cada rodada de mensagens gera um aviso
   no site para o outro lado; a tela aberta atualiza a cada 8 s. Equipe responde com a permissão `mensagens.responder`.
 - **Reservar** na Vitrine guarda uma unidade para o joiner (respeitando `quantidade`) e abre a conversa da reserva.
@@ -258,6 +261,13 @@ O conceito de **Caixinha** permite ao participante acumular photocards de vária
 - **Equipe:** `GOMNotification` dos tipos `PAYMENT`, `PACKAGE_REQUEST`, `REPASSE` e `SYSTEM` (mensagens) vai para
   quem é da equipe daquele GOM. Reserva de vaga e voto em enquete não (seriam centenas no segundo zero).
 - **Nunca** há aviso de CEG nova para quem segue grupo/integrante.
+- **Escolher o que receber** (no card, quando ligado; `apps/avisos/preferencias.py`, model `Preferencia`): só filtra o
+  push, a central do site recebe tudo. Joiner: Pagamentos, Caixas e envios, Mensagens do GOM, Repasses (todos ligados
+  por padrão); **importante** (set cancelado, Pix não recebido, exclusão de dados) não desliga. Cada aviso diz a sua
+  categoria (`ParticipantNotification.categoria`; vazio = pelo tipo, e o que não tem categoria conta como importante).
+  Equipe: Pix avisado (`pag.confirmar`), Pedidos de envio (`envios.pacotes`), Repasses (`pedidos.editar`) e Mensagens
+  (`mensagens.responder`, marcadas em `GOMNotification.metadata['categoria']`): cada um só vai para quem tem a
+  permissão e não desligou.
 - Envio: fila única por processo, depois do commit (não atrasa quem clicou). 404/410 apaga a inscrição; 5 falhas
   seguidas também. Chave VAPID: `VAPID_PRIVATE_KEY` do .env ou derivada do `SECRET_KEY` (`apps/avisos/vapid.py`).
 - Service worker em `/sw.js` (só notificações, sem cache offline) e manifesto em `/manifest.webmanifest`

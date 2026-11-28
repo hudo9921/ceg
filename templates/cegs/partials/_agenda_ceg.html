@@ -1,0 +1,20 @@
+{% comment %}
+Uma abertura na agenda (cegs/agenda.html): capa, horário, contagem ao vivo, GOM, "Para você" (segue o grupo ou
+tem item de integrante seguido: ceg.para_voce / seguidos_nomes) e "Adicionar ao calendário" (.ics).
+{% endcomment %}
+{% firstof ceg.banner_url ceg.era.banner_url ceg.era.group.image_url as capa %}
+<li class="ui-card p-3 sm:p-4 flex items-center gap-3 sm:gap-4{% if ceg.para_voce %} ring-2 ring-ui-accent{% endif %}"
+    x-data="{ left: {{ ceg.countdown_seconds }}, init() { const end = Date.now() + this.left * 1000; const tick = () => { this.left = Math.max(0, Math.ceil((end - Date.now()) / 1000)); }; setInterval(tick, 1000); document.addEventListener('visibilitychange', tick); } }">
+    <a href="{% url 'ceg_detail' ceg.slug %}" class="flex-none" tabindex="-1" aria-hidden="true">
+        {% if capa %}<img src="{{ capa|thumb }}" data-full="{{ capa }}" loading="lazy" decoding="async" alt="" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-ui-line">{% else %}<span class="w-16 h-16 sm:w-20 sm:h-20 ui-well flex items-center justify-center"><i data-lucide="calendar-clock" class="w-6 h-6" stroke-width="1.75"></i></span>{% endif %}
+    </a>
+    <div class="min-w-0 flex-1 space-y-0.5">
+        <p class="ui-label m-0 truncate">{{ ceg.opens_at|date:"H:i" }} · {{ ceg.era.group.name }}</p>
+        <a href="{% url 'ceg_detail' ceg.slug %}" class="block font-bold leading-snug line-clamp-2 no-underline text-ui-text hover:underline">{{ ceg.title }}</a>
+        <p class="text-[13px] ui-muted m-0 truncate">por {{ ceg.gom.name }}{% if ceg.seguidos_nomes %} · <span class="text-ui-accent-text font-semibold">tem {{ ceg.seguidos_nomes|join:", " }}</span>{% elif ceg.para_voce %} · <span class="text-ui-accent-text font-semibold">você segue</span>{% endif %}</p>
+        <p class="m-0"><span class="ui-timer !static inline-flex" role="timer" aria-label="Tempo para abrir"><i data-lucide="clock" class="w-3.5 h-3.5" stroke-width="2"></i><span x-text="uiCountdownLabel(left)">{{ ceg.opens_at|date:"d/m H:i" }}</span></span></p>
+    </div>
+    <a href="{% url 'agenda_ics' ceg.slug %}" class="ui-icon-btn flex-none" aria-label="Adicionar {{ ceg.title }} ao calendário" title="Adicionar ao calendário">
+        <i data-lucide="calendar-plus" class="w-5 h-5" stroke-width="1.75"></i>
+    </a>
+</li>

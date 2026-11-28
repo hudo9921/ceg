@@ -58,3 +58,48 @@ class ImprimirPacotesTests(EnviosQuadroTests):
 
     def test_no_filter_prints_nothing(self):
         self.assertEqual(len(self.client.get(reverse('imprimir_pacotes')).context['pacotes']), 0)
+
+
+class ExportarPacotesTests(TestCase):
+    """Planilha de envios: endereço em colunas, só a etapa pedida, e cada endereço registrado na Auditoria."""
+    setUp = EnviosQuadroTests.setUp
+
+    def _linhas(self, query):
+        import csv
+        import io
+        res = self.client.get(reverse('exportar_pacotes') + query)
+        self.assertEqual(res['Content-Type'], 'text/csv; charset=utf-8')
+        return list(csv.reader(io.StringIO(res.content.decode('utf-8-sig')), delimiter=';'))
+
+    def test_endereco_em_colunas_e_auditoria(self):
+        from apps.cegs.models import AuditLog
+        from apps.participants.models import Endereco
+        pac = self.pac['EM_PREPARACAO']
+        end = Endereco(nome_destinatario='Ana Souza', cep='01001000', logradouro='Rua A', numero='10',
+                       complemento='Apto 2', bairro='Centro', cidade='São Paulo', uf='SP')
+        pac.endereco_destinatario = end.texto_completo()
+        pac.save()
+        linhas = self._linhas('?etapa=EM_PREPARACAO')
+        self.assertEqual(len(linhas), 2)
+        cab, linha = linhas
+        dados = dict(zip(cab, linha))
+        self.assertEqual((dados['Destinatário'], dados['CEP'], dados['Rua'], dados['Número'], dados['Complemento'],
+                          dados['Bairro'], dados['Cidade'], dados['UF']),
+                         ('Ana Souza', '01001000', 'Rua A', '10', 'Apto 2', 'Centro', 'São Paulo', 'SP'))
+        self.assertTrue(AuditLog.objects.filter(event_type=AuditLog.EventType.PII_ACCESS, pacote_nacional=pac).exists())
+
+    def test_abertos_traz_solicitados_e_em_preparacao(self):
+        self.assertEqual(len(self._linhas('?etapa=abertos')), 3)
+
+    def test_endereco_antigo_fica_no_texto_completo(self):
+        pac = self.pac['SOLICITADO']
+        pac.endereco_destinatario = 'Rua qualquer 123 Recife'
+        pac.save()
+        dados = dict(zip(*self._linhas('?etapa=SOLICITADO')))
+        self.assertEqual((dados['Rua'], dados['Endereço completo']), ('', 'Rua qualquer 123 Recife'))
+
+    def test_outro_gom_nao_aparece(self):
+        from apps.goms.models import Gom
+        outro = Gom.objects.create(name='Outro', slug='outro')
+        PacoteNacional.objects.create(gom=outro, participant=self.joiner, status=PacoteNacional.Status.SOLICITADO)
+        self.assertEqual(len(self._linhas('?etapa=SOLICITADO')), 2)

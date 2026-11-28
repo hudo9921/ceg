@@ -1,4 +1,9 @@
-{% comment %}Barra de abas (celular/tablet, abaixo de lg): as seções do joiner (3 sem login, 6 com login). DESIGN_SYSTEM.md §7.{% endcomment %}
+{% comment %}
+Barra de abas (celular/tablet, abaixo de lg): as seções do joiner (3 sem login, 6 com login) e "Mais", que abre
+components/_menu_mais.html com o resto da barra lateral (Repasses, GOMs, painel do GOM, plataforma, conta).
+DESIGN_SYSTEM.md §7.
+{% endcomment %}
+<div x-data="{ mais: false }" @keydown.escape.window="mais = false" @abrir-busca.window="mais = false">
 <nav class="ui-tabbar lg:hidden" aria-label="Navegação principal">
     {% for item in joiner_nav %}
         <a href="{{ item.url }}" class="ui-tab{% if item.active %} is-on{% endif %}"{% if item.active %} aria-current="page"{% endif %}>
@@ -6,4 +11,12 @@
             <span>{{ item.label }}</span>
         </a>
     {% endfor %}
+    <button type="button" class="ui-tab relative bg-transparent border-0 cursor-pointer{% if nav_repasses or nav_goms or nav_procurar or nav_agenda or not nav_section %} is-on{% endif %}"
+            @click="mais = true" :aria-expanded="mais.toString()" aria-haspopup="dialog">
+        <i data-lucide="menu" class="w-[22px] h-[22px]" stroke-width="1.75"></i>
+        <span>Mais</span>
+        {% if gom_unread_notifications_count > 0 or gom_unread_mensagens > 0 %}<span class="absolute top-1.5 right-[calc(50%-18px)] w-2.5 h-2.5 rounded-full bg-ui-danger" aria-label="Há novidades no painel"></span>{% endif %}
+    </button>
 </nav>
+{% include 'components/_menu_mais.html' %}
+</div>

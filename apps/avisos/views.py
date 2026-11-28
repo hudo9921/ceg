@@ -97,3 +97,37 @@ def ajuda(request):
     """Passo a passo para ligar os avisos no Android, iPhone e computador (público)."""
     publico = 'joiner' if get_session_participant(request) else 'gom'
     return render(request, 'avisos/ajuda.html', {'publico_ajuda': publico})
+
+
+def _opcoes_gom(user):
+    """Categorias da equipe que este usuário pode receber (tem a permissão em algum GOM)."""
+    from apps.goms.access import active_memberships
+    from apps.goms.permissions import membership_permissions
+
+    from .preferencias import GOM
+    perms = set()
+    for m in active_memberships(user):
+        perms |= membership_permissions(m)
+    return [(c, r, d) for c, r, d, perm in GOM if user.is_superuser or perm in perms]
+
+
+@never_cache
+def preferencias(request):
+    """GET: opções e o que está ligado. POST {publico, ligados: [...]}: guarda. publico = joiner | gom."""
+    from .preferencias import JOINER, TEXTO_IMPORTANTE, desligados, salvar
+
+    participant, user = _dono(request)
+    body = _corpo(request) if request.method == 'POST' else {}
+    publico = (body.get('publico') or request.GET.get('publico') or ('joiner' if participant else 'gom'))
+    if publico == 'joiner' and participant is None or publico == 'gom' and user is None:
+        return JsonResponse({'success': False, 'requires_auth': True, 'message': 'Entre na sua conta.'}, status=401)
+    dono = {'participant': participant} if publico == 'joiner' else {'user': user}
+    opcoes = JOINER if publico == 'joiner' else _opcoes_gom(user)
+    if request.method == 'POST':
+        ligados = set(body.get('ligados') or [])
+        salvar([c for c, *_ in opcoes if c not in ligados], **dono)
+    fora = desligados(**dono)
+    return JsonResponse({'success': True, 'publico': publico,
+                         'opcoes': [{'chave': c, 'rotulo': r, 'descricao': d, 'ligado': c not in fora} for c, r, d in opcoes],
+                         'aviso': TEXTO_IMPORTANTE if publico == 'joiner' else
+                         'Você só recebe avisos das áreas que pode mexer neste GOM.'})

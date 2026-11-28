@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Agenda de aberturas — CegManager{% endblock %}
+
+{% block content %}
+{% comment %}
+/agenda/ (apps/cegs/agenda.py): CEGs agendadas de todos os GOMs, por dia, com contagem ao vivo e "Adicionar ao
+calendário" (.ics). Quem segue alguém vê "Para você" e pode filtrar ?seguindo=1. Linha: partials/_agenda_ceg.html.
+{% endcomment %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <header class="space-y-2">
+        <p class="ui-label">Agenda</p>
+        <h1 class="ui-disp text-4xl">Aberturas</h1>
+        <p class="ui-muted text-[15px] max-w-2xl">Quando cada CEG abre, em todos os GOMs. Adicione ao calendário do celular para ser lembrado 15 minutos antes do Segundo Zero.</p>
+    </header>
+
+    {% if tem_prefs %}
+        <div class="ui-toggle w-full max-w-sm" role="group" aria-label="Quais aberturas mostrar">
+            <a href="{% url 'agenda' %}" class="flex-1 text-center no-underline {% if not so_sigo %}is-on{% endif %}"{% if not so_sigo %} aria-current="page"{% endif %}>Todas</a>
+            <a href="{% url 'agenda' %}?seguindo=1" class="flex-1 text-center no-underline {% if so_sigo %}is-on{% endif %}"{% if so_sigo %} aria-current="page"{% endif %}>Só quem eu sigo</a>
+        </div>
+    {% endif %}
+
+    {% for dia in dias %}
+        <section class="space-y-3" aria-labelledby="dia-{{ forloop.counter }}">
+            <h2 id="dia-{{ forloop.counter }}" class="ui-label !text-[13px] m-0 sticky top-[68px] lg:top-3 z-10 py-1.5 bg-ui-bg/80 backdrop-blur">
+                {% if dia.hoje %}Hoje{% elif dia.amanha %}Amanhã{% else %}{{ dia.data|date:"l" }}{% endif %} · {{ dia.data|date:"d \d\e F"|lower }}
+            </h2>
+            <ul class="m-0 p-0 list-none space-y-3">
+                {% for ceg in dia.cegs %}{% include 'cegs/partials/_agenda_ceg.html' %}{% endfor %}
+            </ul>
+        </section>
+    {% empty %}
+        <div class="ui-card p-8 text-center space-y-2">
+            <p class="font-semibold m-0">{% if so_sigo %}Nenhuma abertura de quem você segue nos próximos dias.{% else %}Nenhuma CEG agendada agora.{% endif %}</p>
+            <p class="ui-muted text-sm m-0">{% if so_sigo %}<a href="{% url 'agenda' %}" class="underline">Ver todas as aberturas</a>{% else %}As CEGs abertas estão na <a href="{% url 'home' %}" class="underline">página inicial</a>.{% endif %}</p>
+        </div>
+    {% endfor %}
+</div>
+<script>
+    window.uiCountdownLabel = window.uiCountdownLabel || function (s) {
+        if (s <= 0) return 'Aberta agora';
+        const p = (n) => String(n).padStart(2, '0');
+        const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+        return (d > 0 ? d + 'd ' : '') + p(h) + ':' + p(m) + ':' + p(sec);
+    };
+</script>
+{% endblock %}

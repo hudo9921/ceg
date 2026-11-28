@@ -137,7 +137,7 @@
                                     class="ui-input w-full cursor-pointer">
                                     <option value="">Nenhuma Caixa Vinculada</option>
                                     {% for c in all_caixas %}
-                                    <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                                    <option value="{{ c.id }}"{% if c.status != 'EM_CONSOLIDACAO' %} data-caixa-fechada="{{ c.get_status_display }}"{% endif %} {% if ceg.caixa_id == c.id %}selected{% endif %}>
                                         {% if c.origem == 'KR' %}🇰🇷{% elif c.origem == 'JP' %}🇯🇵{% else %}📦{% endif %}
                                         {{ c.nome }} ({{ c.get_status_display }})
                                     </option>
@@ -368,7 +368,7 @@
                             <option value="" {% if not ceg.caixa %}selected{% endif %}>-- Nenhuma (Sem Caixa /
                                 Desvincular) --</option>
                             {% for c in all_caixas %}
-                            <option value="{{ c.id }}" {% if ceg.caixa_id == c.id %}selected{% endif %}>
+                            <option value="{{ c.id }}"{% if c.status != 'EM_CONSOLIDACAO' %} data-caixa-fechada="{{ c.get_status_display }}"{% endif %} {% if ceg.caixa_id == c.id %}selected{% endif %}>
                                 {% if c.origem == 'KR' %}🇰🇷 [KR]{% elif c.origem == 'JP' %}🇯🇵 [JP]{% elif c.origem == 'CN' %}🇨🇳 [CN]{% elif c.origem == 'US' %}🇺🇸 [US]{% else %}📦 [OUTRO]{% endif %}
                                 {{ c.nome }} ({{ c.get_status_display }})
                             </option>

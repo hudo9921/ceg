@@ -121,6 +121,20 @@
             });
         });
 
+        // Grupo da sanfona da barra lateral (components/_nav_grupo.html): abre sozinho quando a página atual
+        // está dentro dele; fora isso, lembra se a pessoa deixou aberto (por aparelho).
+        function navGrupo(chave, ativo) {
+            let salvo = null;
+            try { salvo = localStorage.getItem('nav-grupo:' + chave); } catch (e) {}
+            return {
+                aberto: ativo || salvo === '1',
+                alternar() {
+                    this.aberto = !this.aberto;
+                    try { localStorage.setItem('nav-grupo:' + chave, this.aberto ? '1' : '0'); } catch (e) {}
+                },
+            };
+        }
+
         function themeApp() {
             return {
                 isDark: false,
@@ -637,6 +651,8 @@
     {% include 'components/ui_sidebar.html' %}
     {% include 'components/ui_topbar.html' %}
     {% include 'components/ui_tabbar.html' %}
+    {% if is_gom_member or is_platform_admin %}{% include 'components/_aviso_caixa_fechada.html' %}{% endif %}
+    {% if is_gom_staff %}{% include 'components/_painel_joiner.html' %}{% include 'components/_busca_rapida.html' %}{% endif %}
 
     <!-- Área Principal de Conteúdo (Deslocada pela Sidebar no Desktop) -->
     <div class="lg:pl-60 min-h-screen flex flex-col flex-1 w-full">

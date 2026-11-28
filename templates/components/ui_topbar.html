@@ -9,6 +9,9 @@
             </button>
         </div>
         {% if is_gom_staff %}
+            <button type="button" class="ui-icon-btn" aria-label="Buscar no painel" x-data @click="$dispatch('abrir-busca')">
+                <i data-lucide="search" class="w-5 h-5" stroke-width="1.75"></i>
+            </button>
             <a href="{% url 'gom_notifications' %}" class="ui-icon-btn relative" aria-label="Notificações do GOM">
                 <i data-lucide="bell" class="w-5 h-5" stroke-width="1.75"></i>
                 {% if gom_unread_notifications_count > 0 %}

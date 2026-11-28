@@ -5,7 +5,7 @@
 {% block content %}
 {% comment %}
 /me/seguindo/ (apps/participants/seguindo_views.py): grupos e integrantes que o joiner segue. Seguir destaca as CEGs
-deles na home e nas lojas dos GOMs e avisa quando abre CEG nova. Card de grupo em partials/_seguindo_grupo.html.
+deles na home, nas lojas dos GOMs e na agenda (sem aviso de CEG nova, para não virar spam). Card de grupo em partials/_seguindo_grupo.html.
 {% endcomment %}
 {{ grupos|json_script:"seguindo-data" }}
 <div class="max-w-3xl mx-auto space-y-6" x-data="seguindoApp()">

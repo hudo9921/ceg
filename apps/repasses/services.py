@@ -49,7 +49,7 @@ def checar_vaga(slot, dono, ignorar=None):
 def _notificar_joiner(participante, titulo, mensagem):
     from apps.participants.models import ParticipantNotification
     if participante:
-        ParticipantNotification.objects.create(participant=participante, title=titulo, message=mensagem,
+        ParticipantNotification.objects.create(participant=participante, title=titulo, message=mensagem, categoria='repasses',
                                                notification_type=ParticipantNotification.NotificationType.CLAIM_UPDATE)
 
 

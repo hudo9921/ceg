@@ -8,7 +8,7 @@ Ação da vaga: botão real de "Adicionar à lista"/"Na lista" (o toque sobe par
         <i data-lucide="hand" class="w-4 h-4" stroke-width="1.75"></i><span>Quero esta vaga</span>
     </a>
 {% elif slot.claimed_by %}
-    <p class="m-0 px-1 text-[12px] ui-muted truncate">por {{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}</p>
+    <p class="m-0 px-1 text-[12px] ui-muted truncate">por {% if is_gom_staff %}<button type="button" data-joiner-id="{{ slot.claimed_by_id }}" class="bg-transparent border-0 p-0 cursor-pointer hover:underline text-left text-[12px] ui-muted" title="Ver joiner">{{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}</button>{% else %}{{ slot.claimed_by.social_handle|default:slot.claimed_by.display_name }}{% endif %}</p>
 {% elif logged_participant or user.is_authenticated %}
     <button type="button" class="ui-btn ui-btn-sm w-full"
             :class="picked ? 'ui-btn-primary' : 'bg-ui-surface text-ui-text border border-ui-line'" :aria-pressed="picked.toString()" aria-pressed="false"

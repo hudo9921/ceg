@@ -74,6 +74,22 @@ def _tasks(request, granted, pending, upcoming, now):
     return tasks
 
 
+def _links(log, granted):
+    """Para onde o GOM vai a partir de um evento: o painel do joiner (com permissão) e a página da CEG."""
+    links = {'url': '', 'ceg_url': '', 'ceg_title': ''}
+    if log.participant_id and 'pedidos.ver' in granted:
+        links['url'] = f"{reverse('consulta_joiner')}?participant_id={log.participant_id}"
+    elif log.pacote_nacional_id and 'envios.pacotes' in granted:
+        links['url'] = reverse('envios_nacionais')
+    if log.ceg_id and log.ceg:
+        ceg_url = reverse('ceg_detail', kwargs={'slug': log.ceg.slug})
+        if links['url']:
+            links.update(ceg_url=ceg_url, ceg_title=log.ceg.title)
+        else:
+            links['url'] = ceg_url
+    return links
+
+
 def build_dashboard(request, granted):
     from apps.cegs.models import AuditLog, CEG
     from apps.participants.models import Claim
@@ -98,7 +114,7 @@ def build_dashboard(request, granted):
             {'label': 'CEGs abertas', 'value': str(CEG.objects.for_gom(gom).filter(status=CEG.Status.OPEN).count()),
              'sub': f'{len(upcoming)} agendada{"s" if len(upcoming) != 1 else ""} (14 dias)'},
         ]
-        activity = [{'text': log.action_label, 'when': ago(log.created_at, now)}
-                    for log in AuditLog.objects.for_gom(gom).order_by('-created_at')[:6]]
+        logs = AuditLog.objects.for_gom(gom).select_related('ceg').order_by('-created_at')[:6]
+        activity = [{'text': log.action_label, 'when': ago(log.created_at, now), **_links(log, granted)} for log in logs]
     return {'tasks': _tasks(request, granted, pending, upcoming, now), 'kpis': kpis,
             'upcoming': upcoming if 'ceg.editar' in granted or 'analytics.ver' in granted else [], 'activity': activity}

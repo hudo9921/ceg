@@ -1,0 +1,23 @@
+{% comment %}
+Uma linha do "Agora há pouco" (goms/inicio.html). a.url abre o painel lateral do joiner (link da Consulta 360°; Ctrl+clique abre a página) (ou aos envios / à CEG, apps/goms/dashboard.py:_links)
+e a linha toda é clicável; a.ceg_url é um segundo link, por cima, para a página da CEG do evento.
+{% endcomment %}
+{% if a.url %}
+<div class="relative flex items-start gap-3 px-5 py-3 border-t hover:bg-black/[.03] dark:hover:bg-white/[.04] transition-colors" style="border-color: var(--ui-line)">
+    <span class="flex-1 min-w-0 text-sm">
+        <a href="{{ a.url }}" class="after:absolute after:inset-0 after:content-['']">{{ a.text }}</a>
+        {% if a.ceg_url %}
+            <a href="{{ a.ceg_url }}" class="relative z-10 mt-0.5 flex items-center gap-1 w-fit max-w-full ui-muted text-[12px] hover:underline">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 flex-none" stroke-width="1.75"></i><span class="truncate">{{ a.ceg_title }}</span>
+            </a>
+        {% endif %}
+    </span>
+    <span class="ui-label flex-none">{{ a.when }}</span>
+    <i data-lucide="chevron-right" class="w-4 h-4 flex-none ui-muted self-center" stroke-width="1.75"></i>
+</div>
+{% else %}
+<div class="flex items-start gap-3 px-5 py-3 border-t" style="border-color: var(--ui-line)">
+    <span class="flex-1 text-sm">{{ a.text }}</span>
+    <span class="ui-label flex-none">{{ a.when }}</span>
+</div>
+{% endif %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if publica %}Coleção de {{ dono.display_name }}{% else %}Minha coleção{% endif %} — CegManager{% endblock %}
+
+{% block extra_head %}{% if publica %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+
+{% block content %}
+{% comment %}
+Minha coleção (/me/colecao/) e a versão pública (/colecao/<token>/), de apps/participants/colecao.py: itens de pacotes
+entregues como fichário: um por grupo ou um só (escolha do dono, `modo`; no único os chips pulam até o grupo),
+páginas de 9 bolsos (.ui-binder, static/css/ui.css). Pública: sem preço,
+telefone nem GOM. Fichário que vira página: partials/_colecao_fichario.html (+ _colecao_fichario_js.html).
+Bolso: partials/_colecao_carta.html (texto só ao parar o mouse ou tocar).
+{% endcomment %}
+<div class="max-w-6xl mx-auto space-y-6" x-data="{ grupo: 'todos', de: 0, ate: 1 }" @pagina-mudou="de = $event.detail.de; ate = $event.detail.ate">
+    <header class="space-y-2">
+        {% if not publica %}<a href="{% url 'my_claims' %}" class="ui-label hover:underline">← Minha conta</a>{% else %}<p class="ui-label">Coleção</p>{% endif %}
+        <h1 class="ui-disp text-4xl">{% if publica %}Coleção de {{ dono.display_name }}{% else %}Minha coleção{% endif %}</h1>
+        <p class="ui-muted text-[15px] m-0">{{ total }} ite{{ total|pluralize:"m,ns" }}{% if grupos %} de {{ grupos|length }} grupo{{ grupos|length|pluralize }}{% endif %}{% if not publica %} · o que já chegou na sua casa (pacotes entregues){% endif %}.{% if total %} Pare o mouse ou toque numa carta para ver os detalhes.{% endif %}</p>
+    </header>
+
+    {% if not publica %}
+        <section class="ui-card p-4 flex flex-wrap items-center gap-3" aria-label="Compartilhar coleção">
+            <span class="w-10 h-10 ui-well flex items-center justify-center flex-none"><i data-lucide="share-2" class="w-5 h-5" stroke-width="1.75"></i></span>
+            <div class="min-w-0 flex-[1_1_220px]">
+                <p class="font-semibold m-0">Compartilhar</p>
+                {% if link %}
+                    <p class="text-sm m-0 truncate" x-data="{ copiado: false }">Qualquer pessoa com o link vê seus itens (sem preços nem telefone):
+                        <button type="button" class="font-semibold text-ui-accent-text underline bg-transparent border-0 p-0 cursor-pointer" @click="navigator.clipboard.writeText('{{ link|escapejs }}'); copiado = true; setTimeout(() => copiado = false, 2000)" x-text="copiado ? 'copiado!' : 'copiar link'">copiar link</button>
+                    </p>
+                {% else %}
+                    <p class="text-sm ui-muted m-0">Crie um link para mostrar sua coleção. Só quem tiver o link vê.</p>
+                {% endif %}
+            </div>
+            <form method="post" action="{% url 'colecao_compartilhar' %}" class="m-0">{% csrf_token %}
+                <input type="hidden" name="ligar" value="{% if link %}0{% else %}1{% endif %}">
+                <button type="submit" class="ui-btn ui-btn-sm {% if link %}ui-btn-ghost{% else %}ui-btn-primary{% endif %}">{% if link %}Desligar link{% else %}Criar link{% endif %}</button>
+            </form>
+        </section>
+    {% endif %}
+
+    {% if grupos|length > 1 or not publica and grupos %}
+        <div class="flex flex-wrap items-center gap-3">
+            {% if grupos|length > 1 %}
+                <div class="flex gap-2 overflow-x-auto pb-1 min-w-0 w-full sm:w-auto sm:flex-1" role="group" aria-label="{% if modo == 'unico' %}Ir para o grupo{% else %}Filtrar por grupo{% endif %}">
+                    {% if modo == 'unico' %}
+                        {% for g in grupos %}
+                            <button type="button" class="ui-chip flex-none" :class="de <= {{ g.fim }} && ate >= {{ g.inicio }} && 'is-on'" @click="$dispatch('ir-pagina', {{ g.inicio }})">{{ g.grupo }} <span class="ui-mono ui-muted text-xs">{{ g.total }}</span></button>
+                        {% endfor %}
+                    {% else %}
+                        <button type="button" class="ui-chip flex-none" :class="grupo === 'todos' && 'is-on'" @click="grupo = 'todos'">Todos</button>
+                        {% for g in grupos %}
+                            <button type="button" class="ui-chip flex-none" :class="grupo === '{{ g.id }}' && 'is-on'" @click="grupo = '{{ g.id }}'">{{ g.grupo }} <span class="ui-mono ui-muted text-xs">{{ g.total }}</span></button>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% if not publica %}{% include 'participants/partials/_colecao_modo.html' %}{% endif %}
+        </div>
+    {% endif %}
+
+    {% if modo == 'unico' and grupos %}
+        <section class="space-y-3" aria-label="Fichário">
+            <p class="ui-label m-0 text-right">{{ total }} carta{{ total|pluralize }} · {{ paginas_unico|length }} página{{ paginas_unico|length|pluralize }}</p>
+            {% include 'participants/partials/_colecao_fichario.html' with paginas=paginas_unico nome='a coleção' %}
+        </section>
+    {% else %}
+    {% for g in grupos %}
+        <section class="space-y-3" x-show="grupo === 'todos' || grupo === '{{ g.id }}'" aria-labelledby="colecao-g-{{ g.id }}">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 id="colecao-g-{{ g.id }}" class="ui-disp text-2xl m-0">{{ g.grupo }}</h2>
+                <p class="ui-label m-0">{{ g.total }} carta{{ g.total|pluralize }} · {{ g.paginas|length }} página{{ g.paginas|length|pluralize }}</p>
+            </div>
+            {% include 'participants/partials/_colecao_fichario.html' with paginas=g.paginas nome=g.grupo %}
+        </section>
+    {% empty %}
+        <div class="ui-card p-8 text-center space-y-2">
+            <p class="font-semibold m-0">{% if publica %}Ainda não há itens nesta coleção.{% else %}Sua coleção começa quando o primeiro pacote chegar.{% endif %}</p>
+            {% if not publica %}<p class="ui-muted text-sm m-0">Quando você confirmar a entrega em Envios, os itens aparecem aqui.</p>{% endif %}
+        </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% include 'participants/partials/_colecao_fichario_js.html' %}
+{% endblock %}

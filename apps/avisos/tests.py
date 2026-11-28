@@ -87,3 +87,49 @@ class PushTests(TestCase):
         self.entrar()
         self.assertContains(self.client.get(reverse('my_claims')), reverse('ajuda_notificacoes'))
 
+
+
+@override_settings(PUSH_SINCRONO=True)
+class PreferenciasTests(TestCase):
+    def setUp(self):
+        self.ana = Participant.objects.create(whatsapp='5511900004444', name='Ana')
+        Inscricao.objects.create(participant=self.ana, endpoint='https://push.example.com/ana', p256dh='k', auth='a')
+        self.gom = Gom.objects.create(name='Loja Pref', slug='loja-pref')
+        self.dono = User.objects.create_user('dono-pref', password='x')
+        GomMembership.objects.create(user=self.dono, gom=self.gom, role='OWNER')
+        self.ajudante = User.objects.create_user('ajudante-pref', password='x')
+        from apps.goms.services import set_permissions
+        set_permissions(GomMembership.objects.create(user=self.ajudante, gom=self.gom, role='ADMIN'),
+                        ['pedidos.ver', 'envios.pacotes', 'mensagens.responder'], self.dono)
+        for u in (self.dono, self.ajudante):
+            Inscricao.objects.create(user=u, endpoint=f'https://push.example.com/{u.username}', p256dh='k', auth='a')
+
+    def enviados(self, criar):
+        with mock.patch('pywebpush.webpush') as webpush, self.captureOnCommitCallbacks(execute=True):
+            criar()
+        return [(c.args[0]['endpoint'].rsplit('/', 1)[1], json.loads(c.args[1])['title']) for c in webpush.call_args_list]
+
+    def test_joiner_desliga_pagamentos_mas_importante_chega(self):
+        session = self.client.session
+        session['participant_id'] = self.ana.id
+        session.save()
+        opcoes = self.client.get(reverse('push_preferencias')).json()['opcoes']
+        self.assertEqual([o['chave'] for o in opcoes], ['pagamentos', 'envios', 'mensagens', 'repasses'])
+        self.client.post(reverse('push_preferencias'), json.dumps({'publico': 'joiner', 'ligados': ['envios', 'mensagens', 'repasses']}),
+                         content_type='application/json')
+        criar = ParticipantNotification.objects.create
+        self.assertEqual(self.enviados(lambda: criar(participant=self.ana, title='Pagamento confirmado', message='',
+                                                     categoria='pagamentos')), [])
+        self.assertEqual(self.enviados(lambda: criar(participant=self.ana, title='Set cancelado', message='',
+                                                     notification_type='SET_CANCELLED')), [('ana', 'Set cancelado')])
+
+    def test_equipe_recebe_pela_permissao_e_pode_desligar(self):
+        criar = GOMNotification.objects.create
+        self.assertEqual(self.enviados(lambda: criar(gom=self.gom, notification_type='PAYMENT', title='Pix avisado', message='')),
+                         [('dono-pref', 'Pix avisado')])  # ajudante de logística não confirma Pix
+        self.client.force_login(self.dono)
+        self.client.post(reverse('push_preferencias'), json.dumps({'publico': 'gom', 'ligados': ['pix', 'envios', 'repasses']}),
+                         content_type='application/json')
+        msg = lambda: criar(gom=self.gom, notification_type='SYSTEM', title='Mensagem de Ana', message='',
+                            metadata={'categoria': 'mensagens'})
+        self.assertEqual(self.enviados(msg), [('ajudante-pref', 'Mensagem de Ana')])
